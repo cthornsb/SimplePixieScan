@@ -8,6 +8,7 @@
 class ChannelEvent;
 class MapFile;
 class ConfigFile;
+class ProcessorHandler;
 
 std::string to_str(const int &input_);
 
@@ -21,6 +22,7 @@ class Unpacker{
 
 	MapFile *mapfile;
 	ConfigFile *configfile;
+	ProcessorHandler *handler;
 	
 	std::deque<ChannelEvent*> eventList;
 	std::deque<ChannelEvent*> rawEvent;

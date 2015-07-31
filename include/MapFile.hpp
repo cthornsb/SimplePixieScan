@@ -66,6 +66,8 @@ class MapFile : public ParentClass{
 
 	MapEntry *GetMapEntry(int mod_, int chan_);
 	
+	std::vector<std::string> *GetTypes(){ return &types; }
+	
 	std::string GetType(int mod_, int chan_);
 	
 	std::string GetSubtype(int mod_, int chan_);

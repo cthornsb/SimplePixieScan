@@ -22,7 +22,12 @@ INCLUDE_DIR = $(TOP_LEVEL)/include
 SOURCE_DIR = $(TOP_LEVEL)/source
 OBJ_DIR = $(TOP_LEVEL)/obj
 
-SOURCES = ParentClass.cpp Processor.cpp ChannelEvent.cpp ConfigFile.cpp MapFile.cpp Unpacker.cpp
+# Core files
+SOURCES = ParentClass.cpp ProcessorHandler.cpp Processor.cpp ChannelEvent.cpp ConfigFile.cpp MapFile.cpp Unpacker.cpp
+
+# Processors
+SOURCES += TriggerProcessor.cpp
+
 OBJECTS = $(addprefix $(OBJ_DIR)/,$(SOURCES:.cpp=.o))
 
 POLL_INC_DIR = $(PIXIE_SUITE_DIR)/Poll/include
@@ -77,7 +82,6 @@ $(SCAN_MAIN_OBJ): $(SCAN_MAIN)
 ########################################################################
 
 $(EXECUTABLE): $(OBJECTS)
-	@echo $(OBJECTS)
 	$(COMPILER) $(LDFLAGS) $(OBJECTS) -o $@ $(LDLIBS)
 
 ########################################################################

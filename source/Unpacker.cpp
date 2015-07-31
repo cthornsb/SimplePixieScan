@@ -8,6 +8,7 @@
 #include "MapFile.hpp"
 #include "ConfigFile.hpp"
 #include "ChannelEvent.hpp"
+#include "ProcessorHandler.hpp"
 
 std::string to_str(const int &input_){
 	std::stringstream stream;
@@ -47,46 +48,30 @@ void Unpacker::ProcessRawEvent(){
 	std::string type, subtype, tag;
 	
 	// The first signal in the deque is the start signal for this event
-	//ChannelEvent *start_event = rawEvent.front();
+	ChannelEvent *start_event = rawEvent.front();
 	
 	// Fill the processor event deques with events
 	while(!rawEvent.empty()){
 		current_event = rawEvent.front();
 		
 		// Check that this detector is valid
-		/*if(current_event->entry){
+		if(current_event->entry){
 			// Get detector type information
 			current_event->entry->get(type, subtype, tag);
 		
 			// Pass this event to the correct processor
 			if(type == "ignore"){ } // Do nothing
-			else if(type == "trigger"){
-				trigger_proc.AddEvent(current_event);
-			}
-			else if(type == "vandle"){
-				vandle_proc.AddEvent(current_event);
-			}
-			else if(type == "liquid"){
-				liquid_proc.AddEvent(current_event);
-			}
-			else if(type == "ionchamber"){
-				ionchamber_proc.AddEvent(current_event);
-			}
-			else if(type == "phoswich"){
-				phoswich_proc.AddEvent(current_event);
-			}
-			else{ // Invalid detector type. Delete it
+			else if(!handler->AddEvent(current_event, type)){ // Invalid detector type. Delete it
 				delete current_event;
 			}
 			
-			// This channel is a start signal
+			// This channel is a start signal. Due to the way ScanList
+			// packs the raw event, there may be only one start signal
+			// per raw event.
 			if(tag == "start"){ 
 				start_event = current_event;
 			}
-		}*/
-		
-		// temporary!!!
-		delete current_event; 
+		}
 		
 		// Remove this event from the raw event deque
 		rawEvent.pop_front();
@@ -94,11 +79,7 @@ void Unpacker::ProcessRawEvent(){
 	
 	// Call each processor to do the processing. Each
 	// processor will remove the channel events when finished.
-	/*trigger_proc.Process(start_event);
-	vandle_proc.Process(start_event);
-	liquid_proc.Process(start_event);
-	ionchamber_proc.Process(start_event);
-	phoswich_proc.Process(start_event);*/
+	handler->Process(start_event);
 }
 
 void Unpacker::ScanList(){
@@ -338,12 +319,22 @@ int Unpacker::ReadBuffer(unsigned int *buf, unsigned long *bufLen){
 Unpacker::Unpacker(){
 	mapfile = new MapFile("./setup/map.dat");
 	configfile = new ConfigFile("./setup/config.dat");
+	handler = new ProcessorHandler();
+	
+	std::vector<std::string> *types = mapfile->GetTypes();
+	for(std::vector<std::string>::iterator iter = types->begin(); iter != types->end(); iter++){
+		if(*iter == "ignore"){ continue; }
+		else if(handler->AddProcessor(*iter)){ std::cout << "Unpacker: Added " << *iter << " processor to the processor list.\n"; }
+		else{ std::cout << "Unpacker: Failed to add " << *iter << " processor to the processor list!\n"; }
+	}
+	
 	full_event = false;
 }
 
 Unpacker::~Unpacker(){
 	delete mapfile;
 	delete configfile;
+	delete handler;
 	
 	ClearRawEvent();
 	ClearEventList();

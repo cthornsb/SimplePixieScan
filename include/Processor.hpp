@@ -2,7 +2,7 @@
 #define PROCESSOR_HPP
 
 #include <string>
-#include <queue>
+#include <deque>
 
 struct ChannelEvent;
 
@@ -15,10 +15,12 @@ class Processor{
 	unsigned long total_events;
 	
 	ChannelEvent *start;
-	std::queue<ChannelEvent*> events;
+	std::deque<ChannelEvent*> events;
 	
 	std::string name;
+	std::string type;
 	bool init;
+	bool write_waveform;
   
 	/// Clear channel events from the queue
 	void ClearEvents();
@@ -32,7 +34,7 @@ class Processor{
 	virtual bool HandleEvents();
 
   public:
-	Processor(std::string name_="Generic");
+	Processor(std::string name_, std::string type_);
 	
 	~Processor();
 
@@ -40,9 +42,9 @@ class Processor{
 	
 	bool IsInit(){ return init; }
 
-	float Status(unsigned int total_events);
+	float Status();
 
-	void AddEvent(ChannelEvent *event_){ events.push(event_); }
+	void AddEvent(ChannelEvent *event_){ events.push_back(event_); }
 
 	bool Process(ChannelEvent *start_);
 };

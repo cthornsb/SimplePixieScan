@@ -475,5 +475,7 @@ int main(int argc, char *argv[]){
 	// Clean up detector driver
 	std::cout << "\nCleaning up..\n";
 	
+	delete core;
+	
 	return 0;
 }
