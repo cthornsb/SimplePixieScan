@@ -1,0 +1,19 @@
+# Compiled Source #
+###################
+*.o
+*.so
+
+# Config files #
+################
+config/*
+setup
+
+# ROOT Files #
+##############
+*.root
+RootDict.cpp
+RootDict.h
+
+# Executable #
+##############
+SimpleLDF
