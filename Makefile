@@ -54,7 +54,28 @@ EXECUTABLE = SimpleLDF
 
 ########################################################################
 
-all: $(EXECUTABLE)
+all: directory $(EXECUTABLE)
+
+########################################################################
+
+directory: $(OBJ_DIR)
+# Setup the configuration directory
+	@if [ ! -d $(TOP_LEVEL)/config/default ]; then \
+		tar -xf $(TOP_LEVEL)/config.tar; \
+		echo "Building configuration directory"; \
+	fi
+# Create a symbolic link to the default config directory
+	@if [ ! -e $(TOP_LEVEL)/setup ]; then \
+		ln -s $(TOP_LEVEL)/config/default $(TOP_LEVEL)/setup; \
+		echo "Creating symbolic link to default configuration directory"; \
+	fi
+
+$(OBJ_DIR):
+#	Make the object file directory
+	@if [ ! -d $@ ]; then \
+		echo "Making directory: "$@; \
+		mkdir $@; \
+	fi
 
 ########################################################################
 
