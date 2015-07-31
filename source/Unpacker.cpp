@@ -25,29 +25,31 @@ bool is_in(const std::vector<std::string> &vec_, const std::string &input_){
 void Unpacker::ClearRawEvent(){
 	while(!rawEvent.empty()){
 		delete rawEvent.front();
-		rawEvent.pop();
+		rawEvent.pop_front();
 	}
 }
 
 void Unpacker::ClearEventList(){
 	while(!eventList.empty()){
 		delete eventList.front();
-		eventList.pop();
+		eventList.pop_front();
 	}
 }
 
 void Unpacker::DeleteCurrentEvent(){
 	if(eventList.empty()){ return; }
 	delete eventList.front();
-	eventList.pop();
+	eventList.pop_front();
 }
 
 void Unpacker::ProcessRawEvent(){
 	ChannelEvent *current_event = NULL;
-	ChannelEvent *start_event = NULL;
 	std::string type, subtype, tag;
 	
-	// Fill the processor event queues with events
+	// The first signal in the deque is the start signal for this event
+	//ChannelEvent *start_event = rawEvent.front();
+	
+	// Fill the processor event deques with events
 	while(!rawEvent.empty()){
 		current_event = rawEvent.front();
 		
@@ -86,8 +88,8 @@ void Unpacker::ProcessRawEvent(){
 		// temporary!!!
 		delete current_event; 
 		
-		// Remove this event from the raw event queue
-		rawEvent.pop();
+		// Remove this event from the raw event deque
+		rawEvent.pop_front();
 	}
 	
 	// Call each processor to do the processing. Each
@@ -100,19 +102,17 @@ void Unpacker::ProcessRawEvent(){
 }
 
 void Unpacker::ScanList(){
-	unsigned long chanTime, eventTime;
+	//unsigned long chanTime, eventTime;
 
 	// local variables for the times of the current event, previous
 	// event and time difference between the two
-	double diffTime = 0;
-	
-	//set last_t to the time of the first event
-	double lastTime = eventList.front()->time;
-	double currTime = lastTime;
+	double lastTime = 0.0;
+	double currTime = 0.0;
 	
 	int mod, chan;
-	std::string dtype;
-	std::string dsubtype;
+	std::string type, subtype, tag;
+	
+	bool found_valid_start = false;
 
 	//loop over the list of channels that fired in this buffer
 	ChannelEvent *current_event;
@@ -133,38 +133,47 @@ void Unpacker::ScanList(){
 			DeleteCurrentEvent();
 			continue;
 		}
+
+		// Get detector type information
+		current_event->entry->get(type, subtype, tag);
+		
+		// Search for a start signal
+		if(!found_valid_start){
+			if(tag != "start"){ 
+				DeleteCurrentEvent();
+				continue; 
+			}
+			found_valid_start = true;
+			lastTime = current_event->time;
+		}
+		else if(tag == "start"){ // Encountered a new start signal before the max event width was exceeded
+			if(!rawEvent.empty()){ ProcessRawEvent(); }
+			lastTime = current_event->time;
+		}
 		
 		// This is a channel we're interested in
-		chanTime = current_event->trigTime;
-		eventTime = current_event->eventTimeLo;
-
-		// Retrieve the current event time and determine the time difference 
-		// between the current and previous events. 
+		// Retrieve the current event time
 		currTime = current_event->time;
-		diffTime = currTime - lastTime;
 
 		// If the time difference between the current and previous event is 
 		// larger than the event width, finalize the current event, otherwise
 		// treat this as part of the current event
-		if(diffTime > configfile->event_width && rawEvent.size() > 0){
+		if((currTime - lastTime) > configfile->event_width && !rawEvent.empty()){
+			found_valid_start = false;
 			ProcessRawEvent();
 		}
 
-		unsigned long dtimebin = 2000 + eventTime - chanTime;
+		/*unsigned long dtimebin = 2000 + eventTime - chanTime;
 		if(dtimebin < 0 || dtimebin > 16384){
 			std::cout << "ScanList: Strange dtime for mod = " << mod << ", chan = " << chan << "\n";
-		}
+		}*/
 		
 		// Push this channel event into the rawEvent.
-		
-		rawEvent.push(current_event);
+		rawEvent.push_back(current_event);
 		
 		// Remove this event from the event list but do not delete it yet.
 		// Deleting of the channel events will be handled by clearing the rawEvent.
-		eventList.pop();
-
-		// update the time of the last event
-		lastTime = currTime; 
+		eventList.pop_front();
 	} //end loop over event list
 
 	// Process the last event in the buffer
@@ -177,6 +186,10 @@ void Unpacker::ScanList(){
 		std::cout << "ScanList: Attempting to exit ScanList with elements in the event list!\n";
 		ClearEventList();
 	}
+}	
+
+void Unpacker::SortList(){
+	sort(eventList.begin(), eventList.end(), &ChannelEvent::CompareTime);
 }
 
 int Unpacker::ReadBuffer(unsigned int *buf, unsigned long *bufLen){						
@@ -309,7 +322,7 @@ int Unpacker::ReadBuffer(unsigned int *buf, unsigned long *bufLen){
 				buf += traceLength / 2;
 			}
  
-			eventList.push(currentEvt);
+			eventList.push_back(currentEvt);
 
 			numEvents++;
 		}
@@ -340,8 +353,8 @@ bool Unpacker::ReadSpill(char *ibuf, unsigned int nWords, bool is_verbose/*=true
 	const unsigned int maxVsn = 14; // No more than 14 pixie modules per crate
 	unsigned int nWords_read = 0;
 	
-	static clock_t clockBegin; // Initialization time
-	time_t tmsBegin;
+	//static clock_t clockBegin; // Initialization time
+	//time_t tmsBegin;
 
 	std::vector<ChannelEvent*> eventList; // Vector to hold the events
 
@@ -363,7 +376,7 @@ bool Unpacker::ReadSpill(char *ibuf, unsigned int nWords, bool is_verbose/*=true
 	if(counter==0){
 		// Retrieve the current time for use later to determine the total
 		// running time of the analysis.
-		clockBegin = time(&tmsBegin);
+		//clockBegin = time(&tmsBegin);
 
 		// After completion the descriptions of all channels are in the mapfile
 		// vector, the DetectorDriver and rawEventent have been initialized with the
@@ -488,7 +501,7 @@ bool Unpacker::ReadSpill(char *ibuf, unsigned int nWords, bool is_verbose/*=true
 			//double lastTimestamp = (*(eventList.rbegin()))->time;
 
 			// Sort the event list in time
-			sort(std::begin(eventList), std::end(eventList), CompareTime);
+			SortList();
 
 			// Once the vector of pointers eventlist is sorted based on time,
 			// begin the event processing in ScanList().
@@ -508,13 +521,13 @@ bool Unpacker::ReadSpill(char *ibuf, unsigned int nWords, bool is_verbose/*=true
 		}
 		else {
 			if(is_verbose){ std::cout << "ReadSpill: Spill split between buffers" << std::endl; }
-			ClearEventList(); // This tosses out all events read into the queue so far
+			ClearEventList(); // This tosses out all events read into the deque so far
 			return false; 
 		}		
 	}
 	else if(retval != -10){
 		if(is_verbose){ std::cout << "ReadSpill: bad buffer, numEvents = " << numEvents << std::endl; }
-		ClearEventList(); // This tosses out all events read into the queue so far
+		ClearEventList(); // This tosses out all events read into the deque so far
 		return false;
 	}
 	

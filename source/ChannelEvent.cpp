@@ -21,7 +21,3 @@ ChannelEvent::ChannelEvent(){
 	
 	entry = NULL;
 }
-
-bool CompareTime(ChannelEvent *a_, ChannelEvent *b_){ 
-	return (a_->time < b_->time); 
-}

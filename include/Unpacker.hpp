@@ -1,7 +1,7 @@
 #ifndef UNPACKER_HPP
 #define UNPACKER_HPP
 
-#include <queue>
+#include <deque>
 #include <vector>
 #include <string>
 
@@ -22,8 +22,8 @@ class Unpacker{
 	MapFile *mapfile;
 	ConfigFile *configfile;
 	
-	std::queue<ChannelEvent*> eventList;
-	std::queue<ChannelEvent*> rawEvent;
+	std::deque<ChannelEvent*> eventList;
+	std::deque<ChannelEvent*> rawEvent;
 	
 	void ClearRawEvent();
 	
@@ -34,6 +34,8 @@ class Unpacker{
 	void ProcessRawEvent();
 	
 	void ScanList();
+	
+	void SortList();
 	
 	int ReadBuffer(unsigned int *buf, unsigned long *bufLen);
 	

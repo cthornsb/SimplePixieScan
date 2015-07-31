@@ -33,8 +33,8 @@ struct ChannelEvent{
 	ChannelEvent();
 	
 	int GetID(){ return modNum*chanNum; }
+	
+	static bool CompareTime(ChannelEvent *lhs, ChannelEvent *rhs){ return (lhs->time < rhs->time); }
 };
-
-bool CompareTime(ChannelEvent *a_, ChannelEvent *b_);
 
 #endif
