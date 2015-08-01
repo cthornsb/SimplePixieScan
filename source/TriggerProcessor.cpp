@@ -4,9 +4,15 @@
 #include "TTree.h"
 
 bool TriggerProcessor::HandleEvents(){
+	if(!init){ return false; }
+
 	for(std::deque<ChannelEvent*>::iterator iter = events.begin(); iter != events.end(); iter++){
 		structure.Append((*iter)->time, (*iter)->energy);
-		total_events++;
+		
+		if(write_waveform){
+			waveform.Append((*iter)->trace);
+		}
+		
 		good_events++;
 	}
 	return true;

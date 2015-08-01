@@ -1,6 +1,7 @@
 #include "ProcessorHandler.hpp"
 
 #include "TriggerProcessor.hpp"
+#include "VandleProcessor.hpp"
 
 ProcessorHandler::~ProcessorHandler(){
 	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
@@ -22,8 +23,11 @@ bool ProcessorHandler::AddProcessor(std::string type_){
 		TriggerProcessor *proc = new TriggerProcessor();
 		procs.push_back(ProcessorEntry(proc, "trigger")); 
 	}
-	/*else if(type_ == "vandle"){ procs.push_back(new VandleProcessor()); }
-	else if(type_ == "liquid"){ procs.push_back(new LiquidProcessor()); }
+	else if(type_ == "vandle"){ 
+		VandleProcessor *proc = new VandleProcessor();
+		procs.push_back(ProcessorEntry(proc, "vandle")); 
+	}
+	/*else if(type_ == "liquid"){ procs.push_back(new LiquidProcessor()); }
 	else if(type_ == "logic"){ procs.push_back(new LogicProcessor()); }
 	else if(type_ == "ionchamber"){ procs.push_back(new IonChamberProcessor()); }
 	else if(type_ == "phoswich"){ procs.push_back(new PhoswichProcessor()); }
@@ -36,6 +40,7 @@ bool ProcessorHandler::AddEvent(ChannelEvent* event_, std::string type_){
 	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
 		if(type_ == iter->type){ 
 			iter->proc->AddEvent(event_); 
+			total_events++;
 			return true;
 		}
 	}

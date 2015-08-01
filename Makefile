@@ -33,7 +33,7 @@ DICT_OBJ_DIR = $(DICT_DIR)/obj
 SOURCES = ParentClass.cpp ProcessorHandler.cpp Processor.cpp ChannelEvent.cpp ConfigFile.cpp MapFile.cpp Unpacker.cpp
 
 # Processors
-SOURCES += TriggerProcessor.cpp
+SOURCES += TriggerProcessor.cpp VandleProcessor.cpp
 
 OBJECTS = $(addprefix $(OBJ_DIR)/,$(SOURCES:.cpp=.o))
 

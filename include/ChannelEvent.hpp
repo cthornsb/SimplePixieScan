@@ -12,10 +12,10 @@ struct MapEntry;
 struct ChannelEvent{
 	double energy; /// Raw pixie energy
 	double time; /// Raw low-res pixie time
-	std::vector<unsigned int> trace; /// Trace capture
+	std::vector<int> trace; /// Trace capture
 	
-	static const int numQdcs = 8;	 /// Number of QDCs onboard
-	unsigned int qdcValue[numQdcs];  /// QDCs from onboard
+	static const int numQdcs = 8; /// Number of QDCs onboard
+	unsigned int qdcValue[numQdcs]; // QDCs from onboard
 
 	int modNum; /// Module number
 	int chanNum; /// Channel number
@@ -35,6 +35,8 @@ struct ChannelEvent{
 	int GetID(){ return modNum*chanNum; }
 	
 	static bool CompareTime(ChannelEvent *lhs, ChannelEvent *rhs){ return (lhs->time < rhs->time); }
+	
+	static bool CompareChannel(ChannelEvent *lhs, ChannelEvent *rhs){ return ((lhs->modNum*lhs->chanNum) < (rhs->modNum*rhs->chanNum)); }
 };
 
 #endif

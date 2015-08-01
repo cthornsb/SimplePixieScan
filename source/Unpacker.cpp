@@ -81,13 +81,12 @@ void Unpacker::ProcessRawEvent(){
 			current_event->entry->get(type, subtype, tag);
 		
 			// Pass this event to the correct processor
-			if(type == "ignore"){ } // Do nothing
-			else if(!handler->AddEvent(current_event, type)){ // Invalid detector type. Delete it
+			if(type == "ignore" || !handler->AddEvent(current_event, type)){ // Invalid detector type. Delete it
 				delete current_event;
 			}
 			
 			// This channel is a start signal. Due to the way ScanList
-			// packs the raw event, there may be only one start signal
+			// packs the raw event, there may only be one start signal
 			// per raw event.
 			if(tag == "start"){ 
 				start_event = current_event;
@@ -105,7 +104,8 @@ void Unpacker::ProcessRawEvent(){
 		root_tree->Fill();
 	}
 	
-	// Zero all of the processors
+	// Zero all of the processors. This prevents the output
+	// branches from becoming too large.
 	handler->ZeroAll();
 }
 
@@ -166,10 +166,10 @@ void Unpacker::ScanList(){
 		// If the time difference between the current and previous event is 
 		// larger than the event width, finalize the current event, otherwise
 		// treat this as part of the current event
-		if((currTime - lastTime) > configfile->event_width && !rawEvent.empty()){
+		/*if((currTime - lastTime) > configfile->event_width && !rawEvent.empty()){
 			found_valid_start = false;
 			ProcessRawEvent();
-		}
+		}*/
 
 		/*unsigned long dtimebin = 2000 + eventTime - chanTime;
 		if(dtimebin < 0 || dtimebin > 16384){

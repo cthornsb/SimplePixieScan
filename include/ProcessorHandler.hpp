@@ -19,9 +19,11 @@ struct ProcessorEntry{
 class ProcessorHandler{
   private:
 	std::vector<ProcessorEntry> procs;
+	
+	unsigned long total_events;
 
   public:
-	ProcessorHandler(){ }
+	ProcessorHandler(){ total_events = 0; }
 	
 	~ProcessorHandler();
 	

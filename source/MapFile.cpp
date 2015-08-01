@@ -97,6 +97,7 @@ bool MapFile::Load(const char *filename_){
 	while(true){
 		std::getline(mapfile, line);
 		if(mapfile.eof() || !mapfile.good()){ break; }
+		if(line[0] == '#'){ continue; }
 		line_num++;
 
 		values[0] = "";
