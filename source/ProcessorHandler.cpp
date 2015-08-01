@@ -9,6 +9,14 @@ ProcessorHandler::~ProcessorHandler(){
 	}
 }
 
+bool ProcessorHandler::InitRootOutput(TTree *tree_){
+	bool retval = true;
+	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
+		retval = retval && iter->proc->Initialize(tree_);
+	}
+	return true;
+}
+
 bool ProcessorHandler::AddProcessor(std::string type_){
 	if(type_ == "trigger"){ 
 		TriggerProcessor *proc = new TriggerProcessor();
@@ -40,4 +48,10 @@ bool ProcessorHandler::Process(ChannelEvent *start_){
 		retval = retval && iter->proc->Process(start_);
 	}
 	return retval;
+}
+
+void ProcessorHandler::ZeroAll(){
+	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
+		iter->proc->Zero();
+	}
 }

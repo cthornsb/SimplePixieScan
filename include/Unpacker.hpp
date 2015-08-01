@@ -10,6 +10,9 @@ class MapFile;
 class ConfigFile;
 class ProcessorHandler;
 
+class TFile;
+class TTree;
+
 std::string to_str(const int &input_);
 
 bool is_in(const std::vector<std::string> &vec_, const std::string &input_);
@@ -26,6 +29,11 @@ class Unpacker{
 	
 	std::deque<ChannelEvent*> eventList;
 	std::deque<ChannelEvent*> rawEvent;
+	
+	TFile *root_file;
+	TTree *root_tree;
+	
+	void Initialize();
 	
 	void ClearRawEvent();
 	
@@ -44,8 +52,12 @@ class Unpacker{
   public:
 	Unpacker();
 	
+	Unpacker(std::string fname_, bool overwrite_=true);
+	
 	~Unpacker();
-  
+
+	bool InitRootOutput(std::string fname_, bool overwrite_=true);
+
 	/// Extract channel information from the raw parameter array ibuf
 	bool ReadSpill(char *ibuf, unsigned int nWords, bool is_verbose=true);
 };

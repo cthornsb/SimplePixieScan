@@ -10,6 +10,9 @@
 #include "ChannelEvent.hpp"
 #include "ProcessorHandler.hpp"
 
+#include "TFile.h"
+#include "TTree.h"
+
 std::string to_str(const int &input_){
 	std::stringstream stream;
 	stream << input_;
@@ -21,6 +24,24 @@ bool is_in(const std::vector<std::string> &vec_, const std::string &input_){
 		if((*iter) == input_){ return true; }
 	}
 	return false;
+}
+
+void Unpacker::Initialize(){
+	mapfile = new MapFile("./setup/map.dat");
+	configfile = new ConfigFile("./setup/config.dat");
+	handler = new ProcessorHandler();
+	
+	std::vector<std::string> *types = mapfile->GetTypes();
+	for(std::vector<std::string>::iterator iter = types->begin(); iter != types->end(); iter++){
+		if(*iter == "ignore"){ continue; }
+		else if(handler->AddProcessor(*iter)){ std::cout << "Unpacker: Added " << *iter << " processor to the processor list.\n"; }
+		else{ std::cout << "Unpacker: Failed to add " << *iter << " processor to the processor list!\n"; }
+	}
+	
+	full_event = false;
+	
+	root_file = NULL;
+	root_tree = NULL;
 }
 
 void Unpacker::ClearRawEvent(){
@@ -79,7 +100,13 @@ void Unpacker::ProcessRawEvent(){
 	
 	// Call each processor to do the processing. Each
 	// processor will remove the channel events when finished.
-	handler->Process(start_event);
+	if(handler->Process(start_event)){
+		// This event had at least one valid signal
+		root_tree->Fill();
+	}
+	
+	// Zero all of the processors
+	handler->ZeroAll();
 }
 
 void Unpacker::ScanList(){
@@ -317,18 +344,12 @@ int Unpacker::ReadBuffer(unsigned int *buf, unsigned long *bufLen){
 }
 
 Unpacker::Unpacker(){
-	mapfile = new MapFile("./setup/map.dat");
-	configfile = new ConfigFile("./setup/config.dat");
-	handler = new ProcessorHandler();
-	
-	std::vector<std::string> *types = mapfile->GetTypes();
-	for(std::vector<std::string>::iterator iter = types->begin(); iter != types->end(); iter++){
-		if(*iter == "ignore"){ continue; }
-		else if(handler->AddProcessor(*iter)){ std::cout << "Unpacker: Added " << *iter << " processor to the processor list.\n"; }
-		else{ std::cout << "Unpacker: Failed to add " << *iter << " processor to the processor list!\n"; }
-	}
-	
-	full_event = false;
+	Initialize();
+}
+
+Unpacker::Unpacker(std::string fname_, bool overwrite_/*=true*/){
+	Initialize();
+	InitRootOutput(fname_, overwrite_);
 }
 
 Unpacker::~Unpacker(){
@@ -338,6 +359,39 @@ Unpacker::~Unpacker(){
 	
 	ClearRawEvent();
 	ClearEventList();
+	
+	if(root_file){
+		if(root_file->IsOpen()){
+			std::cout << "Unpacker: Writing " << root_tree->GetEntries() << " entries to root file.\n";
+			root_file->cd();
+			root_tree->Write();
+			root_file->Close();
+		}
+		delete root_file;
+	}
+}
+
+bool Unpacker::InitRootOutput(std::string fname_, bool overwrite_/*=true*/){
+	if(root_file && root_file->IsOpen()){ return false; }
+	
+	std::cout << "Unpacker: Initializing root output.\n";
+	
+	if(overwrite_){ root_file = new TFile(fname_.c_str(), "RECREATE"); }
+	else{ root_file = new TFile(fname_.c_str(), "CREATE"); }
+	
+	if(!root_file->IsOpen()){
+		std::cout << "Unpacker: Failed to open output root file '" << fname_ << "'!\n";
+		root_file->Close();
+		delete root_file;
+		root_file = NULL;
+		return false;
+	}
+	
+	root_tree = new TTree("Pixie16", "Pixie16 data");
+	
+	handler->InitRootOutput(root_tree);
+	
+	return true;
 }
 
 bool Unpacker::ReadSpill(char *ibuf, unsigned int nWords, bool is_verbose/*=true*/){

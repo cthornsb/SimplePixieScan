@@ -5,6 +5,8 @@
 
 #include "Processor.hpp"
 
+class TTree;
+
 struct ProcessorEntry{
 	Processor *proc;
 	std::string type;
@@ -23,11 +25,15 @@ class ProcessorHandler{
 	
 	~ProcessorHandler();
 	
+	bool InitRootOutput(TTree *tree_);
+	
 	bool AddProcessor(std::string type_);
 	
 	bool AddEvent(ChannelEvent* event_, std::string type_);
 	
 	bool Process(ChannelEvent *start_);
+	
+	void ZeroAll();
 };
 
 #endif

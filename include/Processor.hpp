@@ -6,6 +6,9 @@
 
 struct ChannelEvent;
 
+class TTree;
+class TBranch;
+
 class Processor{
   protected:
 	clock_t start_time;
@@ -21,6 +24,9 @@ class Processor{
 	std::string type;
 	bool init;
 	bool write_waveform;
+	bool use_color_terminal;
+	
+	TBranch *local_branch;
   
 	/// Clear channel events from the queue
 	void ClearEvents();
@@ -30,23 +36,35 @@ class Processor{
 	
 	/// Update the amount of time taken by the processor
 	void StopProcess(){ total_time += (clock() - start_time); }
+
+	void PrintMsg(const std::string &msg_);
 	
+	void PrintError(const std::string &msg_);
+	
+	void PrintWarning(const std::string &msg_);
+	
+	void PrintNote(const std::string &msg_);
+
 	virtual bool HandleEvents();
 
   public:
 	Processor(std::string name_, std::string type_);
 	
-	~Processor();
+	virtual ~Processor();
 
 	std::string GetName(){ return name; }
 	
 	bool IsInit(){ return init; }
+	
+	virtual bool Initialize(TTree *tree_);
 
-	float Status();
+	virtual float Status();
 
 	void AddEvent(ChannelEvent *event_){ events.push_back(event_); }
 
 	bool Process(ChannelEvent *start_);
+	
+	virtual void Zero(){ }
 };
 
 #endif

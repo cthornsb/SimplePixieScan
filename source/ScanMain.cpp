@@ -278,8 +278,8 @@ int main(int argc, char *argv[]){
 
 	num_spills_recvd = 0;
 
-	std::stringstream output_filename_prefix;
-	output_filename_prefix << argv[1];
+	std::stringstream output_filename;
+	output_filename << argv[1];
 	
 	long file_start_offset = 0;
 
@@ -384,16 +384,16 @@ int main(int argc, char *argv[]){
 		std::cout << " ==  ==  ==  ==  == \n\n"; 
 	}
 
-	// Initialize detector driver with the output filename
-	Unpacker *core = new Unpacker();
-
-	std::cout << sys_message_head << "Using output filename prefix '" << output_filename_prefix.str() << "'.\n";
+	std::cout << sys_message_head << "Using output filename prefix '" << output_filename.str() << "'.\n";
 	if(debug_mode){ std::cout << sys_message_head << "Using debug mode.\n"; }
 	if(dry_run_mode){ std::cout << sys_message_head << "Doing a dry run.\n"; }
 	if(shm_mode){ 
 		std::cout << sys_message_head << "Using shared-memory mode.\n"; 
 		std::cout << sys_message_head << "Listening on poll2 SHM port 5555\n";
 	}
+
+	// Initialize unpacker core with the output filename
+	Unpacker *core = new Unpacker(output_filename.str());
 
 	if(!shm_mode){
 		// Start reading the file
