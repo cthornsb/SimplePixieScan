@@ -1,39 +1,39 @@
 #####################################################################
 
 # Set the PixieSuite directory
-PIXIE_SUITE_DIR = /home/cory/Research/PixieSuite
+PIXIE_SUITE_DIR = /home/pixie16/cthorns/PixieSuitePLD
 
 # Set the RootPixieScan directory
-PIXIE_SCAN_DIR = /home/cory/Research/RootPixieScan
+PIXIE_SCAN_DIR = /home/pixie16/cthorns/RootPixieScan
 
 #####################################################################
 
-CFLAGS = -g -Wall -O3 -std=c++0x `root-config --cflags` -Iinclude -I$(PIXIE_SCAN_DIR)/include
+CFLAGS = -g -Wall -O3 -std=c++0x `root-config --cflags`
 LDLIBS = -lstdc++ `root-config --libs`
 LDFLAGS = `root-config --glibs`
-
-#CFLAGS = -g -Wall -O3 -std=c++0x -Iinclude
-#LDLIBS = -lstdc++
-#LDFLAGS =
 
 COMPILER = g++
 
 # Directories
 TOP_LEVEL = $(shell pwd)
-DICT_DIR = $(PIXIE_SCAN_DIR)/dict
+
 INCLUDE_DIR = $(TOP_LEVEL)/include
 SOURCE_DIR = $(TOP_LEVEL)/source
 OBJ_DIR = $(TOP_LEVEL)/obj
 
-OBJ_DIR = $(TOP_LEVEL)/obj
-C_OBJ_DIR = $(OBJ_DIR)/c++
+DICT_DIR = $(PIXIE_SCAN_DIR)/dict
 DICT_OBJ_DIR = $(DICT_DIR)/obj
+
+SCAN_INC_DIR = $(PIXIE_SCAN_DIR)/include
+SCAN_SRC_DIR = $(PIXIE_SCAN_DIR)/src
+SCAN_OBJ_DIR = $(PIXIE_SCAN_DIR)/obj/c++
 
 # Core files
 SOURCES = ParentClass.cpp ProcessorHandler.cpp Processor.cpp ChannelEvent.cpp ConfigFile.cpp MapFile.cpp Unpacker.cpp
 
 # Processors
-SOURCES += TriggerProcessor.cpp VandleProcessor.cpp
+SOURCES += TriggerProcessor.cpp \
+           VandleProcessor.cpp
 
 OBJECTS = $(addprefix $(OBJ_DIR)/,$(SOURCES:.cpp=.o))
 
@@ -48,14 +48,14 @@ HRIBF_SOURCE_OBJ = $(OBJ_DIR)/hribf_buffers.o
 SOCKET_SOURCE = $(POLL_SRC_DIR)/poll2_socket.cpp
 SOCKET_SOURCE_OBJ = $(OBJ_DIR)/poll2_socket.o
 
-SCAN_MAIN = $(SOURCE_DIR)/ScanMain.cpp
-SCAN_MAIN_OBJ = $(OBJ_DIR)/ScanMain.o
+SCAN_MAIN = $(SCAN_SRC_DIR)/ScanMain.cpp
+SCAN_MAIN_OBJ = $(SCAN_OBJ_DIR)/ScanMain.o
 
 OBJECTS += $(HRIBF_SOURCE_OBJ) $(SOCKET_SOURCE_OBJ) $(SCAN_MAIN_OBJ)
 
 # ROOT dictionary stuff
 DICT_SOURCE = RootDict
-STRUCT_HEAD = $(PIXIE_SCAN_DIR)/include/Structures.h
+STRUCT_HEAD = $(SCAN_INC_DIR)/Structures.h
 STRUCT_FILE = $(PIXIE_SCAN_DIR)/src/Structures.cpp
 STRUCT_FILE_OBJ = $(PIXIE_SCAN_DIR)/obj/c++/Structures.o
 
@@ -111,7 +111,7 @@ $(DICT_OBJ_DIR):
 
 $(OBJ_DIR)/%.o: $(SOURCE_DIR)/%.cpp
 #	Compile C++ source files
-	$(COMPILER) -c $(CFLAGS) $< -o $@
+	$(COMPILER) -c $(CFLAGS) -Iinclude -I$(SCAN_INC_DIR) $< -o $@
 
 $(HRIBF_SOURCE_OBJ): $(HRIBF_SOURCE)
 #	Compile hribf_buffers from PixieSuite
@@ -123,13 +123,13 @@ $(SOCKET_SOURCE_OBJ): $(SOCKET_SOURCE)
 
 $(SCAN_MAIN_OBJ): $(SCAN_MAIN)
 #	Main scan function
-	$(COMPILER) -c $(CFLAGS) -I$(POLL_INC_DIR) $< -o $@
+	$(COMPILER) -c $(CFLAGS) -DSIMPLE_SCAN -Iinclude -I$(SCAN_INC_DIR) -I$(POLL_INC_DIR) $< -o $@
 	
 #####################################################################
 
 $(STRUCT_FILE_OBJ): $(STRUCT_FILE)
 #	Compile structures file
-	$(COMPILER) -c $(CFLAGS) -I$(PIXIE_SCAN_DIR)/include $< -o $@
+	$(COMPILER) -c $(CFLAGS) -I$(SCAN_INC_DIR) $< -o $@
 
 $(ROOT_DICT_OBJ): $(ROOT_DICT)
 #	Compile rootcint source files

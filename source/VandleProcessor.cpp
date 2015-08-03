@@ -40,7 +40,7 @@ bool VandleProcessor::HandleEvents(){
 		
 		double tof = ((*iter_L)->time + (*iter_R)->time) / 2.0;
 		
-		structure.Append((*iter_L)->entry->location/2, tof, (*iter_L)->energy, (*iter_R)->energy, std::sqrt((*iter_L)->energy * (*iter_R)->energy));
+		structure.Append((*iter_L)->entry->location/2, tof, (*iter_L)->energy, (*iter_R)->energy, 0.0, 0.0, std::sqrt((*iter_L)->energy * (*iter_R)->energy));
 		
 		if(write_waveform){
 			waveform.Append((*iter_L)->trace, (*iter_R)->trace);
