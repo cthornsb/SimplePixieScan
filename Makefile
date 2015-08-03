@@ -56,8 +56,8 @@ OBJECTS += $(HRIBF_SOURCE_OBJ) $(SOCKET_SOURCE_OBJ) $(SCAN_MAIN_OBJ)
 # ROOT dictionary stuff
 DICT_SOURCE = RootDict
 STRUCT_HEAD = $(SCAN_INC_DIR)/Structures.h
-STRUCT_FILE = $(PIXIE_SCAN_DIR)/src/Structures.cpp
-STRUCT_FILE_OBJ = $(PIXIE_SCAN_DIR)/obj/c++/Structures.o
+STRUCT_FILE = $(SCAN_SRC_DIR)/Structures.cpp
+STRUCT_FILE_OBJ = $(SCAN_OBJ_DIR)/Structures.o
 
 ROOT_DICT = $(DICT_DIR)/$(DICT_SOURCE).cpp
 ROOT_DICT_OBJ = $(DICT_OBJ_DIR)/$(DICT_SOURCE).o 

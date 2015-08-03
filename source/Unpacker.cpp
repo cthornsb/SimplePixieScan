@@ -26,24 +26,6 @@ bool is_in(const std::vector<std::string> &vec_, const std::string &input_){
 	return false;
 }
 
-void Unpacker::Initialize(){
-	mapfile = new MapFile("./setup/map.dat");
-	configfile = new ConfigFile("./setup/config.dat");
-	handler = new ProcessorHandler();
-	
-	std::vector<DetType> *types = mapfile->GetTypes();
-	for(std::vector<DetType>::iterator iter = types->begin(); iter != types->end(); iter++){
-		if(iter->type == "ignore"){ continue; }
-		else if(handler->AddProcessor(iter->type)){ std::cout << "Unpacker: Added " << iter->type << " processor to the processor list.\n"; }
-		else{ std::cout << "Unpacker: Failed to add " << iter->type << " processor to the processor list!\n"; }
-	}
-	
-	full_event = false;
-	
-	root_file = NULL;
-	root_tree = NULL;
-}
-
 void Unpacker::ClearRawEvent(){
 	while(!rawEvent.empty()){
 		delete rawEvent.front();
@@ -80,16 +62,22 @@ void Unpacker::ProcessRawEvent(){
 			// Get detector type information
 			current_event->entry->get(type, subtype, tag);
 		
-			// Pass this event to the correct processor
-			if(type == "ignore" || !handler->AddEvent(current_event, type)){ // Invalid detector type. Delete it
-				delete current_event;
-			}
+			if(!raw_event_mode){ // Standard operation. Individual processors will handle output
+				// Pass this event to the correct processor
+				if(type == "ignore" || !handler->AddEvent(current_event, type)){ // Invalid detector type. Delete it
+					delete current_event;
+				}
 			
-			// This channel is a start signal. Due to the way ScanList
-			// packs the raw event, there may only be one start signal
-			// per raw event.
-			if(tag == "start"){ 
-				start_event = current_event;
+				// This channel is a start signal. Due to the way ScanList
+				// packs the raw event, there may only be one start signal
+				// per raw event.
+				if(tag == "start"){ 
+					start_event = current_event;
+				}
+			}
+			else{ // Raw event mode operation. Dump raw event information to root file.
+				structure.Append(current_event->modNum, current_event->chanNum, current_event->time, current_event->energy);
+				delete current_event;
 			}
 		}
 		
@@ -97,16 +85,21 @@ void Unpacker::ProcessRawEvent(){
 		rawEvent.pop_front();
 	}
 	
-	// Call each processor to do the processing. Each
-	// processor will remove the channel events when finished.
-	if(handler->Process(start_event)){
-		// This event had at least one valid signal
-		root_tree->Fill();
+	if(!raw_event_mode){
+		// Call each processor to do the processing. Each
+		// processor will remove the channel events when finished.
+		if(handler->Process(start_event)){
+			// This event had at least one valid signal
+			root_tree->Fill();
+		}
+		
+		// Zero all of the processors.
+		handler->ZeroAll();
 	}
-	
-	// Zero all of the processors. This prevents the output
-	// branches from becoming too large.
-	handler->ZeroAll();
+	else{
+		root_tree->Fill();
+		structure.Zero();
+	}
 }
 
 void Unpacker::ScanList(){
@@ -344,34 +337,72 @@ int Unpacker::ReadBuffer(unsigned int *buf, unsigned long *bufLen){
 }
 
 Unpacker::Unpacker(){
-	Initialize();
+	mapfile = NULL;
+	configfile = NULL;
+	handler = NULL;
+
+	raw_event_mode = false;
+	debug_mode = false;
+	full_event = false;
+	init = false;
+	
+	root_file = NULL;
+	root_tree = NULL;
 }
 
-Unpacker::Unpacker(std::string fname_, bool overwrite_/*=true*/){
+Unpacker::Unpacker(std::string fname_, bool overwrite_/*=true*/, bool debug_mode_/*=false*/){
+	raw_event_mode = false;
 	Initialize();
 	InitRootOutput(fname_, overwrite_);
 }
 
 Unpacker::~Unpacker(){
-	delete mapfile;
-	delete configfile;
-	delete handler;
+	if(init){
+		delete mapfile;
+		delete configfile;
+		delete handler;
 	
-	ClearRawEvent();
-	ClearEventList();
+		ClearRawEvent();
+		ClearEventList();
 	
-	if(root_file){
-		if(root_file->IsOpen()){
-			std::cout << "Unpacker: Writing " << root_tree->GetEntries() << " entries to root file.\n";
-			root_file->cd();
-			root_tree->Write();
-			root_file->Close();
+		if(root_file){
+			if(root_file->IsOpen()){
+				std::cout << "Unpacker: Writing " << root_tree->GetEntries() << " entries to root file.\n";
+				root_file->cd();
+				root_tree->Write();
+				root_file->Close();
+			}
+			delete root_file;
 		}
-		delete root_file;
 	}
 }
 
+bool Unpacker::Initialize(){
+	if(init){ return false; }
+
+	mapfile = new MapFile("./setup/map.dat");
+	configfile = new ConfigFile("./setup/config.dat");
+	handler = new ProcessorHandler();
+	
+	std::vector<DetType> *types = mapfile->GetTypes();
+	for(std::vector<DetType>::iterator iter = types->begin(); iter != types->end(); iter++){
+		if(iter->type == "ignore"){ continue; }
+		else if(handler->AddProcessor(iter->type)){ std::cout << "Unpacker: Added " << iter->type << " processor to the processor list.\n"; }
+		else{ std::cout << "Unpacker: Failed to add " << iter->type << " processor to the processor list!\n"; }
+	}
+	
+	debug_mode = false;
+	full_event = false;
+	
+	root_file = NULL;
+	root_tree = NULL;
+	
+	return (init = true);
+}
+
 bool Unpacker::InitRootOutput(std::string fname_, bool overwrite_/*=true*/){
+	if(!init){ Initialize(); }
+	
 	if(root_file && root_file->IsOpen()){ return false; }
 	
 	std::cout << "Unpacker: Initializing root output.\n";
@@ -389,12 +420,19 @@ bool Unpacker::InitRootOutput(std::string fname_, bool overwrite_/*=true*/){
 	
 	root_tree = new TTree("Pixie16", "Pixie16 data");
 	
-	handler->InitRootOutput(root_tree);
+	if(!raw_event_mode){ // Standard operation
+		handler->InitRootOutput(root_tree);
+	}
+	else{ // Raw event output only. Processors will not be called!
+		root_tree->Branch("RawEvent", &structure);
+	}
 	
 	return true;
 }
 
 bool Unpacker::ReadSpill(char *ibuf, unsigned int nWords, bool is_verbose/*=true*/){
+	if(!init || !root_tree){ return false; }
+
 	const unsigned int maxVsn = 14; // No more than 14 pixie modules per crate
 	unsigned int nWords_read = 0;
 	

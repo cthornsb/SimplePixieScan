@@ -63,11 +63,11 @@ bool VandleProcessor::Initialize(TTree *tree_){
 	
 	// Add a branch to the tree
 	PrintMsg("Adding branch to main TTree.");
-	local_branch = tree_->Branch(type.c_str(), &structure);
+	local_branch = tree_->Branch(name.c_str(), &structure);
 	
 	if(write_waveform){
 		PrintMsg("Writing raw waveforms to file.");
-		local_branch = tree_->Branch((type+"Wave").c_str(), &waveform);
+		local_branch = tree_->Branch((name+"Wave").c_str(), &waveform);
 	}
 	
 	return (init = true);

@@ -5,6 +5,8 @@
 #include <vector>
 #include <string>
 
+#include "Structures.h"
+
 class ChannelEvent;
 class MapFile;
 class ConfigFile;
@@ -22,6 +24,9 @@ class Unpacker{
 	static const unsigned int TOTALREAD = 1000000;
 	static const unsigned int maxWords = 131072; //Revision D
 	bool full_event;
+	bool debug_mode;
+	bool raw_event_mode;
+	bool init;
 
 	MapFile *mapfile;
 	ConfigFile *configfile;
@@ -30,10 +35,10 @@ class Unpacker{
 	std::deque<ChannelEvent*> eventList;
 	std::deque<ChannelEvent*> rawEvent;
 	
+	RawEventStructure structure;
+	
 	TFile *root_file;
 	TTree *root_tree;
-	
-	void Initialize();
 	
 	void ClearRawEvent();
 	
@@ -52,11 +57,19 @@ class Unpacker{
   public:
 	Unpacker();
 	
-	Unpacker(std::string fname_, bool overwrite_=true);
+	Unpacker(std::string fname_, bool overwrite_=true, bool debug_mode_=false);
 	
 	~Unpacker();
 
+	bool Initialize();
+
 	bool InitRootOutput(std::string fname_, bool overwrite_=true);
+	
+	bool IsInit(){ return init; }
+
+	bool SetDebugMode(bool state_=true){ return (debug_mode = state_); }
+
+	bool SetRawEventMode(bool state_=true){ return (raw_event_mode = state_); }
 
 	/// Extract channel information from the raw parameter array ibuf
 	bool ReadSpill(char *ibuf, unsigned int nWords, bool is_verbose=true);
