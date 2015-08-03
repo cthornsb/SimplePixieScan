@@ -5,7 +5,7 @@
 
 ProcessorHandler::~ProcessorHandler(){
 	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
-		iter->proc->Status();
+		iter->proc->Status(total_events);
 		delete iter->proc;
 	}
 }

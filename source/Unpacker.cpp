@@ -31,11 +31,11 @@ void Unpacker::Initialize(){
 	configfile = new ConfigFile("./setup/config.dat");
 	handler = new ProcessorHandler();
 	
-	std::vector<std::string> *types = mapfile->GetTypes();
-	for(std::vector<std::string>::iterator iter = types->begin(); iter != types->end(); iter++){
-		if(*iter == "ignore"){ continue; }
-		else if(handler->AddProcessor(*iter)){ std::cout << "Unpacker: Added " << *iter << " processor to the processor list.\n"; }
-		else{ std::cout << "Unpacker: Failed to add " << *iter << " processor to the processor list!\n"; }
+	std::vector<DetType> *types = mapfile->GetTypes();
+	for(std::vector<DetType>::iterator iter = types->begin(); iter != types->end(); iter++){
+		if(iter->type == "ignore"){ continue; }
+		else if(handler->AddProcessor(iter->type)){ std::cout << "Unpacker: Added " << iter->type << " processor to the processor list.\n"; }
+		else{ std::cout << "Unpacker: Failed to add " << iter->type << " processor to the processor list!\n"; }
 	}
 	
 	full_event = false;
@@ -276,7 +276,7 @@ int Unpacker::ReadBuffer(unsigned int *buf, unsigned long *bufLen){
 
 			// One last check
 			if( traceLength / 2 + headerLength != eventLength ){
-				std::cout << "ReadBuffer:  Bad event length (" << eventLength << ") does not correspond with length of header (";
+				std::cout << "ReadBuffer: Bad event length (" << eventLength << ") does not correspond with length of header (";
 				std::cout << headerLength << ") and length of trace (" << traceLength << ")" << std::endl;
 				buf += eventLength;
 				continue;

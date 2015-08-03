@@ -3,8 +3,16 @@
 
 #include "VandleProcessor.hpp"
 #include "ChannelEvent.hpp"
+#include "MapFile.hpp"
 
 #include "TTree.h"
+
+#define C_IN_VAC 29.9792458 // cm/ns
+#define C_IN_BAR 12.65822 // cm/ns
+
+#define SMALL_LENGTH 60 // cm
+#define MEDIUM_LENGTH 120 // cm
+#define LARGE_LENGTH 200 // cm
 
 bool VandleProcessor::HandleEvents(){
 	if(!init || events.size() <= 1){ 
@@ -24,14 +32,19 @@ bool VandleProcessor::HandleEvents(){
 		// Check that these two channels are indeed neighbors. If not, iterate up by one and check again.
 		if(iter_R != events.end() && ((*iter_L)->modNum != (*iter_R)->modNum) && ((*iter_L)->chanNum-1 != (*iter_R)->chanNum)){ continue; }
 		
-		//std::cout << (*iter_L)->modNum << ", " << (*iter_L)->chanNum << ", " << (*iter_R)->modNum << ", " << (*iter_R)->chanNum << std::endl;
-		//std::cout << " difftime = " << (*iter_L)->time - (*iter_R)->time << std::endl;
-		//std::cout << " qdc = " << std::sqrt((*iter_L)->energy*(*iter_R)->energy) << std::endl;
-		/*structure.Append((*iter)->time, (*iter)->energy);
+		//double tdiff = (*iter_L)->time - (*iter_R)->time;
+		//double y_hit = tdiff * C_IN_BAR; // cm
+		/*double left_hires_time = phase * adcClockInSeconds + chan->GetTrigTime() * filterClockInSeconds;
+		double right_hires_time = phase * adcClockInSeconds + chan->GetTrigTime() * filterClockInSeconds;
+		double timediff = left_hires_time - right_hires_time;*/
+		
+		double tof = ((*iter_L)->time + (*iter_R)->time) / 2.0;
+		
+		structure.Append((*iter_L)->entry->location/2, tof, (*iter_L)->energy, (*iter_R)->energy, std::sqrt((*iter_L)->energy * (*iter_R)->energy));
 		
 		if(write_waveform){
-			left_waveform.Append((*iter)->trace);
-		}*/
+			waveform.Append((*iter_L)->trace, (*iter_R)->trace);
+		}
 		
 		good_events += 2;
 	}
@@ -54,8 +67,7 @@ bool VandleProcessor::Initialize(TTree *tree_){
 	
 	if(write_waveform){
 		PrintMsg("Writing raw waveforms to file.");
-		local_branch = tree_->Branch((type+"WaveL").c_str(), &left_waveform);
-		local_branch = tree_->Branch((type+"WaveR").c_str(), &right_waveform);
+		local_branch = tree_->Branch((type+"Wave").c_str(), &waveform);
 	}
 	
 	return (init = true);
@@ -63,6 +75,5 @@ bool VandleProcessor::Initialize(TTree *tree_){
 
 void VandleProcessor::Zero(){
 	structure.Zero();
-	left_waveform.Zero();
-	right_waveform.Zero();
+	waveform.Zero();
 }

@@ -32,6 +32,14 @@ void Processor::PrintNote(const std::string &msg_){
 	else{ std::cout << name << "Processor: " << msg_ << std::endl; }
 }
 
+bool Processor::SetInitialConditions(){
+	return false;
+}
+
+bool Processor::FitPulse(){
+	return false;
+}
+
 bool Processor::HandleEvents(){
 	for(std::deque<ChannelEvent*>::iterator iter = events.begin(); iter != events.end(); iter++){
 		good_events++;
@@ -45,6 +53,7 @@ Processor::Processor(std::string name_, std::string type_){
 	init = false;
 	write_waveform = false;
 	use_color_terminal = true;
+	hi_res_timing = false;
 	
 	total_time = 0;
 	start_time = clock();
@@ -77,6 +86,12 @@ float Processor::Status(unsigned long total_events_){
 bool Processor::Process(ChannelEvent *start_){
 	// Handle the processor events
 	start = start_;
+	
+	if(hi_res_timing){
+		SetInitialConditions();
+		FitPulse();
+	}
+	
 	bool retval = HandleEvents();
 	
 	// Clean up all channel events which we've been given

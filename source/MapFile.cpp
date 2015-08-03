@@ -176,8 +176,19 @@ bool MapFile::Load(const char *filename_){
 					break;
 				}
 				detectors[mod][*iter].set(values[2]);
-				if(!is_in(types, detectors[mod][*iter].type)){ 
-					types.push_back(detectors[mod][*iter].type); 
+				
+				bool in_list = false;
+				for(std::vector<DetType>::iterator iter2 = types.begin(); iter2 != types.end(); iter2++){
+					if(iter2->type == detectors[mod][*iter].type){
+						detectors[mod][*iter].location = iter2->count + 1;
+						iter2->count++;
+						in_list = true;
+						break;
+					}
+				}
+				if(!in_list){ 
+					types.push_back(DetType(detectors[mod][*iter].type)); 
+					detectors[mod][*iter].location = 1;
 				}
 			}
 		}
@@ -188,8 +199,19 @@ bool MapFile::Load(const char *filename_){
 				continue;
 			}
 			detectors[mod][chan].set(values[2]);
-			if(!is_in(types, detectors[mod][chan].type)){ 
-				types.push_back(detectors[mod][chan].type); 
+			
+			bool in_list = false;
+			for(std::vector<DetType>::iterator iter = types.begin(); iter != types.end(); iter++){
+				if(iter->type == detectors[mod][chan].type){
+					detectors[mod][chan].location = iter->count + 1;
+					iter->count++;
+					in_list = true;
+					break;
+				}
+			}
+			if(!in_list){ 
+				types.push_back(DetType(detectors[mod][chan].type)); 
+				detectors[mod][chan].location = 1;
 			}
 		}
 	}
@@ -204,13 +226,14 @@ void MapFile::PrintAllEntries(){
 	for(int i = 0; i < max_modules; i++){
 		for(int j = 0; j < max_channels; j++){
 			if(detectors[i][j].type == "ignore"){ continue; }
-			std::cout << " " << i << ", " << j << " " << detectors[i][j].print() << std::endl;
+			std::cout << " " << i << ", " << j << ", " << detectors[i][j].location << " " << detectors[i][j].print() << std::endl;
 		}
 	}
 }
 
 void MapFile::PrintAllTypes(){
-	for(std::vector<std::string>::iterator iter = types.begin(); iter != types.end(); iter++){
-		std::cout << " " << (*iter) << std::endl;
+	for(std::vector<DetType>::iterator iter = types.begin(); iter != types.end(); iter++){
+		if(iter->type == "ignore"){ continue; }
+		std::cout << " " << iter->type << ": " << iter->count << std::endl;
 	}
 }

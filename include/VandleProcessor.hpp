@@ -10,8 +10,7 @@ class VandleProcessor : public Processor{
 	bool HandleEvents();
 	
 	VandleStructure structure;
-	VandleWaveform left_waveform;
-	VandleWaveform right_waveform;
+	VandleWaveform waveform;
 
   public:
 	VandleProcessor(bool write_waveform_=false);

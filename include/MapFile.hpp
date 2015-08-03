@@ -7,6 +7,7 @@
 #include "ParentClass.hpp"
 
 struct MapEntry{
+	unsigned int location;
 	std::string type;
 	std::string subtype;
 	std::string tag;
@@ -34,11 +35,20 @@ struct MapEntry{
 	}
 	
 	void clear(){
-		type = "ignore"; subtype = ""; tag = "";
+		location = 0; type = "ignore"; subtype = ""; tag = "";
 	}
 	
 	std::string print(){
 		return (type+":"+subtype+":"+tag);
+	}
+};
+
+struct DetType{
+	std::string type;
+	unsigned int count;
+	
+	DetType(std::string type_){
+		type = type_; count = 1;
 	}
 };
 
@@ -48,7 +58,7 @@ class MapFile : public ParentClass{
 	static const int max_channels = 16;
   
 	MapEntry detectors[max_modules][max_channels];
-	std::vector<std::string> types;
+	std::vector<DetType> types;
 	int max_defined_module;
 	
 	void clear_entries();
@@ -66,7 +76,7 @@ class MapFile : public ParentClass{
 
 	MapEntry *GetMapEntry(int mod_, int chan_);
 	
-	std::vector<std::string> *GetTypes(){ return &types; }
+	std::vector<DetType> *GetTypes(){ return &types; }
 	
 	std::string GetType(int mod_, int chan_);
 	

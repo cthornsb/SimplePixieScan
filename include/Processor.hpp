@@ -8,6 +8,7 @@ struct ChannelEvent;
 
 class TTree;
 class TBranch;
+class TF1;
 
 class Processor{
   protected:
@@ -24,8 +25,14 @@ class Processor{
 	bool init;
 	bool write_waveform;
 	bool use_color_terminal;
+	bool hi_res_timing;
 	
 	TBranch *local_branch;
+	TF1 *fitting_func;
+
+	static const double clockInSeconds = 8e-9; /// One pixie clock is 8 ns
+	static const double adcClockInSeconds = 4e-9; /// One ADC clock is 4 ns
+	static const double filterClockInSeconds = 8e-9; /// One filter clock is 8 ns
   
 	/// Clear channel events from the queue
 	void ClearEvents();
@@ -43,6 +50,10 @@ class Processor{
 	void PrintWarning(const std::string &msg_);
 	
 	void PrintNote(const std::string &msg_);
+
+	virtual bool SetInitialConditions();
+	
+	virtual bool FitPulse();
 
 	virtual bool HandleEvents();
 
