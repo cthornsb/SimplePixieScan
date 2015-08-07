@@ -68,11 +68,13 @@ class Unpacker{
 	bool IsInit(){ return init; }
 
 	bool SetDebugMode(bool state_=true){ return (debug_mode = state_); }
+	
+	bool SetHiResMode(bool state_=true);
 
 	bool SetRawEventMode(bool state_=true){ return (raw_event_mode = state_); }
 
 	/// Extract channel information from the raw parameter array ibuf
-	bool ReadSpill(char *ibuf, unsigned int nWords, bool is_verbose=true);
+	bool ReadSpill(unsigned int *data, unsigned int nWords, bool is_verbose=true);
 };
 
 #endif

@@ -4,6 +4,8 @@
 #include <string>
 #include <deque>
 
+#include "TF1.h"
+
 struct ChannelEvent;
 
 class TTree;
@@ -25,7 +27,7 @@ class Processor{
 	bool init;
 	bool write_waveform;
 	bool use_color_terminal;
-	bool hi_res_timing;
+	bool hires_timing;
 	
 	TBranch *local_branch;
 	TF1 *fitting_func;
@@ -50,27 +52,37 @@ class Processor{
 	void PrintWarning(const std::string &msg_);
 	
 	void PrintNote(const std::string &msg_);
-
-	virtual bool SetInitialConditions();
 	
-	virtual bool FitPulse();
+	void SetFitFunction(double (*func_)(double *, double *), int npar_);
+	
+	void SetFitFunction(const char* func_);
+
+	virtual void FitPulses();
 
 	virtual bool HandleEvents();
 
   public:
-	Processor(std::string name_, std::string type_);
+	Processor(std::string name_, std::string type_, bool hires_timing_=true);
 	
 	virtual ~Processor();
-
+	
+	std::string GetType(){ return type; }
+	
 	std::string GetName(){ return name; }
+	
+	TF1 *GetFunction(){ return fitting_func; }
 	
 	bool IsInit(){ return init; }
 	
+	bool SetHiResMode(bool state_=true){ return (hires_timing = state_); }
+	
 	virtual bool Initialize(TTree *tree_);
 
-	virtual float Status(unsigned long total_events_);
+	float Status(unsigned long total_events_);
 
 	void AddEvent(ChannelEvent *event_){ events.push_back(event_); }
+
+	void PreProcess();
 
 	bool Process(ChannelEvent *start_);
 	

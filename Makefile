@@ -33,7 +33,8 @@ SOURCES = ParentClass.cpp ProcessorHandler.cpp Processor.cpp ChannelEvent.cpp Co
 
 # Processors
 SOURCES += TriggerProcessor.cpp \
-           VandleProcessor.cpp
+           VandleProcessor.cpp \
+           GenericProcessor.cpp
 
 OBJECTS = $(addprefix $(OBJ_DIR)/,$(SOURCES:.cpp=.o))
 
@@ -49,7 +50,7 @@ SOCKET_SOURCE = $(POLL_SRC_DIR)/poll2_socket.cpp
 SOCKET_SOURCE_OBJ = $(OBJ_DIR)/poll2_socket.o
 
 SCAN_MAIN = $(SCAN_SRC_DIR)/ScanMain.cpp
-SCAN_MAIN_OBJ = $(SCAN_OBJ_DIR)/ScanMain.o
+SCAN_MAIN_OBJ = $(OBJ_DIR)/ScanMain.o
 
 OBJECTS += $(HRIBF_SOURCE_OBJ) $(SOCKET_SOURCE_OBJ) $(SCAN_MAIN_OBJ)
 

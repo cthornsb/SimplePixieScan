@@ -14,6 +14,12 @@
 #define MEDIUM_LENGTH 120 // cm
 #define LARGE_LENGTH 200 // cm
 
+double GetWalk(float val){
+	if(val < 175){ return (1.09099 * std::log(val) - 7.76641); }
+	else if(val > 3700){ return (0.0); }
+	else{ return ((-9.13743E-12) * std::pow(val, 3.0) + (1.9485e-7) * pow(val, 2.0) - 0.000163286 * val - 2.13918); }
+}
+
 bool VandleProcessor::HandleEvents(){
 	if(!init || events.size() <= 1){ 
 		return false;
@@ -29,29 +35,31 @@ bool VandleProcessor::HandleEvents(){
 	
 	// Pick out pairs of channels representing vandle bars
 	for(; iter_R != events.end(); iter_L++, iter_R++){
+		// Check that these two channels have the correct detector tag
+		if((*iter_L)->entry->tag != "left" || (*iter_R)->entry->tag != "right"){ continue; }
+	
 		// Check that these two channels are indeed neighbors. If not, iterate up by one and check again.
-		if(iter_R != events.end() && ((*iter_L)->modNum != (*iter_R)->modNum) && ((*iter_L)->chanNum-1 != (*iter_R)->chanNum)){ continue; }
+		if(((*iter_L)->modNum != (*iter_R)->modNum) || ((*iter_L)->chanNum+1 != (*iter_R)->chanNum)){ continue; }
 		
-		//double tdiff = (*iter_L)->time - (*iter_R)->time;
-		//double y_hit = tdiff * C_IN_BAR; // cm
-		/*double left_hires_time = phase * adcClockInSeconds + chan->GetTrigTime() * filterClockInSeconds;
-		double right_hires_time = phase * adcClockInSeconds + chan->GetTrigTime() * filterClockInSeconds;
-		double timediff = left_hires_time - right_hires_time;*/
+		double left_hires_time = (*iter_L)->hires_time;// - GetWalk((*iter_L)->baseline);
+		double right_hires_time = (*iter_R)->hires_time;// - GetWalk((*iter_R)->baseline);
+		double start_hires_time = start->hires_time;// - GetWalk(start->baseline);
 		
-		double tof = ((*iter_L)->time + (*iter_R)->time) / 2.0;
+		double tof = (left_hires_time + right_hires_time) / 2.0 - start_hires_time;
 		
-		structure.Append((*iter_L)->entry->location/2, tof, (*iter_L)->energy, (*iter_R)->energy, 0.0, 0.0, std::sqrt((*iter_L)->energy * (*iter_R)->energy));
-		
+		structure.Append((*iter_L)->entry->location, tof, (*iter_L)->FindQDC(), (*iter_R)->FindQDC(), (left_hires_time - start->hires_time), 
+		                 (right_hires_time - start->hires_time), std::sqrt((*iter_L)->FindQDC() * (*iter_R)->FindQDC()));
+		                 
 		if(write_waveform){
-			waveform.Append((*iter_L)->trace, (*iter_R)->trace);
+			waveform.Append((*iter_L)->yvals, (*iter_R)->yvals, (*iter_L)->size);
 		}
 		
-		good_events += 2;
+		good_events++;
 	}
 	return true;
 }
 
-VandleProcessor::VandleProcessor(bool write_waveform_/*=false*/) : Processor("Vandle", "vandle"){
+VandleProcessor::VandleProcessor(bool write_waveform_/*=false*/, bool hires_timing_/*=false*/) : Processor("Vandle", "vandle", hires_timing_){
 	write_waveform = write_waveform_;
 }
 

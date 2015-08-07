@@ -7,14 +7,14 @@
 
 class TriggerProcessor : public Processor{
   private:
-	bool HandleEvents();
-	
 	TriggerStructure structure;
 	TriggerWaveform waveform;
 
-  public:
-	TriggerProcessor(bool write_waveform_=false);
+	bool HandleEvents();
 	
+  public:
+	TriggerProcessor(bool write_waveform_=false, bool hires_timing_=false);
+
 	bool Initialize(TTree *tree_);
 	
 	void Zero();

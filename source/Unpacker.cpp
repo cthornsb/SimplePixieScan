@@ -48,7 +48,6 @@ void Unpacker::DeleteCurrentEvent(){
 
 void Unpacker::ProcessRawEvent(){
 	ChannelEvent *current_event = NULL;
-	std::string type, subtype, tag;
 	
 	// The first signal in the deque is the start signal for this event
 	ChannelEvent *start_event = rawEvent.front();
@@ -59,19 +58,16 @@ void Unpacker::ProcessRawEvent(){
 		
 		// Check that this detector is valid
 		if(current_event->entry){
-			// Get detector type information
-			current_event->entry->get(type, subtype, tag);
-		
 			if(!raw_event_mode){ // Standard operation. Individual processors will handle output
 				// Pass this event to the correct processor
-				if(type == "ignore" || !handler->AddEvent(current_event, type)){ // Invalid detector type. Delete it
+				if(current_event->entry->type == "ignore" || !handler->AddEvent(current_event)){ // Invalid detector type. Delete it
 					delete current_event;
 				}
 			
 				// This channel is a start signal. Due to the way ScanList
 				// packs the raw event, there may only be one start signal
 				// per raw event.
-				if(tag == "start"){ 
+				if(current_event->entry->tag == "start"){ 
 					start_event = current_event;
 				}
 			}
@@ -304,17 +300,17 @@ int Unpacker::ReadBuffer(unsigned int *buf, unsigned long *bufLen){
 				// sbuf points to the beginning of trace data
 				unsigned short *sbuf = (unsigned short *)buf;
 
-				currentEvt->trace.reserve(traceLength);
+				currentEvt->reserve(traceLength);
 
 				/*if(currentEvt->saturatedBit)
 					currentEvt->trace.SetValue("saturation", 1);*/
 
 				if( lastVirtualChannel != NULL && lastVirtualChannel->trace.empty() ){		
-					lastVirtualChannel->trace.assign(traceLength, 0);
+					lastVirtualChannel->assign(traceLength, 0);
 				}
 				// Read the trace data (2-bytes per sample, i.e. 2 samples per word)
 				for(unsigned int k = 0; k < traceLength; k ++){		
-					currentEvt->trace.push_back(sbuf[k]);
+					currentEvt->push_back(sbuf[k]);
 
 					if(lastVirtualChannel != NULL){
 						lastVirtualChannel->trace[k] += sbuf[k];
@@ -360,6 +356,9 @@ Unpacker::~Unpacker(){
 	if(init){
 		delete mapfile;
 		delete configfile;
+		
+		std::cout << "Unpacker: Found " << handler->GetTotalEvents() << " start events.\n";
+		std::cout << "Unpacker: Total data time is " << handler->GetDeltaEventTime() << " s.\n";
 		delete handler;
 	
 		ClearRawEvent();
@@ -430,7 +429,15 @@ bool Unpacker::InitRootOutput(std::string fname_, bool overwrite_/*=true*/){
 	return true;
 }
 
-bool Unpacker::ReadSpill(char *ibuf, unsigned int nWords, bool is_verbose/*=true*/){
+bool Unpacker::SetHiResMode(bool state_/*=true*/){
+	if(!handler){ return false; }
+
+	handler->SetHiResMode(state_);
+	
+	return true;
+}
+
+bool Unpacker::ReadSpill(unsigned int *data, unsigned int nWords, bool is_verbose/*=true*/){
 	if(!init || !root_tree){ return false; }
 
 	const unsigned int maxVsn = 14; // No more than 14 pixie modules per crate
@@ -440,9 +447,6 @@ bool Unpacker::ReadSpill(char *ibuf, unsigned int nWords, bool is_verbose/*=true
 	//time_t tmsBegin;
 
 	std::vector<ChannelEvent*> eventList; // Vector to hold the events
-
-	// Local version of ibuf pointer
-	unsigned int *data = (unsigned int *)ibuf;
 
 	int retval = 0; // return value from various functions
 	

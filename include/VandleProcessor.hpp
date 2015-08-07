@@ -7,14 +7,14 @@
 
 class VandleProcessor : public Processor{
   private:
+	VandleStructure structure;
+	VandleWaveform waveform;  
+  
 	bool HandleEvents();
 	
-	VandleStructure structure;
-	VandleWaveform waveform;
-
   public:
-	VandleProcessor(bool write_waveform_=false);
-	
+	VandleProcessor(bool write_waveform_=false, bool hires_timing_=false);
+
 	bool Initialize(TTree *tree_);
 	
 	void Zero();

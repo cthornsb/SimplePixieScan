@@ -1,13 +1,14 @@
-#include "TriggerProcessor.hpp"
+#include "GenericProcessor.hpp"
 #include "ChannelEvent.hpp"
+#include "MapFile.hpp"
 
 #include "TTree.h"
 
-bool TriggerProcessor::HandleEvents(){
+bool GenericProcessor::HandleEvents(){
 	if(!init){ return false; }
 
 	for(std::deque<ChannelEvent*>::iterator iter = events.begin(); iter != events.end(); iter++){
-		structure.Append((*iter)->hires_time, (*iter)->FindQDC());
+		structure.Append((*iter)->entry->location, ((*iter)->hires_time - start->hires_time), (*iter)->FindQDC());
 		
 		if(write_waveform){
 			waveform.Append((*iter)->yvals, (*iter)->size);
@@ -18,11 +19,11 @@ bool TriggerProcessor::HandleEvents(){
 	return true;
 }
 
-TriggerProcessor::TriggerProcessor(bool write_waveform_/*=false*/, bool hires_timing_/*=false*/) : Processor("Trigger", "trigger", hires_timing_){
+GenericProcessor::GenericProcessor(bool write_waveform_/*=false*/, bool hires_timing_/*=false*/) : Processor("Generic", "generic", hires_timing_){
 	write_waveform = write_waveform_;
 }
 
-bool TriggerProcessor::Initialize(TTree *tree_){
+bool GenericProcessor::Initialize(TTree *tree_){
 	if(init || !tree_){ 
 		PrintMsg("Root output is already initialized!");
 		return false; 
@@ -40,7 +41,7 @@ bool TriggerProcessor::Initialize(TTree *tree_){
 	return (init = true);
 }
 
-void TriggerProcessor::Zero(){
+void GenericProcessor::Zero(){
 	structure.Zero();
 	waveform.Zero();
 }

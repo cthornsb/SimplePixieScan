@@ -8,8 +8,8 @@
 class TTree;
 
 struct ProcessorEntry{
-	Processor *proc;
-	std::string type;
+	Processor *proc; /// Pointer to a data processor
+	std::string type; /// Type of the data processor
 	
 	ProcessorEntry(Processor *proc_, const std::string &type_){
 		proc = proc_; type = type_;
@@ -18,22 +18,34 @@ struct ProcessorEntry{
 
 class ProcessorHandler{
   private:
-	std::vector<ProcessorEntry> procs;
+	std::vector<ProcessorEntry> procs; /// Vector of data processors
 	
-	unsigned long total_events;
+	unsigned long total_events; /// Total number of start events received
+	
+	double first_event_time; /// Time of the first start event (in s)
+	
+	double delta_event_time; /// Time since the first start event (in s)
 
   public:
-	ProcessorHandler(){ total_events = 0; }
+	ProcessorHandler();
 	
 	~ProcessorHandler();
+	
+	bool SetHiResMode(bool state_=true);
 	
 	bool InitRootOutput(TTree *tree_);
 	
 	bool AddProcessor(std::string type_);
 	
-	bool AddEvent(ChannelEvent* event_, std::string type_);
+	bool AddEvent(ChannelEvent* event_);
 	
 	bool Process(ChannelEvent *start_);
+	
+	unsigned long GetTotalEvents(){ return total_events; }
+	
+	double GetFirstEventTime(){ return first_event_time; }
+	
+	double GetDeltaEventTime(){ return delta_event_time; }
 	
 	void ZeroAll();
 };

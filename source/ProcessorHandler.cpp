@@ -1,13 +1,29 @@
 #include "ProcessorHandler.hpp"
 
+#include "GenericProcessor.hpp"
 #include "TriggerProcessor.hpp"
 #include "VandleProcessor.hpp"
+#include "ChannelEvent.hpp"
+#include "MapFile.hpp"
+
+ProcessorHandler::ProcessorHandler(){ 
+	total_events = 0; 
+	first_event_time = 0.0;
+	delta_event_time = 0.0;
+}
 
 ProcessorHandler::~ProcessorHandler(){
 	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
 		iter->proc->Status(total_events);
 		delete iter->proc;
 	}
+}
+
+bool ProcessorHandler::SetHiResMode(bool state_/*=true*/){
+	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
+		iter->proc->SetHiResMode(state_);
+	}
+	return state_;
 }
 
 bool ProcessorHandler::InitRootOutput(TTree *tree_){
@@ -32,15 +48,23 @@ bool ProcessorHandler::AddProcessor(std::string type_){
 	else if(type_ == "ionchamber"){ procs.push_back(new IonChamberProcessor()); }
 	else if(type_ == "phoswich"){ procs.push_back(new PhoswichProcessor()); }
 	else if(type_ == "nonwich"){ procs.push_back(new NonwichProcessor()); }*/
+	else if(type_ == "generic"){ 
+		GenericProcessor *proc = new GenericProcessor();
+		procs.push_back(ProcessorEntry(proc, "generic")); 
+	}
 	else{ return false; }
 	return true;
 }
 
-bool ProcessorHandler::AddEvent(ChannelEvent* event_, std::string type_){
+bool ProcessorHandler::AddEvent(ChannelEvent* event_){
 	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
-		if(type_ == iter->type){ 
+		if(event_->entry->type == iter->type){ 
 			iter->proc->AddEvent(event_); 
-			total_events++;
+			if(event_->entry->tag == "start"){ 
+				if(total_events == 0){ first_event_time = event_->time * 8E-9; }
+				delta_event_time = (event_->time * 8E-9) - first_event_time;
+				total_events++; 
+			}
 			return true;
 		}
 	}
@@ -48,10 +72,19 @@ bool ProcessorHandler::AddEvent(ChannelEvent* event_, std::string type_){
 }
 
 bool ProcessorHandler::Process(ChannelEvent *start_){
-	bool retval = true;
+	bool retval = false;
+	
+	// First call the preprocessors. The preprocessor will calculate the phase of the trace
+	// by doing a CFD analysis.
 	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
-		retval = retval && iter->proc->Process(start_);
+		iter->proc->PreProcess();
 	}
+	
+	// After preprocessing has finished, call the processors.
+	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
+		if(iter->proc->Process(start_)){ retval = true; }
+	}
+	
 	return retval;
 }
 

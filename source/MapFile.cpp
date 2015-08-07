@@ -180,15 +180,14 @@ bool MapFile::Load(const char *filename_){
 				bool in_list = false;
 				for(std::vector<DetType>::iterator iter2 = types.begin(); iter2 != types.end(); iter2++){
 					if(iter2->type == detectors[mod][*iter].type){
-						detectors[mod][*iter].location = iter2->count + 1;
-						iter2->count++;
+						detectors[mod][*iter].location = iter2->count++;
 						in_list = true;
 						break;
 					}
 				}
 				if(!in_list){ 
 					types.push_back(DetType(detectors[mod][*iter].type)); 
-					detectors[mod][*iter].location = 1;
+					detectors[mod][*iter].location = 0;
 				}
 			}
 		}
@@ -203,15 +202,14 @@ bool MapFile::Load(const char *filename_){
 			bool in_list = false;
 			for(std::vector<DetType>::iterator iter = types.begin(); iter != types.end(); iter++){
 				if(iter->type == detectors[mod][chan].type){
-					detectors[mod][chan].location = iter->count + 1;
-					iter->count++;
+					detectors[mod][chan].location = iter->count++;
 					in_list = true;
 					break;
 				}
 			}
 			if(!in_list){ 
 				types.push_back(DetType(detectors[mod][chan].type)); 
-				detectors[mod][chan].location = 1;
+				detectors[mod][chan].location = 0;
 			}
 		}
 	}
