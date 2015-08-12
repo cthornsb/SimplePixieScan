@@ -3,6 +3,19 @@
 #include "MapFile.hpp"
 #include "Unpacker.hpp"
 
+MapEntry::MapEntry(const MapEntry &other){
+	type = other.type; subtype = other.subtype; tag = other.tag; location = other.location;
+}
+
+bool MapEntry::operator == (const MapEntry &other){
+	if(other.type == type && other.subtype == subtype && other.tag == tag){ return true; }
+	return false;
+}
+
+void MapEntry::get(std::string &type_, std::string &subtype_, std::string &tag_){
+	type_ = type; subtype_ = subtype; tag_ = tag;
+}
+
 void MapEntry::set(const std::string &input_, const char delimiter_/*=':'*/){
 	int count = 0;
 	type = ""; subtype = ""; tag = "";
@@ -16,6 +29,22 @@ void MapEntry::set(const std::string &input_, const char delimiter_/*=':'*/){
 		else if(count == 2){ tag += input_[index]; }
 		else{ break; }
 	}
+}
+	
+void MapEntry::set(const std::string &type_, const std::string &subtype_, const std::string &tag_){
+	type = type_; subtype = subtype_; tag = tag_;
+}
+
+void MapEntry::clear(){
+	location = 0; type = "ignore"; subtype = ""; tag = "";
+}
+
+unsigned int MapEntry::increment(){
+	return ++location;
+}
+
+std::string MapEntry::print(){
+	return (type+":"+subtype+":"+tag);
 }
 
 void MapFile::clear_entries(){
@@ -178,16 +207,15 @@ bool MapFile::Load(const char *filename_){
 				detectors[mod][*iter].set(values[2]);
 				
 				bool in_list = false;
-				for(std::vector<DetType>::iterator iter2 = types.begin(); iter2 != types.end(); iter2++){
-					if(iter2->type == detectors[mod][*iter].type){
-						detectors[mod][*iter].location = iter2->count++;
+				for(std::vector<MapEntry>::iterator iter2 = types.begin(); iter2 != types.end(); iter2++){
+					if(*iter2 == detectors[mod][*iter]){
+						detectors[mod][*iter].location = iter2->increment();
 						in_list = true;
 						break;
 					}
 				}
 				if(!in_list){ 
-					types.push_back(DetType(detectors[mod][*iter].type)); 
-					detectors[mod][*iter].location = 0;
+					types.push_back(MapEntry(detectors[mod][*iter])); 
 				}
 			}
 		}
@@ -200,16 +228,15 @@ bool MapFile::Load(const char *filename_){
 			detectors[mod][chan].set(values[2]);
 			
 			bool in_list = false;
-			for(std::vector<DetType>::iterator iter = types.begin(); iter != types.end(); iter++){
-				if(iter->type == detectors[mod][chan].type){
-					detectors[mod][chan].location = iter->count++;
+			for(std::vector<MapEntry>::iterator iter = types.begin(); iter != types.end(); iter++){
+				if(*iter == detectors[mod][chan]){
+					detectors[mod][chan].location = iter->increment();
 					in_list = true;
 					break;
 				}
 			}
 			if(!in_list){ 
-				types.push_back(DetType(detectors[mod][chan].type)); 
-				detectors[mod][chan].location = 0;
+				types.push_back(MapEntry(detectors[mod][chan])); 
 			}
 		}
 	}
@@ -230,8 +257,8 @@ void MapFile::PrintAllEntries(){
 }
 
 void MapFile::PrintAllTypes(){
-	for(std::vector<DetType>::iterator iter = types.begin(); iter != types.end(); iter++){
+	for(std::vector<MapEntry>::iterator iter = types.begin(); iter != types.end(); iter++){
 		if(iter->type == "ignore"){ continue; }
-		std::cout << " " << iter->type << ": " << iter->count << std::endl;
+		std::cout << " " << iter->print() << std::endl;
 	}
 }

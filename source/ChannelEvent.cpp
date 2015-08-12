@@ -102,6 +102,7 @@ void ChannelEvent::Clear(){
 	
 	hires_energy = 0.0;
 	hires_time = 0.0;
+	valid_chan = false;
 	
 	for(int i = 0; i < numQdcs; i++){
 		qdcValue[i] = 0;

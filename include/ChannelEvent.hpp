@@ -17,6 +17,7 @@ struct ChannelEvent{
 	
 	double hires_energy; /// High resolution energy from the integration of pulse fits
 	double hires_time; /// High resolution time taken from pulse fits (in ns)
+	bool valid_chan; /// True if the high resolution energy and time are valid
 	
 	float *xvals; /// x values used for fitting
 	float *yvals; /// y values used for fitting (baseline corrected trace)

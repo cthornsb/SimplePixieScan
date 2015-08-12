@@ -1,6 +1,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include <iomanip>
+
 #include "VandleProcessor.hpp"
 #include "ChannelEvent.hpp"
 #include "MapFile.hpp"
@@ -13,12 +15,6 @@
 #define SMALL_LENGTH 60 // cm
 #define MEDIUM_LENGTH 120 // cm
 #define LARGE_LENGTH 200 // cm
-
-double GetWalk(float val){
-	if(val < 175){ return (1.09099 * std::log(val) - 7.76641); }
-	else if(val > 3700){ return (0.0); }
-	else{ return ((-9.13743E-12) * std::pow(val, 3.0) + (1.9485e-7) * pow(val, 2.0) - 0.000163286 * val - 2.13918); }
-}
 
 bool VandleProcessor::HandleEvents(){
 	if(!init || events.size() <= 1){ 
@@ -33,23 +29,28 @@ bool VandleProcessor::HandleEvents(){
 	std::deque<ChannelEvent*>::iterator iter_L = events.begin();
 	std::deque<ChannelEvent*>::iterator iter_R = events.begin()+1;
 	
-	// Pick out pairs of channels representing vandle bars
+	// Pick out pairs of channels representing vandle bars.
 	for(; iter_R != events.end(); iter_L++, iter_R++){
-		// Check that these two channels have the correct detector tag
+		// Check that the time and energy values are valid
+		if(!(*iter_L)->valid_chan || !(*iter_R)->valid_chan){ continue; }
+	
+		// Check that these two channels have the correct detector tag.
 		if((*iter_L)->entry->tag != "left" || (*iter_R)->entry->tag != "right"){ continue; }
 	
 		// Check that these two channels are indeed neighbors. If not, iterate up by one and check again.
 		if(((*iter_L)->modNum != (*iter_R)->modNum) || ((*iter_L)->chanNum+1 != (*iter_R)->chanNum)){ continue; }
 		
-		double left_hires_time = (*iter_L)->hires_time;// - GetWalk((*iter_L)->baseline);
-		double right_hires_time = (*iter_R)->hires_time;// - GetWalk((*iter_R)->baseline);
-		double start_hires_time = start->hires_time;// - GetWalk(start->baseline);
+		// Check that the two channels are not separated by too much time.
+		if(((*iter_L)->time != (*iter_R)->time)){ continue; }
 		
-		double tof = (left_hires_time + right_hires_time) / 2.0 - start_hires_time;
+		// Calculate the particle time-of-flight and the time difference between the two ends.		
+		double tof = ((*iter_L)->hires_time + (*iter_R)->hires_time) / 2.0 - start->hires_time;
+		double tdiff = ((*iter_L)->hires_time - (*iter_R)->hires_time);
 		
-		structure.Append((*iter_L)->entry->location, tof, (*iter_L)->FindQDC(), (*iter_R)->FindQDC(), (left_hires_time - start->hires_time), 
-		                 (right_hires_time - start->hires_time), std::sqrt((*iter_L)->FindQDC() * (*iter_R)->FindQDC()));
-		                 
+		// Fill the values into the root tree.
+		structure.Append((*iter_L)->entry->location, tof, (*iter_L)->hires_energy, (*iter_R)->hires_energy, tdiff, 
+		                 ((*iter_R)->hires_time - start->hires_time), std::sqrt((*iter_L)->hires_energy * (*iter_R)->hires_energy));
+		     
 		if(write_waveform){
 			waveform.Append((*iter_L)->yvals, (*iter_R)->yvals, (*iter_L)->size);
 		}

@@ -7,7 +7,11 @@ bool TriggerProcessor::HandleEvents(){
 	if(!init){ return false; }
 
 	for(std::deque<ChannelEvent*>::iterator iter = events.begin(); iter != events.end(); iter++){
-		structure.Append((*iter)->hires_time, (*iter)->FindQDC());
+		// Check that the time and energy values are valid
+		if(!(*iter)->valid_chan){ continue; }
+	
+		// Fill the values into the root tree.
+		structure.Append((*iter)->hires_time, (*iter)->hires_energy);
 		
 		if(write_waveform){
 			waveform.Append((*iter)->yvals, (*iter)->size);

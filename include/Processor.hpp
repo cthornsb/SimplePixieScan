@@ -57,6 +57,8 @@ class Processor{
 	
 	void SetFitFunction(const char* func_);
 
+	virtual void SetFitParameters(double *data);
+
 	virtual void FitPulses();
 
 	virtual bool HandleEvents();

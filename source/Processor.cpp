@@ -64,44 +64,53 @@ void Processor::SetFitFunction(const char* func_){
 	hires_timing = true;
 }
 
+void Processor::SetFitParameters(double *data){
+	if(!data){ return; }
+	
+	// Set initial parameters to those obtained from fit optimizations	
+	fitting_func->SetParameter(0, data[0]*9.211 + 150.484);  // Normalization of pulse
+	fitting_func->SetParameter(1, data[1]*1.087 - 2.359); // Phase (leading edge of pulse) (ns)
+	fitting_func->FixParameter(2, 1.7750575); // Decay constant of exponential (ns)
+	fitting_func->FixParameter(3, 115.64125); // Width of inverted square guassian (ns^4)
+}
+
 void Processor::FitPulses(){
 	for(std::deque<ChannelEvent*>::iterator iter = events.begin(); iter != events.end(); iter++){
-		(*iter)->hires_energy = (*iter)->energy; // Not needed for now
-		(*iter)->hires_time = (*iter)->time;
-
+		// Set the default values for high resolution energy and time
+		(*iter)->hires_energy = (*iter)->energy;
+		(*iter)->hires_time = (*iter)->time * filterClockInSeconds;
+	
 		// Check for trace with zero size
 		if((*iter)->trace.size() == 0){ continue; }
 
-		// Find the leading edge of the pulse
+		// Find the leading edge of the pulse. This will also set the phase of the ChannelEvent
 		if((*iter)->FindLeadingEdge() < 0){ continue; }
+
+		// Set the high resolution energy
+		(*iter)->hires_energy = (*iter)->FindQDC();
 		
 		// Do root fitting for high resolution timing (very slow)
 		if(hires_timing){
 			// "Convert" the trace into a TGraph for fitting
 			TGraph *graph = (*iter)->GetTrace();
 		
-			// Set the initial fitting parameters. Taken from root fit optimizations.
-			/*fitting_func->SetParameter(0, max_amplitude*9.211 + 150.484);                        // Normalization of pulse
-			fitting_func->SetParameter(1, ((*iter)->phase % (*iter)->trace.size())*1.087 - 2.359); // Phase (leading edge of pulse) (ns)
-			fitting_func->FixParameter(2, 1.7750575); // Decay constant of exponential (ns)
-			fitting_func->FixParameter(3, 115.64125); // Width of inverted square guassian (ns^4)*/
+			double pars[2] = {(double)(*iter)->maximum, (double)(*iter)->phase};
 		
-			fitting_func->SetParameter(0, 1.01339 * (*iter)->maximum + 72.40441); // Constant
-			fitting_func->SetParameter(1, (*iter)->max_index); // MPV
-			fitting_func->SetParameter(2, 1.6019623387); // Sigma. Obtained from a fit optimization
-			fitting_func->SetParameter(3, (*iter)->baseline); // Baseline offset
-
+			// Set the initial fitting parameters
+			SetFitParameters(pars);
+			
 			// And finally, do the fitting
 			TFitResultPtr fit_ptr = graph->Fit(fitting_func, "S Q", "", (*iter)->phase, (*iter)->max_index);
-		
-			// Set channel event high resolution parameters
-			//(*iter)->hires_energy = fitting_func->Integral(0.0, (double)(*iter)->trace.size());
-			(*iter)->hires_time = fitting_func->GetParameter(1) * adcClockInSeconds + (*iter)->trigTime * filterClockInSeconds;
+	
+			// Update the phase of the pulse
+			(*iter)->phase = fitting_func->GetParameter(1);
 		
 			delete graph;
 		}
 		
-		(*iter)->hires_time = (*iter)->phase * adcClockInSeconds + (*iter)->time * filterClockInSeconds; // High resolution time (in s)
+		// Set the high resolution time
+		(*iter)->hires_time += (*iter)->phase * adcClockInSeconds;
+		(*iter)->valid_chan = true;
 	}
 }
 
@@ -127,8 +136,7 @@ Processor::Processor(std::string name_, std::string type_, bool hires_timing_/*=
 	
 	local_branch = NULL;
 	if(hires_timing){ // If hi-res timing is to be used, set to the vandle fitting function
-		//fitting_func = new TF1((type + "_func").c_str(), func, 0, 1, 4); 
-		fitting_func = new TF1((type + "_func").c_str(), "landau+[3]", 0, 1); 
+		fitting_func = new TF1((type + "_func").c_str(), func, 0, 1, 4); 
 	}
 	else{ fitting_func = NULL; }
 }

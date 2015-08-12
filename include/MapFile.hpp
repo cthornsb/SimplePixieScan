@@ -12,44 +12,31 @@ struct MapEntry{
 	std::string subtype;
 	std::string tag;
 	
-	MapEntry(){
-		clear();
-	}
+	MapEntry(){ clear(); }
 
-	MapEntry(const std::string &input_, const char delimiter_=':'){
-		set(input_, delimiter_);
-	}
+	MapEntry(const std::string &input_, const char delimiter_=':'){ set(input_, delimiter_); }
 	
-	MapEntry(const std::string &type_, const std::string &subtype_, const std::string &tag_){
-		set(type_, subtype_, tag_);
-	}
+	MapEntry(const std::string &type_, const std::string &subtype_, const std::string &tag_){ set(type_, subtype_, tag_); }
 	
-	void get(std::string &type_, std::string &subtype_, std::string &tag_){
-		type_ = type; subtype_ = subtype; tag_ = tag;
-	}
+	MapEntry(const MapEntry &other);
+
+	bool operator == (const MapEntry &other);
+
+	void get(std::string &type_, std::string &subtype_, std::string &tag_);
 	
 	void set(const std::string &input_, const char delimiter_=':');
 	
-	void set(const std::string &type_, const std::string &subtype_, const std::string &tag_){
-		type = type_; subtype = subtype_; tag = tag_;
-	}
+	void set(const std::string &type_, const std::string &subtype_, const std::string &tag_);
 	
-	void clear(){
-		location = 0; type = "ignore"; subtype = ""; tag = "";
-	}
+	void clear();
 	
-	std::string print(){
-		return (type+":"+subtype+":"+tag);
-	}
-};
-
-struct DetType{
-	std::string type;
-	unsigned int count;
+	unsigned int increment();
 	
-	DetType(std::string type_){
-		type = type_; count = 1;
-	}
+	bool compare(const MapEntry &other);
+	
+	bool compare(const std::string &type_, const std::string &subtype_, const std::string &tag_);
+	
+	std::string print();
 };
 
 class MapFile : public ParentClass{
@@ -58,7 +45,7 @@ class MapFile : public ParentClass{
 	static const int max_channels = 16;
   
 	MapEntry detectors[max_modules][max_channels];
-	std::vector<DetType> types;
+	std::vector<MapEntry> types;
 	int max_defined_module;
 	
 	void clear_entries();
@@ -76,7 +63,7 @@ class MapFile : public ParentClass{
 
 	MapEntry *GetMapEntry(int mod_, int chan_);
 	
-	std::vector<DetType> *GetTypes(){ return &types; }
+	std::vector<MapEntry> *GetTypes(){ return &types; }
 	
 	std::string GetType(int mod_, int chan_);
 	

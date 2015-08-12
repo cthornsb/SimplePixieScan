@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 #include <string.h>
 #include <time.h>
@@ -50,31 +51,29 @@ void Unpacker::ProcessRawEvent(){
 	ChannelEvent *current_event = NULL;
 	
 	// The first signal in the deque is the start signal for this event
-	ChannelEvent *start_event = rawEvent.front();
+	ChannelEvent *start_event = NULL;
 	
 	// Fill the processor event deques with events
 	while(!rawEvent.empty()){
 		current_event = rawEvent.front();
 		
-		// Check that this detector is valid
-		if(current_event->entry){
-			if(!raw_event_mode){ // Standard operation. Individual processors will handle output
-				// Pass this event to the correct processor
-				if(current_event->entry->type == "ignore" || !handler->AddEvent(current_event)){ // Invalid detector type. Delete it
-					delete current_event;
-				}
-			
-				// This channel is a start signal. Due to the way ScanList
-				// packs the raw event, there may only be one start signal
-				// per raw event.
-				if(current_event->entry->tag == "start"){ 
-					start_event = current_event;
-				}
-			}
-			else{ // Raw event mode operation. Dump raw event information to root file.
-				structure.Append(current_event->modNum, current_event->chanNum, current_event->time, current_event->energy);
+		if(!raw_event_mode){ // Standard operation. Individual processors will handle output
+			// Pass this event to the correct processor
+			if(current_event->entry->type == "ignore" || !handler->AddEvent(current_event)){ // Invalid detector type. Delete it
 				delete current_event;
 			}
+		
+			// This channel is a start signal. Due to the way ScanList
+			// packs the raw event, there may be more than one start signal
+			// per raw event.
+			if(current_event->entry->tag == "start"){ 
+				if(start_event != NULL/* && debug_mode*/){ std::cout << "ProcessRawEvent: Found more than one start event in rawEvent!\n"; }
+				start_event = current_event;
+			}
+		}
+		else{ // Raw event mode operation. Dump raw event information to root file.
+			structure.Append(current_event->modNum, current_event->chanNum, current_event->time, current_event->energy);
+			delete current_event;
 		}
 		
 		// Remove this event from the raw event deque
@@ -99,23 +98,19 @@ void Unpacker::ProcessRawEvent(){
 }
 
 void Unpacker::ScanList(){
-	//unsigned long chanTime, eventTime;
-
-	// local variables for the times of the current event, previous
-	// event and time difference between the two
-	double lastTime = 0.0;
-	double currTime = 0.0;
-	
 	int mod, chan;
 	std::string type, subtype, tag;
 	
-	bool found_valid_start = false;
+	ChannelEvent *current_event = eventList.front();
+	
+	// Set lastTime to the time of the first event
+	double lastTime = current_event->time;
+	double currTime;
 
-	//loop over the list of channels that fired in this buffer
-	ChannelEvent *current_event;
+	// Loop over the list of channels that fired in this buffer
 	while(!eventList.empty()){
 		current_event = eventList.front();
-	
+		
 		mod = current_event->modNum;
 		chan = current_event->chanNum;
 		
@@ -134,36 +129,30 @@ void Unpacker::ScanList(){
 		// Get detector type information
 		current_event->entry->get(type, subtype, tag);
 		
-		// Search for a start signal
+		/*// Search for a start signal
 		if(!found_valid_start){
 			if(tag != "start"){ 
 				DeleteCurrentEvent();
 				continue; 
 			}
 			found_valid_start = true;
-			lastTime = current_event->time;
 		}
-		else if(tag == "start"){ // Encountered a new start signal before the max event width was exceeded
+		else if(tag == "start"){ // Encountered a new start signal. Finalize this raw event and process it
 			if(!rawEvent.empty()){ ProcessRawEvent(); }
-			lastTime = current_event->time;
-		}
+		}*/
 		
-		// This is a channel we're interested in
-		// Retrieve the current event time
+		// Retrieve the current event time.
 		currTime = current_event->time;
 
 		// If the time difference between the current and previous event is 
 		// larger than the event width, finalize the current event, otherwise
 		// treat this as part of the current event
-		/*if((currTime - lastTime) > configfile->event_width && !rawEvent.empty()){
-			found_valid_start = false;
-			ProcessRawEvent();
-		}*/
+		if((currTime - lastTime) > 62){ // 62 pixie ticks represents ~0.5 us
+			if(!rawEvent.empty()){ ProcessRawEvent(); }
+		}
 
-		/*unsigned long dtimebin = 2000 + eventTime - chanTime;
-		if(dtimebin < 0 || dtimebin > 16384){
-			std::cout << "ScanList: Strange dtime for mod = " << mod << ", chan = " << chan << "\n";
-		}*/
+		// Update the time of the last event
+		lastTime = currTime; 
 		
 		// Push this channel event into the rawEvent.
 		rawEvent.push_back(current_event);
@@ -171,7 +160,7 @@ void Unpacker::ScanList(){
 		// Remove this event from the event list but do not delete it yet.
 		// Deleting of the channel events will be handled by clearing the rawEvent.
 		eventList.pop_front();
-	} //end loop over event list
+	}
 
 	// Process the last event in the buffer
 	if(rawEvent.size() > 0){
@@ -383,8 +372,8 @@ bool Unpacker::Initialize(){
 	configfile = new ConfigFile("./setup/config.dat");
 	handler = new ProcessorHandler();
 	
-	std::vector<DetType> *types = mapfile->GetTypes();
-	for(std::vector<DetType>::iterator iter = types->begin(); iter != types->end(); iter++){
+	std::vector<MapEntry> *types = mapfile->GetTypes();
+	for(std::vector<MapEntry>::iterator iter = types->begin(); iter != types->end(); iter++){
 		if(iter->type == "ignore"){ continue; }
 		else if(handler->AddProcessor(iter->type)){ std::cout << "Unpacker: Added " << iter->type << " processor to the processor list.\n"; }
 		else{ std::cout << "Unpacker: Failed to add " << iter->type << " processor to the processor list!\n"; }
