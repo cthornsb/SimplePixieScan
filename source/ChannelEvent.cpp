@@ -33,11 +33,19 @@ float ChannelEvent::CorrectBaseline(){
 	else if(baseline_corrected){ return maximum; }
 
 	// Find the baseline
+	baseline = 0.0;
 	size_t sample_size = (10 <= size ? 10:size);
 	for(size_t i = 0; i < sample_size; i++){
 		baseline += (float)trace[i];
 	}
 	baseline = baseline/sample_size;
+	
+	// Calculate the standard deviation
+	stddev = 0.0;
+	for(size_t i = 0; i < sample_size; i++){
+		stddev += ((float)trace[i] - baseline)*((float)trace[i] - baseline);
+	}
+	stddev = std::sqrt((1.0/sample_size) * stddev);
 	
 	// Find the maximum value, the maximum bin, and correct the baseline
 	maximum = -9999.0;
@@ -118,6 +126,7 @@ void ChannelEvent::Clear(){
 	phase = 0.0;
 	maximum = 0.0;
 	baseline = 0.0;
+	stddev = 0.0;
 	qdc = 0.0;
 	max_index = 0;
 

@@ -16,6 +16,12 @@
 #define MEDIUM_LENGTH 120 // cm
 #define LARGE_LENGTH 200 // cm
 
+const double small_max_tdiff = ((SMALL_LENGTH / C_IN_BAR) / 8E-9); // Maximum time difference between valid vandle pairwise events (pixie clock ticks)
+
+double absdiff(const double &v1, const double &v2){
+	return (v1 >= v2)?(v1-v2):(v2-v1);
+}
+
 bool VandleProcessor::HandleEvents(){
 	if(!init || events.size() <= 1){ 
 		return false;
@@ -41,7 +47,7 @@ bool VandleProcessor::HandleEvents(){
 		if(((*iter_L)->modNum != (*iter_R)->modNum) || ((*iter_L)->chanNum+1 != (*iter_R)->chanNum)){ continue; }
 		
 		// Check that the two channels are not separated by too much time.
-		if(((*iter_L)->time != (*iter_R)->time)){ continue; }
+		if(absdiff((*iter_L)->time, (*iter_R)->time) > (2 * small_max_tdiff)){ continue; }
 		
 		// Calculate the particle time-of-flight and the time difference between the two ends.		
 		double tof = ((*iter_L)->hires_time + (*iter_R)->hires_time) / 2.0 - start->hires_time;

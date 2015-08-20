@@ -76,39 +76,45 @@ void Processor::SetFitParameters(double *data){
 
 void Processor::FitPulses(){
 	for(std::deque<ChannelEvent*>::iterator iter = events.begin(); iter != events.end(); iter++){
-		// Set the default values for high resolution energy and time
+		// Set the default values for high resolution energy and time.
 		(*iter)->hires_energy = (*iter)->energy;
 		(*iter)->hires_time = (*iter)->time * filterClockInSeconds;
 	
-		// Check for trace with zero size
+		// Check for trace with zero size.
 		if((*iter)->trace.size() == 0){ continue; }
 
-		// Find the leading edge of the pulse. This will also set the phase of the ChannelEvent
+		// Find the leading edge of the pulse. This will also set the phase of the ChannelEvent.
 		if((*iter)->FindLeadingEdge() < 0){ continue; }
 
-		// Set the high resolution energy
+		// Check for large SNR.
+		if((*iter)->stddev > 3.0){ 
+			//std::cout << (*iter)->stddev << std::endl;
+			continue; 
+		}
+
+		// Set the high resolution energy.
 		(*iter)->hires_energy = (*iter)->FindQDC();
 		
-		// Do root fitting for high resolution timing (very slow)
+		// Do root fitting for high resolution timing (very slow).
 		if(hires_timing){
-			// "Convert" the trace into a TGraph for fitting
+			// "Convert" the trace into a TGraph for fitting.
 			TGraph *graph = (*iter)->GetTrace();
 		
 			double pars[2] = {(double)(*iter)->maximum, (double)(*iter)->phase};
 		
-			// Set the initial fitting parameters
+			// Set the initial fitting parameters.
 			SetFitParameters(pars);
 			
-			// And finally, do the fitting
+			// And finally, do the fitting.
 			TFitResultPtr fit_ptr = graph->Fit(fitting_func, "S Q", "", (*iter)->phase, (*iter)->max_index);
 	
-			// Update the phase of the pulse
+			// Update the phase of the pulse.
 			(*iter)->phase = fitting_func->GetParameter(1);
 		
 			delete graph;
 		}
 		
-		// Set the high resolution time
+		// Set the high resolution time.
 		(*iter)->hires_time += (*iter)->phase * adcClockInSeconds;
 		(*iter)->valid_chan = true;
 	}
