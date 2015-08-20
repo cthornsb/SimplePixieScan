@@ -83,7 +83,7 @@ void Unpacker::ProcessRawEvent(){
 	if(!raw_event_mode){
 		// Call each processor to do the processing. Each
 		// processor will remove the channel events when finished.
-		if(handler->Process(start_event)){
+		if(start_event && handler->Process(start_event)){
 			// This event had at least one valid signal
 			root_tree->Fill();
 		}
@@ -128,18 +128,6 @@ void Unpacker::ScanList(){
 
 		// Get detector type information
 		current_event->entry->get(type, subtype, tag);
-		
-		/*// Search for a start signal
-		if(!found_valid_start){
-			if(tag != "start"){ 
-				DeleteCurrentEvent();
-				continue; 
-			}
-			found_valid_start = true;
-		}
-		else if(tag == "start"){ // Encountered a new start signal. Finalize this raw event and process it
-			if(!rawEvent.empty()){ ProcessRawEvent(); }
-		}*/
 		
 		// Retrieve the current event time.
 		currTime = current_event->time;

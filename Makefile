@@ -1,10 +1,10 @@
 #####################################################################
 
 # Set the PixieSuite directory
-PIXIE_SUITE_DIR = /home/pixie16/cthorns/PixieSuitePLD
+PIXIE_SUITE_DIR = /home/cthorns/PixieSuitePLD
 
 # Set the RootPixieScan directory
-PIXIE_SCAN_DIR = /home/pixie16/cthorns/RootPixieScan
+PIXIE_SCAN_DIR = /home/cthorns/RootPixieScan
 
 #####################################################################
 
@@ -21,7 +21,7 @@ INCLUDE_DIR = $(TOP_LEVEL)/include
 SOURCE_DIR = $(TOP_LEVEL)/source
 OBJ_DIR = $(TOP_LEVEL)/obj
 
-DICT_DIR = $(PIXIE_SCAN_DIR)/dict
+DICT_DIR = $(TOP_LEVEL)/dict
 DICT_OBJ_DIR = $(DICT_DIR)/obj
 
 SCAN_INC_DIR = $(PIXIE_SCAN_DIR)/include
@@ -56,13 +56,11 @@ OBJECTS += $(HRIBF_SOURCE_OBJ) $(SOCKET_SOURCE_OBJ) $(SCAN_MAIN_OBJ)
 
 # ROOT dictionary stuff
 DICT_SOURCE = RootDict
-STRUCT_HEAD = $(SCAN_INC_DIR)/Structures.h
-STRUCT_FILE = $(SCAN_SRC_DIR)/Structures.cpp
-STRUCT_FILE_OBJ = $(SCAN_OBJ_DIR)/Structures.o
+STRUCT_FILE_OBJ = $(OBJ_DIR)/Structures.o
 
 ROOT_DICT = $(DICT_DIR)/$(DICT_SOURCE).cpp
-ROOT_DICT_OBJ = $(DICT_OBJ_DIR)/$(DICT_SOURCE).o 
-ROOT_DICT_SLIB = $(DICT_OBJ_DIR)/$(DICT_SOURCE).so 
+ROOT_DICT_OBJ = $(DICT_OBJ_DIR)/$(DICT_SOURCE).o
+ROOT_DICT_SLIB = $(DICT_OBJ_DIR)/$(DICT_SOURCE).so
 SFLAGS = $(addprefix -l,$(DICT_SOURCE))
 
 OBJECTS += $(ROOT_DICT_OBJ) $(STRUCT_FILE_OBJ)
@@ -71,10 +69,12 @@ EXECUTABLE = SimpleLDF
 
 ########################################################################
 
-all: directory $(ROOT_DICT_SLIB) $(EXECUTABLE)
+all: directory dictionary $(EXECUTABLE)
+#	Create all directories, make all objects, and link executable
 
-dictionary: $(DICT_OBJ_DIR) $(ROOT_DICT_SLIB)
+dictionary:
 #	Create root dictionary objects
+	@$(PIXIE_SCAN_DIR)/tools/rcbuild.sh -t $(PIXIE_SCAN_DIR)/tools -d $(DICT_DIR) -s $(SOURCE_DIR) -i $(INCLUDE_DIR) -o $(OBJ_DIR)
 
 .SECONDARY: $(DICT_DIR)/$(DICT_SOURCE).cpp $(ROOTOBJ)
 #	Want to keep the source files created by rootcint after compilation
@@ -126,24 +126,6 @@ $(SCAN_MAIN_OBJ): $(SCAN_MAIN)
 #	Main scan function
 	$(COMPILER) -c $(CFLAGS) -DSIMPLE_SCAN -Iinclude -I$(SCAN_INC_DIR) -I$(POLL_INC_DIR) $< -o $@
 	
-#####################################################################
-
-$(STRUCT_FILE_OBJ): $(STRUCT_FILE)
-#	Compile structures file
-	$(COMPILER) -c $(CFLAGS) -I$(SCAN_INC_DIR) $< -o $@
-
-$(ROOT_DICT_OBJ): $(ROOT_DICT)
-#	Compile rootcint source files
-	$(COMPILER) -c $(CFLAGS) $< -o $@
-
-$(ROOT_DICT_SLIB): $(STRUCT_FILE_OBJ) $(ROOT_DICT_OBJ)
-#	Generate the root shared library (.so) for the dictionary
-	$(COMPILER) -g -shared -Wl,-soname,lib$(DICT_SOURCE).so -o $(DICT_OBJ_DIR)/lib$(DICT_SOURCE).so $(STRUCT_FILE_OBJ) $(ROOT_DICT_OBJ) -lc
-
-$(ROOT_DICT): $(STRUCT_HEAD) $(DICT_DIR)/LinkDef.h
-#	Generate the dictionary source files using rootcint
-	@cd $(DICT_DIR); rootcint -f $@ -c $(STRUCT_HEAD) $(DICT_DIR)/LinkDef.h
-
 ########################################################################
 
 $(EXECUTABLE): $(OBJECTS)
@@ -151,7 +133,11 @@ $(EXECUTABLE): $(OBJECTS)
 
 ########################################################################
 
-clean:
+tidy: clean_obj clean_dict
+
+clean: clean_obj
+
+clean_obj:
 	@echo "Cleaning up..."
 	@rm -f $(OBJ_DIR)/*.o
 	@rm -f $(EXECUTABLE)
@@ -159,3 +145,4 @@ clean:
 clean_dict:
 	@echo "Removing ROOT dictionaries..."
 	@rm -f $(DICT_DIR)/$(DICT_SOURCE).cpp $(DICT_DIR)/$(DICT_SOURCE).h $(DICT_OBJ_DIR)/*.o  $(DICT_OBJ_DIR)/*.so
+	@rm -f $(STRUCT_FILE_OBJ) $(SOURCE_DIR)/Structures.cpp $(INCLUDE_DIR)/Structures.h $(DICT_DIR)/LinkDef.h

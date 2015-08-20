@@ -1,0 +1,143 @@
+# definitions.struct
+#
+# This file is used for declaring various data types for
+#  .root file output from RootPixieScan. This file is intended
+#  to be read by the executable StructFileGenerator. That program
+#  will automatically generate the following structure files...
+#
+#   Structures.cpp
+#   Structures.h
+#   LinkDef.h
+#
+# These files will be used in the generation of a root dictionary.
+#
+# Valid types:
+#  char, short, int, float, double, and any other standard c++ type
+#  Types beginning with 'u_' will be unsigned (e.g. u_int	= unsigned int)
+#  Types beginning with 'vector:' will be a vector of that type (e.g. vector:int = std::vector<int>)
+#
+# Special flags:
+#  Variable names ending with '_mult' are considered as a multiplicity variable 
+#   and are incremented each time the ::Append method is called. These variables
+#   are also not included to the call to ::Append.
+#  Variable names ending with '_wave' are considered as trace variables. This
+#   means that they will be included in the Waveform class instead of Structure.
+#
+# Cory R. Thornsberry
+# Last updated: Aug. 19th, 2015
+
+#####################################################################
+# RawEvent
+#####################################################################
+# Class name
+BEGIN_CLASS	RawEvent
+
+# Short class description
+SHORT	Raw pixie16 channel data
+
+# Longer class description
+LONG	Structure for raw pixie channels
+
+# Data types and names
+# type	name	description
+BEGIN_TYPES
+vector:int	raw_mod	Module number
+vector:int	raw_chan	Channel number
+vector:double	raw_time	Raw pixie (low-res) time
+vector:double	raw_energy	Raw pixie energy
+u_int	raw_mult	Multiplicity of the raw events
+
+# Trace output data types and names (must end with _wave)
+# type	name	description
+END_TYPES
+
+# End this class
+END_CLASS
+
+#####################################################################
+# Trigger
+#####################################################################
+# Class name
+BEGIN_CLASS	Trigger
+
+# Short class description
+SHORT	Trigger detector data structure
+
+# Longer class description
+LONG	Structure for detectors of type "trigger"
+
+# Data types and names
+# type	name	description
+BEGIN_TYPES
+vector:double	trigger_time	Raw pixie time
+vector:double	trigger_energy	Raw pixie energy
+u_int	trigger_mult	Multiplicity of the trigger detector
+
+# Trace output data types and names (must end with _wave)
+# type	name	description
+vector:int	trigger_wave	Integer vector for trigger pulses
+END_TYPES
+
+# End this class
+END_CLASS
+
+#####################################################################
+# Vandle
+#####################################################################
+# Class name
+BEGIN_CLASS	Vandle
+
+# Short class description
+SHORT	Vandle bar data structure
+
+# Longer class description
+LONG	Structure for detectors of type "vandlesmall" or "vandlebig"
+
+# Data types and names
+# type	name	description
+BEGIN_TYPES
+vector:double	vandle_TOF
+vector:double	vandle_lqdc
+vector:double	vandle_rqdc
+vector:double	vandle_ltime
+vector:double	vandle_rtime
+vector:double	vandle_energy
+vector:int	vandle_loc	Detector location (ID)
+u_int	vandle_mult	Multiplicity of the vandle events
+
+# Trace output data types and names (must end with _wave)
+# type	name	description
+vector:int	left_wave	Integer vector for left vandle pulse
+vector:int	right_wave	Integer vector for right vandle pulse
+END_TYPES
+
+# End this class
+END_CLASS
+
+#####################################################################
+# Generic
+#####################################################################
+# Class name
+BEGIN_CLASS	Generic
+
+# Short class description
+SHORT	Generic data structure
+
+# Longer class description
+LONG	Structure for detectors of type "generic"
+
+# Data types and names
+# type	name	description
+BEGIN_TYPES
+vector:double	generic_TOF
+vector:double	generic_energy
+vector:int	generic_loc	Detector location (ID)
+u_int	generic_mult	Multiplicity of the ion-chamber events
+
+# Trace output data types and names (must end with _wave)
+# type	name	description
+vector:int	generic_wave
+END_TYPES
+
+# End this class
+END_CLASS

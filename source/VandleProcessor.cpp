@@ -48,11 +48,12 @@ bool VandleProcessor::HandleEvents(){
 		double tdiff = ((*iter_L)->hires_time - (*iter_R)->hires_time);
 		
 		// Fill the values into the root tree.
-		structure.Append((*iter_L)->entry->location, tof, (*iter_L)->hires_energy, (*iter_R)->hires_energy, tdiff, 
-		                 ((*iter_R)->hires_time - start->hires_time), std::sqrt((*iter_L)->hires_energy * (*iter_R)->hires_energy));
+		structure.Append(tof, (*iter_L)->hires_energy, (*iter_R)->hires_energy, ((*iter_R)->hires_time - start->hires_time), ((*iter_R)->hires_time - start->hires_time),
+		                 std::sqrt((*iter_L)->hires_energy * (*iter_R)->hires_energy), (*iter_L)->entry->location);
 		     
+		// Copy the trace to the output file.
 		if(write_waveform){
-			waveform.Append((*iter_L)->yvals, (*iter_R)->yvals, (*iter_L)->size);
+			waveform.Append((int*)(*iter_L)->yvals, (int*)(*iter_R)->yvals, (*iter_L)->size);
 		}
 		
 		good_events++;

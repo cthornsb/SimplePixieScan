@@ -13,8 +13,9 @@ bool TriggerProcessor::HandleEvents(){
 		// Fill the values into the root tree.
 		structure.Append((*iter)->hires_time, (*iter)->hires_energy);
 		
+		// Copy the trace to the output file.
 		if(write_waveform){
-			waveform.Append((*iter)->yvals, (*iter)->size);
+			waveform.Append((int*)(*iter)->yvals, (*iter)->size);
 		}
 		
 		good_events++;

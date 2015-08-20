@@ -12,10 +12,11 @@ bool GenericProcessor::HandleEvents(){
 		if(!(*iter)->valid_chan){ continue; }
 	
 		// Fill the values into the root tree.
-		structure.Append((*iter)->entry->location, ((*iter)->hires_time - start->hires_time), (*iter)->hires_energy);
+		structure.Append(((*iter)->hires_time - start->hires_time), (*iter)->hires_energy, (*iter)->entry->location);
 		
+		// Copy the trace to the output file.
 		if(write_waveform){
-			waveform.Append((*iter)->yvals, (*iter)->size);
+			waveform.Append((int*)(*iter)->yvals, (*iter)->size);
 		}
 		
 		good_events++;

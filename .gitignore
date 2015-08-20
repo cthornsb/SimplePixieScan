@@ -13,6 +13,9 @@ setup
 *.root
 RootDict.cpp
 RootDict.h
+Structures.cpp
+Structures.h
+LinkDef.h
 
 # Executable #
 ##############
