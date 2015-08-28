@@ -1,7 +1,13 @@
 #include <fstream>
+#include <sstream>
 
 #include "MapFile.hpp"
 #include "Unpacker.hpp"
+
+std::string to_str(const int &input_){
+	std::stringstream stream; stream << input_;
+	return stream.str();
+}
 
 MapEntry::MapEntry(const MapEntry &other){
 	type = other.type; subtype = other.subtype; tag = other.tag; location = other.location;
