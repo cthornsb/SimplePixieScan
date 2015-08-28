@@ -1,10 +1,6 @@
 #ifndef SCANNER_HPP
 #define SCANNER_HPP
 
-#include <deque>
-#include <vector>
-#include <string>
-
 #include "Unpacker.hpp"
 #include "Structures.h"
 

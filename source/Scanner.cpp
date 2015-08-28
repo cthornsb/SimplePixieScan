@@ -1,9 +1,4 @@
 #include <iostream>
-#include <iomanip>
-#include <sstream>
-#include <string.h>
-#include <time.h>
-#include <algorithm>
 
 // PixieCore libraries
 #include "Unpacker.hpp"
