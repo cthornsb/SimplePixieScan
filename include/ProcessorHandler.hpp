@@ -6,6 +6,7 @@
 #include "Processor.hpp"
 
 class TTree;
+class MapEntry;
 
 struct ProcessorEntry{
 	Processor *proc; /// Pointer to a data processor
@@ -37,7 +38,7 @@ class ProcessorHandler{
 	
 	bool AddProcessor(std::string type_);
 	
-	bool AddEvent(ChannelEvent* event_);
+	bool AddEvent(ChannelEvent *event_, MapEntry *entry_);
 	
 	bool Process(ChannelEvent *start_);
 	

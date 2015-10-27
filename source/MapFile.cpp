@@ -1,8 +1,9 @@
 #include <fstream>
 #include <sstream>
 
+#include "ChannelEvent.hpp"
+
 #include "MapFile.hpp"
-#include "Unpacker.hpp"
 
 std::string to_str(const int &input_){
 	std::stringstream stream; stream << input_;
@@ -96,6 +97,11 @@ MapFile::MapFile(const char *filename_) : ParentClass("MapFile"){
 MapEntry *MapFile::GetMapEntry(int mod_, int chan_){
 	if(mod_ >= max_modules || chan_ >= max_channels){ return NULL; }
 	return &detectors[mod_][chan_];
+}
+
+MapEntry *MapFile::GetMapEntry(ChannelEvent *event_){
+	if(event_->modNum >= max_modules || event_->chanNum >= max_channels){ return NULL; }
+	return &detectors[event_->modNum][event_->chanNum];
 }
 
 std::string MapFile::GetType(int mod_, int chan_){

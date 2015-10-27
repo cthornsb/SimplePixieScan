@@ -6,6 +6,8 @@
 
 #include "ParentClass.hpp"
 
+class ChannelEvent;
+
 struct MapEntry{
 	unsigned int location;
 	std::string type;
@@ -62,6 +64,8 @@ class MapFile : public ParentClass{
 	int GetMaxModule(){ return max_defined_module; }
 
 	MapEntry *GetMapEntry(int mod_, int chan_);
+	
+	MapEntry *GetMapEntry(ChannelEvent *event_);
 	
 	std::vector<MapEntry> *GetTypes(){ return &types; }
 	

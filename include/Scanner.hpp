@@ -1,7 +1,8 @@
 #ifndef SCANNER_HPP
 #define SCANNER_HPP
 
-#include "Unpacker.hpp"
+#include <string>
+
 #include "Structures.h"
 
 class MapFile;
@@ -15,25 +16,46 @@ class Scanner : public Unpacker{
 	ProcessorHandler *handler;
 	
 	RawEventStructure structure;
+
+	bool force_overwrite;	
+	bool raw_event_mode;
+	bool use_root_fitting;
+	
+	std::string output_filename;
 	
 	/// Process all events in the event list.
 	void ProcessRawEvent();
 	
-	/** Initialize the map file, the config file, the processor handler, and add
-	 * all of the required processors.
-	 */
-	bool Initialize();
-	
   public:
 	Scanner();
 	
-	Scanner(std::string fname_, bool overwrite_=true, bool debug_mode_=false);
+	Scanner(std::string fname_);
 	
 	~Scanner();
 
-	bool InitRootOutput(std::string fname_, bool overwrite_=true);
+	/// Initialize the map file, the config file, the processor handler, and add all of the required processors.
+	bool Initialize(std::string prefix_="");
 
-	bool SetHiResMode(bool state_=true);
+	/// Return the syntax string for this program.
+	void SyntaxStr(const char *name_, std::string prefix_="");
+	
+	/// Print a command line help dialogue for recognized command line arguments.
+	void ArgHelp(std::string prefix_="");
+	
+	/// Print an in-terminal help dialogue for recognized commands.
+	void CmdHelp(std::string prefix_="");
+	
+	/// Scan input arguments and set class variables.
+	bool SetArgs(std::deque<std::string> &args_, std::string &filename_);
+
+	/// Print a status message.	
+	void PrintStatus(std::string prefix_="");
+
+	/** Search for an input command and perform the desired action.
+	  * 
+	  * \return True if the command is valid and false otherwise.
+	  */
+	bool CommandControl(std::string cmd_, const std::vector<std::string> &args_);
 };
 
 #endif

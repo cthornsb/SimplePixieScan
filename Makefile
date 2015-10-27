@@ -1,12 +1,15 @@
 #####################################################################
 
 # Set the RootPixieScan directory
-PIXIE_SCAN_DIR = /home/cthorns/RootPixieScan
+PIXIE_SCAN_DIR = $(HOME)/RootPixieScan
+
+# Set the PixieSuite core directory
+PIXIE_SUITE_DIR = $(HOME)/PixieSuite
 
 #####################################################################
 
 CFLAGS = -g -Wall -O3 -std=c++0x `root-config --cflags`
-LDLIBS = -lstdc++ -lPixieCore `root-config --libs`
+LDLIBS = -lstdc++ -L$(PIXIE_SUITE_DIR)/exec/lib -lPixieCore `root-config --libs`
 LDFLAGS = `root-config --glibs`
 
 COMPILER = g++
@@ -78,7 +81,7 @@ $(OBJ_DIR):
 
 $(OBJ_DIR)/%.o: $(SOURCE_DIR)/%.cpp
 #	Compile C++ source files
-	$(COMPILER) -c $(CFLAGS) -Iinclude $< -o $@
+	$(COMPILER) -c $(CFLAGS) -Iinclude -I$(PIXIE_SUITE_DIR)/Core/include $< -o $@
 
 ########################################################################
 
@@ -88,13 +91,13 @@ $(EXECUTABLE): $(OBJECTS)
 ########################################################################
 
 tidy: clean_obj clean_dict
+	@rm -f $(EXECUTABLE)
 
 clean: clean_obj
 
 clean_obj:
 	@echo "Cleaning up..."
 	@rm -f $(OBJ_DIR)/*.o
-	@rm -f $(EXECUTABLE)
 	
 clean_dict:
 	@echo "Removing ROOT dictionaries..."

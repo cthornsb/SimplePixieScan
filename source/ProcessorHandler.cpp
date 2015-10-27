@@ -1,9 +1,9 @@
-#include "ProcessorHandler.hpp"
+#include "ChannelEvent.hpp"
 
+#include "ProcessorHandler.hpp"
 #include "GenericProcessor.hpp"
 #include "TriggerProcessor.hpp"
 #include "VandleProcessor.hpp"
-#include "ChannelEvent.hpp"
 #include "MapFile.hpp"
 
 ProcessorHandler::ProcessorHandler(){ 
@@ -56,11 +56,11 @@ bool ProcessorHandler::AddProcessor(std::string type_){
 	return true;
 }
 
-bool ProcessorHandler::AddEvent(ChannelEvent* event_){
+bool ProcessorHandler::AddEvent(ChannelEvent *event_, MapEntry *entry_){
 	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
-		if(event_->entry->type == iter->type){ 
+		if(entry_->type == iter->type){ 
 			iter->proc->AddEvent(event_); 
-			if(event_->entry->tag == "start"){ 
+			if(entry_->tag == "start"){ 
 				if(total_events == 0){ first_event_time = event_->time * 8E-9; }
 				delta_event_time = (event_->time * 8E-9) - first_event_time;
 				total_events++; 
