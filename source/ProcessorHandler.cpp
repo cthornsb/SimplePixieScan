@@ -35,6 +35,13 @@ bool ProcessorHandler::InitRootOutput(TTree *tree_){
 	return true;
 }
 
+bool ProcessorHandler::CheckProcessor(std::string type_){
+	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
+		if(iter->type == type_){ return false; }
+	}
+	return true;
+}
+
 bool ProcessorHandler::AddProcessor(std::string type_, MapFile *map_){
 	if(type_ == "trigger"){ 
 		TriggerProcessor *proc = new TriggerProcessor(map_);

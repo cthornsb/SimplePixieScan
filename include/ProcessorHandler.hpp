@@ -37,6 +37,8 @@ class ProcessorHandler{
 	
 	bool InitRootOutput(TTree *tree_);
 	
+	bool CheckProcessor(std::string type_);
+	
 	bool AddProcessor(std::string type_, MapFile *map_);
 	
 	bool AddEvent(ChannelEvent *event_, MapEntry *entry_);

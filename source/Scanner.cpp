@@ -42,7 +42,7 @@ void Scanner::ProcessRawEvent(){
 			// This channel is a start signal. Due to the way ScanList
 			// packs the raw event, there may be more than one start signal
 			// per raw event.
-			if(current_entry->tag == "start" || current_entry->tag == "left"){ 
+			if(current_entry->tag == "start"){ 
 				if(start_event != NULL && debug_mode){ std::cout << "ProcessRawEvent: Found more than one start event in rawEvent!\n"; }
 				start_event = current_event;
 			}
@@ -112,11 +112,13 @@ bool Scanner::Initialize(std::string prefix_){
 	mapfile = new MapFile("./setup/map.dat");
 	std::cout << prefix_ << "Reading config file ./setup/config.dat\n";
 	configfile = new ConfigFile("./setup/config.dat");
+	event_width = configfile->event_width * 125; // = event_width * 1E-6(s/us) / 8E-9(s/clock)
+	std::cout << prefix_ << "Setting event width to " << configfile->event_width << " μs (" << event_width << " pixie clock ticks).\n";
 	handler = new ProcessorHandler();
 
 	std::vector<MapEntry> *types = mapfile->GetTypes();
 	for(std::vector<MapEntry>::iterator iter = types->begin(); iter != types->end(); iter++){
-		if(iter->type == "ignore"){ continue; }
+		if(iter->type == "ignore" || !handler->CheckProcessor(iter->type)){ continue; }
 		else if(handler->AddProcessor(iter->type, mapfile)){ std::cout << prefix_ << "Added " << iter->type << " processor to the processor list.\n"; }
 		else{ std::cout << prefix_ << "Failed to add " << iter->type << " processor to the processor list!\n"; }
 	}
