@@ -177,7 +177,6 @@ bool Scanner::SetArgs(std::deque<std::string> &args_, std::string &filename){
 		args_.pop_front();
 		
 		if(current_arg == "--force-overwrite"){
-			std::cout << "HERE!\n"; 
 			/*if(args_.empty()){
 				std::cout << " Error: Missing required argument to option '--mod'!\n";
 				return false;

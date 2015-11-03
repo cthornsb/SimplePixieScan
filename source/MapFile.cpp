@@ -85,11 +85,12 @@ void MapFile::parse_string(const std::string &input_, std::string &left, std::st
 	}
 }
 
-MapFile::MapFile() : ParentClass("MapFile"){ 
+MapFile::MapFile(){ 
 	max_defined_module = -9999;
+	init = false;
 }
 
-MapFile::MapFile(const char *filename_) : ParentClass("MapFile"){ 
+MapFile::MapFile(const char *filename_){ 
 	max_defined_module = -9999;
 	Load(filename_); 
 }
@@ -124,7 +125,7 @@ bool MapFile::Load(const char *filename_){
 
 	std::ifstream mapfile(filename_);
 	if(!mapfile.good()){
-		PrintError("Failed to open input map file!");
+		std::cout << "MapFile: \033[1;31mERROR! Failed to open input map file!\033[0m\n";
 		return (init = false);
 	}
 	
@@ -164,14 +165,14 @@ bool MapFile::Load(const char *filename_){
 		int mod, chan;
 		mod = (unsigned)atoi(values[0].c_str());
 		if(mod >= max_modules){
-			PrintWarning("On line " + to_str(line_num) + ", invalid module number. Ignoring.");
+			std::cout << "MapFile: \033[1;33mWARNING! On line " << line_num << ", invalid module number. Ignoring.\033[0m\n";
 			continue;
 		}
 		
 		if(mod > max_defined_module){ max_defined_module = mod; }
 
 		if(values[0].find(':') != std::string::npos){
-			PrintError("On line " + to_str(line_num) + ", the ':' wildcard is not permitted for specification of modules!");
+			std::cout << "MapFile: \033[1;33mWARNING! On line " << line_num << ", the ':' wildcard is not permitted for specification of modules.\033[0m\n";
 			init = false;
 			break;
 		}
@@ -186,7 +187,7 @@ bool MapFile::Load(const char *filename_){
 			int stop_chan = atoi(rhs.c_str());
 			
 			if(start_chan > stop_chan){ // Flip the start and stop channels
-				PrintWarning("On line " + to_str(line_num) + ", start channel > stop channel. I'm assuming you accidentally swapped the values.");
+				std::cout << "MapFile: \033[1;33mWARNING! On line " << line_num << ", start channel > stop channel. I'm assuming you swapped the values.\033[0m\n";
 				int dummy = start_chan;
 				start_chan = stop_chan;
 				stop_chan = dummy;
@@ -205,7 +206,7 @@ bool MapFile::Load(const char *filename_){
 				}
 			}
 			else{ // All channels
-				if(leftover != 0x0){ PrintWarning("On line " + to_str(line_num) + ", only even (e) or odd (o) may be specified as channel wildcards."); }
+				if(leftover != 0x0){ std::cout << "MapFile: \033[1;33mWARNING! On line " << line_num << ", only even (e) or odd (o) may be specified as channel wildcards.\033[0m\n"; }
 				for(int i = start_chan; i <= stop_chan; i++){
 					channels.push_back(i);
 				}
@@ -213,7 +214,7 @@ bool MapFile::Load(const char *filename_){
 			
 			for(std::vector<int>::iterator iter = channels.begin(); iter != channels.end(); iter++){
 				if(*iter >= max_channels){
-					PrintWarning("On line " + to_str(line_num) + ", invalid channel number. Ignoring.");
+					std::cout << "MapFile: \033[1;33mWARNING! On line " << line_num << ", invalid channel number. Ignoring.\033[0m\n";
 					break;
 				}
 				detectors[mod][*iter].set(values[2]);
@@ -234,7 +235,7 @@ bool MapFile::Load(const char *filename_){
 		else{
 			chan = (unsigned)atoi(values[1].c_str());
 			if(chan >= max_modules){
-				PrintWarning("On line " + to_str(line_num) + ", invalid channel number. Ignoring.");
+				std::cout << "MapFile: \033[1;33mWARNING! On line " << line_num << ", invalid channel number. Ignoring.\033[0m\n";
 				continue;
 			}
 			detectors[mod][chan].set(values[2]);
@@ -259,7 +260,7 @@ bool MapFile::Load(const char *filename_){
 }
 
 void MapFile::PrintAllEntries(){
-	PrintMsg("List of defined detectors...");
+	std::cout << "MapFile: List of defined detectors...\n";
 	for(int i = 0; i < max_modules; i++){
 		for(int j = 0; j < max_channels; j++){
 			if(detectors[i][j].type == "ignore"){ continue; }

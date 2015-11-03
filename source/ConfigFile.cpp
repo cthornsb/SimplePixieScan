@@ -1,4 +1,5 @@
 #include <fstream>
+#include <iostream>
 
 #include "ConfigFile.hpp"
 
@@ -17,11 +18,12 @@ void ConfigFile::parse_string(const std::string &input_, std::string &name, std:
 	}
 }
 
-ConfigFile::ConfigFile() : ParentClass("ConfigFile"){ 
-	event_width = 0.5; // Default value of 500 ns		
+ConfigFile::ConfigFile(){ 
+	event_width = 0.5; // Default value of 500 ns
+	init = false;	
 }
 
-ConfigFile::ConfigFile(const char *filename_) : ParentClass("ConfigFile"){ 
+ConfigFile::ConfigFile(const char *filename_){ 
 	event_width = 0.5; // Default value of 500 ns
 	Load(filename_); 
 }
@@ -29,7 +31,7 @@ ConfigFile::ConfigFile(const char *filename_) : ParentClass("ConfigFile"){
 bool ConfigFile::Load(const char *filename_){
 	std::ifstream configfile(filename_);
 	if(!configfile.good()){
-		PrintError("Failed to open input configuration file!");
+		std::cout << "ConfigFile: \033[1;31mERROR! Failed to open input configuration file!\033[0m\n";
 		return (init = false);
 	}
 	

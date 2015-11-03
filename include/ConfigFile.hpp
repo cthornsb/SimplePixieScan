@@ -1,10 +1,10 @@
 #ifndef CONFIGFILE_HPP
 #define CONFIGFILE_HPP
 
-#include "ParentClass.hpp"
-
-class ConfigFile : public ParentClass{
+class ConfigFile{
   private:
+	bool init;
+  
 	void parse_string(const std::string &input_, std::string &name, std::string &value);
 
   public:

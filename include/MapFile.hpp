@@ -4,8 +4,6 @@
 #include <vector>
 #include <stdlib.h>
 
-#include "ParentClass.hpp"
-
 class ChannelEvent;
 
 struct MapEntry{
@@ -41,8 +39,10 @@ struct MapEntry{
 	std::string print();
 };
 
-class MapFile : public ParentClass{
+class MapFile{
   private:
+  	bool init;
+  
 	static const int max_modules = 14;
 	static const int max_channels = 16;
   

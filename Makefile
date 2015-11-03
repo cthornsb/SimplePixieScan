@@ -25,7 +25,7 @@ DICT_DIR = $(TOP_LEVEL)/dict
 DICT_OBJ_DIR = $(DICT_DIR)/obj
 
 # Core files
-SOURCES = ParentClass.cpp ProcessorHandler.cpp Processor.cpp ConfigFile.cpp MapFile.cpp Scanner.cpp
+SOURCES = ProcessorHandler.cpp Processor.cpp ConfigFile.cpp MapFile.cpp Scanner.cpp
 
 # Processors
 SOURCES += TriggerProcessor.cpp \
