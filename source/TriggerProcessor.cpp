@@ -23,8 +23,7 @@ bool TriggerProcessor::HandleEvents(){
 	return true;
 }
 
-TriggerProcessor::TriggerProcessor(bool write_waveform_/*=false*/, bool hires_timing_/*=false*/) : Processor("Trigger", "trigger", hires_timing_){
-	write_waveform = write_waveform_;
+TriggerProcessor::TriggerProcessor(MapFile *map_) : Processor("Trigger", "trigger", map_){
 }
 
 bool TriggerProcessor::Initialize(TTree *tree_){

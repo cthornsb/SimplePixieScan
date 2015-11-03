@@ -5,6 +5,8 @@
 
 #include "Structures.h"
 
+class MapFile;
+
 class VandleProcessor : public Processor{
   private:
 	VandleStructure structure;
@@ -13,7 +15,7 @@ class VandleProcessor : public Processor{
 	bool HandleEvents();
 	
   public:
-	VandleProcessor(bool write_waveform_=false, bool hires_timing_=false);
+	VandleProcessor(MapFile *map_);
 
 	bool Initialize(TTree *tree_);
 	

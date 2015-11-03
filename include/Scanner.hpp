@@ -58,4 +58,7 @@ class Scanner : public Unpacker{
 	bool CommandControl(std::string cmd_, const std::vector<std::string> &args_);
 };
 
+/// Return a pointer to a new Scanner object.
+Unpacker *GetCore(){ return (Unpacker*)(new Scanner()); }
+
 #endif

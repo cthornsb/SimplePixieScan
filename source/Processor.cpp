@@ -98,7 +98,7 @@ void Processor::FitPulses(){
 		// Do root fitting for high resolution timing (very slow).
 		if(hires_timing){
 			// "Convert" the trace into a TGraph for fitting.
-			TGraph *graph = (*iter)->GetTrace();
+			TGraph *graph = new TGraph((*iter)->size, (*iter)->xvals, (*iter)->yvals);
 		
 			double pars[2] = {(double)(*iter)->maximum, (double)(*iter)->phase};
 		
@@ -127,13 +127,12 @@ bool Processor::HandleEvents(){
 	return false;
 }
 
-Processor::Processor(std::string name_, std::string type_, bool hires_timing_/*=true*/){
+Processor::Processor(std::string name_, std::string type_, MapFile *map_){
 	name = name_;
 	type = type_;
 	init = false;
 	write_waveform = false;
 	use_color_terminal = true;
-	hires_timing = hires_timing_;
 	
 	total_time = 0;
 	start_time = clock();
@@ -145,6 +144,8 @@ Processor::Processor(std::string name_, std::string type_, bool hires_timing_/*=
 		fitting_func = new TF1((type + "_func").c_str(), func, 0, 1, 4); 
 	}
 	else{ fitting_func = NULL; }
+	
+	mapfile = map_;
 }
 
 Processor::~Processor(){

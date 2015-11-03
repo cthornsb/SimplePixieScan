@@ -34,13 +34,13 @@ bool ProcessorHandler::InitRootOutput(TTree *tree_){
 	return true;
 }
 
-bool ProcessorHandler::AddProcessor(std::string type_){
+bool ProcessorHandler::AddProcessor(std::string type_, MapFile *map_){
 	if(type_ == "trigger"){ 
-		TriggerProcessor *proc = new TriggerProcessor();
+		TriggerProcessor *proc = new TriggerProcessor(map_);
 		procs.push_back(ProcessorEntry(proc, "trigger")); 
 	}
 	else if(type_ == "vandle"){ 
-		VandleProcessor *proc = new VandleProcessor();
+		VandleProcessor *proc = new VandleProcessor(map_);
 		procs.push_back(ProcessorEntry(proc, "vandle")); 
 	}
 	/*else if(type_ == "liquid"){ procs.push_back(new LiquidProcessor()); }
@@ -49,7 +49,7 @@ bool ProcessorHandler::AddProcessor(std::string type_){
 	else if(type_ == "phoswich"){ procs.push_back(new PhoswichProcessor()); }
 	else if(type_ == "nonwich"){ procs.push_back(new NonwichProcessor()); }*/
 	else if(type_ == "generic"){ 
-		GenericProcessor *proc = new GenericProcessor();
+		GenericProcessor *proc = new GenericProcessor(map_);
 		procs.push_back(ProcessorEntry(proc, "generic")); 
 	}
 	else{ return false; }

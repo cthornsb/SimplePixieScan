@@ -6,7 +6,8 @@
 
 #include "TF1.h"
 
-struct ChannelEvent;
+class ChannelEvent;
+class MapFile;
 
 class TTree;
 class TBranch;
@@ -31,10 +32,12 @@ class Processor{
 	
 	TBranch *local_branch;
 	TF1 *fitting_func;
+	
+	MapFile *mapfile;
 
-	static const double clockInSeconds = 8e-9; /// One pixie clock is 8 ns
-	static const double adcClockInSeconds = 4e-9; /// One ADC clock is 4 ns
-	static const double filterClockInSeconds = 8e-9; /// One filter clock is 8 ns
+	const double clockInSeconds = 8e-9; /// One pixie clock is 8 ns
+	const double adcClockInSeconds = 4e-9; /// One ADC clock is 4 ns
+	const double filterClockInSeconds = 8e-9; /// One filter clock is 8 ns
   
 	/// Clear channel events from the queue
 	void ClearEvents();
@@ -64,7 +67,7 @@ class Processor{
 	virtual bool HandleEvents();
 
   public:
-	Processor(std::string name_, std::string type_, bool hires_timing_=true);
+	Processor(std::string name_, std::string type_, MapFile *map_);
 	
 	virtual ~Processor();
 	

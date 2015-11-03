@@ -1,10 +1,10 @@
 #####################################################################
 
 # Set the RootPixieScan directory
-PIXIE_SCAN_DIR = $(HOME)/RootPixieScan
+PIXIE_SCAN_DIR = $(HOME)/Research/Pixie16/RootPixieScan
 
 # Set the PixieSuite core directory
-PIXIE_SUITE_DIR = $(HOME)/PixieSuite
+PIXIE_SUITE_DIR = $(HOME)/Research/Pixie16/PixieSuite
 
 #####################################################################
 
@@ -25,7 +25,7 @@ DICT_DIR = $(TOP_LEVEL)/dict
 DICT_OBJ_DIR = $(DICT_DIR)/obj
 
 # Core files
-SOURCES = ParentClass.cpp ProcessorHandler.cpp Processor.cpp ChannelEvent.cpp ConfigFile.cpp MapFile.cpp Scanner.cpp
+SOURCES = ParentClass.cpp ProcessorHandler.cpp Processor.cpp ConfigFile.cpp MapFile.cpp Scanner.cpp
 
 # Processors
 SOURCES += TriggerProcessor.cpp \

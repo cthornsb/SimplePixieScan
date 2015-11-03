@@ -5,6 +5,8 @@
 
 #include "Structures.h"
 
+class MapFile;
+
 class GenericProcessor : public Processor{
   private:
 	GenericStructure structure;
@@ -13,7 +15,7 @@ class GenericProcessor : public Processor{
 	bool HandleEvents();
 	
   public:
-	GenericProcessor(bool write_waveform_=false, bool hires_timing_=false);
+	GenericProcessor(MapFile *map_);
 
 	bool Initialize(TTree *tree_);
 	

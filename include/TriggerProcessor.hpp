@@ -5,6 +5,8 @@
 
 #include "Structures.h"
 
+class MapFile;
+
 class TriggerProcessor : public Processor{
   private:
 	TriggerStructure structure;
@@ -13,7 +15,7 @@ class TriggerProcessor : public Processor{
 	bool HandleEvents();
 	
   public:
-	TriggerProcessor(bool write_waveform_=false, bool hires_timing_=false);
+	TriggerProcessor(MapFile *map_);
 
 	bool Initialize(TTree *tree_);
 	

@@ -2,6 +2,7 @@
 
 // PixieCore libraries
 #include "Unpacker.hpp"
+#include "ScanMain.hpp"
 #include "ChannelEvent.hpp"
 
 // Local files
@@ -42,7 +43,7 @@ void Scanner::ProcessRawEvent(){
 			// packs the raw event, there may be more than one start signal
 			// per raw event.
 			if(current_entry->tag == "start" || current_entry->tag == "left"){ 
-				if(start_event != NULL/* && debug_mode*/){ std::cout << "ProcessRawEvent: Found more than one start event in rawEvent!\n"; }
+				if(start_event != NULL && debug_mode){ std::cout << "ProcessRawEvent: Found more than one start event in rawEvent!\n"; }
 				start_event = current_event;
 			}
 		}
@@ -116,7 +117,7 @@ bool Scanner::Initialize(std::string prefix_){
 	std::vector<MapEntry> *types = mapfile->GetTypes();
 	for(std::vector<MapEntry>::iterator iter = types->begin(); iter != types->end(); iter++){
 		if(iter->type == "ignore"){ continue; }
-		else if(handler->AddProcessor(iter->type)){ std::cout << prefix_ << "Added " << iter->type << " processor to the processor list.\n"; }
+		else if(handler->AddProcessor(iter->type, mapfile)){ std::cout << prefix_ << "Added " << iter->type << " processor to the processor list.\n"; }
 		else{ std::cout << prefix_ << "Failed to add " << iter->type << " processor to the processor list!\n"; }
 	}
 	
@@ -176,6 +177,7 @@ bool Scanner::SetArgs(std::deque<std::string> &args_, std::string &filename){
 		args_.pop_front();
 		
 		if(current_arg == "--force-overwrite"){
+			std::cout << "HERE!\n"; 
 			/*if(args_.empty()){
 				std::cout << " Error: Missing required argument to option '--mod'!\n";
 				return false;
@@ -221,4 +223,10 @@ void Scanner::PrintStatus(std::string prefix_){
 	//std::cout << prefix_ << "Found " << num_traces << " traces and displayed " << num_displayed << ".\n"; 
 }
 
-Unpacker *GetCore(){ return (Unpacker*)(new Scanner()); }
+int main(int argc, char *argv[]){
+	ScanMain scan_main((Unpacker*)(new Scanner()));
+	
+	scan_main.SetMessageHeader("Scanner: ");
+
+	return scan_main.Execute(argc, argv);
+}

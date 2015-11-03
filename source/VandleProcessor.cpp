@@ -34,14 +34,15 @@ bool VandleProcessor::HandleEvents(){
 	
 	std::deque<ChannelEvent*>::iterator iter_L = events.begin();
 	std::deque<ChannelEvent*>::iterator iter_R = events.begin()+1;
-	
+
 	// Pick out pairs of channels representing vandle bars.
 	for(; iter_R != events.end(); iter_L++, iter_R++){
 		// Check that the time and energy values are valid
 		if(!(*iter_L)->valid_chan || !(*iter_R)->valid_chan){ continue; }
 	
 		// Check that these two channels have the correct detector tag.
-		if((*iter_L)->entry->tag != "left" || (*iter_R)->entry->tag != "right"){ continue; }
+		if(mapfile->GetMapEntry((*iter_L))->tag != "left" || 
+		   mapfile->GetMapEntry((*iter_L))->tag != "right"){ continue; }
 	
 		// Check that these two channels are indeed neighbors. If not, iterate up by one and check again.
 		if(((*iter_L)->modNum != (*iter_R)->modNum) || ((*iter_L)->chanNum+1 != (*iter_R)->chanNum)){ continue; }
@@ -51,11 +52,11 @@ bool VandleProcessor::HandleEvents(){
 		
 		// Calculate the particle time-of-flight and the time difference between the two ends.		
 		double tof = ((*iter_L)->hires_time + (*iter_R)->hires_time) / 2.0 - start->hires_time;
-		double tdiff = ((*iter_L)->hires_time - (*iter_R)->hires_time);
+		//double tdiff = ((*iter_L)->hires_time - (*iter_R)->hires_time);
 		
 		// Fill the values into the root tree.
 		structure.Append(tof, (*iter_L)->hires_energy, (*iter_R)->hires_energy, ((*iter_R)->hires_time - start->hires_time), ((*iter_R)->hires_time - start->hires_time),
-		                 std::sqrt((*iter_L)->hires_energy * (*iter_R)->hires_energy), (*iter_L)->entry->location);
+		                 std::sqrt((*iter_L)->hires_energy * (*iter_R)->hires_energy), mapfile->GetMapEntry((*iter_L))->location);
 		     
 		// Copy the trace to the output file.
 		if(write_waveform){
@@ -67,8 +68,7 @@ bool VandleProcessor::HandleEvents(){
 	return true;
 }
 
-VandleProcessor::VandleProcessor(bool write_waveform_/*=false*/, bool hires_timing_/*=false*/) : Processor("Vandle", "vandle", hires_timing_){
-	write_waveform = write_waveform_;
+VandleProcessor::VandleProcessor(MapFile *map_) : Processor("Vandle", "vandle", map_){
 }
 
 bool VandleProcessor::Initialize(TTree *tree_){
