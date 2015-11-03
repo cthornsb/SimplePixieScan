@@ -36,17 +36,17 @@ void Processor::PrintMsg(const std::string &msg_){
 }
 
 void Processor::PrintError(const std::string &msg_){ 
-	if(use_color_terminal){ std::cout << "\e[1;31m" << name << ": " << msg_ << "\e[0m" << std::endl; }
+	if(use_color_terminal){ std::cout << name << "Processor: \033[1;31m" << msg_ << "\033[0m" << std::endl; }
 	else{ std::cout << name << "Processor: " << msg_ << std::endl; }
 }
 
 void Processor::PrintWarning(const std::string &msg_){ 
-	if(use_color_terminal){ std::cout << "\e[1;33m" << name << ": " << msg_ << "\e[0m" << std::endl; }
+	if(use_color_terminal){ std::cout << name << "Processor: \033[1;33m" << msg_ << "\033[0m" << std::endl; }
 	else{ std::cout << name << "Processor: " << msg_ << std::endl; }
 }
 
 void Processor::PrintNote(const std::string &msg_){ 
-	if(use_color_terminal){ std::cout << "\e[1;34m" << name << ": " << msg_ << "\e[0m" << std::endl; }
+	if(use_color_terminal){ std::cout << name << "Processor: \033[1;34m" << msg_ << "\033[0m" << std::endl; }
 	else{ std::cout << name << "Processor: " << msg_ << std::endl; }
 }
 
