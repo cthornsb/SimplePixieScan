@@ -19,11 +19,12 @@ ProcessorHandler::~ProcessorHandler(){
 	}
 }
 
-bool ProcessorHandler::SetHiResMode(bool state_/*=true*/){
+bool ProcessorHandler::ToggleFitting(){
+	bool retval = true;
 	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
-		iter->proc->SetHiResMode(state_);
+		retval = retval && iter->proc->ToggleFitting();
 	}
-	return state_;
+	return retval;
 }
 
 bool ProcessorHandler::InitRootOutput(TTree *tree_){

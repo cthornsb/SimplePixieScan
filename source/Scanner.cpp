@@ -142,6 +142,8 @@ bool Scanner::Initialize(std::string prefix_){
 	else{ // Raw event output only. Processors will not be called!
 		root_tree->Branch("RawEvent", &structure);
 	}
+	
+	if(!use_root_fitting){ handler->ToggleFitting(); }
 
 	return (init = true);
 }
@@ -182,12 +184,15 @@ bool Scanner::SetArgs(std::deque<std::string> &args_, std::string &filename){
 				return false;
 			}
 			mod_ = atoi(args_.front().c_str());*/
+			std::cout << "Scanner: Forcing overwrite of output file.\n";
 			force_overwrite = true;
 		}
 		else if(current_arg == "--raw-event-mode"){
+			std::cout << "Scanner: Using raw event output mode.\n";
 			raw_event_mode = true;
 		}
 		else if(current_arg == "--no-fitting"){
+			std::cout << "Scanner: Toggling root fitting OFF.\n";
 			use_root_fitting = false;
 		}
 		else{ filename = current_arg; }

@@ -28,10 +28,13 @@ class Processor{
 	bool init;
 	bool write_waveform;
 	bool use_color_terminal;
-	bool hires_timing;
+	bool use_fitting;
 	
 	TBranch *local_branch;
 	TF1 *fitting_func;
+	
+	int fitting_low;
+	int fitting_high;
 	
 	MapFile *mapfile;
 
@@ -59,10 +62,12 @@ class Processor{
 	void SetFitFunction(double (*func_)(double *, double *), int npar_);
 	
 	void SetFitFunction(const char* func_);
+	
+	void SetFitFunction();
 
-	virtual void SetFitParameters(double *data);
+	void FitPulses();
 
-	virtual void FitPulses();
+	virtual void SetFitParameters(ChannelEvent *event_);
 
 	virtual bool HandleEvents();
 
@@ -79,7 +84,7 @@ class Processor{
 	
 	bool IsInit(){ return init; }
 	
-	bool SetHiResMode(bool state_=true){ return (hires_timing = state_); }
+	bool ToggleFitting(){ return (use_fitting = !use_fitting); }
 	
 	virtual bool Initialize(TTree *tree_);
 

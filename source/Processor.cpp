@@ -16,11 +16,11 @@
 // parameters: 4
 //  par[0] = alpha (normalization of pulse 1)
 //  par[1] = phi (phase of pulse 1 in ns)
-//  par[2] = beta (decay parameter of the 1st pulse exponential in ns)
-//  par[3] = gamma (width of the inverted square gaussian of the 1st pulse in ns^4)
+//  par[2] = beta (decay parameter of the 1st pulse exponential in ns) (fixed at 1.7750575)
+//  par[3] = gamma (width of the inverted square gaussian of the 1st pulse in ns^4) (fixed at 115.64125)
 double func(double *x, double *par){
 	double arg = x[0] - par[1];
-	if(arg >= 0.0){ return par[0]*std::exp(-arg/par[2])*(1 - std::exp(-arg*arg*arg*arg/par[3])); }
+	if(arg >= 0.0){ return par[0]*std::exp(-arg/1.7750575)*(1 - std::exp(-arg*arg*arg*arg/115.64125)); }
 	return 0.0;
 }
 
@@ -54,27 +54,34 @@ void Processor::SetFitFunction(double (*func_)(double *, double *), int npar_){
 	if(fitting_func){ delete fitting_func; }
 	
 	fitting_func = new TF1((type + "_func").c_str(), func_, 0, 1, npar_);
-	hires_timing = true;
+	use_fitting = true;
 }
 
 void Processor::SetFitFunction(const char* func_){
 	if(fitting_func){ delete fitting_func; }
 	
 	fitting_func = new TF1((type + "_func").c_str(), func_, 0, 1);
-	hires_timing = true;
+	use_fitting = true;
 }
 
-void Processor::SetFitParameters(double *data){
-	if(!data){ return; }
+void Processor::SetFitFunction(){
+	if(fitting_func){ delete fitting_func; }
 	
+	fitting_func = new TF1((type + "_func").c_str(), func, 0, 1, 2);
+	use_fitting = true;
+}
+
+void Processor::SetFitParameters(ChannelEvent *event_){
+	if(!event_){ return; }
+
 	// Set initial parameters to those obtained from fit optimizations	
-	fitting_func->SetParameter(0, data[0]*9.211 + 150.484);  // Normalization of pulse
-	fitting_func->SetParameter(1, data[1]*1.087 - 2.359); // Phase (leading edge of pulse) (ns)
-	fitting_func->FixParameter(2, 1.7750575); // Decay constant of exponential (ns)
-	fitting_func->FixParameter(3, 115.64125); // Width of inverted square guassian (ns^4)
+	fitting_func->SetParameter(0, event_->maximum*9.211 + 150.484); // Normalization of pulse
+	fitting_func->SetParameter(1, event_->phase*1.087 - 2.359); // Phase (leading edge of pulse) (ns)
 }
 
 void Processor::FitPulses(){
+	if(use_fitting && !fitting_func){ SetFitFunction(); } // Set the default fitting function.
+
 	for(std::deque<ChannelEvent*>::iterator iter = events.begin(); iter != events.end(); iter++){
 		// Set the default values for high resolution energy and time.
 		(*iter)->hires_energy = (*iter)->energy;
@@ -83,30 +90,28 @@ void Processor::FitPulses(){
 		// Check for trace with zero size.
 		if((*iter)->trace.size() == 0){ continue; }
 
+		// Correct the baseline.
+		if((*iter)->CorrectBaseline() < 0){ continue; }
+		
+		// Check for large SNR.
+		if((*iter)->stddev > 3.0){ continue; }
+
 		// Find the leading edge of the pulse. This will also set the phase of the ChannelEvent.
 		if((*iter)->FindLeadingEdge() < 0){ continue; }
-
-		// Check for large SNR.
-		if((*iter)->stddev > 3.0){ 
-			//std::cout << (*iter)->stddev << std::endl;
-			continue; 
-		}
 
 		// Set the high resolution energy.
 		(*iter)->hires_energy = (*iter)->FindQDC();
 		
 		// Do root fitting for high resolution timing (very slow).
-		if(hires_timing){
+		if(use_fitting){
 			// "Convert" the trace into a TGraph for fitting.
 			TGraph *graph = new TGraph((*iter)->size, (*iter)->xvals, (*iter)->yvals);
 		
-			double pars[2] = {(double)(*iter)->maximum, (double)(*iter)->phase};
-		
 			// Set the initial fitting parameters.
-			SetFitParameters(pars);
+			SetFitParameters((*iter));
 			
 			// And finally, do the fitting.
-			TFitResultPtr fit_ptr = graph->Fit(fitting_func, "S Q", "", (*iter)->phase, (*iter)->max_index);
+			TFitResultPtr fit_ptr = graph->Fit(fitting_func, "S Q", "", (*iter)->max_index-fitting_low, (*iter)->max_index+fitting_high);
 	
 			// Update the phase of the pulse.
 			(*iter)->phase = fitting_func->GetParameter(1);
@@ -133,6 +138,7 @@ Processor::Processor(std::string name_, std::string type_, MapFile *map_){
 	init = false;
 	write_waveform = false;
 	use_color_terminal = true;
+	use_fitting = true;
 	
 	total_time = 0;
 	start_time = clock();
@@ -140,10 +146,10 @@ Processor::Processor(std::string name_, std::string type_, MapFile *map_){
 	good_events = 0;
 	
 	local_branch = NULL;
-	if(hires_timing){ // If hi-res timing is to be used, set to the vandle fitting function
-		fitting_func = new TF1((type + "_func").c_str(), func, 0, 1, 4); 
-	}
-	else{ fitting_func = NULL; }
+	fitting_func = NULL;
+
+	fitting_low = 10;
+	fitting_high = 15;
 	
 	mapfile = map_;
 }

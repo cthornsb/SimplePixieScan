@@ -33,7 +33,7 @@ class ProcessorHandler{
 	
 	~ProcessorHandler();
 	
-	bool SetHiResMode(bool state_=true);
+	bool ToggleFitting();
 	
 	bool InitRootOutput(TTree *tree_);
 	
