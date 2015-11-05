@@ -4,7 +4,6 @@
 #include <iomanip>
 
 #include "VandleProcessor.hpp"
-#include "ChannelEvent.hpp"
 #include "MapFile.hpp"
 
 #include "TTree.h"
@@ -30,37 +29,45 @@ bool VandleProcessor::HandleEvents(){
 	// Sort the vandle event list by channel ID. This way, we will be able
 	// to determine which channels are neighbors and, thus, part of the
 	// same vandle bar.
-	sort(events.begin(), events.end(), &ChannelEvent::CompareChannel);
+	sort(events.begin(), events.end(), &ChannelEventPair::CompareChannel);
 	
-	std::deque<ChannelEvent*>::iterator iter_L = events.begin();
-	std::deque<ChannelEvent*>::iterator iter_R = events.begin()+1;
+	std::deque<ChannelEventPair*>::iterator iter_L = events.begin();
+	std::deque<ChannelEventPair*>::iterator iter_R = events.begin()+1;
+
+	ChannelEvent *current_event_L;
+	ChannelEvent *current_event_R;
+	ChannelEvent *start_event = start->event;
 
 	// Pick out pairs of channels representing vandle bars.
 	for(; iter_R != events.end(); iter_L++, iter_R++){
+		current_event_L = (*iter_L)->event;
+		current_event_R = (*iter_R)->event;
+	
 		// Check that the time and energy values are valid
-		if(!(*iter_L)->valid_chan || !(*iter_R)->valid_chan){ continue; }
+		if(!current_event_L->valid_chan || !current_event_R->valid_chan){ continue; }
 	
 		// Check that these two channels have the correct detector tag.
-		if(mapfile->GetMapEntry((*iter_L))->tag != "left" || 
-		   mapfile->GetMapEntry((*iter_L))->tag != "right"){ continue; }
+		if((*iter_L)->entry->tag != "left" || 
+		   (*iter_R)->entry->tag != "right"){ continue; }
 	
 		// Check that these two channels are indeed neighbors. If not, iterate up by one and check again.
-		if(((*iter_L)->modNum != (*iter_R)->modNum) || ((*iter_L)->chanNum+1 != (*iter_R)->chanNum)){ continue; }
+		if((current_event_L->modNum != current_event_R->modNum) || (current_event_L->chanNum+1 != current_event_R->chanNum)){ continue; }
 		
 		// Check that the two channels are not separated by too much time.
-		if(absdiff((*iter_L)->time, (*iter_R)->time) > (2 * small_max_tdiff)){ continue; }
+		if(absdiff(current_event_L->time, current_event_R->time) > (2 * small_max_tdiff)){ continue; }
 		
 		// Calculate the particle time-of-flight and the time difference between the two ends.		
-		double tof = ((*iter_L)->hires_time + (*iter_R)->hires_time) / 2.0 - start->hires_time;
-		//double tdiff = ((*iter_L)->hires_time - (*iter_R)->hires_time);
+		double tof = (current_event_L->hires_time + current_event_R->hires_time) / 2.0 - start_event->hires_time;
+		//double tdiff = (current_event_L->hires_time - current_event_R->hires_time);
 		
 		// Fill the values into the root tree.
-		structure.Append(tof, (*iter_L)->hires_energy, (*iter_R)->hires_energy, ((*iter_R)->hires_time - start->hires_time), ((*iter_R)->hires_time - start->hires_time),
-		                 std::sqrt((*iter_L)->hires_energy * (*iter_R)->hires_energy), mapfile->GetMapEntry((*iter_L))->location);
+		structure.Append(tof, current_event_L->hires_energy, current_event_R->hires_energy, (current_event_R->hires_time - start_event->hires_time), 
+		                 (current_event_R->hires_time - start_event->hires_time), std::sqrt(current_event_L->hires_energy * current_event_R->hires_energy), 
+		                 (*iter_L)->entry->location);
 		     
 		// Copy the trace to the output file.
 		if(write_waveform){
-			waveform.Append((int*)(*iter_L)->yvals, (int*)(*iter_R)->yvals, (*iter_L)->size);
+			waveform.Append((int*)current_event_L->yvals, (int*)current_event_R->yvals, current_event_L->size);
 		}
 		
 		good_events++;

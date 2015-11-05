@@ -41,9 +41,9 @@ class ProcessorHandler{
 	
 	bool AddProcessor(std::string type_, MapFile *map_);
 	
-	bool AddEvent(ChannelEvent *event_, MapEntry *entry_);
+	bool AddEvent(ChannelEventPair *pair_);
 	
-	bool Process(ChannelEvent *start_);
+	bool Process(ChannelEventPair *start_);
 	
 	unsigned long GetTotalEvents(){ return total_events; }
 	

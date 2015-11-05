@@ -11,7 +11,12 @@ std::string to_str(const int &input_){
 }
 
 MapEntry::MapEntry(const MapEntry &other){
-	type = other.type; subtype = other.subtype; tag = other.tag; location = other.location;
+	type = other.type; 
+	subtype = other.subtype; 
+	tag = other.tag; 
+	location = other.location;
+	beta = other.beta;
+	gamma = other.gamma;
 }
 
 bool MapEntry::operator == (const MapEntry &other){
@@ -20,7 +25,9 @@ bool MapEntry::operator == (const MapEntry &other){
 }
 
 void MapEntry::get(std::string &type_, std::string &subtype_, std::string &tag_){
-	type_ = type; subtype_ = subtype; tag_ = tag;
+	type_ = type; 
+	subtype_ = subtype; 
+	tag_ = tag;
 }
 
 void MapEntry::set(const std::string &input_, const char delimiter_/*=':'*/){
@@ -39,11 +46,18 @@ void MapEntry::set(const std::string &input_, const char delimiter_/*=':'*/){
 }
 	
 void MapEntry::set(const std::string &type_, const std::string &subtype_, const std::string &tag_){
-	type = type_; subtype = subtype_; tag = tag_;
+	type = type_; 
+	subtype = subtype_; 
+	tag = tag_;
 }
 
 void MapEntry::clear(){
-	location = 0; type = "ignore"; subtype = ""; tag = "";
+	location = 0; 
+	type = "ignore"; 
+	subtype = ""; 
+	tag = "";
+	beta = -1.0;
+	gamma = -1.0;
 }
 
 unsigned int MapEntry::increment(){
@@ -132,7 +146,8 @@ bool MapFile::Load(const char *filename_){
 	init = true;
 	
 	std::string line;
-	std::string values[3];
+	std::string values[5];
+	float beta, gamma;
 	int line_num = 0;
 	size_t current_value;
 	bool reading;
@@ -142,16 +157,20 @@ bool MapFile::Load(const char *filename_){
 		if(line[0] == '#'){ continue; }
 		line_num++;
 
-		values[0] = "";
-		values[1] = "";
-		values[2] = "";
+		values[0] = ""; // module
+		values[1] = ""; // channel
+		values[2] = ""; // type:subtype:tag
+		values[3] = ""; // beta
+		values[4] = ""; // gamma
+		beta = -1.0;
+		gamma = -1.0;
 		current_value = 0;
 		reading = false;
 	
 		for(size_t index = 0; index < line.size(); index++){
 			if(line[index] == ' ' || line[index] == '\t' || line[index] == '\n'){ 
 				if(reading){ 
-					if(++current_value >= 3){ break; } 
+					if(++current_value >= 5){ break; } 
 					reading = false;
 				}
 				continue; 
@@ -175,6 +194,14 @@ bool MapFile::Load(const char *filename_){
 			std::cout << "MapFile: \033[1;33mWARNING! On line " << line_num << ", the ':' wildcard is not permitted for specification of modules.\033[0m\n";
 			init = false;
 			break;
+		}
+
+		if(values[3] != ""){ // Manually set beta
+			beta = atof(values[3].c_str());
+		}
+		
+		if(values[4] != ""){ // Manually set gamma
+			gamma = atof(values[4].c_str());
 		}
 
 		if(values[1].find(':') != std::string::npos){
@@ -218,6 +245,8 @@ bool MapFile::Load(const char *filename_){
 					break;
 				}
 				detectors[mod][*iter].set(values[2]);
+				detectors[mod][*iter].setBeta(beta);
+				detectors[mod][*iter].setGamma(gamma);
 				
 				bool in_list = false;
 				for(std::vector<MapEntry>::iterator iter2 = types.begin(); iter2 != types.end(); iter2++){
@@ -239,6 +268,8 @@ bool MapFile::Load(const char *filename_){
 				continue;
 			}
 			detectors[mod][chan].set(values[2]);
+			detectors[mod][chan].setBeta(beta);
+			detectors[mod][chan].setGamma(gamma);
 			
 			bool in_list = false;
 			for(std::vector<MapEntry>::iterator iter = types.begin(); iter != types.end(); iter++){

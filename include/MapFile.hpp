@@ -11,6 +11,8 @@ struct MapEntry{
 	std::string type;
 	std::string subtype;
 	std::string tag;
+	float beta;
+	float gamma;
 	
 	MapEntry(){ clear(); }
 
@@ -27,6 +29,10 @@ struct MapEntry{
 	void set(const std::string &input_, const char delimiter_=':');
 	
 	void set(const std::string &type_, const std::string &subtype_, const std::string &tag_);
+	
+	void setBeta(const float &beta_){ beta = beta_; }
+	
+	void setGamma(const float &gamma_){ gamma = gamma_; }
 	
 	void clear();
 	

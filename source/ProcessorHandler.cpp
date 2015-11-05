@@ -1,5 +1,3 @@
-#include "ChannelEvent.hpp"
-
 #include "ProcessorHandler.hpp"
 #include "GenericProcessor.hpp"
 #include "TriggerProcessor.hpp"
@@ -64,13 +62,13 @@ bool ProcessorHandler::AddProcessor(std::string type_, MapFile *map_){
 	return true;
 }
 
-bool ProcessorHandler::AddEvent(ChannelEvent *event_, MapEntry *entry_){
+bool ProcessorHandler::AddEvent(ChannelEventPair *pair_){
 	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
-		if(entry_->type == iter->type){ 
-			iter->proc->AddEvent(event_); 
-			if(entry_->tag == "start"){ 
-				if(total_events == 0){ first_event_time = event_->time * 8E-9; }
-				delta_event_time = (event_->time * 8E-9) - first_event_time;
+		if(pair_->entry->type == iter->type){ 
+			iter->proc->AddEvent(pair_); 
+			if(pair_->entry->tag == "start"){ 
+				if(total_events == 0){ first_event_time = pair_->event->time * 8E-9; }
+				delta_event_time = (pair_->event->time * 8E-9) - first_event_time;
 				total_events++; 
 			}
 			return true;
@@ -79,7 +77,7 @@ bool ProcessorHandler::AddEvent(ChannelEvent *event_, MapEntry *entry_){
 	return false;
 }
 
-bool ProcessorHandler::Process(ChannelEvent *start_){
+bool ProcessorHandler::Process(ChannelEventPair *start_){
 	bool retval = false;
 	
 	// First call the preprocessors. The preprocessor will calculate the phase of the trace

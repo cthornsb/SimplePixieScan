@@ -3,7 +3,6 @@
 // PixieCore libraries
 #include "Unpacker.hpp"
 #include "ScanMain.hpp"
-#include "ChannelEvent.hpp"
 
 // Local files
 #include "Scanner.hpp"
@@ -17,10 +16,10 @@
 
 void Scanner::ProcessRawEvent(){
 	ChannelEvent *current_event = NULL;
-	MapEntry *current_entry = NULL;
+	ChannelEventPair *current_pair = NULL;
 	
 	// The first signal in the deque is the start signal for this event
-	ChannelEvent *start_event = NULL;
+	ChannelEventPair *start_event = NULL;
 	
 	// Fill the processor event deques with events
 	while(!rawEvent.empty()){
@@ -28,23 +27,22 @@ void Scanner::ProcessRawEvent(){
 		rawEvent.pop_front(); // Remove this event from the raw event deque.
 		
 		if(!current_event){ continue; }
-		
-		current_entry = mapfile->GetMapEntry(current_event);
-		
-		if(!current_entry){ continue; }
+
+		// Link the channel event to its corresponding map entry.
+		current_pair = new ChannelEventPair(current_event, mapfile->GetMapEntry(current_event));
 
 		if(!raw_event_mode){ // Standard operation. Individual processors will handle output
 			// Pass this event to the correct processor
-			if(current_entry->type == "ignore" || !handler->AddEvent(current_event, current_entry)){ // Invalid detector type. Delete it
+			if(current_pair->entry->type == "ignore" || !handler->AddEvent(current_pair)){ // Invalid detector type. Delete it
 				delete current_event;
 			}
 		
 			// This channel is a start signal. Due to the way ScanList
 			// packs the raw event, there may be more than one start signal
 			// per raw event.
-			if(current_entry->tag == "start"){ 
+			if(current_pair->entry->tag == "start"){ 
 				if(start_event != NULL && debug_mode){ std::cout << "ProcessRawEvent: Found more than one start event in rawEvent!\n"; }
-				start_event = current_event;
+				start_event = current_pair;
 			}
 		}
 		else{ // Raw event mode operation. Dump raw event information to root file.
@@ -85,15 +83,15 @@ Scanner::~Scanner(){
 	delete configfile;
 	
 	if(init){
-		std::cout << "Unpacker: Found " << handler->GetTotalEvents() << " start events.\n";
-		std::cout << "Unpacker: Total data time is " << handler->GetDeltaEventTime() << " s.\n";
+		std::cout << "Scanner: Found " << handler->GetTotalEvents() << " start events.\n";
+		std::cout << "Scanner: Total data time is " << handler->GetDeltaEventTime() << " s.\n";
 	}
 	
 	delete handler;
 
 	if(root_file){
 		if(root_file->IsOpen()){
-			std::cout << "Unpacker: Writing " << root_tree->GetEntries() << " entries to root file.\n";
+			std::cout << "Scanner: Writing " << root_tree->GetEntries() << " entries to root file.\n";
 			root_file->cd();
 			root_tree->Write();
 			root_file->Close();

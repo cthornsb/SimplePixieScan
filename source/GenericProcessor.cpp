@@ -1,5 +1,4 @@
 #include "GenericProcessor.hpp"
-#include "ChannelEvent.hpp"
 #include "MapFile.hpp"
 
 #include "TTree.h"
@@ -7,16 +6,20 @@
 bool GenericProcessor::HandleEvents(){
 	if(!init){ return false; }
 
-	for(std::deque<ChannelEvent*>::iterator iter = events.begin(); iter != events.end(); iter++){
+	ChannelEvent *current_event;
+
+	for(std::deque<ChannelEventPair*>::iterator iter = events.begin(); iter != events.end(); iter++){
+		current_event = (*iter)->event;
+		
 		// Check that the time and energy values are valid
-		if(!(*iter)->valid_chan){ continue; }
+		if(!current_event->valid_chan){ continue; }
 	
 		// Fill the values into the root tree.
-		structure.Append(((*iter)->hires_time - start->hires_time), (*iter)->hires_energy, mapfile->GetMapEntry(*iter)->location);
+		structure.Append((current_event->hires_time - start->event->hires_time), current_event->hires_energy, (*iter)->entry->location);
 		
 		// Copy the trace to the output file.
 		if(write_waveform){
-			waveform.Append((int*)(*iter)->yvals, (*iter)->size);
+			waveform.Append((int*)current_event->yvals, current_event->size);
 		}
 		
 		good_events++;

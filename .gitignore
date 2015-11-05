@@ -11,6 +11,7 @@ setup
 # ROOT Files #
 ##############
 *.root
+*.dat
 RootDict_rdict.pcm
 RootDict.cpp
 RootDict.h

@@ -4,14 +4,55 @@
 #include <string>
 #include <deque>
 
+#include "ChannelEvent.hpp"
+
 #include "TF1.h"
 
-class ChannelEvent;
+class MapEntry;
 class MapFile;
 
 class TTree;
 class TBranch;
 class TF1;
+
+class ChannelEventPair{
+  public:
+  	ChannelEvent *event;
+	MapEntry *entry;
+  
+	ChannelEventPair();
+	
+	ChannelEventPair(ChannelEvent *event_, MapEntry *entry_);
+	
+	~ChannelEventPair();
+	
+	/// Return true if the time of arrival for rhs is later than that of lhs.
+	static bool CompareTime(ChannelEventPair *lhs, ChannelEventPair *rhs){ return (lhs->event->time < rhs->event->time); }
+	
+	/// Return true if lhs has a lower event id (mod * chan) than rhs.
+	static bool CompareChannel(ChannelEventPair *lhs, ChannelEventPair *rhs){ return ((lhs->event->modNum*lhs->event->chanNum) < (rhs->event->modNum*rhs->event->chanNum)); }
+};
+
+class FittingFunction{
+  protected:
+	double beta;
+	double gamma;
+
+  public:
+  	FittingFunction(double beta_=0.563362, double gamma_=0.3049452);
+
+	virtual ~FittingFunction(){}
+
+  	double GetBeta(){ return beta; }
+  	
+  	double GetGamma(){ return gamma; }
+  	
+  	double SetBeta(const double &beta_){ return (beta = beta_); }
+  	
+  	double SetGamma(const double &gamma_){ return (gamma = gamma_); }
+  	
+	virtual double operator () (double *x, double *par);
+};
 
 class Processor{
   protected:
@@ -20,8 +61,8 @@ class Processor{
 	
 	unsigned long good_events;
 	
-	ChannelEvent *start;
-	std::deque<ChannelEvent*> events;
+	ChannelEventPair *start;
+	std::deque<ChannelEventPair*> events;
 	
 	std::string name;
 	std::string type;
@@ -32,16 +73,18 @@ class Processor{
 	
 	TBranch *local_branch;
 	TF1 *fitting_func;
-	
+
+	FittingFunction *actual_func;
+
 	int fitting_low;
 	int fitting_high;
 	
 	MapFile *mapfile;
 
-	const double clockInSeconds = 8e-9; /// One pixie clock is 8 ns
-	const double adcClockInSeconds = 4e-9; /// One ADC clock is 4 ns
-	const double filterClockInSeconds = 8e-9; /// One filter clock is 8 ns
-  
+	double clockInSeconds; /// One pixie clock is 8 ns
+	double adcClockInSeconds; /// One ADC clock is 4 ns
+	double filterClockInSeconds; /// One filter clock is 8 ns
+
 	/// Clear channel events from the queue
 	void ClearEvents();
   
@@ -59,15 +102,15 @@ class Processor{
 	
 	void PrintNote(const std::string &msg_);
 	
-	void SetFitFunction(double (*func_)(double *, double *), int npar_);
+	TF1 *SetFitFunction(double (*func_)(double *, double *), int npar_);
 	
-	void SetFitFunction(const char* func_);
+	TF1 *SetFitFunction(const char* func_);
 	
-	void SetFitFunction();
+	TF1 *SetFitFunction();
 
 	void FitPulses();
 
-	virtual void SetFitParameters(ChannelEvent *event_);
+	virtual void SetFitParameters(ChannelEventPair *event_);
 
 	virtual bool HandleEvents();
 
@@ -90,11 +133,11 @@ class Processor{
 
 	float Status(unsigned long total_events_);
 
-	void AddEvent(ChannelEvent *event_){ events.push_back(event_); }
+	void AddEvent(ChannelEventPair *event_){ events.push_back(event_); }
 
 	void PreProcess();
 
-	bool Process(ChannelEvent *start_);
+	bool Process(ChannelEventPair *start_);
 	
 	virtual void Zero(){ }
 };
