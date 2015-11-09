@@ -55,6 +55,10 @@ all: directory dictionary $(EXECUTABLE)
 dictionary:
 #	Create root dictionary objects
 	@$(PIXIE_SCAN_DIR)/tools/rcbuild.sh -t $(PIXIE_SCAN_DIR)/tools -d $(DICT_DIR) -s $(SOURCE_DIR) -i $(INCLUDE_DIR) -o $(OBJ_DIR)
+#	Copy the root .pcm file (if it exists) to the top directory
+	@if [ -e $(DICT_DIR)/$(DICT_SOURCE)_rdict.pcm ]; then \
+		cp $(DICT_DIR)/$(DICT_SOURCE)_rdict.pcm $(TOP_LEVEL)/; \
+	fi
 
 ########################################################################
 

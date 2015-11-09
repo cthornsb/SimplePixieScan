@@ -22,4 +22,4 @@ LinkDef.h
 # Executable #
 ##############
 PixieLDF
-.pixieldf.cmd
+*.cmd
