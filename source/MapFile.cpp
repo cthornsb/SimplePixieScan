@@ -184,7 +184,7 @@ bool MapFile::Load(const char *filename_){
 		int mod, chan;
 		mod = (unsigned)atoi(values[0].c_str());
 		if(mod >= max_modules){
-			std::cout << "MapFile: \033[1;33mWARNING! On line " << line_num << ", invalid module number. Ignoring.\033[0m\n";
+			std::cout << "MapFile: \033[1;33mWARNING! On line " << line_num << ", invalid module number (" << mod << "). Ignoring.\033[0m\n";
 			continue;
 		}
 		
@@ -241,7 +241,7 @@ bool MapFile::Load(const char *filename_){
 			
 			for(std::vector<int>::iterator iter = channels.begin(); iter != channels.end(); iter++){
 				if(*iter >= max_channels){
-					std::cout << "MapFile: \033[1;33mWARNING! On line " << line_num << ", invalid channel number. Ignoring.\033[0m\n";
+					std::cout << "MapFile: \033[1;33mWARNING! On line " << line_num << ", invalid channel number (" << *iter << "). Ignoring.\033[0m\n";
 					break;
 				}
 				detectors[mod][*iter].set(values[2]);
@@ -251,7 +251,7 @@ bool MapFile::Load(const char *filename_){
 				bool in_list = false;
 				for(std::vector<MapEntry>::iterator iter2 = types.begin(); iter2 != types.end(); iter2++){
 					if(*iter2 == detectors[mod][*iter]){
-						detectors[mod][*iter].location = iter2->increment();
+						detectors[mod][*iter].location = mod*100 + *iter;
 						in_list = true;
 						break;
 					}
@@ -263,8 +263,8 @@ bool MapFile::Load(const char *filename_){
 		}
 		else{
 			chan = (unsigned)atoi(values[1].c_str());
-			if(chan >= max_modules){
-				std::cout << "MapFile: \033[1;33mWARNING! On line " << line_num << ", invalid channel number. Ignoring.\033[0m\n";
+			if(chan >= max_channels){
+				std::cout << "MapFile: \033[1;33mWARNING! On line " << line_num << ", invalid channel number (" << chan << "). Ignoring.\033[0m\n";
 				continue;
 			}
 			detectors[mod][chan].set(values[2]);
@@ -274,7 +274,7 @@ bool MapFile::Load(const char *filename_){
 			bool in_list = false;
 			for(std::vector<MapEntry>::iterator iter = types.begin(); iter != types.end(); iter++){
 				if(*iter == detectors[mod][chan]){
-					detectors[mod][chan].location = iter->increment();
+					detectors[mod][chan].location = mod*100 + chan;
 					in_list = true;
 					break;
 				}
