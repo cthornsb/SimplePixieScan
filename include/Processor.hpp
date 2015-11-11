@@ -140,6 +140,9 @@ class Processor{
 
 	bool Process(ChannelEventPair *start_);
 	
+	/// Finish processing of events by clearing the event list.
+	void WrapUp();
+	
 	virtual void Zero(){ }
 };
 

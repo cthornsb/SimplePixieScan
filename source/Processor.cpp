@@ -234,10 +234,16 @@ bool Processor::Process(ChannelEventPair *start_){
 	
 	bool retval = HandleEvents();
 	
-	// Clean up all channel events which we've been given
-	ClearEvents();
-	
 	StopProcess();
 	
 	return retval;
+}
+
+/** WrapUp processing of events by clearing the event list. Calls to this method
+  * must be done after processing is completed since other processor types may
+  * rely upon events which are contained within this processor.
+  */
+void Processor::WrapUp(){
+	// Clean up all channel events which we've been given
+	ClearEvents();
 }

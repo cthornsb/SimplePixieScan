@@ -91,6 +91,13 @@ bool ProcessorHandler::Process(ChannelEventPair *start_){
 		if(iter->proc->Process(start_)){ retval = true; }
 	}
 	
+	// Finally, tell the processor to finish up processing by clearing its event list. This
+	// must be done last because other processors may rely on events which are contained
+	// within this processor.
+	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
+		iter->proc->WrapUp();
+	}
+	
 	return retval;
 }
 
