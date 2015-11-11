@@ -99,7 +99,11 @@ TF1 *Processor::SetFitFunction(){
 void Processor::SetFitParameters(ChannelEventPair *pair_){
 	if(!pair_){ return; }
 
-	// Set initial parameters to those obtained from fit optimizations	
+	// Set the fixed fitting parameters for a given detector.
+	actual_func->SetBeta(pair_->entry->beta);
+	actual_func->SetGamma(pair_->entry->gamma);
+
+	// Set initial parameters to those obtained from fit optimizations.
 	fitting_func->SetParameter(0, pair_->event->maximum*9.211 + 150.484); // Normalization of pulse
 	fitting_func->SetParameter(1, pair_->event->phase*1.087 - 2.359); // Phase (leading edge of pulse) (ns)
 }
