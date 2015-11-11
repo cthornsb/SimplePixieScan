@@ -60,6 +60,7 @@ class Processor{
 	unsigned long total_time;
 	
 	unsigned long good_events;
+	unsigned long total_events;
 	
 	ChannelEventPair *start;
 	std::deque<ChannelEventPair*> events;
@@ -131,7 +132,7 @@ class Processor{
 	
 	virtual bool Initialize(TTree *tree_);
 
-	float Status(unsigned long total_events_);
+	float Status(unsigned long global_events_);
 
 	void AddEvent(ChannelEventPair *event_){ events.push_back(event_); }
 
