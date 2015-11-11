@@ -34,7 +34,7 @@ void Scanner::ProcessRawEvent(){
 		if(!raw_event_mode){ // Standard operation. Individual processors will handle output
 			// Pass this event to the correct processor
 			if(current_pair->entry->type == "ignore" || !handler->AddEvent(current_pair)){ // Invalid detector type. Delete it
-				delete current_event;
+				delete current_pair;
 			}
 		
 			// This channel is a start signal. Due to the way ScanList
@@ -47,7 +47,7 @@ void Scanner::ProcessRawEvent(){
 		}
 		else{ // Raw event mode operation. Dump raw event information to root file.
 			structure.Append(current_event->modNum, current_event->chanNum, current_event->time, current_event->energy);
-			delete current_event;
+			delete current_pair;
 		}
 	}
 	
