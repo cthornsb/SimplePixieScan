@@ -144,6 +144,13 @@ bool MapFile::Load(const char *filename_){
 	}
 	
 	init = true;
+
+	// Set the location of all possible detectors.
+	for(int i = 0; i < max_modules; i++){
+		for(int j = 0; j < max_channels; j++){
+			detectors[i][j].location = i*(max_channels-1) + j;
+		}
+	}
 	
 	std::string line;
 	std::string values[5];
@@ -251,7 +258,6 @@ bool MapFile::Load(const char *filename_){
 				bool in_list = false;
 				for(std::vector<MapEntry>::iterator iter2 = types.begin(); iter2 != types.end(); iter2++){
 					if(*iter2 == detectors[mod][*iter]){
-						detectors[mod][*iter].location = mod*100 + *iter;
 						in_list = true;
 						break;
 					}
@@ -274,7 +280,6 @@ bool MapFile::Load(const char *filename_){
 			bool in_list = false;
 			for(std::vector<MapEntry>::iterator iter = types.begin(); iter != types.end(); iter++){
 				if(*iter == detectors[mod][chan]){
-					detectors[mod][chan].location = mod*100 + chan;
 					in_list = true;
 					break;
 				}
