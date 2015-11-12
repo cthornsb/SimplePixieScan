@@ -8,8 +8,9 @@ PIXIE_SUITE_DIR = $(HOME)/Research/Pixie16/PixieSuite
 
 #####################################################################
 
-CFLAGS = -g -Wall -O3 -std=c++0x `root-config --cflags`
-LDLIBS = -lstdc++ -L$(PIXIE_SUITE_DIR)/exec/lib -lPixieCore `root-config --libs`
+#CFLAGS = -g -Wall -std=c++0x `root-config --cflags`
+CFLAGS = -Wall -O3 -std=c++0x `root-config --cflags`
+LDLIBS = -lstdc++ -L$(PIXIE_SUITE_DIR)/exec/lib -lPixieScan `root-config --libs`
 LDFLAGS = `root-config --glibs`
 
 COMPILER = g++
@@ -85,7 +86,7 @@ $(OBJ_DIR):
 
 $(OBJ_DIR)/%.o: $(SOURCE_DIR)/%.cpp
 #	Compile C++ source files
-	$(COMPILER) -c $(CFLAGS) -Iinclude -I$(PIXIE_SUITE_DIR)/Core/include $< -o $@
+	$(COMPILER) -c $(CFLAGS) -Iinclude -I$(PIXIE_SUITE_DIR)/exec/include $< -o $@
 
 ########################################################################
 
