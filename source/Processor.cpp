@@ -6,8 +6,6 @@
 
 #include "TTree.h"
 #include "TGraph.h"
-#include "TFitResult.h"
-#include "TFitResultPtr.h"
 
 ChannelEventPair::ChannelEventPair(){
 	event = NULL;
@@ -119,7 +117,7 @@ bool Processor::FitPulse(TGraph *trace_, float &phase){
 	if(!fitting_func){ SetFitFunction(); } 
 
 	// And finally, do the fitting.
-	TFitResultPtr fit_ptr = trace_->Fit(fitting_func, "S Q R");
+	fit_result = trace_->Fit(fitting_func, "S Q R");
 	
 	// Update the phase of the pulse.
 	phase = fitting_func->GetParameter(1);

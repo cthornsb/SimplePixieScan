@@ -30,6 +30,7 @@ SOURCES = ProcessorHandler.cpp Processor.cpp ConfigFile.cpp MapFile.cpp Scanner.
 # Processors
 SOURCES += TriggerProcessor.cpp \
            VandleProcessor.cpp \
+           PhoswichProcessor.cpp \
            GenericProcessor.cpp
 
 OBJECTS = $(addprefix $(OBJ_DIR)/,$(SOURCES:.cpp=.o))

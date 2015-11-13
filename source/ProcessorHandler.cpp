@@ -1,9 +1,10 @@
 #include "Processor.hpp"
 
 #include "ProcessorHandler.hpp"
-#include "GenericProcessor.hpp"
 #include "TriggerProcessor.hpp"
 #include "VandleProcessor.hpp"
+#include "PhoswichProcessor.hpp"
+#include "GenericProcessor.hpp"
 
 #include "MapFile.hpp"
 
@@ -48,8 +49,8 @@ bool ProcessorHandler::AddProcessor(std::string type_, MapFile *map_){
 
 	if(type_ == "trigger"){ proc = (Processor*)(new TriggerProcessor(map_)); }
 	else if(type_ == "vandle"){ proc = (Processor*)(new VandleProcessor(map_)); }
-	/*else if(type_ == "phoswich"){ proc = (Processor*)(new PhoswichProcessor(map_)); }
-	else if(type_ == "liquid"){ procs.push_back(new LiquidProcessor()); }
+	else if(type_ == "phoswich"){ proc = (Processor*)(new PhoswichProcessor(map_)); }
+	/*else if(type_ == "liquid"){ procs.push_back(new LiquidProcessor()); }
 	else if(type_ == "logic"){ procs.push_back(new LogicProcessor()); }
 	else if(type_ == "ionchamber"){ procs.push_back(new IonChamberProcessor()); }
 	else if(type_ == "nonwich"){ procs.push_back(new NonwichProcessor()); }*/

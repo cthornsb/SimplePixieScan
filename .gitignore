@@ -24,3 +24,8 @@ LinkDef.h
 PixieLDF
 rcbuild
 *.cmd
+
+# Dictionary Files #
+####################
+rcbuild
+.def.struct.bkp

@@ -7,6 +7,7 @@
 #include "ChannelEvent.hpp"
 
 #include "TF1.h"
+#include "TFitResultPtr.h"
 
 class MapEntry;
 class MapFile;
@@ -77,6 +78,8 @@ class Processor{
 	TF1 *fitting_func;
 
 	FittingFunction *actual_func;
+
+	TFitResultPtr fit_result; /// Fit result pointer for storing trace fitting information.
 
 	int fitting_low;
 	int fitting_high;
