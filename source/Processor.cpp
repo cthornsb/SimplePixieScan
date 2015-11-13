@@ -150,8 +150,8 @@ Processor::Processor(std::string name_, std::string type_, MapFile *map_){
 	fitting_func = NULL;
 	actual_func = NULL;
 
-	fitting_low = 10;
-	fitting_high = 15;
+	fitting_low = 5;
+	fitting_high = 10;
 
 	mapfile = map_;
 	
@@ -221,6 +221,8 @@ void Processor::PreProcess(){
 		
 		// Do root fitting for high resolution timing (very slow).
 		if(use_fitting){
+			if(!fitting_func){ SetFitFunction(); }
+		
 			// "Convert" the trace into a TGraph for fitting.
 			TGraph *graph = new TGraph(current_event->size, current_event->xvals, current_event->yvals);
 		

@@ -20,6 +20,9 @@ class PhoswichProcessor : public Processor{
 	double slow_A; /// The amplitude of the decaying exponential of the slow pulse.
 	double slow_Slope; /// The slope of the decaying exponential of the slow pulse.
 	double slow_chi2; /// The chi^2/NDF for the slow pulse fit.
+
+	int fitting_low2;
+	int fitting_high2;
 	
 	TF1 *fitting_func2; // Slow pulse component fitting function.
 
