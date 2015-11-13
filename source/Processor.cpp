@@ -2,13 +2,12 @@
 #include <time.h>
 
 #include "Processor.hpp"
+#include "MapFile.hpp"
 
 #include "TTree.h"
-#include "TF1.h"
 #include "TGraph.h"
 #include "TFitResult.h"
 #include "TFitResultPtr.h"
-#include "MapFile.hpp"
 
 ChannelEventPair::ChannelEventPair(){
 	event = NULL;
@@ -96,68 +95,36 @@ TF1 *Processor::SetFitFunction(){
 	return fitting_func;
 }
 
-void Processor::SetFitParameters(ChannelEventPair *pair_){
-	if(!pair_){ return; }
-
+bool Processor::SetFitParameters(ChannelEvent *event_, MapEntry *entry_){
+	if(!event_ || !entry_){ return false; }
+	
 	// Set the fixed fitting parameters for a given detector.
-	actual_func->SetBeta(pair_->entry->beta);
-	actual_func->SetGamma(pair_->entry->gamma);
+	actual_func->SetBeta(entry_->beta);
+	actual_func->SetGamma(entry_->gamma);
 
 	// Set initial parameters to those obtained from fit optimizations.
-	fitting_func->SetParameter(0, pair_->event->maximum*9.211 + 150.484); // Normalization of pulse
-	fitting_func->SetParameter(1, pair_->event->phase*1.087 - 2.359); // Phase (leading edge of pulse) (ns)
+	fitting_func->SetParameter(0, event_->maximum*9.211 + 150.484); // Normalization of pulse
+	fitting_func->SetParameter(1, event_->phase*1.087 - 2.359); // Phase (leading edge of pulse) (ns)
+	
+	// Set the fitting range.
+	fitting_func->SetRange(event_->max_index-fitting_low, event_->max_index+fitting_high);
+	
+	return true;
 }
 
-void Processor::FitPulses(){
-	if(use_fitting && !fitting_func){ SetFitFunction(); } // Set the default fitting function.
-
-	ChannelEvent *current_event;
-
-	for(std::deque<ChannelEventPair*>::iterator iter = events.begin(); iter != events.end(); iter++){
-		total_events++;
-		
-		current_event = (*iter)->event;
+bool Processor::FitPulse(TGraph *trace_, float &phase){
+	if(!trace_){ return false; }
 	
-		// Set the default values for high resolution energy and time.
-		current_event->hires_energy = current_event->energy;
-		current_event->hires_time = current_event->time * filterClockInSeconds;
+	// Set the default fitting function.
+	if(!fitting_func){ SetFitFunction(); } 
+
+	// And finally, do the fitting.
+	TFitResultPtr fit_ptr = trace_->Fit(fitting_func, "S Q R");
 	
-		// Check for trace with zero size.
-		if(current_event->trace.size() == 0){ continue; }
-
-		// Correct the baseline.
-		if(current_event->CorrectBaseline() < 0){ continue; }
-		
-		// Check for large SNR.
-		if(current_event->stddev > 3.0){ continue; }
-
-		// Find the leading edge of the pulse. This will also set the phase of the ChannelEventPair.
-		if(current_event->FindLeadingEdge() < 0){ continue; }
-
-		// Set the high resolution energy.
-		current_event->hires_energy = current_event->FindQDC();
-		
-		// Do root fitting for high resolution timing (very slow).
-		if(use_fitting){
-			// "Convert" the trace into a TGraph for fitting.
-			TGraph *graph = new TGraph(current_event->size, current_event->xvals, current_event->yvals);
-		
-			// Set the initial fitting parameters.
-			SetFitParameters((*iter));
-			
-			// And finally, do the fitting.
-			TFitResultPtr fit_ptr = graph->Fit(fitting_func, "S Q", "", current_event->max_index-fitting_low, current_event->max_index+fitting_high);
+	// Update the phase of the pulse.
+	phase = fitting_func->GetParameter(1);
 	
-			// Update the phase of the pulse.
-			current_event->phase = fitting_func->GetParameter(1);
-		
-			delete graph;
-		}
-		
-		// Set the high resolution time.
-		current_event->hires_time += current_event->phase * adcClockInSeconds;
-		current_event->valid_chan = true;
-	}
+	return true;
 }
 
 bool Processor::HandleEvents(){
@@ -221,20 +188,76 @@ float Processor::Status(unsigned long global_events_){
 }
 
 void Processor::PreProcess(){
-	StartProcess();
-	FitPulses();
+	// Start the timer.
+	StartProcess(); 
+	
+	ChannelEvent *current_event;
+
+	// Iterate over the list of channel events.
+	for(std::deque<ChannelEventPair*>::iterator iter = events.begin(); iter != events.end(); iter++){
+		total_events++;
+		
+		current_event = (*iter)->event;
+	
+		// Set the default values for high resolution energy and time.
+		current_event->hires_energy = current_event->energy;
+		current_event->hires_time = current_event->time * filterClockInSeconds;
+	
+		// Check for trace with zero size.
+		if(current_event->trace.size() == 0){ continue; }
+
+		// Correct the baseline.
+		if(current_event->CorrectBaseline() < 0){ continue; }
+		
+		// Check for large SNR.
+		if(current_event->stddev > 3.0){ continue; }
+
+		// Find the leading edge of the pulse. This will also set the phase of the ChannelEventPair.
+		if(current_event->FindLeadingEdge() < 0){ continue; }
+
+		// Set the high resolution energy.
+		current_event->hires_energy = current_event->FindQDC();
+		
+		// Set the channel event to valid.
+		current_event->valid_chan = true;
+		
+		// Do root fitting for high resolution timing (very slow).
+		if(use_fitting){
+			// "Convert" the trace into a TGraph for fitting.
+			TGraph *graph = new TGraph(current_event->size, current_event->xvals, current_event->yvals);
+		
+			// Set the initial fitting parameters.
+			if(SetFitParameters(current_event, (*iter)->entry)){
+				// Fit the TGraph.
+				if(!FitPulse(graph, current_event->phase)){
+					// Set the channel event to invalid.
+					current_event->valid_chan = false;
+				}
+			}
+			
+			delete graph;
+		}
+		
+		// Set the high resolution time.
+		current_event->hires_time += current_event->phase * adcClockInSeconds;
+	}
+
+	// Stop the timer.
 	StopProcess();
 }
 
 bool Processor::Process(ChannelEventPair *start_){
-	StartProcess();
+	// Start the timer.
+	StartProcess(); 
 
-	// Handle the processor events
+	// Set the start event.
 	start = start_;
 	
+	// Process the individual events.
 	bool retval = HandleEvents();
 	
-	StopProcess();
+	// Stop the timer.
+	StopProcess(); 
 	
 	return retval;
 }

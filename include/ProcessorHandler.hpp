@@ -3,11 +3,12 @@
 
 #include <vector>
 
-#include "Processor.hpp"
-
 class TTree;
+
+class ChannelEventPair;
 class MapEntry;
 class MapFile;
+class Processor;
 
 struct ProcessorEntry{
 	Processor *proc; /// Pointer to a data processor

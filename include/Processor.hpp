@@ -13,6 +13,7 @@ class MapFile;
 
 class TTree;
 class TBranch;
+class TGraph;
 class TF1;
 
 class ChannelEventPair{
@@ -109,10 +110,13 @@ class Processor{
 	
 	TF1 *SetFitFunction();
 
-	void FitPulses();
+	/// Set the fit parameters for the current event.
+	virtual bool SetFitParameters(ChannelEvent *event_, MapEntry *entry_);
+	
+	/// Fit a single trace.
+	virtual bool FitPulse(TGraph *trace_, float &phase);	
 
-	virtual void SetFitParameters(ChannelEventPair *event_);
-
+	/// Process all individual events.
 	virtual bool HandleEvents();
 
   public:

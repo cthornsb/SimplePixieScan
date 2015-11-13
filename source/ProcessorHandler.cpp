@@ -1,7 +1,10 @@
+#include "Processor.hpp"
+
 #include "ProcessorHandler.hpp"
 #include "GenericProcessor.hpp"
 #include "TriggerProcessor.hpp"
 #include "VandleProcessor.hpp"
+
 #include "MapFile.hpp"
 
 ProcessorHandler::ProcessorHandler(){ 
@@ -41,24 +44,20 @@ bool ProcessorHandler::CheckProcessor(std::string type_){
 }
 
 bool ProcessorHandler::AddProcessor(std::string type_, MapFile *map_){
-	if(type_ == "trigger"){ 
-		TriggerProcessor *proc = new TriggerProcessor(map_);
-		procs.push_back(ProcessorEntry(proc, "trigger")); 
-	}
-	else if(type_ == "vandle"){ 
-		VandleProcessor *proc = new VandleProcessor(map_);
-		procs.push_back(ProcessorEntry(proc, "vandle")); 
-	}
-	/*else if(type_ == "liquid"){ procs.push_back(new LiquidProcessor()); }
+	Processor *proc;
+
+	if(type_ == "trigger"){ proc = (Processor*)(new TriggerProcessor(map_)); }
+	else if(type_ == "vandle"){ proc = (Processor*)(new VandleProcessor(map_)); }
+	/*else if(type_ == "phoswich"){ proc = (Processor*)(new PhoswichProcessor(map_)); }
+	else if(type_ == "liquid"){ procs.push_back(new LiquidProcessor()); }
 	else if(type_ == "logic"){ procs.push_back(new LogicProcessor()); }
 	else if(type_ == "ionchamber"){ procs.push_back(new IonChamberProcessor()); }
-	else if(type_ == "phoswich"){ procs.push_back(new PhoswichProcessor()); }
 	else if(type_ == "nonwich"){ procs.push_back(new NonwichProcessor()); }*/
-	else if(type_ == "generic"){ 
-		GenericProcessor *proc = new GenericProcessor(map_);
-		procs.push_back(ProcessorEntry(proc, "generic")); 
-	}
+	else if(type_ == "generic"){ proc = (Processor*)(new GenericProcessor(map_)); }
 	else{ return false; }
+	
+	procs.push_back(ProcessorEntry(proc, type_)); 
+	
 	return true;
 }
 

@@ -8,6 +8,7 @@
 #include "Scanner.hpp"
 #include "MapFile.hpp"
 #include "ConfigFile.hpp"
+#include "Processor.hpp"
 #include "ProcessorHandler.hpp"
 
 // Root libraries
