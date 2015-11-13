@@ -1,8 +1,5 @@
 #####################################################################
 
-# Set the RootPixieScan directory
-PIXIE_SCAN_DIR = $(HOME)/Research/Pixie16/RootPixieScan
-
 # Set the PixieSuite core directory
 PIXIE_SUITE_DIR = $(HOME)/Research/Pixie16/PixieSuite
 
@@ -24,6 +21,8 @@ OBJ_DIR = $(TOP_LEVEL)/obj
 
 DICT_DIR = $(TOP_LEVEL)/dict
 DICT_OBJ_DIR = $(DICT_DIR)/obj
+
+RCBUILD_DIR = $(TOP_LEVEL)/rcbuild
 
 # Core files
 SOURCES = ProcessorHandler.cpp Processor.cpp ConfigFile.cpp MapFile.cpp Scanner.cpp
@@ -55,7 +54,7 @@ all: directory dictionary $(EXECUTABLE)
 
 dictionary:
 #	Create root dictionary objects
-	@$(PIXIE_SCAN_DIR)/tools/rcbuild.sh -t $(PIXIE_SCAN_DIR)/tools -d $(DICT_DIR) -s $(SOURCE_DIR) -i $(INCLUDE_DIR) -o $(OBJ_DIR)
+	@$(RCBUILD_DIR)/rcbuild.sh
 #	Copy the root .pcm file (if it exists) to the top directory
 	@if [ -e $(DICT_DIR)/$(DICT_SOURCE)_rdict.pcm ]; then \
 		cp $(DICT_DIR)/$(DICT_SOURCE)_rdict.pcm $(TOP_LEVEL)/; \

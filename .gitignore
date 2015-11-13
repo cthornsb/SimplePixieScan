@@ -22,4 +22,5 @@ LinkDef.h
 # Executable #
 ##############
 PixieLDF
+rcbuild
 *.cmd
