@@ -17,9 +17,7 @@ class GenericProcessor : public Processor{
   public:
 	GenericProcessor(MapFile *map_);
 
-	bool Initialize(TTree *tree_);
-	
-	void Zero();
+	~GenericProcessor();
 };
 
 #endif

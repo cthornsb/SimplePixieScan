@@ -76,27 +76,8 @@ bool VandleProcessor::HandleEvents(){
 }
 
 VandleProcessor::VandleProcessor(MapFile *map_) : Processor("Vandle", "vandle", map_){
+	root_structure = (Structure*)&structure;
+	root_waveform = (Waveform*)&waveform;
 }
 
-bool VandleProcessor::Initialize(TTree *tree_){
-	if(init || !tree_){ 
-		PrintMsg("Root output is already initialized!");
-		return false; 
-	}
-	
-	// Add a branch to the tree
-	PrintMsg("Adding branch to main TTree.");
-	local_branch = tree_->Branch(name.c_str(), &structure);
-	
-	if(write_waveform){
-		PrintMsg("Writing raw waveforms to file.");
-		local_branch = tree_->Branch((name+"Wave").c_str(), &waveform);
-	}
-	
-	return (init = true);
-}
-
-void VandleProcessor::Zero(){
-	structure.Zero();
-	waveform.Zero();
-}
+VandleProcessor::~VandleProcessor(){ }

@@ -17,9 +17,7 @@ class VandleProcessor : public Processor{
   public:
 	VandleProcessor(MapFile *map_);
 
-	bool Initialize(TTree *tree_);
-	
-	void Zero();
+	~VandleProcessor();
 };
 
 #endif

@@ -1,4 +1,5 @@
 #include "PhoswichProcessor.hpp"
+#include "Structures.h"
 #include "MapFile.hpp"
 
 #include "TTree.h"
@@ -19,27 +20,6 @@ bool PhoswichProcessor::SetFitParameters(ChannelEvent *event_, MapEntry *entry_)
 	fitting_func->SetParameter(1, event_->max_index); // MPV
 	fitting_func->SetParameter(2, 1.65004); // Sigma
 	
-	/*slow_x1 = event_->max_index + fitting_low2;
-	slow_x2 = event_->max_index + fitting_high2;
-	double y1 = event_->yvals[fast_x1]-fitting_func->Eval(fast_x1); 
-	double y2 = event_->yvals[fast_x2]-fitting_func->Eval(fast_x2);
-	if(y1 <= 0.0){ y1 = 0.1; }
-	if(y2 <= 0.0){ y2 = 0.1; }
-
-	double b = 0.0;
-	double A = 0.0;
-	if(y2 >= y1){
-		b = std::log(y2/y1) / (fast_x2 - fast_x1);
-		A = std::log(y2) -b*fast_x2;
-	}
-
-	fitting_func2->SetRange((double)slow_x1, (double)slow_x2);
-	fitting_func2->SetParameter(0, A);
-	fitting_func2->SetParameter(1, b);
-	fitting_func2->FixParameter(2, fitting_func->GetParameter(0));
-	fitting_func2->FixParameter(3, fitting_func->GetParameter(1));
-	fitting_func2->FixParameter(4, fitting_func->GetParameter(2));*/
-	
 	// Compute the trace qdc of the slow component of the pulse.
 	slow_qdc = event_->IntegratePulse(event_->max_index + fitting_low2, event_->max_index + fitting_high2);
 	
@@ -58,15 +38,6 @@ bool PhoswichProcessor::FitPulse(TGraph *trace_, float &phase){
 	fast_Sigma = fitting_func->GetParameter(2);
 	fast_chi2 = fit_result->Chi2()/fit_result->Ndf();
 	fast_qdc = fitting_func->Integral(fast_x1, fast_x2);
-
-	// Fit the slow pulse.
-	/*fit_result = trace_->Fit(fitting_func2, "SQRE");
-
-	// f(x) = exp(A + B*x) = C * exp(B*x)
-	slow_A = fitting_func2->GetParameter(0); // = ln(C)
-	slow_Slope = fitting_func2->GetParameter(1);
-	slow_chi2 = fit_result->Chi2()/fit_result->Ndf();
-	slow_qdc = fitting_func2->Integral(slow_x1, slow_x2);*/
 
 	// Compute the phase by subtracting the pulse HWHM from the most-probable-value.
 	phase = fitting_func->GetParameter(1) - 1.17741*fitting_func->GetParameter(2);
@@ -101,37 +72,15 @@ bool PhoswichProcessor::HandleEvents(){
 
 PhoswichProcessor::PhoswichProcessor(MapFile *map_) : Processor("Phoswich", "phoswich", map_){
 	fitting_func = new TF1("f_fast", "landau", 0, 1);
-	//fitting_func2 = new TF1("f_slow", "expo(0)+landau(2)", 0, 1);
+	
 	fitting_low = 5;
 	fitting_high = 8;
 	fitting_low2 = 15;
 	fitting_high2 = 100;
+	
+	root_structure = (Structure*)&structure;
+	root_waveform = (Waveform*)&waveform;
 }
 
 PhoswichProcessor::~PhoswichProcessor(){
-	// fitting_func is deleted by Processor::~Processor()
-	//if(fitting_func2){ delete fitting_func2; }
-}
-
-bool PhoswichProcessor::Initialize(TTree *tree_){
-	if(init || !tree_){ 
-		PrintMsg("Root output is already initialized!");
-		return false; 
-	}
-	
-	// Add a branch to the tree
-	PrintMsg("Adding branch to main TTree.");
-	local_branch = tree_->Branch(name.c_str(), &structure);
-	
-	if(write_waveform){
-		PrintMsg("Writing raw waveforms to file.");
-		local_branch = tree_->Branch((name+"Wave").c_str(), &waveform);
-	}
-	
-	return (init = true);
-}
-
-void PhoswichProcessor::Zero(){
-	structure.Zero();
-	waveform.Zero();
 }

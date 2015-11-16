@@ -17,6 +17,9 @@ class TBranch;
 class TGraph;
 class TF1;
 
+class Structure;
+class Waveform;
+
 class ChannelEventPair{
   public:
   	ChannelEvent *event;
@@ -58,6 +61,9 @@ class FittingFunction{
 
 class Processor{
   protected:
+	Structure *root_structure; /// Root data structure for storing processor-specific information.
+	Waveform *root_waveform; /// Root data structure for storing baseline corrected traces.
+  
 	clock_t start_time;
 	unsigned long total_time;
 	
@@ -137,7 +143,7 @@ class Processor{
 	
 	bool ToggleFitting(){ return (use_fitting = !use_fitting); }
 	
-	virtual bool Initialize(TTree *tree_);
+	bool Initialize(TTree *tree_);
 
 	float Status(unsigned long global_events_);
 
@@ -150,7 +156,7 @@ class Processor{
 	/// Finish processing of events by clearing the event list.
 	void WrapUp();
 	
-	virtual void Zero(){ }
+	void Zero();
 };
 
 #endif

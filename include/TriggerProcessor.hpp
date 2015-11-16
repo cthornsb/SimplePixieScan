@@ -17,9 +17,7 @@ class TriggerProcessor : public Processor{
   public:
 	TriggerProcessor(MapFile *map_);
 
-	bool Initialize(TTree *tree_);
-	
-	void Zero();
+	~TriggerProcessor();
 };
 
 #endif

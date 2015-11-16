@@ -3,6 +3,7 @@
 #include <time.h>
 
 #include "Processor.hpp"
+#include "Structures.h"
 #include "MapFile.hpp"
 
 #include "TTree.h"
@@ -147,6 +148,9 @@ Processor::Processor(std::string name_, std::string type_, MapFile *map_){
 	good_events = 0;
 	total_events = 0;
 	
+	root_structure = NULL;
+	root_waveform = NULL;
+	
 	local_branch = NULL;
 	fitting_func = NULL;
 	actual_func = NULL;
@@ -169,7 +173,21 @@ Processor::~Processor(){
 }
 
 bool Processor::Initialize(TTree *tree_){
-	return false;
+	if(init || !tree_){ 
+		PrintMsg("Root output is already initialized!");
+		return false; 
+	}
+	
+	// Add a branch to the tree
+	PrintMsg("Adding branch to main TTree.");
+	local_branch = tree_->Branch(name.c_str(), root_structure);
+	
+	if(write_waveform){
+		PrintMsg("Writing raw waveforms to file.");
+		local_branch = tree_->Branch((name+"Wave").c_str(), root_waveform);
+	}
+	
+	return (init = true);
 }
 
 float Processor::Status(unsigned long global_events_){
@@ -270,4 +288,9 @@ bool Processor::Process(ChannelEventPair *start_){
 void Processor::WrapUp(){
 	// Clean up all channel events which we've been given
 	ClearEvents();
+}
+
+void Processor::Zero(){
+	root_structure->Zero();
+	root_waveform->Zero();
 }
