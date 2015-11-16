@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cmath>
 #include <time.h>
 
 #include "Processor.hpp"
@@ -213,8 +214,8 @@ void Processor::PreProcess(){
 		// Find the leading edge of the pulse. This will also set the phase of the ChannelEventPair.
 		if(current_event->FindLeadingEdge() < 0){ continue; }
 
-		// Set the high resolution energy.
-		current_event->hires_energy = current_event->FindQDC();
+		// Compute the energy of the pulse within the fitting window.
+		current_event->hires_energy = current_event->FindQDC(current_event->max_index - fitting_low, current_event->max_index + fitting_high);
 		
 		// Set the channel event to valid.
 		current_event->valid_chan = true;

@@ -129,15 +129,12 @@ LONG	Structure for detectors of type "phoswich"
 # Data types and names
 # type	name	description
 BEGIN_TYPES
-vector:double	phoswich_time	The clock time of the phoswich pulse.
-vector:double	phoswich_energy	The total energy of the phoswich pulse.
+vector:double	phoswich_fqdc	The integral of the fast portion of the pulse.
+vector:double	phoswich_sqdc	The integral of the slow portion of the pulse.
 vector:double	phoswich_fAmp	The amplitude of the landau function for the fast pulse.
 vector:double	phoswich_fMPV	The most probable value of the landau function for the fast pulse.
 vector:double	phoswich_fSigma	The sigma (roughly the width) of the landau function for the fast pulse.
 vector:double	phoswich_fChi2	The chi^2/NDF for the fast pulse fit.
-vector:double	phoswich_sAmp	The amplitude of the decaying exponential of the slow pulse.
-vector:double	phoswich_sSlope	The slope of the decaying exponential of the slow pulse.
-vector:double	phoswich_sChi2	The chi^2/NDF for the slow pulse fit.
 u_int	phoswich_mult	Multiplicity of the phoswich events
 
 # Trace output data types and names (must end with _wave)

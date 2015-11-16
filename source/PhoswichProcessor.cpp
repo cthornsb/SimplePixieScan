@@ -11,35 +11,37 @@ bool PhoswichProcessor::SetFitParameters(ChannelEvent *event_, MapEntry *entry_)
 	if(!event_ || !entry_){ return false; }
 
 	// Set the initial parameters of the fast pulse.
-	unsigned int x1 = event_->max_index - fitting_low;
-	unsigned int x2 = event_->max_index + fitting_high;
+	fast_x1 = event_->max_index - fitting_low;
+	fast_x2 = event_->max_index + fitting_high;
 
-	fitting_func->SetRange((double)x1, (double)x2);
+	fitting_func->SetRange((double)fast_x1, (double)fast_x2);
 	fitting_func->SetParameter(0, 5.571827*event_->maximum - 0.9336001); // Constant
 	fitting_func->SetParameter(1, event_->max_index); // MPV
 	fitting_func->SetParameter(2, 1.65004); // Sigma
 	
-	// Set the initial parameters of the slow pulse.
-	x1 = event_->max_index + fitting_low; 
-	x2 = event_->max_index + fitting_high2;
-	double y1 = event_->yvals[x1]-fitting_func->Eval(x1); 
-	double y2 = event_->yvals[x2]-fitting_func->Eval(x2);
+	/*slow_x1 = event_->max_index + fitting_low2;
+	slow_x2 = event_->max_index + fitting_high2;
+	double y1 = event_->yvals[fast_x1]-fitting_func->Eval(fast_x1); 
+	double y2 = event_->yvals[fast_x2]-fitting_func->Eval(fast_x2);
 	if(y1 <= 0.0){ y1 = 0.1; }
 	if(y2 <= 0.0){ y2 = 0.1; }
 
 	double b = 0.0;
 	double A = 0.0;
 	if(y2 >= y1){
-		b = std::log(y2/y1) / (x2 - x1);
-		A = std::log(y2) -b*x2;
+		b = std::log(y2/y1) / (fast_x2 - fast_x1);
+		A = std::log(y2) -b*fast_x2;
 	}
 
-	fitting_func2->SetRange((double)x1, (double)x2);
+	fitting_func2->SetRange((double)slow_x1, (double)slow_x2);
 	fitting_func2->SetParameter(0, A);
 	fitting_func2->SetParameter(1, b);
 	fitting_func2->FixParameter(2, fitting_func->GetParameter(0));
 	fitting_func2->FixParameter(3, fitting_func->GetParameter(1));
-	fitting_func2->FixParameter(4, fitting_func->GetParameter(2));
+	fitting_func2->FixParameter(4, fitting_func->GetParameter(2));*/
+	
+	// Compute the trace qdc of the slow component of the pulse.
+	slow_qdc = event_->IntegratePulse(event_->max_index + fitting_low2, event_->max_index + fitting_high2);
 	
 	return true;
 }
@@ -55,17 +57,19 @@ bool PhoswichProcessor::FitPulse(TGraph *trace_, float &phase){
 	fast_MPV = fitting_func->GetParameter(1);
 	fast_Sigma = fitting_func->GetParameter(2);
 	fast_chi2 = fit_result->Chi2()/fit_result->Ndf();
+	fast_qdc = fitting_func->Integral(fast_x1, fast_x2);
 
 	// Fit the slow pulse.
-	fit_result = trace_->Fit(fitting_func2, "SQRE");
+	/*fit_result = trace_->Fit(fitting_func2, "SQRE");
 
 	// f(x) = exp(A + B*x) = C * exp(B*x)
 	slow_A = fitting_func2->GetParameter(0); // = ln(C)
 	slow_Slope = fitting_func2->GetParameter(1);
 	slow_chi2 = fit_result->Chi2()/fit_result->Ndf();
+	slow_qdc = fitting_func2->Integral(slow_x1, slow_x2);*/
 
-	// Update the phase of the pulse by moving 3 sigma from the MPV.
-	phase = fitting_func->GetParameter(1) - 3*fitting_func->GetParameter(2);
+	// Compute the phase by subtracting the pulse HWHM from the most-probable-value.
+	phase = fitting_func->GetParameter(1) - 1.17741*fitting_func->GetParameter(2);
 	
 	return true;
 }
@@ -83,7 +87,7 @@ bool PhoswichProcessor::HandleEvents(){
 		if(!current_event->valid_chan){ continue; }
 	
 		// Fill the values into the root tree.
-		structure.Append(current_event->hires_time, current_event->hires_energy, fast_A, fast_MPV, fast_Sigma, fast_chi2, slow_A, slow_Slope, slow_chi2);
+		structure.Append(fast_qdc, slow_qdc, fast_A, fast_MPV, fast_Sigma, fast_chi2);
 		
 		// Copy the trace to the output file.
 		if(write_waveform){
@@ -97,7 +101,7 @@ bool PhoswichProcessor::HandleEvents(){
 
 PhoswichProcessor::PhoswichProcessor(MapFile *map_) : Processor("Phoswich", "phoswich", map_){
 	fitting_func = new TF1("f_fast", "landau", 0, 1);
-	fitting_func2 = new TF1("f_slow", "expo(0)+landau(2)", 0, 1);
+	//fitting_func2 = new TF1("f_slow", "expo(0)+landau(2)", 0, 1);
 	fitting_low = 5;
 	fitting_high = 8;
 	fitting_low2 = 15;
@@ -106,7 +110,7 @@ PhoswichProcessor::PhoswichProcessor(MapFile *map_) : Processor("Phoswich", "pho
 
 PhoswichProcessor::~PhoswichProcessor(){
 	// fitting_func is deleted by Processor::~Processor()
-	if(fitting_func2){ delete fitting_func2; }
+	//if(fitting_func2){ delete fitting_func2; }
 }
 
 bool PhoswichProcessor::Initialize(TTree *tree_){
