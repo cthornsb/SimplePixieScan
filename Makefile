@@ -31,6 +31,7 @@ SOURCES = ProcessorHandler.cpp Processor.cpp ConfigFile.cpp MapFile.cpp Scanner.
 SOURCES += TriggerProcessor.cpp \
            VandleProcessor.cpp \
            PhoswichProcessor.cpp \
+           NonwichProcessor.cpp \
            GenericProcessor.cpp \
            LogicProcessor.cpp
 

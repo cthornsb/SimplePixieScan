@@ -146,6 +146,35 @@ END_TYPES
 END_CLASS
 
 #####################################################################
+# Nonwich
+#####################################################################
+# Class name
+BEGIN_CLASS	Nonwich
+
+# Short class description
+SHORT	Data structure for the nonwich detector
+
+# Longer class description
+LONG	Structure for detectors of type "nonwich"
+
+# Data types and names
+# type	name	description
+BEGIN_TYPES
+vector:double	nonwich_TOF	The time-of-flight between the dE and the E.
+vector:double	nonwich_dE	The integral of the dE pulse.
+vector:double	nonwich_E	The integral of the E pulse.
+u_int	nonwich_mult	Multiplicity of the nonwich events
+
+# Trace output data types and names (must end with _wave)
+# type	name	description
+vector:int	nonwich_dE_wave	The nonwich dE trace.
+vector:int	nonwich_E_wave	The nonwich E trace.
+END_TYPES
+
+# End this class
+END_CLASS
+
+#####################################################################
 # Generic
 #####################################################################
 # Class name

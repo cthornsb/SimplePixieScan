@@ -4,6 +4,7 @@
 #include "TriggerProcessor.hpp"
 #include "VandleProcessor.hpp"
 #include "PhoswichProcessor.hpp"
+#include "NonwichProcessor.hpp"
 #include "GenericProcessor.hpp"
 #include "LogicProcessor.hpp"
 
@@ -51,10 +52,7 @@ bool ProcessorHandler::AddProcessor(std::string type_, MapFile *map_){
 	if(type_ == "trigger"){ proc = (Processor*)(new TriggerProcessor(map_)); }
 	else if(type_ == "vandle"){ proc = (Processor*)(new VandleProcessor(map_)); }
 	else if(type_ == "phoswich"){ proc = (Processor*)(new PhoswichProcessor(map_)); }
-	/*else if(type_ == "liquid"){ procs.push_back(new LiquidProcessor()); }
-	else if(type_ == "logic"){ procs.push_back(new LogicProcessor()); }
-	else if(type_ == "ionchamber"){ procs.push_back(new IonChamberProcessor()); }
-	else if(type_ == "nonwich"){ procs.push_back(new NonwichProcessor()); }*/
+	else if(type_ == "nonwich"){ proc = (Processor*)(new NonwichProcessor(map_)); }
 	else if(type_ == "generic"){ proc = (Processor*)(new GenericProcessor(map_)); }
 	else if(type_ == "logic"){ proc = (Processor*)(new LogicProcessor(map_)); }
 	else{ return false; }
