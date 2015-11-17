@@ -5,6 +5,7 @@
 #include "VandleProcessor.hpp"
 #include "PhoswichProcessor.hpp"
 #include "GenericProcessor.hpp"
+#include "LogicProcessor.hpp"
 
 #include "MapFile.hpp"
 
@@ -55,6 +56,7 @@ bool ProcessorHandler::AddProcessor(std::string type_, MapFile *map_){
 	else if(type_ == "ionchamber"){ procs.push_back(new IonChamberProcessor()); }
 	else if(type_ == "nonwich"){ procs.push_back(new NonwichProcessor()); }*/
 	else if(type_ == "generic"){ proc = (Processor*)(new GenericProcessor(map_)); }
+	else if(type_ == "logic"){ proc = (Processor*)(new LogicProcessor(map_)); }
 	else{ return false; }
 	
 	procs.push_back(ProcessorEntry(proc, type_)); 

@@ -163,11 +163,33 @@ BEGIN_TYPES
 vector:double	generic_TOF
 vector:double	generic_energy
 vector:int	generic_loc	Detector location (ID)
-u_int	generic_mult	Multiplicity of the ion-chamber events
+u_int	generic_mult	Multiplicity of the generic type events
 
 # Trace output data types and names (must end with _wave)
 # type	name	description
 vector:int	generic_wave
+END_TYPES
+
+# End this class
+END_CLASS
+
+#####################################################################
+# Logic
+#####################################################################
+# Class name
+BEGIN_CLASS	Logic
+
+# Short class description
+SHORT	Logic data structure
+
+# Longer class description
+LONG	Track the number of occurances of logic signals.
+
+# Data types and names
+# type	name	description
+BEGIN_TYPES
+vector:int	logic_loc	Detector location (ID)
+u_int	logic_mult	Multiplicity of the logic events
 END_TYPES
 
 # End this class

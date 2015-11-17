@@ -6,8 +6,6 @@
 #include "VandleProcessor.hpp"
 #include "MapFile.hpp"
 
-#include "TTree.h"
-
 #define C_IN_VAC 29.9792458 // cm/ns
 #define C_IN_BAR 12.65822 // cm/ns
 

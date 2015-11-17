@@ -2,7 +2,6 @@
 #include "Structures.h"
 #include "MapFile.hpp"
 
-#include "TTree.h"
 #include "TGraph.h"
 #include "TFitResult.h"
 #include "TFitResultPtr.h"

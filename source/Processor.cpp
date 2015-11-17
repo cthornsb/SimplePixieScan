@@ -9,6 +9,9 @@
 #include "TTree.h"
 #include "TGraph.h"
 
+Structure dummyStructure;
+Waveform dummyWaveform;
+
 ChannelEventPair::ChannelEventPair(){
 	event = NULL;
 	entry = NULL;
@@ -148,8 +151,8 @@ Processor::Processor(std::string name_, std::string type_, MapFile *map_){
 	good_events = 0;
 	total_events = 0;
 	
-	root_structure = NULL;
-	root_waveform = NULL;
+	root_structure = &dummyStructure;
+	root_waveform = &dummyWaveform;
 	
 	local_branch = NULL;
 	fitting_func = NULL;

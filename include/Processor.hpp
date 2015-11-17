@@ -20,6 +20,9 @@ class TF1;
 class Structure;
 class Waveform;
 
+extern Structure dummyStructure;
+extern Waveform dummyWaveform;
+
 class ChannelEventPair{
   public:
   	ChannelEvent *event;

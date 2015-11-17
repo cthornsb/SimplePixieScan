@@ -1,7 +1,5 @@
 #include "TriggerProcessor.hpp"
 
-#include "TTree.h"
-
 bool TriggerProcessor::HandleEvents(){
 	if(!init){ return false; }
 
