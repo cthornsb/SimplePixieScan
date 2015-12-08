@@ -77,26 +77,43 @@ bool ProcessorHandler::AddEvent(ChannelEventPair *pair_){
 	return false;
 }
 
-bool ProcessorHandler::Process(ChannelEventPair *start_){
+bool ProcessorHandler::AddStart(ChannelEventPair *pair_){
+	if(!pair_){ return false; }
+	
+	starts.push_back(pair_);
+
+	return true;
+}
+
+bool ProcessorHandler::Process(){
+	// Return false if there are no start events.
+	if(starts.empty()){ return false; }
+	
 	bool retval = false;
 	
-	// First call the preprocessors. The preprocessor will calculate the phase of the trace
-	// by doing a CFD analysis.
-	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
-		iter->proc->PreProcess();
+	// Iterate over all start events in the starts vector.
+	for(std::vector<ChannelEventPair*>::iterator start = starts.begin(); start != starts.end(); start++){
+		// First call the preprocessors. The preprocessor will calculate the phase of the trace
+		// by doing a CFD analysis.
+		for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
+			iter->proc->PreProcess();
+		}
+	
+		// After preprocessing has finished, call the processors.
+		for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
+			if(iter->proc->Process(*start)){ retval = true; }
+		}
+	
+		// Finally, tell the processor to finish up processing by clearing its event list. This
+		// must be done last because other processors may rely on events which are contained
+		// within this processor.
+		for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
+			iter->proc->WrapUp();
+		}
 	}
 	
-	// After preprocessing has finished, call the processors.
-	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
-		if(iter->proc->Process(start_)){ retval = true; }
-	}
-	
-	// Finally, tell the processor to finish up processing by clearing its event list. This
-	// must be done last because other processors may rely on events which are contained
-	// within this processor.
-	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
-		iter->proc->WrapUp();
-	}
+	// Remove all pointers from the start vector.
+	starts.clear();
 	
 	return retval;
 }

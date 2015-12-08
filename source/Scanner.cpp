@@ -19,9 +19,6 @@ void Scanner::ProcessRawEvent(){
 	ChannelEvent *current_event = NULL;
 	ChannelEventPair *current_pair = NULL;
 	
-	// The first signal in the deque is the start signal for this event
-	ChannelEventPair *start_event = NULL;
-	
 	// Fill the processor event deques with events
 	while(!rawEvent.empty()){
 		current_event = rawEvent.front();
@@ -42,8 +39,7 @@ void Scanner::ProcessRawEvent(){
 			// packs the raw event, there may be more than one start signal
 			// per raw event.
 			if(current_pair->entry->tag == "start"){ 
-				if(start_event != NULL && debug_mode){ std::cout << "ProcessRawEvent: Found more than one start event in rawEvent!\n"; }
-				start_event = current_pair;
+				handler->AddStart(current_pair);
 			}
 		}
 		else{ // Raw event mode operation. Dump raw event information to root file.
@@ -55,7 +51,7 @@ void Scanner::ProcessRawEvent(){
 	if(!raw_event_mode){
 		// Call each processor to do the processing. Each
 		// processor will remove the channel events when finished.
-		if(start_event && handler->Process(start_event)){
+		if(handler->Process()){
 			// This event had at least one valid signal
 			root_tree->Fill();
 		}

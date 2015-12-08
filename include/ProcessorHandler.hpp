@@ -22,6 +22,8 @@ struct ProcessorEntry{
 class ProcessorHandler{
   private:
 	std::vector<ProcessorEntry> procs; /// Vector of data processors
+
+	std::vector<ChannelEventPair*> starts; /// Vector of all start events
 	
 	unsigned long total_events; /// Total number of start events received
 	
@@ -44,7 +46,9 @@ class ProcessorHandler{
 	
 	bool AddEvent(ChannelEventPair *pair_);
 	
-	bool Process(ChannelEventPair *start_);
+	bool AddStart(ChannelEventPair *pair_);
+	
+	bool Process();
 	
 	unsigned long GetTotalEvents(){ return total_events; }
 	

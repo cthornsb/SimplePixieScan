@@ -151,7 +151,7 @@ class Processor{
 	float Status(unsigned long global_events_);
 
 	void AddEvent(ChannelEventPair *event_){ events.push_back(event_); }
-
+	
 	void PreProcess();
 
 	bool Process(ChannelEventPair *start_);
