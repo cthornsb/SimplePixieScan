@@ -103,23 +103,20 @@ bool ProcessorHandler::Process(){
 		for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
 			if(iter->proc->Process(*start)){ retval = true; }
 		}
-	
-		// Finally, tell the processor to finish up processing by clearing its event list. This
-		// must be done last because other processors may rely on events which are contained
-		// within this processor.
-		for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
-			iter->proc->WrapUp();
-		}
 	}
-	
-	// Remove all pointers from the start vector.
-	starts.clear();
 	
 	return retval;
 }
 
 void ProcessorHandler::ZeroAll(){
+	// Remove all pointers from the start vector.
+	starts.clear();
+	
+	// Remove all channel events from the processors and tell the processor to finish up 
+	// processing by clearing its event list. This must be done last because other processors 
+	// may rely on events which are contained within this processor.
 	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
+		iter->proc->WrapUp();
 		iter->proc->Zero();
 	}
 }
