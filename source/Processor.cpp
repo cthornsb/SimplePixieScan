@@ -106,8 +106,8 @@ bool Processor::SetFitParameters(ChannelEvent *event_, MapEntry *entry_){
 	actual_func->SetGamma(entry_->gamma);
 
 	// Set initial parameters to those obtained from fit optimizations.
-	fitting_func->SetParameter(0, event_->maximum*9.211 + 150.484); // Normalization of pulse
-	fitting_func->SetParameter(1, event_->phase*1.087 - 2.359); // Phase (leading edge of pulse) (ns)
+	fitting_func->SetParameter(0, event_->qdc); // Normalization of pulse
+	fitting_func->SetParameter(1, event_->phase); // Phase (leading edge of pulse) (ns)
 	
 	// Set the fitting range.
 	fitting_func->SetRange(event_->max_index-fitting_low, event_->max_index+fitting_high);

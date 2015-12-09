@@ -41,10 +41,10 @@ LONG	Structure for raw pixie channels
 # Data types and names
 # type	name	description
 BEGIN_TYPES
-vector:int	raw_mod	Module number
-vector:int	raw_chan	Channel number
-vector:double	raw_time	Raw pixie (low-res) time
-vector:double	raw_energy	Raw pixie energy
+vector:int	raw_mod	The module number.
+vector:int	raw_chan	The channel number.
+vector:double	raw_time	The raw pixie16 system clock time.
+vector:double	raw_energy	The raw pixie energy.
 u_int	raw_mult	Multiplicity of the raw events
 
 # Trace output data types and names (must end with _wave)
@@ -69,13 +69,14 @@ LONG	Structure for detectors of type "trigger"
 # Data types and names
 # type	name	description
 BEGIN_TYPES
-vector:double	trigger_time	Raw pixie time
-vector:double	trigger_energy	Raw pixie energy
-u_int	trigger_mult	Multiplicity of the trigger detector
+vector:double	trigger_time	The raw pixie16 system clock time.
+vector:double	trigger_energy	The energy computed from the trace.
+vector:double	trigger_phase	The trace offset in ns.
+u_int	trigger_mult	Multiplicity of the trigger detector.
 
 # Trace output data types and names (must end with _wave)
 # type	name	description
-vector:int	trigger_wave	Integer vector for trigger pulses
+vector:int	trigger_wave	Integer vector for trigger pulses.
 END_TYPES
 
 # End this class
@@ -96,19 +97,19 @@ LONG	Structure for detectors of type "vandlesmall" or "vandlebig"
 # Data types and names
 # type	name	description
 BEGIN_TYPES
-vector:double	vandle_TOF
-vector:double	vandle_lqdc
-vector:double	vandle_rqdc
-vector:double	vandle_ltime
-vector:double	vandle_rtime
-vector:double	vandle_energy
+vector:double	vandle_lqdc	The left pmt energy computed from trace.
+vector:double	vandle_rqdc	The right pmt energy computed from trace.
+vector:double	vandle_ltime	The left pmt raw pixie16 system clock time.
+vector:double	vandle_rtime	The right pmt raw pixie16 system clock time.
+vector:double	vandle_lphase	The left pmt trace offset in ns.
+vector:double	vandle_rphase	The right pmt trace offset in ns.
 vector:int	vandle_loc	Detector location (ID)
-u_int	vandle_mult	Multiplicity of the vandle events
+u_int	vandle_mult	Multiplicity of the vandle events.
 
 # Trace output data types and names (must end with _wave)
 # type	name	description
-vector:int	left_wave	Integer vector for left vandle pulse
-vector:int	right_wave	Integer vector for right vandle pulse
+vector:int	left_wave	Integer vector for left vandle pulse.
+vector:int	right_wave	Integer vector for right vandle pulse.
 END_TYPES
 
 # End this class
@@ -129,13 +130,14 @@ LONG	Structure for detectors of type "phoswich"
 # Data types and names
 # type	name	description
 BEGIN_TYPES
+vector:double	phoswich_time	The raw pixie16 system clock time.
 vector:double	phoswich_fqdc	The integral of the fast portion of the pulse.
 vector:double	phoswich_sqdc	The integral of the slow portion of the pulse.
 vector:double	phoswich_fAmp	The amplitude of the landau function for the fast pulse.
 vector:double	phoswich_fMPV	The most probable value of the landau function for the fast pulse.
 vector:double	phoswich_fSigma	The sigma (roughly the width) of the landau function for the fast pulse.
 vector:double	phoswich_fChi2	The chi^2/NDF for the fast pulse fit.
-u_int	phoswich_mult	Multiplicity of the phoswich events
+u_int	phoswich_mult	Multiplicity of the phoswich events.
 
 # Trace output data types and names (must end with _wave)
 # type	name	description
@@ -160,15 +162,16 @@ LONG	Structure for detectors of type "nonwich"
 # Data types and names
 # type	name	description
 BEGIN_TYPES
-vector:double	nonwich_TOF	The time-of-flight between the dE and the E.
+vector:double	nonwich_dEtime	The raw pixie16 system clock time for the dE.
+vector:double	nonwich_Etime	The raw pixie16 system clock time for the E.
 vector:double	nonwich_dE	The integral of the dE pulse.
 vector:double	nonwich_E	The integral of the E pulse.
-u_int	nonwich_mult	Multiplicity of the nonwich events
+u_int	nonwich_mult	Multiplicity of the nonwich events.
 
 # Trace output data types and names (must end with _wave)
 # type	name	description
-vector:int	nonwich_dE_wave	The nonwich dE trace.
-vector:int	nonwich_E_wave	The nonwich E trace.
+vector:int	nonwich_dEwave	The nonwich dE trace.
+vector:int	nonwich_Ewave	The nonwich E trace.
 END_TYPES
 
 # End this class
@@ -189,14 +192,15 @@ LONG	Structure for detectors of type "generic"
 # Data types and names
 # type	name	description
 BEGIN_TYPES
-vector:double	generic_TOF
-vector:double	generic_energy
+vector:double	generic_time	The raw pixie16 system clock time.
+vector:double	generic_energy	The energy computed from the trace.
+vector:double	generic_phase	The trace offset in ns.
 vector:int	generic_loc	Detector location (ID)
-u_int	generic_mult	Multiplicity of the generic type events
+u_int	generic_mult	Multiplicity of the generic type events.
 
 # Trace output data types and names (must end with _wave)
 # type	name	description
-vector:int	generic_wave
+vector:int	generic_wave	Integer vector for generic pulses.
 END_TYPES
 
 # End this class
@@ -217,8 +221,8 @@ LONG	Track the number of occurances of logic signals.
 # Data types and names
 # type	name	description
 BEGIN_TYPES
-vector:int	logic_loc	Detector location (ID)
-u_int	logic_mult	Multiplicity of the logic events
+vector:int	logic_loc	Signal location (ID).
+u_int	logic_mult	Multiplicity of the logic events.
 END_TYPES
 
 # End this class

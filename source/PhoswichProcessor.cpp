@@ -57,7 +57,7 @@ bool PhoswichProcessor::HandleEvents(){
 		if(!current_event->valid_chan){ continue; }
 	
 		// Fill the values into the root tree.
-		structure.Append(fast_qdc, slow_qdc, fast_A, fast_MPV, fast_Sigma, fast_chi2);
+		structure.Append(current_event->time, fast_qdc, slow_qdc, fast_A, fast_MPV, fast_Sigma, fast_chi2);
 		
 		// Copy the trace to the output file.
 		if(write_waveform){

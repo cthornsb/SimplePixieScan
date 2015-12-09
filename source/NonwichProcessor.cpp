@@ -20,11 +20,8 @@ bool NonwichProcessor::HandleEvents(){
 		// Check that the time and energy values are valid
 		if(!current_event->valid_chan){ continue; }
 	
-		// Calculate the particle time-of-flight and the time difference between the two ends.		
-		double tof = current_event->hires_time - start->event->hires_time;
-		
 		// Fill the values into the root tree.
-		structure.Append(tof, start->event->hires_energy, current_event->hires_energy);
+		structure.Append(start->event->time, current_event->time, start->event->hires_energy, current_event->hires_energy);
 		     
 		// Copy the trace to the output file.
 		if(write_waveform){

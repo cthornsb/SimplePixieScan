@@ -34,7 +34,6 @@ bool VandleProcessor::HandleEvents(){
 
 	ChannelEvent *current_event_L;
 	ChannelEvent *current_event_R;
-	ChannelEvent *start_event = start->event;
 
 	// Pick out pairs of channels representing vandle bars.
 	for(; iter_R != events.end(); iter_L++, iter_R++){
@@ -54,14 +53,9 @@ bool VandleProcessor::HandleEvents(){
 		// Check that the two channels are not separated by too much time.
 		if(absdiff(current_event_L->time, current_event_R->time) > (2 * small_max_tdiff)){ continue; }
 		
-		// Calculate the particle time-of-flight and the time difference between the two ends.		
-		double tof = (current_event_L->hires_time + current_event_R->hires_time) / 2.0 - start_event->hires_time;
-		//double tdiff = (current_event_L->hires_time - current_event_R->hires_time);
-		
 		// Fill the values into the root tree.
-		structure.Append(tof, current_event_L->hires_energy, current_event_R->hires_energy, (current_event_R->hires_time - start_event->hires_time), 
-		                 (current_event_R->hires_time - start_event->hires_time), std::sqrt(current_event_L->hires_energy * current_event_R->hires_energy), 
-		                 (*iter_L)->entry->location);
+		structure.Append(current_event_L->hires_energy, current_event_R->hires_energy, current_event_L->time, current_event_R->time,
+		                 current_event_L->phase, current_event_R->phase, (*iter_L)->entry->location);
 		     
 		// Copy the trace to the output file.
 		if(write_waveform){
