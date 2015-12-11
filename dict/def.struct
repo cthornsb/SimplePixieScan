@@ -49,6 +49,7 @@ u_int	raw_mult	Multiplicity of the raw events
 
 # Trace output data types and names (must end with _wave)
 # type	name	description
+vector:int	raw_wave	Integer vector for raw waveforms.
 END_TYPES
 
 # End this class

@@ -14,6 +14,7 @@
 // Root libraries
 #include "TFile.h"
 #include "TTree.h"
+#include "TH2I.h"
 
 void Scanner::ProcessRawEvent(){
 	ChannelEvent *current_event = NULL;
@@ -24,12 +25,16 @@ void Scanner::ProcessRawEvent(){
 		current_event = rawEvent.front();
 		rawEvent.pop_front(); // Remove this event from the raw event deque.
 		
+		// Check that this channel event exists.
 		if(!current_event){ continue; }
 
-		// Link the channel event to its corresponding map entry.
-		current_pair = new ChannelEventPair(current_event, mapfile->GetMapEntry(current_event));
+		// Fill the output histogram with the module and channel id.
+		chanCounts->Fill(current_event->chanNum, current_event->modNum);
 
 		if(!raw_event_mode){ // Standard operation. Individual processors will handle output
+			// Link the channel event to its corresponding map entry.
+			current_pair = new ChannelEventPair(current_event, mapfile->GetMapEntry(current_event));
+		
 			// Pass this event to the correct processor
 			if(current_pair->entry->type == "ignore" || !handler->AddEvent(current_pair)){ // Invalid detector type. Delete it
 				delete current_pair;
@@ -44,6 +49,7 @@ void Scanner::ProcessRawEvent(){
 		}
 		else{ // Raw event mode operation. Dump raw event information to root file.
 			structure.Append(current_event->modNum, current_event->chanNum, current_event->time, current_event->energy);
+			waveform.Append(current_event->trace);
 			delete current_pair;
 		}
 	}
@@ -62,6 +68,7 @@ void Scanner::ProcessRawEvent(){
 	else{
 		root_tree->Fill();
 		structure.Zero();
+		waveform.Zero();
 	}
 }
 
@@ -76,26 +83,30 @@ Scanner::Scanner(){
 }
 
 Scanner::~Scanner(){
-	delete mapfile;
-	delete configfile;
-	
 	if(init){
-		std::cout << "Scanner: Found " << handler->GetTotalEvents() << " start events.\n";
-		std::cout << "Scanner: Total data time is " << handler->GetDeltaEventTime() << " s.\n";
-	}
-	
-	delete handler;
-
-	if(root_file){
+		std::cout << "Scanner: Found " << chanCounts->GetEntries() << " total events.\n";
+		if(!raw_event_mode){
+			std::cout << "Scanner: Found " << handler->GetTotalEvents() << " start events.\n";
+			std::cout << "Scanner: Total data time is " << handler->GetDeltaEventTime() << " s.\n";
+		
+			delete mapfile;
+			delete configfile;
+			delete handler;
+		}
+		
+		// If the root file is open, write the tree and histogram.
 		if(root_file->IsOpen()){
 			std::cout << "Scanner: Writing " << root_tree->GetEntries() << " entries to root file.\n";
 			root_file->cd();
 			root_tree->Write();
+			if(chanCounts){ 
+				chanCounts->Write(); 
+			}
 			root_file->Close();
 		}
 		delete root_file;
 	}
-	
+
 	Close(); // Close the Unpacker object.
 }
 
@@ -103,26 +114,31 @@ Scanner::~Scanner(){
 bool Scanner::Initialize(std::string prefix_){
 	if(init){ return false; }
 
-	std::cout << prefix_ << "Reading map file ./setup/map.dat\n";
-	mapfile = new MapFile("./setup/map.dat");
-	std::cout << prefix_ << "Reading config file ./setup/config.dat\n";
-	configfile = new ConfigFile("./setup/config.dat");
-	event_width = configfile->event_width * 125; // = event_width * 1E-6(s/us) / 8E-9(s/clock)
-	std::cout << prefix_ << "Setting event width to " << configfile->event_width << " μs (" << event_width << " pixie clock ticks).\n";
-	handler = new ProcessorHandler();
-
-	std::vector<MapEntry> *types = mapfile->GetTypes();
-	for(std::vector<MapEntry>::iterator iter = types->begin(); iter != types->end(); iter++){
-		if(iter->type == "ignore" || !handler->CheckProcessor(iter->type)){ continue; }
-		else if(handler->AddProcessor(iter->type, mapfile)){ std::cout << prefix_ << "Added " << iter->type << " processor to the processor list.\n"; }
-		else{ std::cout << prefix_ << "Failed to add " << iter->type << " processor to the processor list!\n"; }
+	// Only initialize map file, config file, and processor handler if not in raw event mode.
+	if(!raw_event_mode){
+		std::cout << prefix_ << "Reading map file ./setup/map.dat\n";
+		mapfile = new MapFile("./setup/map.dat");
+		std::cout << prefix_ << "Reading config file ./setup/config.dat\n";
+		configfile = new ConfigFile("./setup/config.dat");
+		event_width = configfile->event_width * 125; // = event_width * 1E-6(s/us) / 8E-9(s/tick)
+		std::cout << prefix_ << "Setting event width to " << configfile->event_width << " μs (" << event_width << " pixie clock ticks).\n";
+		handler = new ProcessorHandler();
+		
+		// Load all needed processors.
+		std::vector<MapEntry> *types = mapfile->GetTypes();
+		for(std::vector<MapEntry>::iterator iter = types->begin(); iter != types->end(); iter++){
+			if(iter->type == "ignore" || !handler->CheckProcessor(iter->type)){ continue; }
+			else if(handler->AddProcessor(iter->type, mapfile)){ std::cout << prefix_ << "Added " << iter->type << " processor to the processor list.\n"; }
+			else{ std::cout << prefix_ << "Failed to add " << iter->type << " processor to the processor list!\n"; }
+		}
 	}
 	
+	// Initialize the root output file.
 	std::cout << prefix_ << "Initializing root output.\n";
-
 	if(force_overwrite){ root_file = new TFile(output_filename.c_str(), "RECREATE"); }
 	else{ root_file = new TFile(output_filename.c_str(), "CREATE"); }
 
+	// Check that the root file is open.
 	if(!root_file->IsOpen()){
 		std::cout << prefix_ << "Failed to open output root file '" << output_filename << "'!\n";
 		root_file->Close();
@@ -131,16 +147,22 @@ bool Scanner::Initialize(std::string prefix_){
 		return false;
 	}
 
+	// Setup the root tree for data output.
 	root_tree = new TTree("Pixie16", "Pixie16 data");
+	
+	// Setup a 2d histogram for tracking all channel counts.
+	chanCounts = new TH2I("chanCounts", "Recorded Counts for Module vs. Channel", 16, 0, 16, 14, 0, 14);
+	chanCounts->GetXaxis()->SetTitle("Channel");
+	chanCounts->GetYaxis()->SetTitle("Module");
 
 	if(!raw_event_mode){ // Standard operation
 		handler->InitRootOutput(root_tree);
+		if(!use_root_fitting){ handler->ToggleFitting(); }
 	}
-	else{ // Raw event output only. Processors will not be called!
+	else{ // Raw event output only. Processors will not be called.
 		root_tree->Branch("RawEvent", &structure);
+		root_tree->Branch("RawWave", &waveform);
 	}
-	
-	if(!use_root_fitting){ handler->ToggleFitting(); }
 
 	return (init = true);
 }
