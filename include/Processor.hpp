@@ -16,6 +16,7 @@ class TTree;
 class TBranch;
 class TGraph;
 class TF1;
+class TH1;
 
 class Structure;
 class Waveform;
@@ -135,6 +136,8 @@ class Processor{
 	Processor(std::string name_, std::string type_, MapFile *map_);
 	
 	virtual ~Processor();
+
+	virtual void GetHists(std::vector<TH1*> &hists_){ }
 	
 	std::string GetType(){ return type; }
 	

@@ -1,43 +1,67 @@
 #ifndef ONLINE_PROCESSOR_HPP
 #define ONLINE_PROCESSOR_HPP
 
+#include <vector>
+#include <string>
+
+class Processor;
+
 class TH1;
-class TH2;
 class TCanvas;
 class TApplication;
 
+class plot_object{
+  public:
+	std::string opt;
+	std::string name;
+	
+	TH1 *hist;
+	
+	plot_object(TH1 *hist_, const std::string &draw_opt_="");
+
+	~plot_object(){ }
+	
+	void Draw();
+};
+
 class OnlineProcessor{
   private:
-	unsigned int which_hists[4];
+	unsigned int canvas_cols;
+	unsigned int canvas_rows;
+  	unsigned int num_hists; /// The number of histograms which may be plotted at a given time.
+  	
+	int *which_hists; /// Array for storing which histogram to plot for each of the canvas pads.
 
-	bool init;
-
-	TH1* hists_1d[5]; /// Array of 1d histogram pointers for plotting online data.
-	TH2* hists_2d[5]; /// Array of 2d histogram pointers for plotting online data.
+	std::vector<TH1*> plottable_hists; /// Vector of plottable histograms which is filled by the processors.
 
 	TCanvas *can; /// Root canvas for plotting online data.
 	
 	TApplication *rootapp; /// Root application for handling graphics.
 	
-	/// Redraw all current plots to the canvas.
-	void RedrawRoot();
-	
   public:
-	OnlineProcessor();
+  	/// Default constructor.
+	OnlineProcessor(const unsigned int &cols_=2, const unsigned int &rows_=2);
 	
+	/// Destructor.
 	~OnlineProcessor();
 	
-	/// Initialize.
-	bool Initialize();
-	
-	/// Set the range of a 1d histogram.
-	void SetRange(const unsigned int &index_, const double &low_, const double &high_);
-	
-	/// Set the range of a 2d histogram.
-	void SetRange(const unsigned int &index_, const double &Xlow_, const double &Xhigh_, const double &Ylow_, const double &Yhigh_);
+	/// Change the histogram id of one of the canvas pads.
+	bool ChangeHist(const unsigned int &index_, const unsigned int &hist_id_);
+
+	/// Change the histogram id of one of the canvas pads.
+	bool ChangeHist(const unsigned int &index_, const std::string &hist_name_);
 	
 	/// Refresh online plots.
 	void Refresh();
+	
+	/// Add a processor's histograms to the list of plottable items.
+	void AddHists(Processor *proc_);
+	
+	/// Add a single histogram to the list of plottable items.
+	void AddHist(TH1 *hist_);
+	
+	/// Display a list of available plots.
+	void PrintHists();
 };
 
 #endif

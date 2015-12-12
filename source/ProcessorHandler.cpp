@@ -46,7 +46,7 @@ bool ProcessorHandler::CheckProcessor(std::string type_){
 	return true;
 }
 
-bool ProcessorHandler::AddProcessor(std::string type_, MapFile *map_){
+Processor *ProcessorHandler::AddProcessor(std::string type_, MapFile *map_){
 	Processor *proc;
 
 	if(type_ == "trigger"){ proc = (Processor*)(new TriggerProcessor(map_)); }
@@ -55,11 +55,11 @@ bool ProcessorHandler::AddProcessor(std::string type_, MapFile *map_){
 	else if(type_ == "nonwich"){ proc = (Processor*)(new NonwichProcessor(map_)); }
 	else if(type_ == "generic"){ proc = (Processor*)(new GenericProcessor(map_)); }
 	else if(type_ == "logic"){ proc = (Processor*)(new LogicProcessor(map_)); }
-	else{ return false; }
+	else{ return NULL; }
 	
 	procs.push_back(ProcessorEntry(proc, type_)); 
 	
-	return true;
+	return proc;
 }
 
 bool ProcessorHandler::AddEvent(ChannelEventPair *pair_){

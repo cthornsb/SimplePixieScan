@@ -22,6 +22,7 @@ class Scanner : public Unpacker{
 	RawEventWaveform waveform; /// Root data structure for storing raw waveforms.
 
 	TH2I *chanCounts; /// 2d root histogram to store number of total channel counts found.
+	TH2I *chanEnergy; /// 2d root histogram to store the energy spectra from all channels.
 	
 	bool force_overwrite;	
 	bool raw_event_mode;

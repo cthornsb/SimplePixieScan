@@ -30,8 +30,9 @@ void Scanner::ProcessRawEvent(){
 		// Check that this channel event exists.
 		if(!current_event){ continue; }
 
-		// Fill the output histogram with the module and channel id.
+		// Fill the output histograms.
 		chanCounts->Fill(current_event->chanNum, current_event->modNum);
+		chanEnergy->Fill(current_event->energy, current_event->modNum*16+current_event->chanNum);
 
 		if(!raw_event_mode){ // Standard operation. Individual processors will handle output
 			// Link the channel event to its corresponding map entry.
@@ -102,9 +103,8 @@ Scanner::~Scanner(){
 			std::cout << "Scanner: Writing " << root_tree->GetEntries() << " entries to root file.\n";
 			root_file->cd();
 			root_tree->Write();
-			if(chanCounts){ 
-				chanCounts->Write(); 
-			}
+			chanCounts->Write();
+			chanEnergy->Write();
 			root_file->Close();
 		}
 		delete root_file;
@@ -118,6 +118,30 @@ Scanner::~Scanner(){
 /// Initialize the map file, the config file, the processor handler, and add all of the required processors.
 bool Scanner::Initialize(std::string prefix_){
 	if(init){ return false; }
+
+	// Initialize the online data processor.
+	online = new OnlineProcessor();
+
+	// Setup a 2d histogram for tracking all channel counts.
+	chanCounts = new TH2I("chanCounts", "Recorded Counts for Module vs. Channel", 16, 0, 16, 14, 0, 14);
+	chanCounts->GetXaxis()->SetTitle("Channel");
+	chanCounts->GetYaxis()->SetTitle("Module");
+	chanCounts->SetStats(0);
+
+	// Setup a 2d histogram for tracking all channel counts.
+	chanEnergy = new TH2I("chanEnergy", "Channel vs. Energy", 500, 0, 20000, 224, 0, 224);
+	chanEnergy->GetXaxis()->SetTitle("Energy (a.u.)");
+	chanEnergy->GetYaxis()->SetTitle("Channel");	
+	chanEnergy->SetStats(0);
+
+	// Add the raw histograms to the online processor.
+	online->AddHist((TH1*)chanCounts);
+	online->AddHist((TH1*)chanEnergy);
+	
+	// Set the first and second histograms to channel count histogram and energy histogram.
+	online->ChangeHist(0, 0);
+	online->ChangeHist(1, 1);
+	online->Refresh();
 
 	// Only initialize map file, config file, and processor handler if not in raw event mode.
 	if(!raw_event_mode){
@@ -133,14 +157,18 @@ bool Scanner::Initialize(std::string prefix_){
 		std::vector<MapEntry> *types = mapfile->GetTypes();
 		for(std::vector<MapEntry>::iterator iter = types->begin(); iter != types->end(); iter++){
 			if(iter->type == "ignore" || !handler->CheckProcessor(iter->type)){ continue; }
-			else if(handler->AddProcessor(iter->type, mapfile)){ std::cout << prefix_ << "Added " << iter->type << " processor to the processor list.\n"; }
-			else{ std::cout << prefix_ << "Failed to add " << iter->type << " processor to the processor list!\n"; }
+			else{
+				Processor *proc = handler->AddProcessor(iter->type, mapfile);
+				if(proc){
+					std::cout << prefix_ << "Added " << iter->type << " processor to the processor list.\n"; 
+				
+					// Initialize all online diagnostic plots.
+					online->AddHists(proc);
+				}
+				else{ std::cout << prefix_ << "Failed to add " << iter->type << " processor to the processor list!\n"; }
+			}
 		}
 	}
-	
-	// Initialize the online data processor.
-	online = new OnlineProcessor();
-	online->Initialize();
 	
 	// Initialize the root output file.
 	std::cout << prefix_ << "Initializing root output.\n";
@@ -159,11 +187,6 @@ bool Scanner::Initialize(std::string prefix_){
 	// Setup the root tree for data output.
 	root_tree = new TTree("Pixie16", "Pixie16 data");
 	
-	// Setup a 2d histogram for tracking all channel counts.
-	chanCounts = new TH2I("chanCounts", "Recorded Counts for Module vs. Channel", 16, 0, 16, 14, 0, 14);
-	chanCounts->GetXaxis()->SetTitle("Channel");
-	chanCounts->GetYaxis()->SetTitle("Module");
-
 	if(!raw_event_mode){ // Standard operation
 		handler->InitRootOutput(root_tree);
 		if(!use_root_fitting){ handler->ToggleFitting(); }
@@ -237,20 +260,25 @@ bool Scanner::CommandControl(std::string cmd_, const std::vector<std::string> &a
 	if(cmd_ == "refresh"){
 		online->Refresh();
 	}
-	/*if(cmd_ == "set"){ // Toggle debug mode
+	else if(cmd_ == "list"){
+		online->PrintHists();
+	}
+	else if(cmd_ == "set"){
 		if(args_.size() == 2){
-			mod_ = atoi(args_.at(0).c_str());
-			chan_ = atoi(args_.at(1).c_str());
-			resetGraph_ = true;
+			int index1 = atoi(args_.at(0).c_str());
+			int index2 = atoi(args_.at(1).c_str());
+			if(online->ChangeHist(index1, args_.at(1))){ std::cout << message_head << "Set TPad " << index1 << " to histogram '" << args_.at(1) << "'.\n"; }
+			else if(online->ChangeHist(index1, index2)){ std::cout << message_head << "Set TPad " << index1 << " to histogram ID " << index2 << ".\n"; }
+			else{ std::cout << message_head << "Failed to set TPad " << index1 << " to histogram '" << args_.at(1) << "'!\n"; }
 		}
 		else{
 			std::cout << message_head << "Invalid number of parameters to 'set'\n";
-			std::cout << message_head << " -SYNTAX- set [module] [channel]\n";
+			std::cout << message_head << " -SYNTAX- set [index] [hist]\n";
 		}
-	}*/
-	//else{ return false; }
+	}
+	else{ return false; }
 
-	return false;
+	return true;
 }
 
 /// Print a status message.	
