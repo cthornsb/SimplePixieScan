@@ -10,12 +10,14 @@
 #include "ConfigFile.hpp"
 #include "Processor.hpp"
 #include "ProcessorHandler.hpp"
+#include "OnlineProcessor.hpp"
 
 // Root libraries
 #include "TFile.h"
 #include "TTree.h"
 #include "TH2I.h"
 
+/// Process all events in the event list.
 void Scanner::ProcessRawEvent(){
 	ChannelEvent *current_event = NULL;
 	ChannelEventPair *current_pair = NULL;
@@ -79,6 +81,7 @@ Scanner::Scanner(){
 	mapfile = NULL;
 	configfile = NULL;
 	handler = NULL;
+	online = NULL;
 	output_filename = "out.root";
 }
 
@@ -105,6 +108,8 @@ Scanner::~Scanner(){
 			root_file->Close();
 		}
 		delete root_file;
+		
+		if(online){ delete online; }
 	}
 
 	Close(); // Close the Unpacker object.
@@ -132,6 +137,10 @@ bool Scanner::Initialize(std::string prefix_){
 			else{ std::cout << prefix_ << "Failed to add " << iter->type << " processor to the processor list!\n"; }
 		}
 	}
+	
+	// Initialize the online data processor.
+	online = new OnlineProcessor();
+	online->Initialize();
 	
 	// Initialize the root output file.
 	std::cout << prefix_ << "Initializing root output.\n";
@@ -225,6 +234,9 @@ bool Scanner::SetArgs(std::deque<std::string> &args_, std::string &filename){
   * \return True if the command is valid and false otherwise.
   */
 bool Scanner::CommandControl(std::string cmd_, const std::vector<std::string> &args_){
+	if(cmd_ == "refresh"){
+		online->Refresh();
+	}
 	/*if(cmd_ == "set"){ // Toggle debug mode
 		if(args_.size() == 2){
 			mod_ = atoi(args_.at(0).c_str());

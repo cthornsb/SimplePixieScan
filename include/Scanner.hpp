@@ -8,6 +8,7 @@
 class MapFile;
 class ConfigFile;
 class ProcessorHandler;
+class OnlineProcessor;
 class TH2I;
 
 class Scanner : public Unpacker{
@@ -15,12 +16,13 @@ class Scanner : public Unpacker{
 	MapFile *mapfile;
 	ConfigFile *configfile;
 	ProcessorHandler *handler;
+	OnlineProcessor *online;
 	
 	RawEventStructure structure; /// Root data structure for storing raw channel event information.
 	RawEventWaveform waveform; /// Root data structure for storing raw waveforms.
 
 	TH2I *chanCounts; /// 2d root histogram to store number of total channel counts found.
-
+	
 	bool force_overwrite;	
 	bool raw_event_mode;
 	bool use_root_fitting;
