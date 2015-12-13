@@ -134,6 +134,24 @@ std::string MapFile::GetTag(int mod_, int chan_){
 	return detectors[mod_][chan_].tag;
 }
 
+int MapFile::GetFirstOccurance(const std::string &type_){
+	for(int i = 0; i < max_modules; i++){
+		for(int j = 0; j < max_channels; j++){
+			if(detectors[i][j].type == type_){ return (int)detectors[i][j].location; }
+		}
+	}
+	return -1;
+}
+
+int MapFile::GetLastOccurance(const std::string &type_){
+	for(int i = max_modules-1; i >= 0; i--){
+		for(int j = max_channels-1; j >= 0; j--){
+			if(detectors[i][j].type == type_){ return (int)detectors[i][j].location; }
+		}
+	}
+	return -1;
+}
+
 bool MapFile::Load(const char *filename_){
 	clear_entries();
 
