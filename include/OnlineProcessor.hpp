@@ -10,16 +10,17 @@ class TH1;
 class TCanvas;
 class TApplication;
 
-class plot_object{
+class PlotObject{
   public:
 	std::string opt;
 	std::string name;
+	std::string title;
 	
 	TH1 *hist;
 	
-	plot_object(TH1 *hist_, const std::string &draw_opt_="");
+	PlotObject(TH1 *hist_, const std::string &draw_opt_="");
 
-	~plot_object(){ }
+	~PlotObject(){ }
 	
 	void Draw();
 };
@@ -32,7 +33,7 @@ class OnlineProcessor{
   	
 	int *which_hists; /// Array for storing which histogram to plot for each of the canvas pads.
 
-	std::vector<TH1*> plottable_hists; /// Vector of plottable histograms which is filled by the processors.
+	std::vector<PlotObject*> plottable_hists; /// Vector of plottable histograms which is filled by the processors.
 
 	TCanvas *can; /// Root canvas for plotting online data.
 	
@@ -58,7 +59,7 @@ class OnlineProcessor{
 	void AddHists(Processor *proc_);
 	
 	/// Add a single histogram to the list of plottable items.
-	void AddHist(TH1 *hist_);
+	void AddHist(PlotObject *hist_);
 	
 	/// Display a list of available plots.
 	void PrintHists();

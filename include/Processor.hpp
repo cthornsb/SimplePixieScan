@@ -11,6 +11,7 @@
 
 class MapEntry;
 class MapFile;
+class PlotObject;
 
 class TTree;
 class TBranch;
@@ -137,7 +138,7 @@ class Processor{
 	
 	virtual ~Processor();
 
-	virtual void GetHists(std::vector<TH1*> &hists_){ }
+	virtual void GetHists(std::vector<PlotObject*> &plots_){ }
 	
 	std::string GetType(){ return type; }
 	

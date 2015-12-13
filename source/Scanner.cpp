@@ -135,8 +135,8 @@ bool Scanner::Initialize(std::string prefix_){
 	chanEnergy->SetStats(0);
 
 	// Add the raw histograms to the online processor.
-	online->AddHist((TH1*)chanCounts);
-	online->AddHist((TH1*)chanEnergy);
+	online->AddHist(new PlotObject((TH1*)chanCounts, "COLZ"));
+	online->AddHist(new PlotObject((TH1*)chanEnergy, "COLZ"));
 	
 	// Set the first and second histograms to channel count histogram and energy histogram.
 	online->ChangeHist(0, 0);
