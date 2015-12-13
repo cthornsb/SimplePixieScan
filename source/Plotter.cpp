@@ -17,6 +17,9 @@ Plotter::Plotter(const std::string &name_, const std::string &title_, const std:
 	std::stringstream stream; stream << "Counts per " << (xmin_-xmax_)/xbins_;
 	hist->GetYaxis()->SetTitle(stream.str().c_str());
 	hist->SetStats(0);
+	logx = false;
+	logy = false;
+	logz = false;
 	dim = 1;
 }
 
@@ -30,11 +33,31 @@ Plotter::Plotter(const std::string &name_, const std::string &title_, const std:
 	hist->GetXaxis()->SetTitle(xtitle_.c_str());
 	hist->GetYaxis()->SetTitle(ytitle_.c_str());
 	hist->SetStats(0);
+	logx = false;
+	logy = false;
+	logz = false;
 	dim = 2;
 }
 
 Plotter::~Plotter(){ 
 	delete hist; 
+}
+
+void Plotter::GetXrange(double &xmin_, double &xmax_){
+	xmin_ = xmin;
+	xmax_ = xmax;
+}
+
+void Plotter::GetYrange(double &ymin_, double &ymax_){
+	ymin_ = ymin;
+	ymax_ = ymax;
+}
+
+void Plotter::GetRange(double &xmin_, double &xmax_, double &ymin_, double &ymax_){
+	xmin_ = xmin;
+	xmax_ = xmax;
+	ymin_ = ymin;
+	ymax_ = ymax;
 }
 
 void Plotter::SetXaxisTitle(const std::string &title_){ 
@@ -79,6 +102,9 @@ void Plotter::Draw(TPad *pad_){
 	if(dim == 1){
 		SetYrange(hist->GetMinimum()*1.1, hist->GetMaximum()*1.1);
 	}
+	if(logx){ pad_->SetLogx(); }
+	if(logy){ pad_->SetLogy(); }
+	if(logz){ pad_->SetLogz(); }
 	pad_->DrawFrame(xmin, ymin, xmax, ymax);
 	hist->Draw((opt+"SAME").c_str());
 }

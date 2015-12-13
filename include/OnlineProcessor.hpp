@@ -8,6 +8,7 @@ class Processor;
 class Plotter;
 
 class TCanvas;
+class TPad;
 class TApplication;
 
 class OnlineProcessor{
@@ -21,8 +22,11 @@ class OnlineProcessor{
 	std::vector<Plotter*> plottable_hists; /// Vector of plottable histograms which is filled by the processors.
 
 	TCanvas *can; /// Root canvas for plotting online data.
+	TPad *pad; /// Pointer to the current TPad for drawing.
 	
 	TApplication *rootapp; /// Root application for handling graphics.
+	
+	TPad *cd(const unsigned int &index_);
 	
   public:
   	/// Default constructor.
@@ -42,6 +46,12 @@ class OnlineProcessor{
 	bool SetYrange(const unsigned int &index_, const double &ymin_, const double &ymax_);
 	
 	bool SetRange(const unsigned int &index_, const double &xmin_, const double &xmax_, const double &ymin_, const double &ymax_);
+	
+	bool ToggleLogX(const unsigned int &index_);
+	
+	bool ToggleLogY(const unsigned int &index_);
+	
+	bool ToggleLogZ(const unsigned int &index_);
 	
 	/// Refresh online plots.
 	void Refresh();

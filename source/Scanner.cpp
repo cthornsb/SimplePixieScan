@@ -215,6 +215,9 @@ void Scanner::CmdHelp(std::string prefix_){
 	std::cout << prefix_ << "refresh                    - Update online diagnostic plots.\n";
 	std::cout << prefix_ << "list                       - List all plottable online histograms.\n";
 	std::cout << prefix_ << "set [index] [hist]         - Set the histogram to draw to part of the canvas.\n";
+	std::cout << prefix_ << "xlog [index]               - Toggle the x-axis log/linear scale of a specified histogram.\n";
+	std::cout << prefix_ << "ylog [index]               - Toggle the y-axis log/linear scale of a specified histogram.\n";
+	std::cout << prefix_ << "zlog [index]               - Toggle the z-axis log/linear scale of a specified histogram.\n"; 
 	std::cout << prefix_ << "xrange [index] [min] [max] - Set the x-axis range of a histogram displayed on the canvas.\n";
 	std::cout << prefix_ << "yrange [index] [min] [max] - Set the y-axis range of a histogram displayed on the canvas.\n";
 	std::cout << prefix_ << "range [index] [xmin] [xmax] [ymin] [ymax] - Set the range of the x and y axes.\n";
@@ -231,11 +234,6 @@ bool Scanner::SetArgs(std::deque<std::string> &args_, std::string &filename){
 		args_.pop_front();
 		
 		if(current_arg == "--force-overwrite"){
-			/*if(args_.empty()){
-				std::cout << " Error: Missing required argument to option '--mod'!\n";
-				return false;
-			}
-			mod_ = atoi(args_.front().c_str());*/
 			std::cout << "Scanner: Forcing overwrite of output file.\n";
 			force_overwrite = true;
 		}
@@ -275,6 +273,39 @@ bool Scanner::CommandControl(std::string cmd_, const std::vector<std::string> &a
 		else{
 			std::cout << message_head << "Invalid number of parameters to 'set'\n";
 			std::cout << message_head << " -SYNTAX- set [index] [hist]\n";
+		}
+	}
+	else if(cmd_ == "xlog"){
+		if(args_.size() == 1){
+			int index = atoi(args_.at(0).c_str());
+			if(online->ToggleLogX(index)){ std::cout << message_head << "Successfully toggled x-axis log scale for TPad " << index << ".\n"; }
+			else{ std::cout << message_head << "Failed to toggle x-axis log scale for TPad " << index << ".\n"; }
+		}
+		else{
+			std::cout << message_head << "Invalid number of parameters to 'xlog'\n";
+			std::cout << message_head << " -SYNTAX- xlog [index]\n";
+		}
+	}
+	else if(cmd_ == "ylog"){
+		if(args_.size() == 1){
+			int index = atoi(args_.at(0).c_str());
+			if(online->ToggleLogY(index)){ std::cout << message_head << "Successfully toggled y-axis log scale for TPad " << index << ".\n"; }
+			else{ std::cout << message_head << "Failed to toggle y-axis log scale for TPad " << index << ".\n"; }
+		}
+		else{
+			std::cout << message_head << "Invalid number of parameters to 'ylog'\n";
+			std::cout << message_head << " -SYNTAX- ylog [index]\n";
+		}
+	}
+	else if(cmd_ == "zlog"){
+		if(args_.size() == 1){
+			int index = atoi(args_.at(0).c_str());
+			if(online->ToggleLogZ(index)){ std::cout << message_head << "Successfully toggled z-axis log scale for TPad " << index << ".\n"; }
+			else{ std::cout << message_head << "Failed to toggle z-axis log scale for TPad " << index << ".\n"; }
+		}
+		else{
+			std::cout << message_head << "Invalid number of parameters to 'zlog'\n";
+			std::cout << message_head << " -SYNTAX- zlog [index]\n";
 		}
 	}
 	else if(cmd_ == "xrange"){
@@ -341,7 +372,6 @@ bool Scanner::CommandControl(std::string cmd_, const std::vector<std::string> &a
 
 /// Print a status message.	
 void Scanner::PrintStatus(std::string prefix_){ 
-	//std::cout << prefix_ << "Found " << num_traces << " traces and displayed " << num_displayed << ".\n"; 
 }
 
 int main(int argc, char *argv[]){

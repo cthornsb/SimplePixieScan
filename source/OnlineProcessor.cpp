@@ -9,6 +9,12 @@
 #include "TSystem.h"
 #include "TApplication.h"
 
+TPad *OnlineProcessor::cd(const unsigned int &index_){
+	if(index_ >= num_hists){ return NULL; }
+	pad = (TPad*)(can->cd(index_+1));
+	return pad;
+}
+
 OnlineProcessor::OnlineProcessor(const unsigned int &cols_/*=2*/, const unsigned int &rows_/*=2*/){
 	num_hists = cols_*rows_;
 	canvas_cols = cols_;
@@ -81,10 +87,34 @@ bool OnlineProcessor::SetRange(const unsigned int &index_, const double &xmin_, 
 	return true;
 }
 
+bool OnlineProcessor::ToggleLogX(const unsigned int &index_){
+	if(!cd(index_)){ return false; }
+	std::vector<Plotter*>::iterator iter = plottable_hists.begin();
+	if((*(iter+which_hists[index_]))->GetXmin() <= 0.0){ return false; }
+	(*(iter+which_hists[index_]))->ToggleLogX();
+	return true;
+}
+
+bool OnlineProcessor::ToggleLogY(const unsigned int &index_){
+	if(!cd(index_)){ return false; }
+	std::vector<Plotter*>::iterator iter = plottable_hists.begin();
+	if((*(iter+which_hists[index_]))->GetYmin() <= 0.0){ return false; }
+	(*(iter+which_hists[index_]))->ToggleLogY();
+	return true;
+}
+
+bool OnlineProcessor::ToggleLogZ(const unsigned int &index_){
+	if(!cd(index_)){ return false; }
+	std::vector<Plotter*>::iterator iter = plottable_hists.begin();
+	(*(iter+which_hists[index_]))->ToggleLogZ();
+	return true;
+}
+
 /// Refresh online plots.
 void OnlineProcessor::Refresh(){
 	can->Clear();
 
+	// Divide the canvas into TPads.
 	can->Divide(canvas_cols, canvas_rows);
 
 	std::vector<Plotter*>::iterator iter = plottable_hists.begin();
@@ -92,7 +122,8 @@ void OnlineProcessor::Refresh(){
 	// Set the histogram ids for all TPads.
 	for(unsigned int i = 0; i < num_hists; i++){
 		if(which_hists[i] >= 0){
-			(*(iter+which_hists[i]))->Draw((TPad*)can->cd(i+1));
+			cd(i);
+			(*(iter+which_hists[i]))->Draw(pad);
 		}
 	}
 

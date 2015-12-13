@@ -14,6 +14,10 @@ class Plotter{
 
 	double xmin, xmax;
 	double ymin, ymax;
+
+	bool logx;
+	bool logy;
+	bool logz;
 	
 	std::string name;
 	std::string opt;	
@@ -32,9 +36,29 @@ class Plotter{
 	
 	int GetNdim(){ return dim; }
 	
+	double GetXmin(){ return xmin; }
+	
+	double GetXmax(){ return xmax; }
+	
+	double GetYmin(){ return ymin; }
+	
+	double GetYmax(){ return ymax; }
+
+	bool GetLogX(){ return logx; }
+	
+	bool GetLogY(){ return logy; }
+	
+	bool GetLogZ(){ return logz; }
+	
 	std::string GetName(){ return name; }
 	
 	std::string GetDrawOption(){ return opt; }
+
+	void GetXrange(double &xmin_, double &xmax_);
+	
+	void GetYrange(double &ymin_, double &ymax_);
+	
+	void GetRange(double &xmin_, double &xmax_, double &ymin_, double &ymax_);
 	
 	void SetXaxisTitle(const std::string &title_);
 	
@@ -47,6 +71,12 @@ class Plotter{
 	void SetYrange(const double &ymin_, const double &ymax_);
 	
 	void SetRange(const double &xmin_, const double &xmax_, const double &ymin_, const double &ymax_);
+	
+	void ToggleLogX(){ logx = !logx; }
+	
+	void ToggleLogY(){ logy = !logy; }
+	
+	void ToggleLogZ(){ logz = !logz; }
 	
 	void Zero();
 	
