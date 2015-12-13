@@ -5,25 +5,10 @@
 #include <string>
 
 class Processor;
+class Plotter;
 
-class TH1;
 class TCanvas;
 class TApplication;
-
-class PlotObject{
-  public:
-	std::string opt;
-	std::string name;
-	std::string title;
-	
-	TH1 *hist;
-	
-	PlotObject(TH1 *hist_, const std::string &draw_opt_="");
-
-	~PlotObject(){ }
-	
-	void Draw();
-};
 
 class OnlineProcessor{
   private:
@@ -33,7 +18,7 @@ class OnlineProcessor{
   	
 	int *which_hists; /// Array for storing which histogram to plot for each of the canvas pads.
 
-	std::vector<PlotObject*> plottable_hists; /// Vector of plottable histograms which is filled by the processors.
+	std::vector<Plotter*> plottable_hists; /// Vector of plottable histograms which is filled by the processors.
 
 	TCanvas *can; /// Root canvas for plotting online data.
 	
@@ -52,6 +37,12 @@ class OnlineProcessor{
 	/// Change the histogram id of one of the canvas pads.
 	bool ChangeHist(const unsigned int &index_, const std::string &hist_name_);
 	
+	bool SetXrange(const unsigned int &index_, const double &xmin_, const double &xmax_);
+	
+	bool SetYrange(const unsigned int &index_, const double &ymin_, const double &ymax_);
+	
+	bool SetRange(const unsigned int &index_, const double &xmin_, const double &xmax_, const double &ymin_, const double &ymax_);
+	
 	/// Refresh online plots.
 	void Refresh();
 	
@@ -59,7 +50,7 @@ class OnlineProcessor{
 	void AddHists(Processor *proc_);
 	
 	/// Add a single histogram to the list of plottable items.
-	void AddHist(PlotObject *hist_);
+	void AddHist(Plotter *hist_);
 	
 	/// Display a list of available plots.
 	void PrintHists();

@@ -25,7 +25,7 @@ DICT_OBJ_DIR = $(DICT_DIR)/obj
 RCBUILD_DIR = $(TOP_LEVEL)/rcbuild
 
 # Core files
-SOURCES = ProcessorHandler.cpp OnlineProcessor.cpp Processor.cpp ConfigFile.cpp MapFile.cpp Scanner.cpp
+SOURCES = Plotter.cpp ProcessorHandler.cpp OnlineProcessor.cpp Processor.cpp ConfigFile.cpp MapFile.cpp Scanner.cpp
 
 # Processors
 SOURCES += TriggerProcessor.cpp \

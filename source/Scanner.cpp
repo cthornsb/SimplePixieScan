@@ -11,6 +11,7 @@
 #include "Processor.hpp"
 #include "ProcessorHandler.hpp"
 #include "OnlineProcessor.hpp"
+#include "Plotter.hpp"
 
 // Root libraries
 #include "TFile.h"
@@ -88,7 +89,7 @@ Scanner::Scanner(){
 
 Scanner::~Scanner(){
 	if(init){
-		std::cout << "Scanner: Found " << chanCounts->GetEntries() << " total events.\n";
+		std::cout << "Scanner: Found " << chanCounts->GetHist()->GetEntries() << " total events.\n";
 		if(!raw_event_mode){
 			std::cout << "Scanner: Found " << handler->GetTotalEvents() << " start events.\n";
 			std::cout << "Scanner: Total data time is " << handler->GetDeltaEventTime() << " s.\n";
@@ -103,8 +104,8 @@ Scanner::~Scanner(){
 			std::cout << "Scanner: Writing " << root_tree->GetEntries() << " entries to root file.\n";
 			root_file->cd();
 			root_tree->Write();
-			chanCounts->Write();
-			chanEnergy->Write();
+			chanCounts->GetHist()->Write();
+			chanEnergy->GetHist()->Write();
 			root_file->Close();
 		}
 		delete root_file;
@@ -123,20 +124,14 @@ bool Scanner::Initialize(std::string prefix_){
 	online = new OnlineProcessor();
 
 	// Setup a 2d histogram for tracking all channel counts.
-	chanCounts = new TH2I("chanCounts", "Recorded Counts for Module vs. Channel", 16, 0, 16, 14, 0, 14);
-	chanCounts->GetXaxis()->SetTitle("Channel");
-	chanCounts->GetYaxis()->SetTitle("Module");
-	chanCounts->SetStats(0);
+	chanCounts = new Plotter("chanCounts", "Recorded Counts for Module vs. Channel", "COLZ", "Channel", 16, 0, 16, "Module", 14, 0, 14);
 
 	// Setup a 2d histogram for tracking all channel counts.
-	chanEnergy = new TH2I("chanEnergy", "Channel vs. Energy", 500, 0, 20000, 224, 0, 224);
-	chanEnergy->GetXaxis()->SetTitle("Energy (a.u.)");
-	chanEnergy->GetYaxis()->SetTitle("Channel");	
-	chanEnergy->SetStats(0);
+	chanEnergy = new Plotter("chanEnergy", "Channel vs. Energy", "COLZ", "Energy (a.u.)", 500, 0, 20000, "Channel", 224, 0, 224);
 
 	// Add the raw histograms to the online processor.
-	online->AddHist(new PlotObject((TH1*)chanCounts, "COLZ"));
-	online->AddHist(new PlotObject((TH1*)chanEnergy, "COLZ"));
+	online->AddHist(chanCounts);
+	online->AddHist(chanEnergy);
 	
 	// Set the first and second histograms to channel count histogram and energy histogram.
 	online->ChangeHist(0, 0);
@@ -208,15 +203,21 @@ void Scanner::SyntaxStr(const char *name_, std::string prefix_){
  * \param[in] prefix_
  */
 void Scanner::ArgHelp(std::string prefix_){
-	std::cout << prefix_ << "--force-overwrite | Force an overwrite of the output root file if it exists (default=false)\n";
-	std::cout << prefix_ << "--raw-event-mode  | Write raw channel information to the output root file (default=false)\n";
-	std::cout << prefix_ << "--no-fitting      | Do not use root fitting for high resolution timing (default=true)\n";
+	std::cout << prefix_ << "--force-overwrite - Force an overwrite of the output root file if it exists (default=false)\n";
+	std::cout << prefix_ << "--raw-event-mode  - Write raw channel information to the output root file (default=false)\n";
+	std::cout << prefix_ << "--no-fitting      - Do not use root fitting for high resolution timing (default=true)\n";
 }
 
 /** 
  *	\param[in] prefix_ 
  */
 void Scanner::CmdHelp(std::string prefix_){
+	std::cout << prefix_ << "refresh                    - Update online diagnostic plots.\n";
+	std::cout << prefix_ << "list                       - List all plottable online histograms.\n";
+	std::cout << prefix_ << "set [index] [hist]         - Set the histogram to draw to part of the canvas.\n";
+	std::cout << prefix_ << "xrange [index] [min] [max] - Set the x-axis range of a histogram displayed on the canvas.\n";
+	std::cout << prefix_ << "yrange [index] [min] [max] - Set the y-axis range of a histogram displayed on the canvas.\n";
+	std::cout << prefix_ << "range [index] [xmin] [xmax] [ymin] [ymax] - Set the range of the x and y axes.\n";
 }
 
 /**
@@ -274,6 +275,63 @@ bool Scanner::CommandControl(std::string cmd_, const std::vector<std::string> &a
 		else{
 			std::cout << message_head << "Invalid number of parameters to 'set'\n";
 			std::cout << message_head << " -SYNTAX- set [index] [hist]\n";
+		}
+	}
+	else if(cmd_ == "xrange"){
+		if(args_.size() == 3){
+			int index = atoi(args_.at(0).c_str());
+			float min = atof(args_.at(1).c_str());
+			float max = atof(args_.at(2).c_str());
+			if(max > min){ 
+				if(online->SetXrange(index, min, max)){ std::cout << message_head << "Successfully set range of TPad " << index << ".\n"; }
+				else{ std::cout << message_head << "Failed to set range of TPad " << index << "!\n"; }
+			}
+			else{ std::cout << message_head << "Invalid range for x-axis [" << min << ", " << max << "]\n"; }
+		}
+		else{
+			std::cout << message_head << "Invalid number of parameters to 'xrange'\n";
+			std::cout << message_head << " -SYNTAX- xrange [index] [min] [max]\n";
+		}
+	}
+	else if(cmd_ == "yrange"){
+		if(args_.size() == 3){
+			int index = atoi(args_.at(0).c_str());
+			float min = atof(args_.at(1).c_str());
+			float max = atof(args_.at(2).c_str());
+			if(max > min){ 
+				if(online->SetYrange(index, min, max)){ std::cout << message_head << "Successfully set range of TPad " << index << ".\n"; }
+				else{ std::cout << message_head << "Failed to set range of TPad " << index << "!\n"; }
+			}
+			else{ std::cout << message_head << "Invalid range for y-axis [" << min << ", " << max << "]\n"; }
+		}
+		else{
+			std::cout << message_head << "Invalid number of parameters to 'yrange'\n";
+			std::cout << message_head << " -SYNTAX- yrange [index] [min] [max]\n";
+		}
+	}
+	else if(cmd_ == "range"){
+		if(args_.size() == 5){
+			int index = atoi(args_.at(0).c_str());
+			float xmin = atof(args_.at(1).c_str());
+			float xmax = atof(args_.at(2).c_str());
+			float ymin = atof(args_.at(3).c_str());
+			float ymax = atof(args_.at(4).c_str());
+			if(xmax > xmin && ymax > ymin){ 
+				if(online->SetRange(index, xmin, xmax, ymin, ymax)){ std::cout << message_head << "Successfully set range of TPad " << index << ".\n"; }
+				else{ std::cout << message_head << "Failed to set range of TPad " << index << "!\n"; }
+			}
+			else{ 
+				if(xmax <= xmin && ymax <= ymin){
+					std::cout << message_head << "Invalid range for x-axis [" << xmin << ", " << xmax;
+					std::cout << "] and y-axis [" << ymin << ", " << ymax << "]\n"; 
+				}
+				else if(xmax <= xmin){ std::cout << message_head << "Invalid range for x-axis [" << xmin << ", " << xmax << "]\n"; }
+				else{ std::cout << message_head << "Invalid range for y-axis [" << ymin << ", " << ymax << "]\n"; }
+			}
+		}
+		else{
+			std::cout << message_head << "Invalid number of parameters to 'range'\n";
+			std::cout << message_head << " -SYNTAX- range [index] [xmin] [xmax] [ymin] [ymax]\n";
 		}
 	}
 	else{ return false; }

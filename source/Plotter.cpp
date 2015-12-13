@@ -1,0 +1,84 @@
+#include <sstream>
+
+#include "Plotter.hpp"
+
+#include "TH1.h"
+#include "TH1F.h"
+#include "TH2F.h"
+#include "TPad.h"
+
+Plotter::Plotter(const std::string &name_, const std::string &title_, const std::string &draw_opt_,
+                 const std::string &xtitle_, const int &xbins_, const double &xmin_, const double &xmax_){
+	name = name_;
+	opt = draw_opt_;
+	SetXrange(xmin_, xmax_);
+	hist = (TH1*)(new TH1F(name.c_str(), title_.c_str(), xbins_, xmin, xmax));
+	hist->GetXaxis()->SetTitle(xtitle_.c_str());
+	std::stringstream stream; stream << "Counts per " << (xmin_-xmax_)/xbins_;
+	hist->GetYaxis()->SetTitle(stream.str().c_str());
+	hist->SetStats(0);
+	dim = 1;
+}
+
+Plotter::Plotter(const std::string &name_, const std::string &title_, const std::string &draw_opt_,
+                 const std::string &xtitle_, const int &xbins_, const double &xmin_, const double &xmax_,
+                 const std::string &ytitle_, const int &ybins_, const double &ymin_, const double &ymax_){
+	name = name_;
+	opt = draw_opt_;
+	SetRange(xmin_, xmax_, ymin_, ymax_);
+	hist = (TH1*)(new TH2F(name.c_str(), title_.c_str(), xbins_, xmin, xmax, ybins_, ymin, ymax));
+	hist->GetXaxis()->SetTitle(xtitle_.c_str());
+	hist->GetYaxis()->SetTitle(ytitle_.c_str());
+	hist->SetStats(0);
+	dim = 2;
+}
+
+Plotter::~Plotter(){ 
+	delete hist; 
+}
+
+void Plotter::SetXaxisTitle(const std::string &title_){ 
+	hist->GetXaxis()->SetTitle(title_.c_str()); 
+}
+
+void Plotter::SetYaxisTitle(const std::string &title_){ 
+	hist->GetYaxis()->SetTitle(title_.c_str()); 
+}
+
+void Plotter::SetStats(const bool &state_/*=true*/){
+	hist->SetStats(state_); 
+}
+
+void Plotter::SetXrange(const double &xmin_, const double &xmax_){
+	xmin = xmin_;
+	xmax = xmax_;
+}
+
+void Plotter::SetYrange(const double &ymin_, const double &ymax_){
+	ymin = ymin_;
+	ymax = ymax_;
+}
+
+void Plotter::SetRange(const double &xmin_, const double &xmax_, const double &ymin_, const double &ymax_){
+	SetXrange(xmin_, xmax_);
+	SetYrange(ymin_, ymax_);
+}
+
+void Plotter::Zero(){
+}
+
+void Plotter::Fill(const double &x_){
+	hist->Fill(x_);
+}
+
+void Plotter::Fill(const double &x_, const double &y_){
+	hist->Fill(x_, y_);
+}
+
+void Plotter::Draw(TPad *pad_){
+	if(dim == 1){
+		SetYrange(hist->GetMinimum()*1.1, hist->GetMaximum()*1.1);
+	}
+	pad_->DrawFrame(xmin, ymin, xmax, ymax);
+	hist->Draw((opt+"SAME").c_str());
+}
