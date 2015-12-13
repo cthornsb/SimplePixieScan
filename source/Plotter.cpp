@@ -90,12 +90,9 @@ void Plotter::SetRange(const double &xmin_, const double &xmax_, const double &y
 void Plotter::Zero(){
 }
 
-void Plotter::Fill(const double &x_){
-	hist->Fill(x_);
-}
-
-void Plotter::Fill(const double &x_, const double &y_){
-	hist->Fill(x_, y_);
+void Plotter::Fill(const double &x_, const double &y_/*=0.0*/){
+	if(dim == 1){ hist->Fill(x_); }
+	else{ hist->Fill(x_, y_); }
 }
 
 void Plotter::Draw(TPad *pad_){
