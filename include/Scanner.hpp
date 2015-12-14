@@ -26,6 +26,7 @@ class Scanner : public Unpacker{
 	
 	bool force_overwrite;	
 	bool raw_event_mode;
+	bool online_mode;
 	bool use_root_fitting;
 	
 	std::string output_filename;

@@ -79,6 +79,7 @@ void Scanner::ProcessRawEvent(){
 Scanner::Scanner(){
 	force_overwrite = false;
 	raw_event_mode = false;
+	online_mode = false;
 	use_root_fitting = true;
 	mapfile = NULL;
 	configfile = NULL;
@@ -120,23 +121,25 @@ Scanner::~Scanner(){
 bool Scanner::Initialize(std::string prefix_){
 	if(init){ return false; }
 
-	// Initialize the online data processor.
-	online = new OnlineProcessor();
-
 	// Setup a 2d histogram for tracking all channel counts.
 	chanCounts = new Plotter("chanCounts", "Recorded Counts for Module vs. Channel", "COLZ", "Channel", 16, 0, 16, "Module", 14, 0, 14);
 
 	// Setup a 2d histogram for tracking all channel counts.
 	chanEnergy = new Plotter("chanEnergy", "Channel vs. Energy", "COLZ", "Energy (a.u.)", 500, 0, 20000, "Channel", 224, 0, 224);
 
-	// Add the raw histograms to the online processor.
-	online->AddHist(chanCounts);
-	online->AddHist(chanEnergy);
+	if(online_mode){
+		// Initialize the online data processor.
+		online = new OnlineProcessor();
+
+		// Add the raw histograms to the online processor.
+		online->AddHist(chanCounts);
+		online->AddHist(chanEnergy);
 	
-	// Set the first and second histograms to channel count histogram and energy histogram.
-	online->ChangeHist(0, 0);
-	online->ChangeHist(1, 1);
-	online->Refresh();
+		// Set the first and second histograms to channel count histogram and energy histogram.
+		online->ChangeHist(0, 0);
+		online->ChangeHist(1, 1);
+		online->Refresh();
+	}
 
 	// Only initialize map file, config file, and processor handler if not in raw event mode.
 	if(!raw_event_mode){
@@ -156,9 +159,10 @@ bool Scanner::Initialize(std::string prefix_){
 				Processor *proc = handler->AddProcessor(iter->type, mapfile);
 				if(proc){
 					std::cout << prefix_ << "Added " << iter->type << " processor to the processor list.\n"; 
-				
-					// Initialize all online diagnostic plots.
-					online->AddHists(proc);
+					if(online_mode){
+						// Initialize all online diagnostic plots.
+						online->AddHists(proc);
+					}
 				}
 				else{ std::cout << prefix_ << "Failed to add " << iter->type << " processor to the processor list!\n"; }
 			}
@@ -205,6 +209,7 @@ void Scanner::SyntaxStr(const char *name_, std::string prefix_){
 void Scanner::ArgHelp(std::string prefix_){
 	std::cout << prefix_ << "--force-overwrite - Force an overwrite of the output root file if it exists (default=false)\n";
 	std::cout << prefix_ << "--raw-event-mode  - Write raw channel information to the output root file (default=false)\n";
+	std::cout << prefix_ << "--online-mode     - Plot online root histograms for monitoring data (default=false)\n";
 	std::cout << prefix_ << "--no-fitting      - Do not use root fitting for high resolution timing (default=true)\n";
 }
 
@@ -212,15 +217,17 @@ void Scanner::ArgHelp(std::string prefix_){
  *	\param[in] prefix_ 
  */
 void Scanner::CmdHelp(std::string prefix_){
-	std::cout << prefix_ << "refresh                    - Update online diagnostic plots.\n";
-	std::cout << prefix_ << "list                       - List all plottable online histograms.\n";
-	std::cout << prefix_ << "set [index] [hist]         - Set the histogram to draw to part of the canvas.\n";
-	std::cout << prefix_ << "xlog [index]               - Toggle the x-axis log/linear scale of a specified histogram.\n";
-	std::cout << prefix_ << "ylog [index]               - Toggle the y-axis log/linear scale of a specified histogram.\n";
-	std::cout << prefix_ << "zlog [index]               - Toggle the z-axis log/linear scale of a specified histogram.\n"; 
-	std::cout << prefix_ << "xrange [index] [min] [max] - Set the x-axis range of a histogram displayed on the canvas.\n";
-	std::cout << prefix_ << "yrange [index] [min] [max] - Set the y-axis range of a histogram displayed on the canvas.\n";
-	std::cout << prefix_ << "range [index] [xmin] [xmax] [ymin] [ymax] - Set the range of the x and y axes.\n";
+	if(online_mode){
+		std::cout << prefix_ << "refresh                    - Update online diagnostic plots.\n";
+		std::cout << prefix_ << "list                       - List all plottable online histograms.\n";
+		std::cout << prefix_ << "set [index] [hist]         - Set the histogram to draw to part of the canvas.\n";
+		std::cout << prefix_ << "xlog [index]               - Toggle the x-axis log/linear scale of a specified histogram.\n";
+		std::cout << prefix_ << "ylog [index]               - Toggle the y-axis log/linear scale of a specified histogram.\n";
+		std::cout << prefix_ << "zlog [index]               - Toggle the z-axis log/linear scale of a specified histogram.\n"; 
+		std::cout << prefix_ << "xrange [index] [min] [max] - Set the x-axis range of a histogram displayed on the canvas.\n";
+		std::cout << prefix_ << "yrange [index] [min] [max] - Set the y-axis range of a histogram displayed on the canvas.\n";
+		std::cout << prefix_ << "range [index] [xmin] [xmax] [ymin] [ymax] - Set the range of the x and y axes.\n";
+	}
 }
 
 /**
@@ -241,6 +248,10 @@ bool Scanner::SetArgs(std::deque<std::string> &args_, std::string &filename){
 			std::cout << "Scanner: Using raw event output mode.\n";
 			raw_event_mode = true;
 		}
+		else if(current_arg == "--online-mode"){
+			std::cout << "Scanner: Using online mode.\n";
+			online_mode = true;
+		}
 		else if(current_arg == "--no-fitting"){
 			std::cout << "Scanner: Toggling root fitting OFF.\n";
 			use_root_fitting = false;
@@ -256,113 +267,115 @@ bool Scanner::SetArgs(std::deque<std::string> &args_, std::string &filename){
   * \return True if the command is valid and false otherwise.
   */
 bool Scanner::CommandControl(std::string cmd_, const std::vector<std::string> &args_){
-	if(cmd_ == "refresh"){
-		online->Refresh();
-	}
-	else if(cmd_ == "list"){
-		online->PrintHists();
-	}
-	else if(cmd_ == "set"){
-		if(args_.size() == 2){
-			int index1 = atoi(args_.at(0).c_str());
-			int index2 = atoi(args_.at(1).c_str());
-			if(online->ChangeHist(index1, args_.at(1))){ std::cout << message_head << "Set TPad " << index1 << " to histogram '" << args_.at(1) << "'.\n"; }
-			else if(online->ChangeHist(index1, index2)){ std::cout << message_head << "Set TPad " << index1 << " to histogram ID " << index2 << ".\n"; }
-			else{ std::cout << message_head << "Failed to set TPad " << index1 << " to histogram '" << args_.at(1) << "'!\n"; }
+	if(online_mode){
+		if(cmd_ == "refresh"){
+			online->Refresh();
 		}
-		else{
-			std::cout << message_head << "Invalid number of parameters to 'set'\n";
-			std::cout << message_head << " -SYNTAX- set [index] [hist]\n";
+		else if(cmd_ == "list"){
+			online->PrintHists();
 		}
-	}
-	else if(cmd_ == "xlog"){
-		if(args_.size() == 1){
-			int index = atoi(args_.at(0).c_str());
-			if(online->ToggleLogX(index)){ std::cout << message_head << "Successfully toggled x-axis log scale for TPad " << index << ".\n"; }
-			else{ std::cout << message_head << "Failed to toggle x-axis log scale for TPad " << index << ".\n"; }
-		}
-		else{
-			std::cout << message_head << "Invalid number of parameters to 'xlog'\n";
-			std::cout << message_head << " -SYNTAX- xlog [index]\n";
-		}
-	}
-	else if(cmd_ == "ylog"){
-		if(args_.size() == 1){
-			int index = atoi(args_.at(0).c_str());
-			if(online->ToggleLogY(index)){ std::cout << message_head << "Successfully toggled y-axis log scale for TPad " << index << ".\n"; }
-			else{ std::cout << message_head << "Failed to toggle y-axis log scale for TPad " << index << ".\n"; }
-		}
-		else{
-			std::cout << message_head << "Invalid number of parameters to 'ylog'\n";
-			std::cout << message_head << " -SYNTAX- ylog [index]\n";
-		}
-	}
-	else if(cmd_ == "zlog"){
-		if(args_.size() == 1){
-			int index = atoi(args_.at(0).c_str());
-			if(online->ToggleLogZ(index)){ std::cout << message_head << "Successfully toggled z-axis log scale for TPad " << index << ".\n"; }
-			else{ std::cout << message_head << "Failed to toggle z-axis log scale for TPad " << index << ".\n"; }
-		}
-		else{
-			std::cout << message_head << "Invalid number of parameters to 'zlog'\n";
-			std::cout << message_head << " -SYNTAX- zlog [index]\n";
-		}
-	}
-	else if(cmd_ == "xrange"){
-		if(args_.size() == 3){
-			int index = atoi(args_.at(0).c_str());
-			float min = atof(args_.at(1).c_str());
-			float max = atof(args_.at(2).c_str());
-			if(max > min){ 
-				if(online->SetXrange(index, min, max)){ std::cout << message_head << "Successfully set range of TPad " << index << ".\n"; }
-				else{ std::cout << message_head << "Failed to set range of TPad " << index << "!\n"; }
+		else if(cmd_ == "set"){
+			if(args_.size() == 2){
+				int index1 = atoi(args_.at(0).c_str());
+				int index2 = atoi(args_.at(1).c_str());
+				if(online->ChangeHist(index1, args_.at(1))){ std::cout << message_head << "Set TPad " << index1 << " to histogram '" << args_.at(1) << "'.\n"; }
+				else if(online->ChangeHist(index1, index2)){ std::cout << message_head << "Set TPad " << index1 << " to histogram ID " << index2 << ".\n"; }
+				else{ std::cout << message_head << "Failed to set TPad " << index1 << " to histogram '" << args_.at(1) << "'!\n"; }
 			}
-			else{ std::cout << message_head << "Invalid range for x-axis [" << min << ", " << max << "]\n"; }
-		}
-		else{
-			std::cout << message_head << "Invalid number of parameters to 'xrange'\n";
-			std::cout << message_head << " -SYNTAX- xrange [index] [min] [max]\n";
-		}
-	}
-	else if(cmd_ == "yrange"){
-		if(args_.size() == 3){
-			int index = atoi(args_.at(0).c_str());
-			float min = atof(args_.at(1).c_str());
-			float max = atof(args_.at(2).c_str());
-			if(max > min){ 
-				if(online->SetYrange(index, min, max)){ std::cout << message_head << "Successfully set range of TPad " << index << ".\n"; }
-				else{ std::cout << message_head << "Failed to set range of TPad " << index << "!\n"; }
+			else{
+				std::cout << message_head << "Invalid number of parameters to 'set'\n";
+				std::cout << message_head << " -SYNTAX- set [index] [hist]\n";
 			}
-			else{ std::cout << message_head << "Invalid range for y-axis [" << min << ", " << max << "]\n"; }
 		}
-		else{
-			std::cout << message_head << "Invalid number of parameters to 'yrange'\n";
-			std::cout << message_head << " -SYNTAX- yrange [index] [min] [max]\n";
-		}
-	}
-	else if(cmd_ == "range"){
-		if(args_.size() == 5){
-			int index = atoi(args_.at(0).c_str());
-			float xmin = atof(args_.at(1).c_str());
-			float xmax = atof(args_.at(2).c_str());
-			float ymin = atof(args_.at(3).c_str());
-			float ymax = atof(args_.at(4).c_str());
-			if(xmax > xmin && ymax > ymin){ 
-				if(online->SetRange(index, xmin, xmax, ymin, ymax)){ std::cout << message_head << "Successfully set range of TPad " << index << ".\n"; }
-				else{ std::cout << message_head << "Failed to set range of TPad " << index << "!\n"; }
+		else if(cmd_ == "xlog"){
+			if(args_.size() == 1){
+				int index = atoi(args_.at(0).c_str());
+				if(online->ToggleLogX(index)){ std::cout << message_head << "Successfully toggled x-axis log scale for TPad " << index << ".\n"; }
+				else{ std::cout << message_head << "Failed to toggle x-axis log scale for TPad " << index << ".\n"; }
 			}
-			else{ 
-				if(xmax <= xmin && ymax <= ymin){
-					std::cout << message_head << "Invalid range for x-axis [" << xmin << ", " << xmax;
-					std::cout << "] and y-axis [" << ymin << ", " << ymax << "]\n"; 
+			else{
+				std::cout << message_head << "Invalid number of parameters to 'xlog'\n";
+				std::cout << message_head << " -SYNTAX- xlog [index]\n";
+			}
+		}
+		else if(cmd_ == "ylog"){
+			if(args_.size() == 1){
+				int index = atoi(args_.at(0).c_str());
+				if(online->ToggleLogY(index)){ std::cout << message_head << "Successfully toggled y-axis log scale for TPad " << index << ".\n"; }
+				else{ std::cout << message_head << "Failed to toggle y-axis log scale for TPad " << index << ".\n"; }
+			}
+			else{
+				std::cout << message_head << "Invalid number of parameters to 'ylog'\n";
+				std::cout << message_head << " -SYNTAX- ylog [index]\n";
+			}
+		}
+		else if(cmd_ == "zlog"){
+			if(args_.size() == 1){
+				int index = atoi(args_.at(0).c_str());
+				if(online->ToggleLogZ(index)){ std::cout << message_head << "Successfully toggled z-axis log scale for TPad " << index << ".\n"; }
+				else{ std::cout << message_head << "Failed to toggle z-axis log scale for TPad " << index << ".\n"; }
+			}
+			else{
+				std::cout << message_head << "Invalid number of parameters to 'zlog'\n";
+				std::cout << message_head << " -SYNTAX- zlog [index]\n";
+			}
+		}
+		else if(cmd_ == "xrange"){
+			if(args_.size() == 3){
+				int index = atoi(args_.at(0).c_str());
+				float min = atof(args_.at(1).c_str());
+				float max = atof(args_.at(2).c_str());
+				if(max > min){ 
+					if(online->SetXrange(index, min, max)){ std::cout << message_head << "Successfully set range of TPad " << index << ".\n"; }
+					else{ std::cout << message_head << "Failed to set range of TPad " << index << "!\n"; }
 				}
-				else if(xmax <= xmin){ std::cout << message_head << "Invalid range for x-axis [" << xmin << ", " << xmax << "]\n"; }
-				else{ std::cout << message_head << "Invalid range for y-axis [" << ymin << ", " << ymax << "]\n"; }
+				else{ std::cout << message_head << "Invalid range for x-axis [" << min << ", " << max << "]\n"; }
+			}
+			else{
+				std::cout << message_head << "Invalid number of parameters to 'xrange'\n";
+				std::cout << message_head << " -SYNTAX- xrange [index] [min] [max]\n";
 			}
 		}
-		else{
-			std::cout << message_head << "Invalid number of parameters to 'range'\n";
-			std::cout << message_head << " -SYNTAX- range [index] [xmin] [xmax] [ymin] [ymax]\n";
+		else if(cmd_ == "yrange"){
+			if(args_.size() == 3){
+				int index = atoi(args_.at(0).c_str());
+				float min = atof(args_.at(1).c_str());
+				float max = atof(args_.at(2).c_str());
+				if(max > min){ 
+					if(online->SetYrange(index, min, max)){ std::cout << message_head << "Successfully set range of TPad " << index << ".\n"; }
+					else{ std::cout << message_head << "Failed to set range of TPad " << index << "!\n"; }
+				}
+				else{ std::cout << message_head << "Invalid range for y-axis [" << min << ", " << max << "]\n"; }
+			}
+			else{
+				std::cout << message_head << "Invalid number of parameters to 'yrange'\n";
+				std::cout << message_head << " -SYNTAX- yrange [index] [min] [max]\n";
+			}
+		}
+		else if(cmd_ == "range"){
+			if(args_.size() == 5){
+				int index = atoi(args_.at(0).c_str());
+				float xmin = atof(args_.at(1).c_str());
+				float xmax = atof(args_.at(2).c_str());
+				float ymin = atof(args_.at(3).c_str());
+				float ymax = atof(args_.at(4).c_str());
+				if(xmax > xmin && ymax > ymin){ 
+					if(online->SetRange(index, xmin, xmax, ymin, ymax)){ std::cout << message_head << "Successfully set range of TPad " << index << ".\n"; }
+					else{ std::cout << message_head << "Failed to set range of TPad " << index << "!\n"; }
+				}
+				else{ 
+					if(xmax <= xmin && ymax <= ymin){
+						std::cout << message_head << "Invalid range for x-axis [" << xmin << ", " << xmax;
+						std::cout << "] and y-axis [" << ymin << ", " << ymax << "]\n"; 
+					}
+					else if(xmax <= xmin){ std::cout << message_head << "Invalid range for x-axis [" << xmin << ", " << xmax << "]\n"; }
+					else{ std::cout << message_head << "Invalid range for y-axis [" << ymin << ", " << ymax << "]\n"; }
+				}
+			}
+			else{
+				std::cout << message_head << "Invalid number of parameters to 'range'\n";
+				std::cout << message_head << " -SYNTAX- range [index] [xmin] [xmax] [ymin] [ymax]\n";
+			}
 		}
 	}
 	else{ return false; }
