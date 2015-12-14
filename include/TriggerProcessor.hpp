@@ -13,9 +13,8 @@ class TriggerProcessor : public Processor{
 	TriggerStructure structure;
 	TriggerWaveform waveform;
 
-	Plotter *loc_energy_2d;
-	Plotter *loc_phase_2d;
-	Plotter *loc_1d;
+	Plotter *energy_1d;
+	Plotter *phase_1d;
 
 	virtual bool HandleEvents();
 	
