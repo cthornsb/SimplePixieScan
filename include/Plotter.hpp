@@ -21,6 +21,8 @@ class Plotter{
 	
 	std::string name;
 	std::string opt;	
+
+	void UpdateRange();
 	
   public:
 	Plotter(const std::string &name_, const std::string &title_, const std::string &draw_opt_,

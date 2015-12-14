@@ -7,14 +7,20 @@
 #include "TH2F.h"
 #include "TPad.h"
 
+void Plotter::UpdateRange(){
+	hist->GetXaxis()->SetRangeUser(xmin, xmax);
+	hist->GetYaxis()->SetRangeUser(ymin, ymax);
+}
+
 Plotter::Plotter(const std::string &name_, const std::string &title_, const std::string &draw_opt_,
                  const std::string &xtitle_, const int &xbins_, const double &xmin_, const double &xmax_){
 	name = name_;
 	opt = draw_opt_;
-	SetXrange(xmin_, xmax_);
+	xmin = xmin_;
+	xmax = xmax_;
 	hist = (TH1*)(new TH1F(name.c_str(), title_.c_str(), xbins_, xmin, xmax));
 	hist->GetXaxis()->SetTitle(xtitle_.c_str());
-	std::stringstream stream; stream << "Counts per " << (xmin_-xmax_)/xbins_;
+	std::stringstream stream; stream << "Counts per " << (xmax_-xmin_)/xbins_ << " units";
 	hist->GetYaxis()->SetTitle(stream.str().c_str());
 	hist->SetStats(0);
 	logx = false;
@@ -28,7 +34,10 @@ Plotter::Plotter(const std::string &name_, const std::string &title_, const std:
                  const std::string &ytitle_, const int &ybins_, const double &ymin_, const double &ymax_){
 	name = name_;
 	opt = draw_opt_;
-	SetRange(xmin_, xmax_, ymin_, ymax_);
+	xmin = xmin_;
+	xmax = xmax_;
+	ymin = ymin_;
+	ymax = ymax_;
 	hist = (TH1*)(new TH2F(name.c_str(), title_.c_str(), xbins_, xmin, xmax, ybins_, ymin, ymax));
 	hist->GetXaxis()->SetTitle(xtitle_.c_str());
 	hist->GetYaxis()->SetTitle(ytitle_.c_str());
@@ -75,11 +84,13 @@ void Plotter::SetStats(const bool &state_/*=true*/){
 void Plotter::SetXrange(const double &xmin_, const double &xmax_){
 	xmin = xmin_;
 	xmax = xmax_;
+	UpdateRange();
 }
 
 void Plotter::SetYrange(const double &ymin_, const double &ymax_){
 	ymin = ymin_;
 	ymax = ymax_;
+	UpdateRange();
 }
 
 void Plotter::SetRange(const double &xmin_, const double &xmax_, const double &ymin_, const double &ymax_){
@@ -102,6 +113,5 @@ void Plotter::Draw(TPad *pad_){
 	if(logx){ pad_->SetLogx(); }
 	if(logy){ pad_->SetLogy(); }
 	if(logz){ pad_->SetLogz(); }
-	pad_->DrawFrame(xmin, ymin, xmax, ymax);
 	hist->Draw((opt+"SAME").c_str());
 }

@@ -40,12 +40,9 @@ OnlineProcessor::~OnlineProcessor(){
 	can->Close();
 	delete can;
 	delete[] which_hists;
-	for(std::vector<Plotter*>::iterator iter = plottable_hists.begin(); iter != plottable_hists.end(); iter++){
-		delete (*iter);
-	}
 }
 
-bool OnlineProcessor::ChangeHist(const unsigned int &index_, const size_t &hist_id_){
+bool OnlineProcessor::ChangeHist(const unsigned int &index_, const unsigned int &hist_id_){
 	if(index_ >= num_hists || hist_id_ >= plottable_hists.size()){ return false; }
 	which_hists[index_] = hist_id_;
 	return true;
