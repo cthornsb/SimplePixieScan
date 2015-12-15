@@ -1,6 +1,7 @@
 #include "PhoswichProcessor.hpp"
 #include "Structures.h"
 #include "MapFile.hpp"
+#include "Plotter.hpp"
 
 #include "TGraph.h"
 #include "TFitResult.h"
@@ -55,6 +56,11 @@ bool PhoswichProcessor::HandleEvents(){
 	
 		// Check that the time and energy values are valid
 		if(!current_event->valid_chan){ continue; }
+
+		fast_energy_1d->Fill(fast_qdc);
+		slow_energy_1d->Fill(slow_qdc);
+		energy_2d->Fill(slow_qdc, fast_qdc);
+		MPV_1d->Fill(fast_MPV);
 	
 		// Fill the values into the root tree.
 		structure.Append(current_event->time, fast_qdc, slow_qdc, fast_A, fast_MPV, fast_Sigma, fast_chi2);
@@ -79,7 +85,23 @@ PhoswichProcessor::PhoswichProcessor(MapFile *map_) : Processor("Phoswich", "pho
 	
 	root_structure = (Structure*)&structure;
 	root_waveform = (Waveform*)&waveform;
+	
+	fast_energy_1d = new Plotter("phoswich_h1", "Phoswich Fast LR", "", "Light Response (a.u.)", 200, 0, 20000);
+	slow_energy_1d = new Plotter("phoswich_h2", "Phoswich Slow LR", "", "Light Response (a.u.)", 200, 0, 20000);
+	energy_2d = new Plotter("phoswich_h3", "Phoswich Fast LR vs. Slow", "COLZ", "Slow Light Response (a.u.)", 200, 0, 20000, "Fast Light Response (a.u.)", 200, 0, 20000);
+	MPV_1d = new Plotter("phoswich_h4", "Phoswich Most-Probable Value", "", "MPV (ns)", 100, 0, 100);
 }
 
-PhoswichProcessor::~PhoswichProcessor(){
+PhoswichProcessor::~PhoswichProcessor(){ 
+	delete fast_energy_1d;
+	delete slow_energy_1d;
+	delete energy_2d;
+	delete MPV_1d;
+}
+
+void PhoswichProcessor::GetHists(std::vector<Plotter*> &plots_){
+	plots_.push_back(fast_energy_1d);
+	plots_.push_back(slow_energy_1d);
+	plots_.push_back(energy_2d);
+	plots_.push_back(MPV_1d);
 }

@@ -24,6 +24,11 @@ class PhoswichProcessor : public Processor{
 	int fitting_low2;
 	int fitting_high2;
 
+	Plotter *fast_energy_1d;
+	Plotter *slow_energy_1d;
+	Plotter *energy_2d;
+	Plotter *MPV_1d;
+
 	/// Set the fit parameters for the current event.
 	virtual bool SetFitParameters(ChannelEvent *event_, MapEntry *entry_);
 	
@@ -37,6 +42,8 @@ class PhoswichProcessor : public Processor{
 	PhoswichProcessor(MapFile *map_);
 	
 	~PhoswichProcessor();
+
+	virtual void GetHists(std::vector<Plotter*> &plots_);
 };
 
 #endif

@@ -24,7 +24,7 @@
 #   means that they will be included in the Waveform class instead of Structure.
 #
 # Cory R. Thornsberry
-# Last updated: Nov. 13th, 2015
+# Last updated: Dec. 15th, 2015
 
 #####################################################################
 # RawEvent
@@ -71,7 +71,7 @@ LONG	Structure for detectors of type "trigger"
 # type	name	description
 BEGIN_TYPES
 vector:double	trigger_time	The raw pixie16 system clock time.
-vector:double	trigger_energy	The energy computed from the trace.
+vector:double	trigger_tqdc	The energy computed from the trace.
 vector:double	trigger_phase	The trace offset in ns.
 u_int	trigger_mult	Multiplicity of the trigger detector.
 
@@ -131,8 +131,8 @@ LONG	Structure for detectors of type "phoswich"
 # type	name	description
 BEGIN_TYPES
 vector:double	phoswich_time	The raw pixie16 system clock time.
-vector:double	phoswich_fqdc	The integral of the fast portion of the pulse.
-vector:double	phoswich_sqdc	The integral of the slow portion of the pulse.
+vector:double	phoswich_ftqdc	The integral of the fast portion of the pulse.
+vector:double	phoswich_stqdc	The integral of the slow portion of the pulse.
 vector:double	phoswich_fAmp	The amplitude of the landau function for the fast pulse.
 vector:double	phoswich_fMPV	The most probable value of the landau function for the fast pulse.
 vector:double	phoswich_fSigma	The sigma (roughly the width) of the landau function for the fast pulse.
@@ -192,8 +192,8 @@ LONG	Structure for detectors of type "generic"
 # Data types and names
 # type	name	description
 BEGIN_TYPES
-vector:double	generic_time	The raw pixie16 system clock time.
-vector:double	generic_energy	The energy computed from the trace.
+vector:double	generic_tdiff	The time of flight of the particle detected by vandle.
+vector:double	generic_tqdc	The energy computed from the trace.
 vector:double	generic_phase	The trace offset in ns.
 vector:int	generic_loc	Detector location (ID)
 u_int	generic_mult	Multiplicity of the generic type events.
