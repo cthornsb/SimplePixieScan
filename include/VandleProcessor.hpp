@@ -12,10 +12,8 @@ class VandleProcessor : public Processor{
 	VandleStructure structure;
 	VandleWaveform waveform;  
 
-	Plotter *loc_L_tdiff_2d;
-	Plotter *loc_R_tdiff_2d;
-	Plotter *loc_L_energy_2d;
-	Plotter *loc_R_energy_2d;
+	Plotter *loc_tdiff_2d;
+	Plotter *loc_energy_2d;
 	Plotter *loc_L_phase_2d;
 	Plotter *loc_R_phase_2d;
 	Plotter *loc_1d;

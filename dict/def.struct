@@ -98,10 +98,9 @@ LONG	Structure for detectors of type "vandlesmall" or "vandlebig"
 # Data types and names
 # type	name	description
 BEGIN_TYPES
-vector:double	vandle_lqdc	The left pmt energy computed from trace.
-vector:double	vandle_rqdc	The right pmt energy computed from trace.
-vector:double	vandle_ltime	The left pmt raw pixie16 system clock time.
-vector:double	vandle_rtime	The right pmt raw pixie16 system clock time.
+vector:double	vandle_tdiff	The time of flight of the particle detected by vandle.
+vector:double	vandle_ltqdc	The left pmt energy computed from the trace.
+vector:double	vandle_rtqdc	The right pmt energy computed from the trace.
 vector:double	vandle_lphase	The left pmt trace offset in ns.
 vector:double	vandle_rphase	The right pmt trace offset in ns.
 vector:int	vandle_loc	Detector location (ID)
