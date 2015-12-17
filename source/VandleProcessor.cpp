@@ -6,7 +6,7 @@
 #include "Plotter.hpp"
 
 #define C_IN_VAC 29.9792458 // cm/ns
-#define C_IN_BAR 12.65822 // cm/ns
+#define C_IN_BAR 13.2354 // cm/ns (13.2354 +/- 1.09219) CRT Dec. 16th, 2015 bar 1022)
 
 #define SMALL_LENGTH 60 // cm
 #define MEDIUM_LENGTH 120 // cm
@@ -55,21 +55,19 @@ bool VandleProcessor::HandleEvents(){
 		// Calculate the time difference between the current event and the start.
 		double tdiff_L = (current_event_L->time - start->event->time)*8 + (current_event_L->phase - start->event->phase)*4;
 		double tdiff_R = (current_event_R->time - start->event->time)*8 + (current_event_R->phase - start->event->phase)*4;
-		double tdiff = ((tdiff_L+tdiff_R)/2 - SMALL_LENGTH/(2*C_IN_BAR));
-		double tqdc = std::sqrt(current_event_L->hires_energy*current_event_R->hires_energy);
 		
 		// Get the location of this detector.
 		int location = (*iter_L)->entry->location;
 		
 		// Fill all diagnostic histograms.
-		loc_tdiff_2d->Fill(tdiff, location);
-		loc_energy_2d->Fill(tqdc, location);
+		loc_tdiff_2d->Fill((tdiff_L + tdiff_R)/2.0, location);
+		loc_energy_2d->Fill(std::sqrt(current_event_L->hires_energy*current_event_R->hires_energy), location);
 		loc_L_phase_2d->Fill(current_event_L->phase, location);
 		loc_R_phase_2d->Fill(current_event_R->phase, location);
 		loc_1d->Fill(location);		
 		
 		// Fill the values into the root tree.
-		structure.Append(tdiff, current_event_L->hires_energy, current_event_R->hires_energy, current_event_L->phase, current_event_R->phase, location);
+		structure.Append(tdiff_L, tdiff_R, current_event_L->hires_energy, current_event_R->hires_energy, current_event_L->phase, current_event_R->phase, location);
 		     
 		// Copy the trace to the output file.
 		if(write_waveform){

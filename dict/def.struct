@@ -98,7 +98,8 @@ LONG	Structure for detectors of type "vandlesmall" or "vandlebig"
 # Data types and names
 # type	name	description
 BEGIN_TYPES
-vector:double	vandle_tdiff	The time of flight of the particle detected by vandle.
+vector:double	vandle_ltdiff	The time of flight of the particle detected by vandle.
+vector:double	vandle_rtdiff	The time of flight of the particle detected by vandle.
 vector:double	vandle_ltqdc	The left pmt energy computed from the trace.
 vector:double	vandle_rtqdc	The right pmt energy computed from the trace.
 vector:double	vandle_lphase	The left pmt trace offset in ns.
