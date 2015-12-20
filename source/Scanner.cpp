@@ -74,6 +74,16 @@ void Scanner::ProcessRawEvent(){
 		structure.Zero();
 		waveform.Zero();
 	}
+	
+	// Check for the need to update the online canvas.
+	if(online_mode){
+		if(events_since_last_update >= events_between_updates){
+			online->Refresh();
+			events_since_last_update = 0;
+			std::cout << "refresh!\n";
+		}
+		else{ events_since_last_update++; }
+	}
 }
 
 Scanner::Scanner(){
@@ -86,6 +96,8 @@ Scanner::Scanner(){
 	handler = NULL;
 	online = NULL;
 	output_filename = "out.root";
+	events_since_last_update = 0;
+	events_between_updates = 5000;
 }
 
 Scanner::~Scanner(){
@@ -218,7 +230,7 @@ void Scanner::ArgHelp(std::string prefix_){
  */
 void Scanner::CmdHelp(std::string prefix_){
 	if(online_mode){
-		std::cout << prefix_ << "refresh                    - Update online diagnostic plots.\n";
+		std::cout << prefix_ << "refresh <update>           - Set refresh frequency of online diagnostic plots (default=5000).\n";
 		std::cout << prefix_ << "list                       - List all plottable online histograms.\n";
 		std::cout << prefix_ << "set [index] [hist]         - Set the histogram to draw to part of the canvas.\n";
 		std::cout << prefix_ << "xlog [index]               - Toggle the x-axis log/linear scale of a specified histogram.\n";
@@ -269,13 +281,21 @@ bool Scanner::SetArgs(std::deque<std::string> &args_, std::string &filename){
 bool Scanner::CommandControl(std::string cmd_, const std::vector<std::string> &args_){
 	if(online_mode){
 		if(cmd_ == "refresh"){
-			online->Refresh();
+			if(args_.size() >= 1){
+				int frequency = atoi(args_.at(0).c_str());
+				if(frequency > 0){ 
+					std::cout << message_head << "Set canvas update frequency to " << frequency << " events.\n"; 
+					events_between_updates = frequency;
+				}
+				else{ std::cout << message_head << "Failed to set canvas update frequency to " << frequency << " events!\n"; }
+			}
+			else{ online->Refresh(); }
 		}
 		else if(cmd_ == "list"){
 			online->PrintHists();
 		}
 		else if(cmd_ == "set"){
-			if(args_.size() == 2){
+			if(args_.size() >= 2){
 				int index1 = atoi(args_.at(0).c_str());
 				int index2 = atoi(args_.at(1).c_str());
 				if(online->ChangeHist(index1, args_.at(1))){ std::cout << message_head << "Set TPad " << index1 << " to histogram '" << args_.at(1) << "'.\n"; }
@@ -288,7 +308,7 @@ bool Scanner::CommandControl(std::string cmd_, const std::vector<std::string> &a
 			}
 		}
 		else if(cmd_ == "xlog"){
-			if(args_.size() == 1){
+			if(args_.size() >= 1){
 				int index = atoi(args_.at(0).c_str());
 				if(online->ToggleLogX(index)){ std::cout << message_head << "Successfully toggled x-axis log scale for TPad " << index << ".\n"; }
 				else{ std::cout << message_head << "Failed to toggle x-axis log scale for TPad " << index << ".\n"; }
@@ -299,7 +319,7 @@ bool Scanner::CommandControl(std::string cmd_, const std::vector<std::string> &a
 			}
 		}
 		else if(cmd_ == "ylog"){
-			if(args_.size() == 1){
+			if(args_.size() >= 1){
 				int index = atoi(args_.at(0).c_str());
 				if(online->ToggleLogY(index)){ std::cout << message_head << "Successfully toggled y-axis log scale for TPad " << index << ".\n"; }
 				else{ std::cout << message_head << "Failed to toggle y-axis log scale for TPad " << index << ".\n"; }
@@ -310,7 +330,7 @@ bool Scanner::CommandControl(std::string cmd_, const std::vector<std::string> &a
 			}
 		}
 		else if(cmd_ == "zlog"){
-			if(args_.size() == 1){
+			if(args_.size() >= 1){
 				int index = atoi(args_.at(0).c_str());
 				if(online->ToggleLogZ(index)){ std::cout << message_head << "Successfully toggled z-axis log scale for TPad " << index << ".\n"; }
 				else{ std::cout << message_head << "Failed to toggle z-axis log scale for TPad " << index << ".\n"; }
@@ -321,7 +341,7 @@ bool Scanner::CommandControl(std::string cmd_, const std::vector<std::string> &a
 			}
 		}
 		else if(cmd_ == "xrange"){
-			if(args_.size() == 3){
+			if(args_.size() >= 3){
 				int index = atoi(args_.at(0).c_str());
 				float min = atof(args_.at(1).c_str());
 				float max = atof(args_.at(2).c_str());
@@ -337,7 +357,7 @@ bool Scanner::CommandControl(std::string cmd_, const std::vector<std::string> &a
 			}
 		}
 		else if(cmd_ == "yrange"){
-			if(args_.size() == 3){
+			if(args_.size() >= 3){
 				int index = atoi(args_.at(0).c_str());
 				float min = atof(args_.at(1).c_str());
 				float max = atof(args_.at(2).c_str());
@@ -353,7 +373,7 @@ bool Scanner::CommandControl(std::string cmd_, const std::vector<std::string> &a
 			}
 		}
 		else if(cmd_ == "range"){
-			if(args_.size() == 5){
+			if(args_.size() >= 5){
 				int index = atoi(args_.at(0).c_str());
 				float xmin = atof(args_.at(1).c_str());
 				float xmax = atof(args_.at(2).c_str());

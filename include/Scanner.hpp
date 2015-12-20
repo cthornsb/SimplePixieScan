@@ -24,6 +24,9 @@ class Scanner : public Unpacker{
 	Plotter *chanCounts; /// 2d root histogram to store number of total channel counts found.
 	Plotter *chanEnergy; /// 2d root histogram to store the energy spectra from all channels.
 	
+	int events_since_last_update; /// The number of processed events since the last online histogram update.
+	int events_between_updates; /// The number of events to process before updating online histograms.
+	
 	bool force_overwrite;	
 	bool raw_event_mode;
 	bool online_mode;

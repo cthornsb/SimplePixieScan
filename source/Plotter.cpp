@@ -107,9 +107,9 @@ void Plotter::Fill(const double &x_, const double &y_/*=0.0*/){
 }
 
 void Plotter::Draw(TPad *pad_){
-	if(dim == 1){
+	/*if(dim == 1){
 		SetYrange(hist->GetMinimum()*1.1, hist->GetMaximum()*1.1);
-	}
+	}*/
 	if(logx){ pad_->SetLogx(); }
 	if(logy){ pad_->SetLogy(); }
 	if(logz){ pad_->SetLogz(); }
