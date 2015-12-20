@@ -12,12 +12,21 @@ class NonwichProcessor : public Processor{
 	NonwichStructure structure;
 	NonwichWaveform waveform;  
   
-	bool HandleEvents();
+	Plotter *dE_energy_1d;
+	Plotter *E_energy_1d;
+	Plotter *tdiff_1d;
+	Plotter *energy_2d;
+	Plotter *dE_phase_1d;
+	Plotter *E_phase_1d;
+  
+	virtual bool HandleEvents();
 	
   public:
 	NonwichProcessor(MapFile *map_);
 
 	~NonwichProcessor();
+	
+	virtual void GetHists(std::vector<Plotter*> &plots_);
 };
 
 #endif

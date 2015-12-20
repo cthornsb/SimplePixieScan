@@ -87,14 +87,14 @@ VandleProcessor::VandleProcessor(MapFile *map_) : Processor("Vandle", "vandle", 
 	int maxloc = map_->GetLastOccurance("vandle");
 	
 	if(maxloc-minloc > 1){ // More than one detector. Define 2d plots.
-		loc_tdiff_2d = new Plotter("vandle_h1", "Vandle L Location vs. Tdiff", "COLZ", "Tdiff (ns)", 200, -100, 100, "Location", maxloc-minloc, minloc, maxloc+1);
-		loc_energy_2d = new Plotter("vandle_h2", "Vandle L Location vs. Energy", "COLZ", "Energy (a.u.)", 200, 0, 20000, "Location", maxloc-minloc, minloc, maxloc+1);
-		loc_L_phase_2d = new Plotter("vandle_h3", "Vandle L Location vs. Phase", "COLZ", "Phase (ns)", 100, 0, 100, "Location", maxloc-minloc, minloc, maxloc+1);
-		loc_R_phase_2d = new Plotter("vandle_h4", "Vandle R Location vs. Phase", "COLZ", "Phase (ns)", 100, 0, 100, "Location", maxloc-minloc, minloc, maxloc+1);
+		loc_tdiff_2d = new Plotter("vandle_h1", "Vandle Location vs. Tdiff", "COLZ", "Tdiff (ns)", 200, -100, 100, "Location", maxloc-minloc, minloc, maxloc+1);
+		loc_energy_2d = new Plotter("vandle_h2", "Vandle Location vs. Energy", "COLZ", "Energy (a.u.)", 200, 0, 20000, "Location", maxloc-minloc, minloc, maxloc+1);
+		loc_L_phase_2d = new Plotter("vandle_h3", "Vandle Location vs. L Phase", "COLZ", "Phase (ns)", 100, 0, 100, "Location", maxloc-minloc, minloc, maxloc+1);
+		loc_R_phase_2d = new Plotter("vandle_h4", "Vandle Location vs. R Phase", "COLZ", "Phase (ns)", 100, 0, 100, "Location", maxloc-minloc, minloc, maxloc+1);
 	}
 	else{ // Only one detector. Define 1d plots instead.
-		loc_tdiff_2d = new Plotter("vandle_h1", "Vandle L Tdiff", "", "Tdiff (ns)", 200, -100, 100);
-		loc_energy_2d = new Plotter("vandle_h2", "Vandle L Energy", "", "Energy (a.u.)", 200, 0, 20000);
+		loc_tdiff_2d = new Plotter("vandle_h1", "Vandle Tdiff", "", "Tdiff (ns)", 200, -100, 100);
+		loc_energy_2d = new Plotter("vandle_h2", "Vandle Energy", "", "Energy (a.u.)", 200, 0, 20000);
 		loc_L_phase_2d = new Plotter("vandle_h3", "Vandle L Phase", "", "Phase (ns)", 100, 0, 100);
 		loc_R_phase_2d = new Plotter("vandle_h4", "Vandle R Phase", "", "Phase (ns)", 100, 0, 100);
 	}

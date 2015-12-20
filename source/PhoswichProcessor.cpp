@@ -57,6 +57,7 @@ bool PhoswichProcessor::HandleEvents(){
 		// Check that the time and energy values are valid
 		if(!current_event->valid_chan){ continue; }
 
+		// Fill all diagnostic histograms.
 		fast_energy_1d->Fill(fast_qdc);
 		slow_energy_1d->Fill(slow_qdc);
 		energy_2d->Fill(slow_qdc, fast_qdc);
