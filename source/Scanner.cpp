@@ -238,6 +238,7 @@ void Scanner::CmdHelp(std::string prefix_){
 		std::cout << prefix_ << "zlog [index]               - Toggle the z-axis log/linear scale of a specified histogram.\n"; 
 		std::cout << prefix_ << "xrange [index] [min] [max] - Set the x-axis range of a histogram displayed on the canvas.\n";
 		std::cout << prefix_ << "yrange [index] [min] [max] - Set the y-axis range of a histogram displayed on the canvas.\n";
+		std::cout << prefix_ << "unzoom [index] <axis>      - Unzoom the x-axis, the y-axis, or both.\n";
 		std::cout << prefix_ << "range [index] [xmin] [xmax] [ymin] [ymax] - Set the range of the x and y axes.\n";
 	}
 }
@@ -372,6 +373,30 @@ bool Scanner::CommandControl(std::string cmd_, const std::vector<std::string> &a
 				std::cout << message_head << " -SYNTAX- yrange [index] [min] [max]\n";
 			}
 		}
+		else if(cmd_ == "unzoom"){
+			if(args_.size() >= 1){
+				int index = atoi(args_.at(0).c_str());
+				if(args_.size() >= 2){
+					if(args_.at(1) == "x" || args_.at(1) == "X" || args_.at(1) == "0"){
+						online->ResetXrange(index);
+						std::cout << message_head << "Reset range of X axis.\n";
+					}
+					else if(args_.at(1) == "y" || args_.at(1) == "Y" || args_.at(1) == "1"){
+						online->ResetYrange(index);
+						std::cout << message_head << "Reset range of Y axis.\n";
+					}
+					else{ std::cout << message_head << "Unknown axis (" << args_.at(1) << ")!\n"; }
+				}
+				else{
+					online->ResetRange(index);
+					std::cout << message_head << "Reset range of X and Y axes.\n";
+				}
+			}
+			else{
+				std::cout << message_head << "Invalid number of parameters to 'unzoom'\n";
+				std::cout << message_head << " -SYNTAX- unzoom [index] <axis>\n";
+			}
+		}
 		else if(cmd_ == "range"){
 			if(args_.size() >= 5){
 				int index = atoi(args_.at(0).c_str());
@@ -397,6 +422,7 @@ bool Scanner::CommandControl(std::string cmd_, const std::vector<std::string> &a
 				std::cout << message_head << " -SYNTAX- range [index] [xmin] [xmax] [ymin] [ymax]\n";
 			}
 		}
+		else{ return false; }
 	}
 	else{ return false; }
 

@@ -22,8 +22,6 @@ class Plotter{
 	std::string name;
 	std::string opt;	
 
-	void UpdateRange();
-	
   public:
 	Plotter(const std::string &name_, const std::string &title_, const std::string &draw_opt_,
 	        const std::string &xtitle_, const int &xbins_, const double &xmin_, const double &xmax_);
@@ -73,6 +71,12 @@ class Plotter{
 	void SetYrange(const double &ymin_, const double &ymax_);
 	
 	void SetRange(const double &xmin_, const double &xmax_, const double &ymin_, const double &ymax_);
+	
+	void ResetXrange();
+	
+	void ResetYrange();
+	
+	void ResetRange();
 	
 	void ToggleLogX(){ logx = !logx; }
 	

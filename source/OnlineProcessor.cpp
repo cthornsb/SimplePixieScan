@@ -42,6 +42,11 @@ OnlineProcessor::~OnlineProcessor(){
 	delete[] which_hists;
 }
 
+Plotter* OnlineProcessor::GetPlot(const unsigned int &index_){
+	if(index_ >= num_hists){ return NULL; }
+	return *(plottable_hists.begin()+which_hists[index_]);
+}
+
 bool OnlineProcessor::ChangeHist(const unsigned int &index_, const unsigned int &hist_id_){
 	if(index_ >= num_hists || hist_id_ >= plottable_hists.size()){ return false; }
 	which_hists[index_] = hist_id_;
@@ -64,23 +69,46 @@ bool OnlineProcessor::ChangeHist(const unsigned int &index_, const std::string &
 }
 
 bool OnlineProcessor::SetXrange(const unsigned int &index_, const double &xmin_, const double &xmax_){
-	if(index_ >= num_hists){ return false; }
-	std::vector<Plotter*>::iterator iter = plottable_hists.begin();
-	(*(iter+which_hists[index_]))->SetXrange(xmin_, xmax_);
+	Plotter *plot = GetPlot(index_);
+	if(!plot){ return false; }
+	plot->SetXrange(xmin_, xmax_);
 	return true;
 }
 
 bool OnlineProcessor::SetYrange(const unsigned int &index_, const double &ymin_, const double &ymax_){
-	if(index_ >= num_hists){ return false; }
-	std::vector<Plotter*>::iterator iter = plottable_hists.begin();
-	(*(iter+which_hists[index_]))->SetYrange(ymin_, ymax_);
+	Plotter *plot = GetPlot(index_);
+	if(!plot){ return false; }
+	plot->SetYrange(ymin_, ymax_);
 	return true;
 }
 
 bool OnlineProcessor::SetRange(const unsigned int &index_, const double &xmin_, const double &xmax_, const double &ymin_, const double &ymax_){
-	if(index_ >= num_hists){ return false; }
-	std::vector<Plotter*>::iterator iter = plottable_hists.begin();
-	(*(iter+which_hists[index_]))->SetRange(xmin_, xmax_, ymin_, ymax_);
+	Plotter *plot = GetPlot(index_);
+	if(!plot){ return false; }
+	plot->SetXrange(xmin_, xmax_);
+	plot->SetYrange(ymin_, ymax_);
+	return true;
+}
+
+bool OnlineProcessor::ResetXrange(const unsigned int &index_){
+	Plotter *plot = GetPlot(index_);
+	if(!plot){ return false; }
+	plot->GetHist()->GetXaxis()->UnZoom();
+	return true;
+}
+
+bool OnlineProcessor::ResetYrange(const unsigned int &index_){
+	Plotter *plot = GetPlot(index_);
+	if(!plot){ return false; }
+	plot->GetHist()->GetYaxis()->UnZoom();
+	return true;
+}
+
+bool OnlineProcessor::ResetRange(const unsigned int &index_){
+	Plotter *plot = GetPlot(index_);
+	if(!plot){ return false; }
+	plot->GetHist()->GetXaxis()->UnZoom();
+	plot->GetHist()->GetYaxis()->UnZoom();
 	return true;
 }
 

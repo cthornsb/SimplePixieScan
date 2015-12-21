@@ -27,13 +27,18 @@ class OnlineProcessor{
 	TApplication *rootapp; /// Root application for handling graphics.
 	
 	TPad *cd(const unsigned int &index_);
-	
+
   public:
   	/// Default constructor.
 	OnlineProcessor(const unsigned int &cols_=2, const unsigned int &rows_=2);
 	
 	/// Destructor.
 	~OnlineProcessor();
+	
+	/// Element access operator.
+	Plotter* operator [] (const unsigned int &index_){ return GetPlot(index_); }
+	
+	Plotter* GetPlot(const unsigned int &index_);
 	
 	/// Change the histogram id of one of the canvas pads.
 	bool ChangeHist(const unsigned int &index_, const unsigned int &hist_id_);
@@ -46,6 +51,12 @@ class OnlineProcessor{
 	bool SetYrange(const unsigned int &index_, const double &ymin_, const double &ymax_);
 	
 	bool SetRange(const unsigned int &index_, const double &xmin_, const double &xmax_, const double &ymin_, const double &ymax_);
+	
+	bool ResetXrange(const unsigned int &index_);
+	
+	bool ResetYrange(const unsigned int &index_);
+	
+	bool ResetRange(const unsigned int &index_);
 	
 	bool ToggleLogX(const unsigned int &index_);
 	
