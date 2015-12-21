@@ -9,6 +9,7 @@ class Plotter;
 
 class TCanvas;
 class TPad;
+class TH1;
 class TApplication;
 
 class OnlineProcessor{
@@ -23,6 +24,7 @@ class OnlineProcessor{
 
 	TCanvas *can; /// Root canvas for plotting online data.
 	TPad *pad; /// Pointer to the current TPad for drawing.
+	Plotter *plot; /// Pointer to the current plotter object.
 	
 	TApplication *rootapp; /// Root application for handling graphics.
 	
@@ -63,8 +65,11 @@ class OnlineProcessor{
 	bool ToggleLogY(const unsigned int &index_);
 	
 	bool ToggleLogZ(const unsigned int &index_);
+
+	/// Refresh a single online plot.
+	void Refresh(const unsigned int &index_);
 	
-	/// Refresh online plots.
+	/// Refresh all online plots.
 	void Refresh();
 	
 	/// Add a processor's histograms to the list of plottable items.

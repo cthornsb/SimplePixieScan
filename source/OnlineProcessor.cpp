@@ -12,6 +12,7 @@
 TPad *OnlineProcessor::cd(const unsigned int &index_){
 	if(index_ >= num_hists){ return NULL; }
 	pad = (TPad*)(can->cd(index_+1));
+	plot = *(plottable_hists.begin()+which_hists[index_]);
 	return pad;
 }
 
@@ -44,12 +45,13 @@ OnlineProcessor::~OnlineProcessor(){
 
 Plotter* OnlineProcessor::GetPlot(const unsigned int &index_){
 	if(index_ >= num_hists){ return NULL; }
-	return *(plottable_hists.begin()+which_hists[index_]);
+	return (plot = *(plottable_hists.begin()+which_hists[index_]));
 }
 
 bool OnlineProcessor::ChangeHist(const unsigned int &index_, const unsigned int &hist_id_){
 	if(index_ >= num_hists || hist_id_ >= plottable_hists.size()){ return false; }
 	which_hists[index_] = hist_id_;
+	Refresh(index_);
 	return true;
 }
 
@@ -60,6 +62,7 @@ bool OnlineProcessor::ChangeHist(const unsigned int &index_, const std::string &
 	for(std::vector<Plotter*>::iterator iter = plottable_hists.begin(); iter != plottable_hists.end(); iter++){
 		if(strcmp((*iter)->GetName().c_str(), hist_name_.c_str()) == 0){
 			which_hists[index_] = count;
+			Refresh(index_);
 			return true;
 		}
 		count++;
@@ -69,86 +72,90 @@ bool OnlineProcessor::ChangeHist(const unsigned int &index_, const std::string &
 }
 
 bool OnlineProcessor::SetXrange(const unsigned int &index_, const double &xmin_, const double &xmax_){
-	Plotter *plot = GetPlot(index_);
-	if(!plot){ return false; }
+	if(!GetPlot(index_)){ return false; }
 	plot->SetXrange(xmin_, xmax_);
+	Refresh(index_);
 	return true;
 }
 
 bool OnlineProcessor::SetYrange(const unsigned int &index_, const double &ymin_, const double &ymax_){
-	Plotter *plot = GetPlot(index_);
-	if(!plot){ return false; }
+	if(!GetPlot(index_)){ return false; }
 	plot->SetYrange(ymin_, ymax_);
+	Refresh(index_);
 	return true;
 }
 
 bool OnlineProcessor::SetRange(const unsigned int &index_, const double &xmin_, const double &xmax_, const double &ymin_, const double &ymax_){
-	Plotter *plot = GetPlot(index_);
-	if(!plot){ return false; }
+	if(!GetPlot(index_)){ return false; }
 	plot->SetXrange(xmin_, xmax_);
 	plot->SetYrange(ymin_, ymax_);
+	Refresh(index_);
 	return true;
 }
 
 bool OnlineProcessor::ResetXrange(const unsigned int &index_){
-	Plotter *plot = GetPlot(index_);
-	if(!plot){ return false; }
+	if(!GetPlot(index_)){ return false; }
 	plot->GetHist()->GetXaxis()->UnZoom();
+	Refresh(index_);
 	return true;
 }
 
 bool OnlineProcessor::ResetYrange(const unsigned int &index_){
-	Plotter *plot = GetPlot(index_);
-	if(!plot){ return false; }
+	if(!GetPlot(index_)){ return false; }
 	plot->GetHist()->GetYaxis()->UnZoom();
+	Refresh(index_);
 	return true;
 }
 
 bool OnlineProcessor::ResetRange(const unsigned int &index_){
-	Plotter *plot = GetPlot(index_);
-	if(!plot){ return false; }
+	if(!GetPlot(index_)){ return false; }
 	plot->GetHist()->GetXaxis()->UnZoom();
 	plot->GetHist()->GetYaxis()->UnZoom();
+	Refresh(index_);
 	return true;
 }
 
 bool OnlineProcessor::ToggleLogX(const unsigned int &index_){
-	if(!cd(index_)){ return false; }
-	std::vector<Plotter*>::iterator iter = plottable_hists.begin();
-	if((*(iter+which_hists[index_]))->GetXmin() <= 0.0){ return false; }
-	(*(iter+which_hists[index_]))->ToggleLogX();
+	if(!cd(index_) || plot->GetXmin() <= 0.0){ return false; }
+	plot->ToggleLogX();
+	Refresh(index_);
 	return true;
 }
 
 bool OnlineProcessor::ToggleLogY(const unsigned int &index_){
-	if(!cd(index_)){ return false; }
-	std::vector<Plotter*>::iterator iter = plottable_hists.begin();
-	if((*(iter+which_hists[index_]))->GetYmin() <= 0.0){ return false; }
-	(*(iter+which_hists[index_]))->ToggleLogY();
+	if(!cd(index_) || plot->GetYmin() <= 0.0){ return false; }
+	plot->ToggleLogY();
+	Refresh(index_);
 	return true;
 }
 
 bool OnlineProcessor::ToggleLogZ(const unsigned int &index_){
 	if(!cd(index_)){ return false; }
-	std::vector<Plotter*>::iterator iter = plottable_hists.begin();
-	(*(iter+which_hists[index_]))->ToggleLogZ();
+	plot->ToggleLogZ();
+	Refresh(index_);
 	return true;
 }
 
-/// Refresh online plots.
+/// Refresh a single online plot.
+void OnlineProcessor::Refresh(const unsigned int &index_){
+	if(cd(index_)){
+		plot->Draw(pad);
+		can->Update();
+	}
+}
+
+/// Refresh all online plots.
 void OnlineProcessor::Refresh(){
 	can->Clear();
 
 	// Divide the canvas into TPads.
 	can->Divide(canvas_cols, canvas_rows);
 
-	std::vector<Plotter*>::iterator iter = plottable_hists.begin();
-
 	// Set the histogram ids for all TPads.
 	for(unsigned int i = 0; i < num_hists; i++){
 		if(which_hists[i] >= 0){
 			cd(i);
-			(*(iter+which_hists[i]))->Draw(pad);
+			plot->Draw(pad);
 		}
 	}
 
