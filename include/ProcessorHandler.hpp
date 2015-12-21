@@ -42,7 +42,7 @@ class ProcessorHandler{
 	
 	bool CheckProcessor(std::string type_);
 	
-	bool AddProcessor(std::string type_, MapFile *map_);
+	Processor *AddProcessor(std::string type_, MapFile *map_);
 	
 	bool AddEvent(ChannelEventPair *pair_);
 	

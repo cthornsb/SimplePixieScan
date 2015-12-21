@@ -6,18 +6,24 @@
 #include "Structures.h"
 
 class MapFile;
+class Plotter;
 
 class TriggerProcessor : public Processor{
   private:
 	TriggerStructure structure;
 	TriggerWaveform waveform;
 
-	bool HandleEvents();
+	Plotter *energy_1d;
+	Plotter *phase_1d;
+
+	virtual bool HandleEvents();
 	
   public:
 	TriggerProcessor(MapFile *map_);
 
 	~TriggerProcessor();
+	
+	virtual void GetHists(std::vector<Plotter*> &plots_);
 };
 
 #endif

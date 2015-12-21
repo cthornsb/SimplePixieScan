@@ -6,7 +6,8 @@
 
 class ChannelEvent;
 
-struct MapEntry{
+class MapEntry{
+  public:
 	unsigned int location;
 	std::string type;
 	std::string subtype;
@@ -48,7 +49,7 @@ struct MapEntry{
 class MapFile{
   private:
   	bool init;
-  
+
 	static const int max_modules = 14;
 	static const int max_channels = 16;
   
@@ -80,6 +81,10 @@ class MapFile{
 	std::string GetSubtype(int mod_, int chan_);
 	
 	std::string GetTag(int mod_, int chan_);
+	
+	int GetFirstOccurance(const std::string &type_);
+	
+	int GetLastOccurance(const std::string &type_);
 	
 	bool Load(const char *filename_);
 

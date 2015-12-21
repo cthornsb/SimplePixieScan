@@ -1,7 +1,6 @@
 #include "GenericProcessor.hpp"
 #include "MapFile.hpp"
-
-#include "TTree.h"
+#include "Plotter.hpp"
 
 bool GenericProcessor::HandleEvents(){
 	if(!init){ return false; }
@@ -14,8 +13,20 @@ bool GenericProcessor::HandleEvents(){
 		// Check that the time and energy values are valid
 		if(!current_event->valid_chan){ continue; }
 	
+		// Calculate the time difference between the current event and the start.
+		double tdiff = (current_event->time - start->event->time)*8 + (current_event->phase - start->event->phase)*4;
+		
+		// Get the location of this detector.
+		int location = (*iter)->entry->location;
+		
+		// Fill all diagnostic histograms.
+		loc_tdiff_2d->Fill(tdiff, location);
+		loc_energy_2d->Fill(current_event->hires_energy, location);
+		loc_phase_2d->Fill(current_event->phase, location);
+		loc_1d->Fill(location);
+	
 		// Fill the values into the root tree.
-		structure.Append(current_event->time, current_event->hires_energy, current_event->phase, (*iter)->entry->location);
+		structure.Append(tdiff, current_event->hires_energy, current_event->phase, location);
 		
 		// Copy the trace to the output file.
 		if(write_waveform){
@@ -30,6 +41,33 @@ bool GenericProcessor::HandleEvents(){
 GenericProcessor::GenericProcessor(MapFile *map_) : Processor("Generic", "generic", map_){
 	root_structure = (Structure*)&structure;
 	root_waveform = (Waveform*)&waveform;
+
+	int minloc = map_->GetFirstOccurance("generic");
+	int maxloc = map_->GetLastOccurance("generic");
+
+	if(maxloc-minloc > 1){ // More than one detector. Define 2d plots.
+		loc_tdiff_2d = new Plotter("generic_h1", "Generic Location vs. Tdiff", "COLZ", "Tdiff (ns)", 200, -100, 100, "Location", maxloc-minloc, minloc, maxloc+1);
+		loc_energy_2d = new Plotter("generic_h2", "Generic Location vs. Energy", "COLZ", "Energy (a.u.)", 200, 0, 20000, "Location", maxloc-minloc, minloc, maxloc+1);
+		loc_phase_2d = new Plotter("generic_h3", "Generic Location vs. Phase", "COLZ", "Phase (ns)", 100, 0, 100, "Location", maxloc-minloc, minloc, maxloc+1);
+	}
+	else{ // Only one detector. Define 1d plots instead.
+		loc_tdiff_2d = new Plotter("generic_h1", "Generic Tdiff", "", "Tdiff (ns)", 200, -100, 100);
+		loc_energy_2d = new Plotter("generic_h2", "Generic Energy", "", "Energy (a.u.)", 200, 0, 20000);
+		loc_phase_2d = new Plotter("generic_h3", "Generic Phase", "", "Phase (ns)", 100, 0, 100);
+	}
+	loc_1d = new Plotter("generic_h4", "Generic Location", "", "Location", maxloc-minloc, minloc, maxloc+1);
 }
 
-GenericProcessor::~GenericProcessor(){ }
+GenericProcessor::~GenericProcessor(){ 
+	delete loc_tdiff_2d;
+	delete loc_energy_2d;
+	delete loc_phase_2d;
+	delete loc_1d;
+}
+
+void GenericProcessor::GetHists(std::vector<Plotter*> &plots_){
+	plots_.push_back(loc_tdiff_2d);
+	plots_.push_back(loc_energy_2d);
+	plots_.push_back(loc_phase_2d);
+	plots_.push_back(loc_1d);
+}

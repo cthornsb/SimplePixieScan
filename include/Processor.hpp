@@ -11,11 +11,13 @@
 
 class MapEntry;
 class MapFile;
+class Plotter;
 
 class TTree;
 class TBranch;
 class TGraph;
 class TF1;
+class TH1;
 
 class Structure;
 class Waveform;
@@ -135,6 +137,8 @@ class Processor{
 	Processor(std::string name_, std::string type_, MapFile *map_);
 	
 	virtual ~Processor();
+
+	virtual void GetHists(std::vector<Plotter*> &plots_){ }
 	
 	std::string GetType(){ return type; }
 	

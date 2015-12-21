@@ -8,21 +8,28 @@
 class MapFile;
 class ConfigFile;
 class ProcessorHandler;
-class TH2I;
+class OnlineProcessor;
+class Plotter;
 
 class Scanner : public Unpacker{
   private:
 	MapFile *mapfile;
 	ConfigFile *configfile;
 	ProcessorHandler *handler;
+	OnlineProcessor *online;
 	
 	RawEventStructure structure; /// Root data structure for storing raw channel event information.
 	RawEventWaveform waveform; /// Root data structure for storing raw waveforms.
 
-	TH2I *chanCounts; /// 2d root histogram to store number of total channel counts found.
-
+	Plotter *chanCounts; /// 2d root histogram to store number of total channel counts found.
+	Plotter *chanEnergy; /// 2d root histogram to store the energy spectra from all channels.
+	
+	int events_since_last_update; /// The number of processed events since the last online histogram update.
+	int events_between_updates; /// The number of events to process before updating online histograms.
+	
 	bool force_overwrite;	
 	bool raw_event_mode;
+	bool online_mode;
 	bool use_root_fitting;
 	
 	std::string output_filename;
