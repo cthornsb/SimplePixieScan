@@ -166,7 +166,7 @@ bool MapFile::Load(const char *filename_){
 	// Set the location of all possible detectors.
 	for(int i = 0; i < max_modules; i++){
 		for(int j = 0; j < max_channels; j++){
-			detectors[i][j].location = i*(max_channels-1) + j;
+			detectors[i][j].location = i*max_channels + j;
 		}
 	}
 	
