@@ -14,6 +14,8 @@ class ConfigFile{
 	
 	ConfigFile(const char *filename_);
 	
+	bool IsInit(){ return init; }
+	
 	bool Load(const char *filename_);
 };
 

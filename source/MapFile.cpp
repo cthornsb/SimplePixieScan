@@ -179,7 +179,10 @@ bool MapFile::Load(const char *filename_){
 	while(true){
 		std::getline(mapfile, line);
 		if(mapfile.eof() || !mapfile.good()){ break; }
-		if(line[0] == '#'){ continue; }
+		if(line[0] == '#'){ 
+			line_num++;
+			continue; 
+		}
 		line_num++;
 
 		values[0] = ""; // module
@@ -216,7 +219,7 @@ bool MapFile::Load(const char *filename_){
 		if(mod > max_defined_module){ max_defined_module = mod; }
 
 		if(values[0].find(':') != std::string::npos){
-			std::cout << "MapFile: \033[1;33mWARNING! On line " << line_num << ", the ':' wildcard is not permitted for specification of modules.\033[0m\n";
+			std::cout << "MapFile: \033[1;31mERROR! On line " << line_num << ", the ':' wildcard is not permitted for specification of modules.\033[0m\n";
 			init = false;
 			break;
 		}

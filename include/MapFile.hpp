@@ -82,6 +82,8 @@ class MapFile{
 	
 	std::string GetTag(int mod_, int chan_);
 	
+	bool IsInit(){ return init; }
+	
 	int GetFirstOccurance(const std::string &type_);
 	
 	int GetLastOccurance(const std::string &type_);

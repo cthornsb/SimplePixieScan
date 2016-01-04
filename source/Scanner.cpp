@@ -157,8 +157,19 @@ bool Scanner::Initialize(std::string prefix_){
 	if(!raw_event_mode){
 		std::cout << prefix_ << "Reading map file ./setup/map.dat\n";
 		mapfile = new MapFile("./setup/map.dat");
+		if(!mapfile->IsInit()){ // Failed to read map file.
+			std::cout << prefix_ << "Failed to read map file './setup/map.dat'.\n";
+			delete mapfile;
+			return false;
+		}
 		std::cout << prefix_ << "Reading config file ./setup/config.dat\n";
 		configfile = new ConfigFile("./setup/config.dat");
+		if(!configfile->IsInit()){ // Failed to read config file.
+			std::cout << prefix_ << "Failed to read configuration file './setup/configp.dat'.\n";
+			delete mapfile;
+			delete configfile;
+			return false;
+		}
 		event_width = configfile->event_width * 125; // = event_width * 1E-6(s/us) / 8E-9(s/tick)
 		std::cout << prefix_ << "Setting event width to " << configfile->event_width << " μs (" << event_width << " pixie clock ticks).\n";
 		handler = new ProcessorHandler();
