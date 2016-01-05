@@ -15,8 +15,7 @@ MapEntry::MapEntry(const MapEntry &other){
 	subtype = other.subtype; 
 	tag = other.tag; 
 	location = other.location;
-	beta = other.beta;
-	gamma = other.gamma;
+	args = other.args;
 }
 
 bool MapEntry::operator == (const MapEntry &other){
@@ -56,8 +55,12 @@ void MapEntry::clear(){
 	type = "ignore"; 
 	subtype = ""; 
 	tag = "";
-	beta = -1.0;
-	gamma = -1.0;
+}
+
+bool MapEntry::getArg(const size_t &index_, float &arg){
+	if(index_ >= args.size()){ return false; }
+	arg = args.at(index_);
+	return true;
 }
 
 unsigned int MapEntry::increment(){
@@ -171,10 +174,9 @@ bool MapFile::Load(const char *filename_){
 	}
 	
 	std::string line;
-	std::string values[5];
-	float beta, gamma;
+	std::string argument;
+	std::vector<std::string> values;
 	int line_num = 0;
-	size_t current_value;
 	bool reading;
 	while(true){
 		std::getline(mapfile, line);
@@ -184,64 +186,65 @@ bool MapFile::Load(const char *filename_){
 			continue; 
 		}
 		line_num++;
-
-		values[0] = ""; // module
-		values[1] = ""; // channel
-		values[2] = ""; // type:subtype:tag
-		values[3] = ""; // beta
-		values[4] = ""; // gamma
-		beta = -1.0;
-		gamma = -1.0;
-		current_value = 0;
+		
+		values.clear();
+		argument = "";
 		reading = false;
 	
+		// Split the string into individual arguments.
 		for(size_t index = 0; index < line.size(); index++){
 			if(line[index] == ' ' || line[index] == '\t' || line[index] == '\n'){ 
 				if(reading){ 
-					if(++current_value >= 5){ break; } 
-					reading = false;
+					values.push_back(argument);
+					argument = "";
+					reading = false; 
 				}
 				continue; 
 			}
 			else if(line[index] == '#'){ break; }
 			else if(!reading){ reading = true; }
 		
-			values[current_value] += line[index];
-		}
-
-		int mod, chan;
-		mod = (unsigned)atoi(values[0].c_str());
-		if(mod >= max_modules){
-			std::cout << "MapFile: \033[1;33mWARNING! On line " << line_num << ", invalid module number (" << mod << "). Ignoring.\033[0m\n";
-			continue;
+			argument += line[index];
 		}
 		
-		if(mod > max_defined_module){ max_defined_module = mod; }
+		// Check for a remaining argument.
+		if(!argument.empty()){ values.push_back(argument); }
 
-		if(values[0].find(':') != std::string::npos){
+		// Check for two few map file arguments.
+		if(values.size() < 3){
+			std::cout << "MapFile: \033[1;33mWARNING! On line " << line_num << ", expected at least 3 parameters but received " << values.size() << ". Ignoring.\033[0m\n";
+			continue;
+		}
+
+		// Check for the ':' character in the module specification.
+		if(values.at(0).find(':') != std::string::npos){
 			std::cout << "MapFile: \033[1;31mERROR! On line " << line_num << ", the ':' wildcard is not permitted for specification of modules.\033[0m\n";
 			init = false;
 			break;
 		}
 
-		if(values[3] != ""){ // Manually set beta
-			beta = atof(values[3].c_str());
+		int mod, chan;
+		mod = (unsigned)atoi(values.at(0).c_str());
+		if(mod >= max_modules){
+			std::cout << "MapFile: \033[1;33mWARNING! On line " << line_num << ", invalid module number (" << mod << "). Ignoring.\033[0m\n";
+			continue;
 		}
 		
-		if(values[4] != ""){ // Manually set gamma
-			gamma = atof(values[4].c_str());
-		}
+		// Check for the maximum defined module.
+		if(mod > max_defined_module){ max_defined_module = mod; }
 
-		if(values[1].find(':') != std::string::npos){
+		// Check for the ':' character in the channel specification.
+		if(values.at(1).find(':') != std::string::npos){ // User has specified a range of channels.
 			std::vector<int> channels;
 			std::string lhs, rhs;
 			char leftover;
 			
-			parse_string(values[1], lhs, rhs, leftover);
+			parse_string(values.at(1), lhs, rhs, leftover);
 			int start_chan = atoi(lhs.c_str());
 			int stop_chan = atoi(rhs.c_str());
 			
-			if(start_chan > stop_chan){ // Flip the start and stop channels
+			// Flip the start and stop channels
+			if(start_chan > stop_chan){
 				std::cout << "MapFile: \033[1;33mWARNING! On line " << line_num << ", start channel > stop channel. I'm assuming you swapped the values.\033[0m\n";
 				int dummy = start_chan;
 				start_chan = stop_chan;
@@ -267,14 +270,16 @@ bool MapFile::Load(const char *filename_){
 				}
 			}
 			
+			// Iterate over all specified channels and set the detector type.
 			for(std::vector<int>::iterator iter = channels.begin(); iter != channels.end(); iter++){
 				if(*iter >= max_channels){
 					std::cout << "MapFile: \033[1;33mWARNING! On line " << line_num << ", invalid channel number (" << *iter << "). Ignoring.\033[0m\n";
 					break;
 				}
-				detectors[mod][*iter].set(values[2]);
-				detectors[mod][*iter].setBeta(beta);
-				detectors[mod][*iter].setGamma(gamma);
+				detectors[mod][*iter].set(values.at(2));
+				for(size_t arg_index = 3; arg_index < values.size(); arg_index++){
+					detectors[mod][*iter].pushArg(atof(values.at(arg_index).c_str()));
+				}
 				
 				bool in_list = false;
 				for(std::vector<MapEntry>::iterator iter2 = types.begin(); iter2 != types.end(); iter2++){
@@ -288,15 +293,16 @@ bool MapFile::Load(const char *filename_){
 				}
 			}
 		}
-		else{
-			chan = (unsigned)atoi(values[1].c_str());
+		else{ // User has specified a single channel.
+			chan = (unsigned)atoi(values.at(1).c_str());
 			if(chan >= max_channels){
 				std::cout << "MapFile: \033[1;33mWARNING! On line " << line_num << ", invalid channel number (" << chan << "). Ignoring.\033[0m\n";
 				continue;
 			}
-			detectors[mod][chan].set(values[2]);
-			detectors[mod][chan].setBeta(beta);
-			detectors[mod][chan].setGamma(gamma);
+			detectors[mod][chan].set(values.at(2));
+			for(size_t arg_index = 3; arg_index < values.size(); arg_index++){
+				detectors[mod][chan].pushArg(atof(values.at(arg_index).c_str()));
+			}
 			
 			bool in_list = false;
 			for(std::vector<MapEntry>::iterator iter = types.begin(); iter != types.end(); iter++){

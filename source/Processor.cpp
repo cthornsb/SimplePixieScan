@@ -102,8 +102,9 @@ bool Processor::SetFitParameters(ChannelEvent *event_, MapEntry *entry_){
 	if(!event_ || !entry_){ return false; }
 	
 	// Set the fixed fitting parameters for a given detector.
-	actual_func->SetBeta(entry_->beta);
-	actual_func->SetGamma(entry_->gamma);
+	float beta, gamma;
+	if(entry_->getArg(0, beta)){ actual_func->SetBeta(beta); }
+	if(entry_->getArg(1, gamma)){ actual_func->SetGamma(gamma); }
 
 	// Set initial parameters to those obtained from fit optimizations.
 	fitting_func->SetParameter(0, event_->qdc); // Normalization of pulse

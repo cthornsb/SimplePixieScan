@@ -12,8 +12,7 @@ class MapEntry{
 	std::string type;
 	std::string subtype;
 	std::string tag;
-	float beta;
-	float gamma;
+	std::vector<float> args;
 	
 	MapEntry(){ clear(); }
 
@@ -31,17 +30,13 @@ class MapEntry{
 	
 	void set(const std::string &type_, const std::string &subtype_, const std::string &tag_);
 	
-	void setBeta(const float &beta_){ beta = beta_; }
-	
-	void setGamma(const float &gamma_){ gamma = gamma_; }
+	void pushArg(const float &arg_){ args.push_back(arg_); }
 	
 	void clear();
 	
 	unsigned int increment();
 	
-	bool compare(const MapEntry &other);
-	
-	bool compare(const std::string &type_, const std::string &subtype_, const std::string &tag_);
+	bool getArg(const unsigned int &index_, float &arg);
 	
 	std::string print();
 };
