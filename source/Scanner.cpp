@@ -90,7 +90,7 @@ Scanner::Scanner(){
 	force_overwrite = false;
 	raw_event_mode = false;
 	online_mode = false;
-	use_root_fitting = true;
+	use_root_fitting = false;
 	mapfile = NULL;
 	configfile = NULL;
 	handler = NULL;
@@ -211,7 +211,7 @@ bool Scanner::Initialize(std::string prefix_){
 	
 	if(!raw_event_mode){ // Standard operation
 		handler->InitRootOutput(root_tree);
-		if(!use_root_fitting){ handler->ToggleFitting(); }
+		if(use_root_fitting){ handler->ToggleFitting(); }
 	}
 	else{ // Raw event output only. Processors will not be called.
 		root_tree->Branch("RawEvent", &structure);
@@ -233,7 +233,7 @@ void Scanner::ArgHelp(std::string prefix_){
 	std::cout << prefix_ << "--force-overwrite - Force an overwrite of the output root file if it exists (default=false)\n";
 	std::cout << prefix_ << "--raw-event-mode  - Write raw channel information to the output root file (default=false)\n";
 	std::cout << prefix_ << "--online-mode     - Plot online root histograms for monitoring data (default=false)\n";
-	std::cout << prefix_ << "--no-fitting      - Do not use root fitting for high resolution timing (default=true)\n";
+	std::cout << prefix_ << "--fitting         - Use root fitting for high resolution timing (default=false)\n";
 }
 
 /** 
@@ -276,9 +276,9 @@ bool Scanner::SetArgs(std::deque<std::string> &args_, std::string &filename){
 			std::cout << "Scanner: Using online mode.\n";
 			online_mode = true;
 		}
-		else if(current_arg == "--no-fitting"){
-			std::cout << "Scanner: Toggling root fitting OFF.\n";
-			use_root_fitting = false;
+		else if(current_arg == "--fitting"){
+			std::cout << "Scanner: Toggling root fitting ON.\n";
+			use_root_fitting = true;
 		}
 		else{ filename = current_arg; }
 	}
