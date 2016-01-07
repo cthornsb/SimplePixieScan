@@ -27,13 +27,16 @@ class PhoswichProcessor : public Processor{
 	Plotter *fast_energy_1d;
 	Plotter *slow_energy_1d;
 	Plotter *energy_2d;
-	Plotter *MPV_1d;
+	Plotter *phase_1d;
 
 	/// Set the fit parameters for the current event.
 	virtual bool SetFitParameters(ChannelEvent *event_, MapEntry *entry_);
 	
 	/// Fit a single trace.
 	virtual bool FitPulse(TGraph *trace_, float &phase);	
+
+	/// Set the CFD parameters for the current event.
+	virtual bool SetCfdParameters(ChannelEvent *event_, MapEntry *entry_);
 
 	/// Process all individual events.
 	virtual bool HandleEvents();

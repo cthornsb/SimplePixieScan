@@ -130,6 +130,9 @@ class Processor{
 	/// Fit a single trace.
 	virtual bool FitPulse(TGraph *trace_, float &phase);	
 
+	/// Set the CFD parameters for the current event.
+	virtual bool SetCfdParameters(ChannelEvent *event_, MapEntry *entry_){ return true; }
+
 	/// Perform CFD analysis on a single trace.
 	virtual bool CfdPulse(ChannelEvent *event_, MapEntry *entry_);
 

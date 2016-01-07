@@ -282,9 +282,12 @@ void Processor::PreProcess(){
 			delete graph;
 		}
 		else{ // Do a more simplified CFD analysis to save time.
-			if(!CfdPulse(current_event, (*iter)->entry)){
-				// Set the channel event to invalid.
-				current_event->valid_chan = false;
+			// Set the initial CFD parameters.
+			if(SetCfdParameters(current_event, (*iter)->entry)){
+				if(!CfdPulse(current_event, (*iter)->entry)){
+					// Set the channel event to invalid.
+					current_event->valid_chan = false;
+				}
 			}
 		}
 		
