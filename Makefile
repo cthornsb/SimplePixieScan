@@ -31,6 +31,7 @@ SOURCES = Plotter.cpp ProcessorHandler.cpp OnlineProcessor.cpp Processor.cpp Con
 SOURCES += TriggerProcessor.cpp \
            VandleProcessor.cpp \
            PhoswichProcessor.cpp \
+           LiquidBarProcessor.cpp \
            NonwichProcessor.cpp \
            GenericProcessor.cpp \
            LogicProcessor.cpp

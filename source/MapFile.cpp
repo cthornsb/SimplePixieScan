@@ -5,6 +5,10 @@
 
 #include "MapFile.hpp"
 
+double absdiff(const double &v1, const double &v2){
+	return (v1 >= v2)?(v1-v2):(v2-v1);
+}
+
 std::string to_str(const int &input_){
 	std::stringstream stream; stream << input_;
 	return stream.str();

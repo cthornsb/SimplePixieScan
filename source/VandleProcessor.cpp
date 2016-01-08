@@ -5,18 +5,14 @@
 #include "MapFile.hpp"
 #include "Plotter.hpp"
 
+#ifndef C_IN_VAC
 #define C_IN_VAC 29.9792458 // cm/ns
-#define C_IN_BAR 13.2354 // cm/ns (13.2354 +/- 1.09219) CRT Dec. 16th, 2015 bar 1022)
+#endif
+#define C_IN_VANDLE_BAR 13.2354 // cm/ns (13.2354 +/- 1.09219) CRT Dec. 16th, 2015 bar 1022)
 
-#define SMALL_LENGTH 60 // cm
-#define MEDIUM_LENGTH 120 // cm
-#define LARGE_LENGTH 200 // cm
+#define VANDLE_BAR_LENGTH 60 // cm
 
-const double small_max_tdiff = ((SMALL_LENGTH / C_IN_BAR) / 8E-9); // Maximum time difference between valid vandle pairwise events (pixie clock ticks)
-
-double absdiff(const double &v1, const double &v2){
-	return (v1 >= v2)?(v1-v2):(v2-v1);
-}
+const double max_tdiff = ((VANDLE_BAR_LENGTH / C_IN_VANDLE_BAR) / 8E-9); // Maximum time difference between valid vandle pairwise events (pixie clock ticks)
 
 bool VandleProcessor::HandleEvents(){
 	if(!init || events.size() <= 1){ 
@@ -50,7 +46,7 @@ bool VandleProcessor::HandleEvents(){
 		if((current_event_L->modNum != current_event_R->modNum) || (current_event_L->chanNum+1 != current_event_R->chanNum)){ continue; }
 		
 		// Check that the two channels are not separated by too much time.
-		if(absdiff(current_event_L->time, current_event_R->time) > (2 * small_max_tdiff)){ continue; }
+		if(absdiff(current_event_L->time, current_event_R->time) > (2 * max_tdiff)){ continue; }
 
 		// Calculate the time difference between the current event and the start.
 		double tdiff_L = (current_event_L->time - start->event->time)*8 + (current_event_L->phase - start->event->phase)*4;

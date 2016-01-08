@@ -109,8 +109,8 @@ u_int	vandle_mult	Multiplicity of the vandle events.
 
 # Trace output data types and names (must end with _wave)
 # type	name	description
-vector:int	left_wave	Integer vector for left vandle pulse.
-vector:int	right_wave	Integer vector for right vandle pulse.
+vector:int	vandle_left_wave	Integer vector for left vandle pulse.
+vector:int	vandle_right_wave	Integer vector for right vandle pulse.
 END_TYPES
 
 # End this class
@@ -143,6 +143,39 @@ u_int	phoswich_mult	Multiplicity of the phoswich events.
 # Trace output data types and names (must end with _wave)
 # type	name	description
 vector:int	phoswich_wave	The phoswich trace.
+END_TYPES
+
+# End this class
+END_CLASS
+
+#####################################################################
+# LiquidBar
+#####################################################################
+# Class name
+BEGIN_CLASS	LiquidBar
+
+# Short class description
+SHORT	LiquidBar bar data structure
+
+# Longer class description
+LONG	Structure for detectors of type "liquidbar"
+
+# Data types and names
+# type	name	description
+BEGIN_TYPES
+vector:double	liquidbar_ltdiff	The time of flight of the particle detected by liquidbar.
+vector:double	liquidbar_rtdiff	The time of flight of the particle detected by liquidbar.
+vector:double	liquidbar_ltqdc	The left pmt energy computed from the trace.
+vector:double	liquidbar_rtqdc	The right pmt energy computed from the trace.
+vector:double	liquidbar_lphase	The left pmt trace offset in ns.
+vector:double	liquidbar_rphase	The right pmt trace offset in ns.
+vector:int	liquidbar_loc	Detector location (ID)
+u_int	liquidbar_mult	Multiplicity of the liquidbar events.
+
+# Trace output data types and names (must end with _wave)
+# type	name	description
+vector:int	liquid_left_wave	Integer vector for left liquidbar pulse.
+vector:int	liquid_right_wave	Integer vector for right liquidbar pulse.
 END_TYPES
 
 # End this class

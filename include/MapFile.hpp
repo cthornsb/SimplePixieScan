@@ -4,6 +4,8 @@
 #include <vector>
 #include <stdlib.h>
 
+double absdiff(const double &v1, const double &v2);
+
 class ChannelEvent;
 
 class MapEntry{
@@ -36,7 +38,7 @@ class MapEntry{
 	
 	unsigned int increment();
 	
-	bool getArg(const unsigned int &index_, float &arg);
+	bool getArg(const size_t &index_, float &arg);
 	
 	std::string print();
 };
