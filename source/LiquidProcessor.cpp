@@ -47,9 +47,9 @@ bool LiquidProcessor::HandleEvents(){
 
 LiquidProcessor::LiquidProcessor(MapFile *map_) : Processor("Liquid", "liquid", map_){
 	fitting_low = 5;
-	fitting_high = 8;
-	fitting_low2 = 15;
-	fitting_high2 = 100;
+	fitting_high = 5;
+	fitting_low2 = 5;
+	fitting_high2 = 20;
 
 	root_structure = (Structure*)&structure;
 	root_waveform = (Waveform*)&waveform;

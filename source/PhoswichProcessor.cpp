@@ -92,9 +92,9 @@ PhoswichProcessor::PhoswichProcessor(MapFile *map_) : Processor("Phoswich", "pho
 	fitting_func = new TF1("f_fast", "landau", 0, 1);
 	
 	fitting_low = 5;
-	fitting_high = 8;
-	fitting_low2 = 15;
-	fitting_high2 = 100;
+	fitting_high = 5;
+	fitting_low2 = 5;
+	fitting_high2 = 20;
 	
 	root_structure = (Structure*)&structure;
 	root_waveform = (Waveform*)&waveform;
