@@ -165,8 +165,10 @@ LONG	Structure for detectors of type "liquidbar"
 BEGIN_TYPES
 vector:double	liquidbar_ltdiff	The time of flight of the particle detected by liquidbar.
 vector:double	liquidbar_rtdiff	The time of flight of the particle detected by liquidbar.
-vector:double	liquidbar_ltqdc	The left pmt energy computed from the trace.
-vector:double	liquidbar_rtqdc	The right pmt energy computed from the trace.
+vector:double	liquidbar_lstqdc	The left pmt short integral computed from the trace.
+vector:double	liquidbar_lltqdc	The left pmt long integral computed from the trace.
+vector:double	liquidbar_rstqdc	The right pmt short integral computed from the trace.
+vector:double	liquidbar_rltqdc	The right pmt long integral computed from the trace.
 vector:double	liquidbar_lphase	The left pmt trace offset in ns.
 vector:double	liquidbar_rphase	The right pmt trace offset in ns.
 vector:int	liquidbar_loc	Detector location (ID)
@@ -176,6 +178,36 @@ u_int	liquidbar_mult	Multiplicity of the liquidbar events.
 # type	name	description
 vector:int	liquid_left_wave	Integer vector for left liquidbar pulse.
 vector:int	liquid_right_wave	Integer vector for right liquidbar pulse.
+END_TYPES
+
+# End this class
+END_CLASS
+
+#####################################################################
+# Liquid
+#####################################################################
+# Class name
+BEGIN_CLASS	Liquid
+
+# Short class description
+SHORT	Liquid detector data structure
+
+# Longer class description
+LONG	Structure for detectors of type "liquid"
+
+# Data types and names
+# type	name	description
+BEGIN_TYPES
+vector:double	liquid_tdiff	The time of flight of the particle detected by the detector.
+vector:double	liquid_stqdc	The pmt short integral computed from the trace.
+vector:double	liquid_ltqdc	The pmt long integral computed from the trace.
+vector:double	liquid_phase	The pmt trace offset in ns.
+vector:int	liquid_loc	Detector location (ID)
+u_int	liquid_mult	Multiplicity of the liquid events.
+
+# Trace output data types and names (must end with _wave)
+# type	name	description
+vector:int	liquid_wave	Integer vector for liquid pulse.
 END_TYPES
 
 # End this class

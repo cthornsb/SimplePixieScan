@@ -12,20 +12,19 @@ class LiquidBarProcessor : public Processor{
 	LiquidBarStructure structure;
 	LiquidBarWaveform waveform;
 
-	double short_qdc; /// The integral of the short portion of the pulse.
-	double long_qdc; /// The integral of the long portion of the pulse.
+	double left_short_qdc; /// The integral of the short portion of the left pmt pulse.
+	double left_long_qdc; /// The integral of the long portion of the left pmt pulse.
+	double right_short_qdc; /// The integral of the short portion of the right pmt pulse.
+	double right_long_qdc; /// The integral of the long portion of the right pmt pulse.
 
-	int fitting_low2;
-	int fitting_high2;
+	int fitting_low2; /// Lower limit of the long fitting integral (in adc clock ticks).
+	int fitting_high2; /// Upper limit of the long fitting integral (in adc clock ticks).
 
 	Plotter *loc_tdiff_2d;
 	Plotter *loc_short_energy_2d;
 	Plotter *loc_long_energy_2d;
 	Plotter *loc_psd_2d;
 	Plotter *loc_1d;
-
-	/// Set the CFD parameters for the current event.
-	virtual bool SetCfdParameters(ChannelEvent *event_, MapEntry *entry_);
 
 	/// Process all individual events.
 	virtual bool HandleEvents();

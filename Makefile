@@ -32,6 +32,7 @@ SOURCES += TriggerProcessor.cpp \
            VandleProcessor.cpp \
            PhoswichProcessor.cpp \
            LiquidBarProcessor.cpp \
+           LiquidProcessor.cpp \
            NonwichProcessor.cpp \
            GenericProcessor.cpp \
            LogicProcessor.cpp
