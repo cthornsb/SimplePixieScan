@@ -53,6 +53,9 @@ class Scanner : public Unpacker{
 	/// Initialize the map file, the config file, the processor handler, and add all of the required processors.
 	bool Initialize(std::string prefix_="");
 
+	/// Perform last minute procedures before running.
+	void FinalInitialization(); 
+
 	/// Return the syntax string for this program.
 	void SyntaxStr(const char *name_, std::string prefix_="");
 	

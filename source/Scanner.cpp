@@ -17,6 +17,7 @@
 #include "TFile.h"
 #include "TTree.h"
 #include "TH2I.h"
+#include "TNamed.h"
 
 /// Process all events in the event list.
 void Scanner::ProcessRawEvent(){
@@ -222,6 +223,20 @@ bool Scanner::Initialize(std::string prefix_){
 	}
 
 	return (init = true);
+}
+
+/// Perform last minute procedures before running.
+void Scanner::FinalInitialization(){
+	if(!scan_main){ return; }
+	fileInformation *finfo = scan_main->GetFileInfo();
+	if(!finfo){ return; }
+	std::string name, value;
+	root_file->cd();
+	for(size_t index = 0; index < finfo->size(); index++){
+		finfo->at(index, name, value);
+		TNamed *named = new TNamed(name.c_str(), value.c_str());
+		named->Write();
+	}
 }
 
 /// Return the syntax string for this program.
