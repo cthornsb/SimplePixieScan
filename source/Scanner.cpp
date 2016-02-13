@@ -226,7 +226,7 @@ bool Scanner::Initialize(std::string prefix_){
 
 /// Return the syntax string for this program.
 void Scanner::SyntaxStr(const char *name_, std::string prefix_){ 
-	std::cout << prefix_ << "SYNTAX: " << std::string(name_) << " <options> <input>\n"; 
+	std::cout << prefix_ << "SYNTAX: " << std::string(name_) << " <input> <options> <output>\n"; 
 }
 	
 /**
@@ -262,6 +262,7 @@ void Scanner::CmdHelp(std::string prefix_){
  * \param[out] filename
  */
 bool Scanner::SetArgs(std::deque<std::string> &args_, std::string &filename){
+	int count = 0;
 	std::string current_arg;
 	while(!args_.empty()){
 		current_arg = args_.front();
@@ -283,7 +284,11 @@ bool Scanner::SetArgs(std::deque<std::string> &args_, std::string &filename){
 			std::cout << "Scanner: Toggling root fitting ON.\n";
 			use_root_fitting = true;
 		}
-		else{ filename = current_arg; }
+		else{ // Not a valid option. Must be a filename.
+			if(count == 0){ filename = current_arg; } // Set the input filename.
+			else if(count == 1){ output_filename = current_arg; } // Set the output filename prefix.
+			count++;
+		}
 	}
 	
 	return true;
@@ -448,9 +453,19 @@ void Scanner::PrintStatus(std::string prefix_){
 }
 
 int main(int argc, char *argv[]){
-	ScanMain scan_main((Unpacker*)(new Scanner()));
+	// Define a new unpacker object.
+	Unpacker *scanner = (Unpacker*)(new Scanner());
 	
+	// Setup the ScanMain object and link it to the unpacker object.
+	ScanMain scan_main(scanner);
+	
+	// Link the unpacker object back to the ScanMain object so we may
+	// access its command line arguments and options.
+	scanner->SetScanMain(&scan_main);
+	
+	// Set the output message prefix.
 	scan_main.SetMessageHeader("Scanner: ");
 
+	// Run the main loop.
 	return scan_main.Execute(argc, argv);
 }
