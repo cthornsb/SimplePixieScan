@@ -1,7 +1,7 @@
 #include <fstream>
 #include <sstream>
 
-#include "ChannelEvent.hpp"
+#include "PixieEvent.hpp"
 
 #include "MapFile.hpp"
 
@@ -121,7 +121,7 @@ MapEntry *MapFile::GetMapEntry(int mod_, int chan_){
 	return &detectors[mod_][chan_];
 }
 
-MapEntry *MapFile::GetMapEntry(ChannelEvent *event_){
+MapEntry *MapFile::GetMapEntry(PixieEvent *event_){
 	if(event_->modNum >= max_modules || event_->chanNum >= max_channels){ return NULL; }
 	return &detectors[event_->modNum][event_->chanNum];
 }

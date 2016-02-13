@@ -4,7 +4,7 @@
 #include <string>
 #include <deque>
 
-#include "ChannelEvent.hpp"
+#include "PixieEvent.hpp"
 
 #include "TF1.h"
 #include "TFitResultPtr.h"
@@ -27,20 +27,21 @@ extern Waveform dummyWaveform;
 
 class ChannelEventPair{
   public:
-  	ChannelEvent *event;
+  	PixieEvent *pixieEvent;
+  	ChannelEvent *channelEvent;
 	MapEntry *entry;
   
 	ChannelEventPair();
 	
-	ChannelEventPair(ChannelEvent *event_, MapEntry *entry_);
+	ChannelEventPair(PixieEvent *p_event_, ChannelEvent *c_event_, MapEntry *entry_);
 	
 	~ChannelEventPair();
 	
 	/// Return true if the time of arrival for rhs is later than that of lhs.
-	static bool CompareTime(ChannelEventPair *lhs, ChannelEventPair *rhs){ return (lhs->event->time < rhs->event->time); }
+	static bool CompareTime(ChannelEventPair *lhs, ChannelEventPair *rhs){ return (lhs->pixieEvent->time < rhs->pixieEvent->time); }
 	
 	/// Return true if lhs has a lower event id (mod * chan) than rhs.
-	static bool CompareChannel(ChannelEventPair *lhs, ChannelEventPair *rhs){ return ((lhs->event->modNum*lhs->event->chanNum) < (rhs->event->modNum*rhs->event->chanNum)); }
+	static bool CompareChannel(ChannelEventPair *lhs, ChannelEventPair *rhs){ return ((lhs->pixieEvent->modNum*lhs->pixieEvent->chanNum) < (rhs->pixieEvent->modNum*rhs->pixieEvent->chanNum)); }
 };
 
 class FittingFunction{

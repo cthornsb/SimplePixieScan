@@ -8,7 +8,7 @@ bool TriggerProcessor::HandleEvents(){
 	ChannelEvent *current_event;
 
 	for(std::deque<ChannelEventPair*>::iterator iter = events.begin(); iter != events.end(); iter++){
-		current_event = (*iter)->event;
+		current_event = (*iter)->channelEvent;
 	
 		// Check that the time and energy values are valid
 		if(!current_event->valid_chan){ continue; }
@@ -18,7 +18,7 @@ bool TriggerProcessor::HandleEvents(){
 		phase_1d->Fill(current_event->phase);
 	
 		// Fill the values into the root tree.
-		structure.Append(current_event->time, current_event->hires_energy, current_event->phase);
+		structure.Append(current_event->event->time, current_event->hires_energy, current_event->phase);
 		
 		// Copy the trace to the output file.
 		if(write_waveform){

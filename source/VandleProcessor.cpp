@@ -27,20 +27,26 @@ bool VandleProcessor::HandleEvents(){
 	std::deque<ChannelEventPair*>::iterator iter_L = events.begin();
 	std::deque<ChannelEventPair*>::iterator iter_R = events.begin()+1;
 
-	ChannelEvent *current_event_L;
-	ChannelEvent *current_event_R;
+	PixieEvent *current_event_L;
+	PixieEvent *current_event_R;
+
+	ChannelEvent *channel_event_L;
+	ChannelEvent *channel_event_R;
 
 	// Pick out pairs of channels representing vandle bars.
 	for(; iter_R != events.end(); iter_L++, iter_R++){
-		current_event_L = (*iter_L)->event;
-		current_event_R = (*iter_R)->event;
+		current_event_L = (*iter_L)->pixieEvent;
+		current_event_R = (*iter_R)->pixieEvent;
+
+		channel_event_L = (*iter_L)->channelEvent;
+		channel_event_R = (*iter_R)->channelEvent;
 	
 		// Check that the time and energy values are valid
-		if(!current_event_L->valid_chan || !current_event_R->valid_chan){ continue; }
+		if(!channel_event_L->valid_chan || !channel_event_R->valid_chan){ continue; }
 	
 		// Check that these two channels have the correct detector tag.
-		if((*iter_L)->entry->tag != "left" || 
-		   (*iter_R)->entry->tag != "right"){ continue; }
+		if((*iter_L)->entry->subtype != "left" || 
+		   (*iter_R)->entry->subtype != "right"){ continue; }
 	
 		// Check that these two channels are indeed neighbors. If not, iterate up by one and check again.
 		if((current_event_L->modNum != current_event_R->modNum) || (current_event_L->chanNum+1 != current_event_R->chanNum)){ continue; }
@@ -49,25 +55,25 @@ bool VandleProcessor::HandleEvents(){
 		if(absdiff(current_event_L->time, current_event_R->time) > (2 * max_tdiff)){ continue; }
 
 		// Calculate the time difference between the current event and the start.
-		double tdiff_L = (current_event_L->time - start->event->time)*8 + (current_event_L->phase - start->event->phase)*4;
-		double tdiff_R = (current_event_R->time - start->event->time)*8 + (current_event_R->phase - start->event->phase)*4;
+		double tdiff_L = (current_event_L->time - start->pixieEvent->time)*8 + (channel_event_L->phase - start->channelEvent->phase)*4;
+		double tdiff_R = (current_event_R->time - start->pixieEvent->time)*8 + (channel_event_R->phase - start->channelEvent->phase)*4;
 		
 		// Get the location of this detector.
 		int location = (*iter_L)->entry->location;
 		
 		// Fill all diagnostic histograms.
 		loc_tdiff_2d->Fill((tdiff_L + tdiff_R)/2.0, location);
-		loc_energy_2d->Fill(std::sqrt(current_event_L->hires_energy*current_event_R->hires_energy), location);
-		loc_L_phase_2d->Fill(current_event_L->phase, location);
-		loc_R_phase_2d->Fill(current_event_R->phase, location);
+		loc_energy_2d->Fill(std::sqrt(channel_event_L->hires_energy*channel_event_R->hires_energy), location);
+		loc_L_phase_2d->Fill(channel_event_L->phase, location);
+		loc_R_phase_2d->Fill(channel_event_R->phase, location);
 		loc_1d->Fill(location);		
 		
 		// Fill the values into the root tree.
-		structure.Append(tdiff_L, tdiff_R, current_event_L->hires_energy, current_event_R->hires_energy, current_event_L->phase, current_event_R->phase, location);
+		structure.Append(tdiff_L, tdiff_R, channel_event_L->hires_energy, channel_event_R->hires_energy, channel_event_L->phase, channel_event_R->phase, location);
 		     
 		// Copy the trace to the output file.
 		if(write_waveform){
-			waveform.Append((int*)current_event_L->yvals, (int*)current_event_R->yvals, current_event_L->size);
+			waveform.Append((int*)channel_event_L->yvals, (int*)channel_event_R->yvals, channel_event_L->size);
 		}
 		
 		good_events += 2;

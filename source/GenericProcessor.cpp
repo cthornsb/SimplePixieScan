@@ -8,13 +8,13 @@ bool GenericProcessor::HandleEvents(){
 	ChannelEvent *current_event;
 
 	for(std::deque<ChannelEventPair*>::iterator iter = events.begin(); iter != events.end(); iter++){
-		current_event = (*iter)->event;
+		current_event = (*iter)->channelEvent;
 		
 		// Check that the time and energy values are valid
 		if(!current_event->valid_chan){ continue; }
 	
 		// Calculate the time difference between the current event and the start.
-		double tdiff = (current_event->time - start->event->time)*8 + (current_event->phase - start->event->phase)*4;
+		double tdiff = (current_event->event->time - start->pixieEvent->time)*8 + (current_event->phase - start->channelEvent->phase)*4;
 		
 		// Get the location of this detector.
 		int location = (*iter)->entry->location;

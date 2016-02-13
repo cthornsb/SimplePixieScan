@@ -13,17 +13,19 @@ Structure dummyStructure;
 Waveform dummyWaveform;
 
 ChannelEventPair::ChannelEventPair(){
-	event = NULL;
+	pixieEvent = NULL;
+	channelEvent = NULL;
 	entry = NULL;
 }
 
-ChannelEventPair::ChannelEventPair(ChannelEvent *event_, MapEntry *entry_){
-	event = event_;
+ChannelEventPair::ChannelEventPair(PixieEvent *pix_event_, ChannelEvent *chan_event_, MapEntry *entry_){
+	pixieEvent = pix_event_;
+	channelEvent = chan_event_;
 	entry = entry_;
 }
 
 ChannelEventPair::~ChannelEventPair(){
-	if(event){ delete event; }
+	if(channelEvent){ delete channelEvent; } // Deleting the ChannelEvent will also delete the underlying PixieEvent.
 }
 
 // 1D function to use for pulse fitting
@@ -234,48 +236,50 @@ void Processor::PreProcess(){
 	// Start the timer.
 	StartProcess(); 
 	
-	ChannelEvent *current_event;
+	PixieEvent *current_event;
+	ChannelEvent *channel_event;
 
 	// Iterate over the list of channel events.
 	for(std::deque<ChannelEventPair*>::iterator iter = events.begin(); iter != events.end(); iter++){
 		total_events++;
 		
-		current_event = (*iter)->event;
+		current_event = (*iter)->pixieEvent;
+		channel_event = (*iter)->channelEvent;
 	
 		// Set the default values for high resolution energy and time.
-		current_event->hires_energy = current_event->energy;
-		current_event->hires_time = current_event->time * filterClockInSeconds;
+		channel_event->hires_energy = current_event->energy;
+		channel_event->hires_time = current_event->time * filterClockInSeconds;
 	
 		// Check for trace with zero size.
-		if(current_event->trace.empty()){ continue; }
+		if(current_event->adcTrace.empty()){ continue; }
 
 		// Correct the baseline.
-		if(current_event->CorrectBaseline() < 0){ continue; }
+		if(channel_event->CorrectBaseline() < 0){ continue; }
 		
 		// Check for large SNR.
-		if(current_event->stddev > 3.0){ continue; }
+		if(channel_event->stddev > 3.0){ continue; }
 
 		// Find the leading edge of the pulse. This will also set the phase of the ChannelEventPair.
-		if(current_event->FindLeadingEdge() < 0){ continue; }
+		if(channel_event->FindLeadingEdge() < 0){ continue; }
 
 		// Compute the energy of the pulse within the fitting window.
-		current_event->hires_energy = current_event->FindQDC(current_event->max_index - fitting_low, current_event->max_index + fitting_high);
+		channel_event->hires_energy = channel_event->FindQDC(channel_event->max_index - fitting_low, channel_event->max_index + fitting_high);
 		
 		// Set the channel event to valid.
-		current_event->valid_chan = true;
+		channel_event->valid_chan = true;
 		
 		if(use_fitting){ // Do root fitting for high resolution timing (very slow).
 			if(!fitting_func){ SetFitFunction(); }
 		
 			// "Convert" the trace into a TGraph for fitting.
-			TGraph *graph = new TGraph(current_event->size, current_event->xvals, current_event->yvals);
+			TGraph *graph = new TGraph(channel_event->size, channel_event->xvals, channel_event->yvals);
 		
 			// Set the initial fitting parameters.
-			if(SetFitParameters(current_event, (*iter)->entry)){
+			if(SetFitParameters(channel_event, (*iter)->entry)){
 				// Fit the TGraph.
-				if(!FitPulse(graph, current_event->phase)){
+				if(!FitPulse(graph, channel_event->phase)){
 					// Set the channel event to invalid.
-					current_event->valid_chan = false;
+					channel_event->valid_chan = false;
 				}
 			}
 			
@@ -283,16 +287,16 @@ void Processor::PreProcess(){
 		}
 		else{ // Do a more simplified CFD analysis to save time.
 			// Set the initial CFD parameters.
-			if(SetCfdParameters(current_event, (*iter)->entry)){
-				if(!CfdPulse(current_event, (*iter)->entry)){
+			if(SetCfdParameters(channel_event, (*iter)->entry)){
+				if(!CfdPulse(channel_event, (*iter)->entry)){
 					// Set the channel event to invalid.
-					current_event->valid_chan = false;
+					channel_event->valid_chan = false;
 				}
 			}
 		}
 		
 		// Set the high resolution time.
-		current_event->hires_time += current_event->phase * adcClockInSeconds;
+		channel_event->hires_time += channel_event->phase * adcClockInSeconds;
 	}
 
 	// Stop the timer.

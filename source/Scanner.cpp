@@ -20,7 +20,8 @@
 
 /// Process all events in the event list.
 void Scanner::ProcessRawEvent(){
-	ChannelEvent *current_event = NULL;
+	PixieEvent *current_event = NULL;
+	ChannelEvent *channel_event = NULL;
 	ChannelEventPair *current_pair = NULL;
 	
 	// Fill the processor event deques with events
@@ -31,13 +32,15 @@ void Scanner::ProcessRawEvent(){
 		// Check that this channel event exists.
 		if(!current_event){ continue; }
 
+		channel_event = new ChannelEvent(current_event);
+
 		// Fill the output histograms.
 		chanCounts->Fill(current_event->chanNum, current_event->modNum);
 		chanEnergy->Fill(current_event->energy, current_event->modNum*16+current_event->chanNum);
 
 		if(!raw_event_mode){ // Standard operation. Individual processors will handle output
 			// Link the channel event to its corresponding map entry.
-			current_pair = new ChannelEventPair(current_event, mapfile->GetMapEntry(current_event));
+			current_pair = new ChannelEventPair(current_event, channel_event, mapfile->GetMapEntry(current_event));
 		
 			// Pass this event to the correct processor
 			if(current_pair->entry->type == "ignore" || !handler->AddEvent(current_pair)){ // Invalid detector type. Delete it
@@ -53,7 +56,7 @@ void Scanner::ProcessRawEvent(){
 		}
 		else{ // Raw event mode operation. Dump raw event information to root file.
 			structure.Append(current_event->modNum, current_event->chanNum, current_event->time, current_event->energy);
-			waveform.Append(current_event->trace);
+			waveform.Append(current_event->adcTrace);
 			delete current_pair;
 		}
 	}

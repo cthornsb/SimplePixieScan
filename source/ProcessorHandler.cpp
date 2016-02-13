@@ -71,8 +71,8 @@ bool ProcessorHandler::AddEvent(ChannelEventPair *pair_){
 		if(pair_->entry->type == iter->type){ 
 			iter->proc->AddEvent(pair_); 
 			if(pair_->entry->tag == "start"){ 
-				if(total_events == 0){ first_event_time = pair_->event->time * 8E-9; }
-				delta_event_time = (pair_->event->time * 8E-9) - first_event_time;
+				if(total_events == 0){ first_event_time = pair_->pixieEvent->time * 8E-9; }
+				delta_event_time = (pair_->pixieEvent->time * 8E-9) - first_event_time;
 				total_events++; 
 			}
 			return true;

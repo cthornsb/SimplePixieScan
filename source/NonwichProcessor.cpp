@@ -8,7 +8,7 @@ bool NonwichProcessor::HandleEvents(){
 	ChannelEvent *current_event;
 
 	for(std::deque<ChannelEventPair*>::iterator iter = events.begin(); iter != events.end(); iter++){
-		current_event = (*iter)->event;
+		current_event = (*iter)->channelEvent;
 	
 		// Check that this is a E-residual event. The E-loss channel should be marked as a start.
 		if((*iter)->entry->tag != "E"){ continue; }
@@ -17,19 +17,19 @@ bool NonwichProcessor::HandleEvents(){
 		if(!current_event->valid_chan){ continue; }
 	
 		// Fill all diagnostic histograms.
-		dE_energy_1d->Fill(start->event->hires_energy);
+		dE_energy_1d->Fill(start->channelEvent->hires_energy);
 		E_energy_1d->Fill(current_event->hires_energy);
-		tdiff_1d->Fill((current_event->time - start->event->time)*8 + (current_event->phase - start->event->phase)*4);
-		energy_2d->Fill(current_event->hires_energy, start->event->hires_energy);
-		dE_phase_1d->Fill(start->event->phase);
+		tdiff_1d->Fill((current_event->event->time - start->pixieEvent->time)*8 + (current_event->phase - start->channelEvent->phase)*4);
+		energy_2d->Fill(current_event->hires_energy, start->channelEvent->hires_energy);
+		dE_phase_1d->Fill(start->channelEvent->phase);
 		E_phase_1d->Fill(current_event->phase);
 	
 		// Fill the values into the root tree.
-		structure.Append(start->event->time, current_event->time, start->event->hires_energy, current_event->hires_energy);
+		structure.Append(start->pixieEvent->time, current_event->event->time, start->channelEvent->hires_energy, current_event->hires_energy);
 		     
 		// Copy the trace to the output file.
 		if(write_waveform){
-			waveform.Append((int*)start->event->yvals, (int*)current_event->yvals, current_event->size);
+			waveform.Append((int*)start->channelEvent->yvals, (int*)current_event->yvals, current_event->size);
 		}
 		
 		good_events++;

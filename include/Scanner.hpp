@@ -11,12 +11,18 @@ class ProcessorHandler;
 class OnlineProcessor;
 class Plotter;
 
+class TFile;
+class TTree;
+
 class Scanner : public Unpacker{
   private:
 	MapFile *mapfile;
 	ConfigFile *configfile;
 	ProcessorHandler *handler;
 	OnlineProcessor *online;
+	
+	TFile *root_file;
+	TTree *root_tree;
 	
 	RawEventStructure structure; /// Root data structure for storing raw channel event information.
 	RawEventWaveform waveform; /// Root data structure for storing raw waveforms.
