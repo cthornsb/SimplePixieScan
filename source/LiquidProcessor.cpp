@@ -22,7 +22,7 @@ bool LiquidProcessor::HandleEvents(){
 		int location = (*iter)->entry->location;
 
 		// Compute the trace qdc of the fast and slow component of the left pmt pulse.
-		short_qdc = current_event->IntegratePulse(current_event->max_index - fitting_low, current_event->max_index + fitting_high);
+		short_qdc = current_event->IntegratePulse(current_event->max_index + fitting_low, current_event->max_index + fitting_high);
 		long_qdc = current_event->IntegratePulse(current_event->max_index + fitting_low2, current_event->max_index + fitting_high2);	
 
 		// Fill all diagnostic histograms.
@@ -46,10 +46,10 @@ bool LiquidProcessor::HandleEvents(){
 }
 
 LiquidProcessor::LiquidProcessor(MapFile *map_) : Processor("Liquid", "liquid", map_){
-	fitting_low = 5;
-	fitting_high = 5;
-	fitting_low2 = 5;
-	fitting_high2 = 20;
+	fitting_low = 4;
+	fitting_high = 38;
+	fitting_low2 = -5;
+	fitting_high2 = 38;
 
 	root_structure = (Structure*)&structure;
 	root_waveform = (Waveform*)&waveform;
