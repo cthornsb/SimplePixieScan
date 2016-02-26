@@ -22,10 +22,10 @@ LinkDef.h
 # Executable #
 ##############
 PixieLDF
-rcbuild
+run.sh
 *.cmd
 
 # Dictionary Files #
 ####################
-rcbuild
+rcbuild/rcbuild
 .def.struct.bkp

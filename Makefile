@@ -1,13 +1,16 @@
 #####################################################################
 
 # Set the PixieSuite core directory
-PIXIE_SUITE_DIR = $(HOME)/Research/Pixie16/PixieSuite
+PIXIE_SUITE_DIR = $(HOME)/Research/PixieSuite
+
+# This one will be set automatically.
+PIXIE_SUITE_LIB_DIR = $(PIXIE_SUITE_DIR)/exec/lib
 
 #####################################################################
 
 #CFLAGS = -g -Wall -std=c++0x `root-config --cflags`
 CFLAGS = -Wall -O3 -std=c++0x `root-config --cflags`
-LDLIBS = -lstdc++ -L$(PIXIE_SUITE_DIR)/exec/lib -lPixieScan `root-config --libs`
+LDLIBS = -lstdc++ -L$(PIXIE_SUITE_LIB_DIR) -lPixieScan `root-config --libs`
 LDFLAGS = `root-config --glibs`
 
 COMPILER = g++
@@ -21,6 +24,8 @@ OBJ_DIR = $(TOP_LEVEL)/obj
 
 DICT_DIR = $(TOP_LEVEL)/dict
 DICT_OBJ_DIR = $(DICT_DIR)/obj
+
+EXEC_DIR = $(TOP_LEVEL)/exec
 
 RCBUILD_DIR = $(TOP_LEVEL)/rcbuild
 
@@ -50,11 +55,11 @@ SFLAGS = $(addprefix -l,$(DICT_SOURCE))
 
 OBJECTS += $(ROOT_DICT_OBJ) $(STRUCT_FILE_OBJ)
 
-EXECUTABLE = PixieLDF
+EXECUTABLE = $(EXEC_DIR)/PixieLDF
 
 ########################################################################
 
-all: directory dictionary $(EXECUTABLE)
+all: directory dictionary runscript $(EXECUTABLE)
 #	Create all directories, make all objects, and link executable
 
 dictionary:
@@ -64,10 +69,14 @@ dictionary:
 	@if [ -e $(DICT_DIR)/$(DICT_SOURCE)_rdict.pcm ]; then \
 		cp $(DICT_DIR)/$(DICT_SOURCE)_rdict.pcm $(TOP_LEVEL)/; \
 	fi
+	
+runscript:
+#	Generate the run.sh shell script
+	@$(RCBUILD_DIR)/libpath.sh $(PIXIE_SUITE_LIB_DIR) $(DICT_OBJ_DIR)
 
 ########################################################################
 
-directory: $(OBJ_DIR)
+directory: $(OBJ_DIR) $(EXEC_DIR)
 # Setup the configuration directory
 	@if [ ! -d $(TOP_LEVEL)/config/default ]; then \
 		tar -xf $(TOP_LEVEL)/config.tar; \
@@ -81,6 +90,13 @@ directory: $(OBJ_DIR)
 
 $(OBJ_DIR):
 #	Make the object file directory
+	@if [ ! -d $@ ]; then \
+		echo "Making directory: "$@; \
+		mkdir $@; \
+	fi
+	
+$(EXEC_DIR):
+#	Make the executable directory
 	@if [ ! -d $@ ]; then \
 		echo "Making directory: "$@; \
 		mkdir $@; \
@@ -100,7 +116,7 @@ $(EXECUTABLE): $(OBJECTS)
 ########################################################################
 
 tidy: clean_obj clean_dict
-	@rm -f $(EXECUTABLE)
+	@rm -f $(EXECUTABLE) ./run.sh
 
 clean: clean_obj
 
