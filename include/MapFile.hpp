@@ -79,6 +79,10 @@ class MapFile{
 	
 	std::string GetTag(int mod_, int chan_);
 	
+	const int GetMaxModules(){ return max_modules; }
+	
+	const int GetMaxChannels(){ return max_channels; }
+	
 	bool IsInit(){ return init; }
 	
 	int GetFirstOccurance(const std::string &type_);

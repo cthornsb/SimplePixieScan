@@ -211,8 +211,9 @@ bool Scanner::Initialize(std::string prefix_){
 	}
 
 	// Setup the root tree for data output.
-	root_tree = new TTree("Pixie16", "Pixie16 data");
+	root_tree = new TTree("data", "Pixie16 data");
 	
+	// Add branches to the output tree.
 	if(!raw_event_mode){ // Standard operation
 		handler->InitRootOutput(root_tree);
 		if(use_root_fitting){ handler->ToggleFitting(); }
@@ -230,12 +231,49 @@ void Scanner::FinalInitialization(){
 	if(!scan_main){ return; }
 	fileInformation *finfo = scan_main->GetFileInfo();
 	if(!finfo){ return; }
+
+	// Add file header information to the output root file.
 	std::string name, value;
-	root_file->cd();
+	root_file->mkdir("head");
+	root_file->cd("head");
 	for(size_t index = 0; index < finfo->size(); index++){
 		finfo->at(index, name, value);
-		TNamed *named = new TNamed(name.c_str(), value.c_str());
-		named->Write();
+		std::cout << name << ", " << value << std::endl;
+		TNamed named(name.c_str(), value.c_str());
+		named.Write();
+	}
+	
+	// Add all map entries to the output root file.
+	const int num_mod = mapfile->GetMaxModules();
+	const int num_chan = mapfile->GetMaxChannels();
+	MapEntry *entryptr;
+	
+	std::string dir_names[num_mod];
+	std::string chan_names[num_chan];
+	for(int i = 0; i < num_mod; i++){
+		std::stringstream stream;
+		if(i < 10){ stream << "0" << i; }
+		else{ stream << i; }
+		dir_names[i] = "map/mod" + stream.str();
+	}
+	for(int i = 0; i < num_chan; i++){
+		std::stringstream stream;
+		if(i < 10){ stream << "0" << i; }
+		else{ stream << i; }
+		chan_names[i] = "chan" + stream.str();
+	}
+	
+	root_file->mkdir("map");
+	for(int i = 0; i < num_mod; i++){
+		root_file->mkdir(dir_names[i].c_str());
+		root_file->cd(dir_names[i].c_str());
+		for(int j = 0; j < num_chan; j++){
+			entryptr = mapfile->GetMapEntry(i, j);
+			if(entryptr->type == "ignore"){ continue; }
+			std::cout << chan_names[j] << ", " << entryptr->type << std::endl;
+			TNamed named(chan_names[j].c_str(), (entryptr->type+":"+entryptr->subtype+":"+entryptr->tag).c_str());
+			named.Write();
+		}
 	}
 }
 
