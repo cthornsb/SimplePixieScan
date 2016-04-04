@@ -19,6 +19,11 @@ Structures.cpp
 Structures.h
 LinkDef.h
 
+# Data Files #
+##############
+*.ldf
+*.pld
+
 # Executable #
 ##############
 PixieLDF
