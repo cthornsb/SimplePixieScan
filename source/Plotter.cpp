@@ -126,3 +126,7 @@ void Plotter::Draw(TPad *pad_){
 	if(logz){ pad_->SetLogz(); }
 	hist->Draw((opt+"SAME").c_str());
 }
+
+void Plotter::Write(){
+	hist->Write();
+}

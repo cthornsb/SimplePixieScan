@@ -107,6 +107,21 @@ Scanner::Scanner(){
 Scanner::~Scanner(){
 	if(init){
 		std::cout << "Scanner: Found " << chanCounts->GetHist()->GetEntries() << " total events.\n";
+
+		// If the root file is open, write the tree and histogram.
+		if(root_file->IsOpen()){
+			// Write all online diagnostic histograms to the output root file.
+			std::cout << "Scanner: Writing " << online->WriteHists(root_file) << " histograms to root file.\n";
+
+			// Write root tree to output file.
+			std::cout << "Scanner: Writing " << root_tree->GetEntries() << " entries to root file.\n";
+			root_file->cd();
+			root_tree->Write();
+			chanCounts->GetHist()->Write();
+			chanEnergy->GetHist()->Write();
+			root_file->Close();
+		}
+
 		if(!raw_event_mode){
 			std::cout << "Scanner: Found " << handler->GetTotalEvents() << " start events.\n";
 			std::cout << "Scanner: Total data time is " << handler->GetDeltaEventTime() << " s.\n";
@@ -115,19 +130,9 @@ Scanner::~Scanner(){
 			delete configfile;
 			delete handler;
 		}
-		
-		// If the root file is open, write the tree and histogram.
-		if(root_file->IsOpen()){
-			std::cout << "Scanner: Writing " << root_tree->GetEntries() << " entries to root file.\n";
-			root_file->cd();
-			root_tree->Write();
-			chanCounts->GetHist()->Write();
-			chanEnergy->GetHist()->Write();
-			root_file->Close();
-		}
+
 		delete root_file;
-		
-		if(online){ delete online; }
+		delete online;
 	}
 
 	Close(); // Close the Unpacker object.
@@ -143,10 +148,12 @@ bool Scanner::Initialize(std::string prefix_){
 	// Setup a 2d histogram for tracking all channel counts.
 	chanEnergy = new Plotter("chanEnergy", "Channel vs. Energy", "COLZ", "Energy (a.u.)", 500, 0, 20000, "Channel", 224, 0, 224);
 
-	if(online_mode){
-		// Initialize the online data processor.
-		online = new OnlineProcessor();
+	// Initialize the online data processor.
+	online = new OnlineProcessor();
 
+	if(online_mode){
+		online->SetDisplayMode();
+	
 		// Add the raw histograms to the online processor.
 		online->AddHist(chanCounts);
 		online->AddHist(chanEnergy);
@@ -186,10 +193,9 @@ bool Scanner::Initialize(std::string prefix_){
 				Processor *proc = handler->AddProcessor(iter->type, mapfile);
 				if(proc){
 					std::cout << prefix_ << "Added " << iter->type << " processor to the processor list.\n"; 
-					if(online_mode){
-						// Initialize all online diagnostic plots.
-						online->AddHists(proc);
-					}
+					
+					// Initialize all online diagnostic plots.
+					online->AddHists(proc);
 				}
 				else{ std::cout << prefix_ << "Failed to add " << iter->type << " processor to the processor list!\n"; }
 			}

@@ -5,18 +5,39 @@
 #include "OnlineProcessor.hpp"
 
 #include "TH1.h"
+#include "TFile.h"
 #include "TCanvas.h"
 #include "TSystem.h"
 #include "TApplication.h"
 
 TPad *OnlineProcessor::cd(const unsigned int &index_){
-	if(index_ >= num_hists){ return NULL; }
+	if(!display_mode || index_ >= num_hists){ return NULL; }
 	pad = (TPad*)(can->cd(index_+1));
 	plot = *(plottable_hists.begin()+which_hists[index_]);
 	return pad;
 }
 
-OnlineProcessor::OnlineProcessor(const unsigned int &cols_/*=2*/, const unsigned int &rows_/*=2*/){
+OnlineProcessor::OnlineProcessor(){
+	display_mode = false;
+}
+
+OnlineProcessor::~OnlineProcessor(){
+	if(display_mode){
+		can->Close();
+		delete can;
+		delete[] which_hists;
+	}
+}
+
+Plotter* OnlineProcessor::GetPlot(const unsigned int &index_){
+	if(!display_mode || index_ >= num_hists){ return NULL; }
+	return (plot = *(plottable_hists.begin()+which_hists[index_]));
+}
+
+/// Activate display of histograms to TCanvas.
+void OnlineProcessor::SetDisplayMode(const unsigned int &cols_/*=2*/, const unsigned int &rows_/*=2*/){
+	if(display_mode){ return; }
+
 	num_hists = cols_*rows_;
 	canvas_cols = cols_;
 	canvas_rows = rows_;
@@ -37,26 +58,15 @@ OnlineProcessor::OnlineProcessor(const unsigned int &cols_/*=2*/, const unsigned
 	can = new TCanvas("scanner_c1", "Scanner Canvas");
 }
 
-OnlineProcessor::~OnlineProcessor(){
-	can->Close();
-	delete can;
-	delete[] which_hists;
-}
-
-Plotter* OnlineProcessor::GetPlot(const unsigned int &index_){
-	if(index_ >= num_hists){ return NULL; }
-	return (plot = *(plottable_hists.begin()+which_hists[index_]));
-}
-
 bool OnlineProcessor::ChangeHist(const unsigned int &index_, const unsigned int &hist_id_){
-	if(index_ >= num_hists || hist_id_ >= plottable_hists.size()){ return false; }
+	if(!display_mode || index_ >= num_hists || hist_id_ >= plottable_hists.size()){ return false; }
 	which_hists[index_] = hist_id_;
 	Refresh(index_);
 	return true;
 }
 
 bool OnlineProcessor::ChangeHist(const unsigned int &index_, const std::string &hist_name_){
-	if(index_ >= num_hists){ return false; }
+	if(!display_mode || index_ >= num_hists){ return false; }
 	
 	int count = 0;
 	for(std::vector<Plotter*>::iterator iter = plottable_hists.begin(); iter != plottable_hists.end(); iter++){
@@ -146,6 +156,8 @@ void OnlineProcessor::Refresh(const unsigned int &index_){
 
 /// Refresh all online plots.
 void OnlineProcessor::Refresh(){
+	if(!display_mode){ return; }
+
 	can->Clear();
 
 	// Divide the canvas into TPads.
@@ -175,6 +187,22 @@ void OnlineProcessor::AddHists(Processor *proc){
 /// Add a single histogram to the list of plottable items.
 void OnlineProcessor::AddHist(Plotter *hist_){
 	plottable_hists.push_back(hist_);
+}
+
+/// Write a histogram to a root TTree.
+int OnlineProcessor::WriteHists(TFile *file_, const std::string &dirname_/*="hists"*/){
+	if(!file_){ return -1; }
+
+	file_->mkdir(dirname_.c_str());
+	file_->cd(dirname_.c_str());
+
+	int count = 0;
+	for(std::vector<Plotter*>::iterator iter = plottable_hists.begin(); iter != plottable_hists.end(); iter++){
+		(*iter)->Write();
+		count++;
+	}
+	
+	return count;
 }
 
 /// Display a list of available plots.

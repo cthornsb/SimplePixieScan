@@ -10,6 +10,7 @@ class Plotter;
 class TCanvas;
 class TPad;
 class TH1;
+class TFile;
 class TApplication;
 
 class OnlineProcessor{
@@ -17,6 +18,8 @@ class OnlineProcessor{
 	unsigned int canvas_cols;
 	unsigned int canvas_rows;
   	unsigned int num_hists; /// The number of histograms which may be plotted at a given time.
+  	
+  	bool display_mode; /// True if histograms are to be displayed in a root canvas.
   	
 	int *which_hists; /// Array for storing which histogram to plot for each of the canvas pads.
 
@@ -32,7 +35,7 @@ class OnlineProcessor{
 
   public:
   	/// Default constructor.
-	OnlineProcessor(const unsigned int &cols_=2, const unsigned int &rows_=2);
+	OnlineProcessor();
 	
 	/// Destructor.
 	~OnlineProcessor();
@@ -41,6 +44,12 @@ class OnlineProcessor{
 	Plotter* operator [] (const unsigned int &index_){ return GetPlot(index_); }
 	
 	Plotter* GetPlot(const unsigned int &index_);
+	
+	/// Return true if histograms are to be displayed using root TCanvas and false otherwise.
+	bool DisplayMode(){ return display_mode; }
+	
+	/// Activate display of histograms to TCanvas.
+	void SetDisplayMode(const unsigned int &cols_=2, const unsigned int &rows_=2);
 	
 	/// Change the histogram id of one of the canvas pads.
 	bool ChangeHist(const unsigned int &index_, const unsigned int &hist_id_);
@@ -77,6 +86,9 @@ class OnlineProcessor{
 	
 	/// Add a single histogram to the list of plottable items.
 	void AddHist(Plotter *hist_);
+	
+	/// Write all histograms to a root TTree.
+	int WriteHists(TFile *file_, const std::string &dirname_="hists");
 	
 	/// Display a list of available plots.
 	void PrintHists();

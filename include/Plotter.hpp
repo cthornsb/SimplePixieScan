@@ -89,6 +89,8 @@ class Plotter{
 	void Fill(const double &x_, const double &y_=0.0);
 	
 	void Draw(TPad *pad_);
+	
+	void Write();
 };
 
 #endif
