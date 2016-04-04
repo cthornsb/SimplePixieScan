@@ -276,7 +276,6 @@ void Scanner::FinalInitialization(){
 		for(int j = 0; j < num_chan; j++){
 			entryptr = mapfile->GetMapEntry(i, j);
 			if(entryptr->type == "ignore"){ continue; }
-			std::cout << chan_names[j] << ", " << entryptr->type << std::endl;
 			TNamed named(chan_names[j].c_str(), (entryptr->type+":"+entryptr->subtype+":"+entryptr->tag).c_str());
 			named.Write();
 		}
