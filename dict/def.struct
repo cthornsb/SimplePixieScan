@@ -165,10 +165,8 @@ LONG	Structure for detectors of type "liquidbar"
 BEGIN_TYPES
 vector:double	liquidbar_ltdiff	The time of flight of the particle detected by liquidbar.
 vector:double	liquidbar_rtdiff	The time of flight of the particle detected by liquidbar.
-vector:double	liquidbar_lstqdc	The left pmt short integral computed from the trace.
-vector:double	liquidbar_lltqdc	The left pmt long integral computed from the trace.
-vector:double	liquidbar_rstqdc	The right pmt short integral computed from the trace.
-vector:double	liquidbar_rltqdc	The right pmt long integral computed from the trace.
+vector:double	liquidbar_stqdc	The short integral computed from both pmt traces.
+vector:double	liquidbar_ltqdc	The long integral computed from both pmt traces.
 vector:double	liquidbar_lphase	The left pmt trace offset in ns.
 vector:double	liquidbar_rphase	The right pmt trace offset in ns.
 vector:int	liquidbar_loc	Detector location (ID)

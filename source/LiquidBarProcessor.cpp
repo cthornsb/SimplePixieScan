@@ -70,15 +70,18 @@ bool LiquidBarProcessor::HandleEvents(){
 		right_short_qdc = channel_event_R->IntegratePulse(channel_event_R->max_index + fitting_low, channel_event_R->max_index + fitting_high);
 		right_long_qdc = channel_event_R->IntegratePulse(channel_event_R->max_index + fitting_low2, channel_event_R->max_index + fitting_high2);	
 		
+		double stqdc = std::sqrt(left_short_qdc*right_short_qdc);
+		double ltqdc = std::sqrt(left_long_qdc*right_long_qdc);
+		
 		// Fill all diagnostic histograms.
 		loc_tdiff_2d->Fill((tdiff_L + tdiff_R)/2.0, location/2);
-		loc_short_energy_2d->Fill((left_short_qdc + right_short_qdc)/2.0, location/2);
-		loc_long_energy_2d->Fill((left_long_qdc + right_long_qdc)/2.0, location/2);
-		loc_psd_2d->Fill((left_short_qdc + right_short_qdc)/(left_long_qdc + right_long_qdc), location/2);
+		loc_short_energy_2d->Fill(stqdc, location/2);
+		loc_long_energy_2d->Fill(ltqdc, location/2);
+		loc_psd_2d->Fill(stqdc/ltqdc, location/2);
 		loc_1d->Fill(location/2);		
 		
 		// Fill the values into the root tree.
-		structure.Append(tdiff_L, tdiff_R, left_short_qdc, left_long_qdc, right_short_qdc, right_long_qdc, channel_event_L->phase, channel_event_R->phase, location);
+		structure.Append(tdiff_L, tdiff_R, stqdc, ltqdc, channel_event_L->phase, channel_event_R->phase, location);
 		     
 		// Copy the trace to the output file.
 		if(write_waveform){
@@ -104,15 +107,15 @@ LiquidBarProcessor::LiquidBarProcessor(MapFile *map_) : Processor("LiquidBar", "
 	
 	if(maxloc-minloc > 1){ // More than one detector. Define 2d plots.
 		loc_tdiff_2d = new Plotter("liquidbar_h1", "Liquid Bar Location vs. Avg. Tdiff", "COLZ", "Tdiff (ns)", 200, -100, 100, "Location", maxloc-minloc, minloc/2, (maxloc+1)/2);
-		loc_short_energy_2d = new Plotter("liquidbar_h2", "Liquid Bar Location vs. Avg. S", "COLZ", "S (a.u.)", 200, 0, 20000, "Location", maxloc-minloc, minloc/2, (maxloc+1)/2);
-		loc_long_energy_2d = new Plotter("liquidbar_h3", "Liquid Bar Location vs. Avg. L", "COLZ", "L (a.u.)", 200, 0, 20000, "Location", maxloc-minloc, minloc/2, (maxloc+1)/2);
-		loc_psd_2d = new Plotter("liquidbar_h4", "Liquid Bar Location vs. Avg. PSD", "COLZ", "PSD (S/L)", 200, 0, 1, "Location", maxloc-minloc, minloc/2, (maxloc+1)/2);
+		loc_short_energy_2d = new Plotter("liquidbar_h2", "Liquid Bar Location vs. S", "COLZ", "S (a.u.)", 200, 0, 20000, "Location", maxloc-minloc, minloc/2, (maxloc+1)/2);
+		loc_long_energy_2d = new Plotter("liquidbar_h3", "Liquid Bar Location vs. L", "COLZ", "L (a.u.)", 200, 0, 20000, "Location", maxloc-minloc, minloc/2, (maxloc+1)/2);
+		loc_psd_2d = new Plotter("liquidbar_h4", "Liquid Bar Location vs. PSD", "COLZ", "PSD (S/L)", 200, 0, 1, "Location", maxloc-minloc, minloc/2, (maxloc+1)/2);
 	}
 	else{ // Only one detector. Define 1d plots instead.
 		loc_tdiff_2d = new Plotter("liquidbar_h1", "Liquid Bar Avg. Tdiff", "", "Tdiff (ns)", 200, -100, 100);
-		loc_short_energy_2d = new Plotter("liquidbar_h2", "Liquid Bar Avg. S", "COLZ", "S (a.u.)", 200, 0, 20000);
-		loc_long_energy_2d = new Plotter("liquidbar_h3", "Liquid Bar Avg. L", "COLZ", "L (a.u.)", 200, 0, 20000);
-		loc_psd_2d = new Plotter("liquidbar_h4", "Liquid Bar Avg. PSD", "COLZ", "PSD (S/L)", 200, 0, 1);
+		loc_short_energy_2d = new Plotter("liquidbar_h2", "Liquid Bar S", "COLZ", "S (a.u.)", 200, 0, 20000);
+		loc_long_energy_2d = new Plotter("liquidbar_h3", "Liquid Bar L", "COLZ", "L (a.u.)", 200, 0, 20000);
+		loc_psd_2d = new Plotter("liquidbar_h4", "Liquid Bar PSD", "COLZ", "PSD (S/L)", 200, 0, 1);
 	}
 	loc_1d = new Plotter("liquidbar_h5", "Liquid Bar Location", "", "Location", maxloc-minloc, minloc, maxloc+1);
 }
