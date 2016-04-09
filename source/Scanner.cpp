@@ -16,7 +16,7 @@
 // Root libraries
 #include "TFile.h"
 #include "TTree.h"
-#include "TH2I.h"
+#include "TH1.h"
 #include "TNamed.h"
 
 /// Process all events in the event list.
@@ -148,7 +148,7 @@ bool Scanner::Initialize(std::string prefix_){
 	chanCounts = new Plotter("chanCounts", "Recorded Counts for Module vs. Channel", "COLZ", "Channel", 16, 0, 16, "Module", 14, 0, 14);
 
 	// Setup a 2d histogram for tracking all channel counts.
-	chanEnergy = new Plotter("chanEnergy", "Channel vs. Energy", "COLZ", "Energy (a.u.)", 500, 0, 20000, "Channel", 224, 0, 224);
+	chanEnergy = new Plotter("chanEnergy", "Channel vs. Energy", "COLZ", "Energy (a.u.)", 32768, 0, 32768, "Channel", 224, 0, 224);
 
 	// Initialize the online data processor.
 	online = new OnlineProcessor();
