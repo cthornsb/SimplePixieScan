@@ -110,8 +110,10 @@ Scanner::~Scanner(){
 
 		// If the root file is open, write the tree and histogram.
 		if(root_file->IsOpen()){
-			// Write all online diagnostic histograms to the output root file.
-			std::cout << "Scanner: Writing " << online->WriteHists(root_file) << " histograms to root file.\n";
+			if(!raw_event_mode){
+				// Write all online diagnostic histograms to the output root file.
+				std::cout << "Scanner: Writing " << online->WriteHists(root_file) << " histograms to root file.\n";
+			}
 
 			// Write root tree to output file.
 			std::cout << "Scanner: Writing " << root_tree->GetEntries() << " entries to root file.\n";
@@ -249,35 +251,37 @@ void Scanner::FinalInitialization(){
 		named.Write();
 	}
 	
-	// Add all map entries to the output root file.
-	const int num_mod = mapfile->GetMaxModules();
-	const int num_chan = mapfile->GetMaxChannels();
-	MapEntry *entryptr;
+	if(!raw_event_mode){
+		// Add all map entries to the output root file.
+		const int num_mod = mapfile->GetMaxModules();
+		const int num_chan = mapfile->GetMaxChannels();
+		MapEntry *entryptr;
 	
-	std::string dir_names[num_mod];
-	std::string chan_names[num_chan];
-	for(int i = 0; i < num_mod; i++){
-		std::stringstream stream;
-		if(i < 10){ stream << "0" << i; }
-		else{ stream << i; }
-		dir_names[i] = "map/mod" + stream.str();
-	}
-	for(int i = 0; i < num_chan; i++){
-		std::stringstream stream;
-		if(i < 10){ stream << "0" << i; }
-		else{ stream << i; }
-		chan_names[i] = "chan" + stream.str();
-	}
+		std::string dir_names[num_mod];
+		std::string chan_names[num_chan];
+		for(int i = 0; i < num_mod; i++){
+			std::stringstream stream;
+			if(i < 10){ stream << "0" << i; }
+			else{ stream << i; }
+			dir_names[i] = "map/mod" + stream.str();
+		}
+		for(int i = 0; i < num_chan; i++){
+			std::stringstream stream;
+			if(i < 10){ stream << "0" << i; }
+			else{ stream << i; }
+			chan_names[i] = "chan" + stream.str();
+		}
 	
-	root_file->mkdir("map");
-	for(int i = 0; i < num_mod; i++){
-		root_file->mkdir(dir_names[i].c_str());
-		root_file->cd(dir_names[i].c_str());
-		for(int j = 0; j < num_chan; j++){
-			entryptr = mapfile->GetMapEntry(i, j);
-			if(entryptr->type == "ignore"){ continue; }
-			TNamed named(chan_names[j].c_str(), (entryptr->type+":"+entryptr->subtype+":"+entryptr->tag).c_str());
-			named.Write();
+		root_file->mkdir("map");
+		for(int i = 0; i < num_mod; i++){
+			root_file->mkdir(dir_names[i].c_str());
+			root_file->cd(dir_names[i].c_str());
+			for(int j = 0; j < num_chan; j++){
+				entryptr = mapfile->GetMapEntry(i, j);
+				if(entryptr->type == "ignore"){ continue; }
+				TNamed named(chan_names[j].c_str(), (entryptr->type+":"+entryptr->subtype+":"+entryptr->tag).c_str());
+				named.Write();
+			}
 		}
 	}
 }
