@@ -21,10 +21,10 @@ class Scanner : public Unpacker{
 	ProcessorHandler *handler;
 	OnlineProcessor *online;
 	
-	TFile *root_file;
-	TTree *root_tree;
+	TFile *root_file; /// Output root file for storing data.
+	TTree *root_tree; /// Output TTree for storing processed data.
 	
-	TTree *raw_tree;
+	TTree *raw_tree; /// Output TTree for storing raw pixie data.
 	
 	Plotter *chanCounts; /// 2d root histogram to store number of total channel counts found.
 	Plotter *chanEnergy; /// 2d root histogram to store the energy spectra from all channels.
@@ -32,12 +32,12 @@ class Scanner : public Unpacker{
 	int events_since_last_update; /// The number of processed events since the last online histogram update.
 	int events_between_updates; /// The number of events to process before updating online histograms.
 	
-	int raw_event_module;
-	int raw_event_channel;
-	double raw_event_energy;
-	double raw_event_time;
+	int raw_event_module; /// Module ID from the channel event.
+	int raw_event_channel; /// Channel ID from the channel event.
+	double raw_event_energy; /// Raw pixie energy taken directly from the module (a.u.).
+	double raw_event_time; /// Raw pixie time taken directly from the module and converted to seconds.
 	
-	bool force_overwrite;	
+	bool force_overwrite;
 	bool online_mode;
 	bool use_root_fitting;
 	
