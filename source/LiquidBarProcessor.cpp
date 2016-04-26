@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cmath>
 
 #include "LiquidBarProcessor.hpp"
 #include "Structures.h"
