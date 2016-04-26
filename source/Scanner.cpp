@@ -39,45 +39,38 @@ void Scanner::ProcessRawEvent(){
 		chanCounts->Fill(current_event->chanNum, current_event->modNum);
 		chanEnergy->Fill(current_event->energy, current_event->modNum*16+current_event->chanNum);
 
-		if(!raw_event_mode){ // Standard operation. Individual processors will handle output
-			// Link the channel event to its corresponding map entry.
-			current_pair = new ChannelEventPair(current_event, channel_event, mapfile->GetMapEntry(current_event));
-		
-			// Pass this event to the correct processor
-			if(current_pair->entry->type == "ignore" || !handler->AddEvent(current_pair)){ // Invalid detector type. Delete it
-				delete current_pair;
-			}
-		
-			// This channel is a start signal. Due to the way ScanList
-			// packs the raw event, there may be more than one start signal
-			// per raw event.
-			if(current_pair->entry->tag == "start"){ 
-				handler->AddStart(current_pair);
-			}
-		}
-		else{ // Raw event mode operation. Dump raw event information to root file.
-			structure.Append(current_event->modNum, current_event->chanNum, current_event->time, current_event->energy);
-			waveform.Append(current_event->adcTrace);
+		// Link the channel event to its corresponding map entry.
+		current_pair = new ChannelEventPair(current_event, channel_event, mapfile->GetMapEntry(current_event));
+
+		// Raw event information. Dump raw event information to root file.
+		raw_event_module = current_event->modNum;
+		raw_event_channel = current_event->chanNum;
+		raw_event_energy = current_event->energy;
+		raw_event_time = current_event->time*8E-9;
+		raw_tree->Fill();
+	
+		// Pass this event to the correct processor
+		if(current_pair->entry->type == "ignore" || !handler->AddEvent(current_pair)){ // Invalid detector type. Delete it
 			delete current_pair;
+		}
+	
+		// This channel is a start signal. Due to the way ScanList
+		// packs the raw event, there may be more than one start signal
+		// per raw event.
+		if(current_pair->entry->tag == "start"){ 
+			handler->AddStart(current_pair);
 		}
 	}
 	
-	if(!raw_event_mode){
-		// Call each processor to do the processing. Each
-		// processor will remove the channel events when finished.
-		if(handler->Process()){
-			// This event had at least one valid signal
-			root_tree->Fill();
-		}
-		
-		// Zero all of the processors.
-		handler->ZeroAll();
-	}
-	else{
+	// Call each processor to do the processing. Each
+	// processor will remove the channel events when finished.
+	if(handler->Process()){
+		// This event had at least one valid signal
 		root_tree->Fill();
-		structure.Zero();
-		waveform.Zero();
 	}
+	
+	// Zero all of the processors.
+	handler->ZeroAll();
 	
 	// Check for the need to update the online canvas.
 	if(online_mode){
@@ -92,7 +85,6 @@ void Scanner::ProcessRawEvent(){
 
 Scanner::Scanner(){
 	force_overwrite = false;
-	raw_event_mode = false;
 	online_mode = false;
 	use_root_fitting = false;
 	mapfile = NULL;
@@ -110,29 +102,32 @@ Scanner::~Scanner(){
 
 		// If the root file is open, write the tree and histogram.
 		if(root_file->IsOpen()){
-			if(!raw_event_mode){
-				// Write all online diagnostic histograms to the output root file.
-				std::cout << "Scanner: Writing " << online->WriteHists(root_file) << " histograms to root file.\n";
-			}
+			// Write all online diagnostic histograms to the output root file.
+			std::cout << "Scanner: Writing " << online->WriteHists(root_file) << " histograms to root file.\n";
 
-			// Write root tree to output file.
-			std::cout << "Scanner: Writing " << root_tree->GetEntries() << " entries to root file.\n";
 			root_file->cd();
+
+			// Write root trees to output file.
+			std::cout << "Scanner: Writing " << raw_tree->GetEntries() << " raw data entries to root file.\n";
+			raw_tree->Write();
+			
+			std::cout << "Scanner: Writing " << root_tree->GetEntries() << " processed data entries to root file.\n";
 			root_tree->Write();
+			
+			// Write debug histograms.
 			chanCounts->GetHist()->Write();
 			chanEnergy->GetHist()->Write();
+			
+			// Close the root file.
 			root_file->Close();
 		}
 
-		if(!raw_event_mode){
-			std::cout << "Scanner: Found " << handler->GetTotalEvents() << " start events.\n";
-			std::cout << "Scanner: Total data time is " << handler->GetDeltaEventTime() << " s.\n";
-		
-			delete mapfile;
-			delete configfile;
-			delete handler;
-		}
-
+		std::cout << "Scanner: Found " << handler->GetTotalEvents() << " start events.\n";
+		std::cout << "Scanner: Total data time is " << handler->GetDeltaEventTime() << " s.\n";
+	
+		delete mapfile;
+		delete configfile;
+		delete handler;
 		delete root_file;
 		delete online;
 	}
@@ -166,41 +161,39 @@ bool Scanner::Initialize(std::string prefix_){
 		online->Refresh();
 	}
 
-	// Only initialize map file, config file, and processor handler if not in raw event mode.
-	if(!raw_event_mode){
-		std::cout << prefix_ << "Reading map file ./setup/map.dat\n";
-		mapfile = new MapFile("./setup/map.dat");
-		if(!mapfile->IsInit()){ // Failed to read map file.
-			std::cout << prefix_ << "Failed to read map file './setup/map.dat'.\n";
-			delete mapfile;
-			return false;
-		}
-		std::cout << prefix_ << "Reading config file ./setup/config.dat\n";
-		configfile = new ConfigFile("./setup/config.dat");
-		if(!configfile->IsInit()){ // Failed to read config file.
-			std::cout << prefix_ << "Failed to read configuration file './setup/configp.dat'.\n";
-			delete mapfile;
-			delete configfile;
-			return false;
-		}
-		event_width = configfile->event_width * 125; // = event_width * 1E-6(s/us) / 8E-9(s/tick)
-		std::cout << prefix_ << "Setting event width to " << configfile->event_width << " μs (" << event_width << " pixie clock ticks).\n";
-		handler = new ProcessorHandler();
-		
-		// Load all needed processors.
-		std::vector<MapEntry> *types = mapfile->GetTypes();
-		for(std::vector<MapEntry>::iterator iter = types->begin(); iter != types->end(); iter++){
-			if(iter->type == "ignore" || !handler->CheckProcessor(iter->type)){ continue; }
-			else{
-				Processor *proc = handler->AddProcessor(iter->type, mapfile);
-				if(proc){
-					std::cout << prefix_ << "Added " << iter->type << " processor to the processor list.\n"; 
-					
-					// Initialize all online diagnostic plots.
-					online->AddHists(proc);
-				}
-				else{ std::cout << prefix_ << "Failed to add " << iter->type << " processor to the processor list!\n"; }
+	// Initialize map file, config file, and processor handler.
+	std::cout << prefix_ << "Reading map file ./setup/map.dat\n";
+	mapfile = new MapFile("./setup/map.dat");
+	if(!mapfile->IsInit()){ // Failed to read map file.
+		std::cout << prefix_ << "Failed to read map file './setup/map.dat'.\n";
+		delete mapfile;
+		return false;
+	}
+	std::cout << prefix_ << "Reading config file ./setup/config.dat\n";
+	configfile = new ConfigFile("./setup/config.dat");
+	if(!configfile->IsInit()){ // Failed to read config file.
+		std::cout << prefix_ << "Failed to read configuration file './setup/configp.dat'.\n";
+		delete mapfile;
+		delete configfile;
+		return false;
+	}
+	event_width = configfile->event_width * 125; // = event_width * 1E-6(s/us) / 8E-9(s/tick)
+	std::cout << prefix_ << "Setting event width to " << configfile->event_width << " μs (" << event_width << " pixie clock ticks).\n";
+	handler = new ProcessorHandler();
+	
+	// Load all needed processors.
+	std::vector<MapEntry> *types = mapfile->GetTypes();
+	for(std::vector<MapEntry>::iterator iter = types->begin(); iter != types->end(); iter++){
+		if(iter->type == "ignore" || !handler->CheckProcessor(iter->type)){ continue; }
+		else{
+			Processor *proc = handler->AddProcessor(iter->type, mapfile);
+			if(proc){
+				std::cout << prefix_ << "Added " << iter->type << " processor to the processor list.\n"; 
+				
+				// Initialize all online diagnostic plots.
+				online->AddHists(proc);
 			}
+			else{ std::cout << prefix_ << "Failed to add " << iter->type << " processor to the processor list!\n"; }
 		}
 	}
 	
@@ -221,15 +214,18 @@ bool Scanner::Initialize(std::string prefix_){
 	// Setup the root tree for data output.
 	root_tree = new TTree("data", "Pixie16 data");
 	
+	// Setup the raw data tree for output.
+	raw_tree = new TTree("raw", "Raw Pixie data");
+	
+	// Add branches to the raw data tree.
+	raw_tree->Branch("mod", &raw_event_module);
+	raw_tree->Branch("chan", &raw_event_channel);
+	raw_tree->Branch("energy", &raw_event_energy);
+	raw_tree->Branch("time", &raw_event_time);
+	
 	// Add branches to the output tree.
-	if(!raw_event_mode){ // Standard operation
-		handler->InitRootOutput(root_tree);
-		if(use_root_fitting){ handler->ToggleFitting(); }
-	}
-	else{ // Raw event output only. Processors will not be called.
-		root_tree->Branch("RawEvent", &structure);
-		root_tree->Branch("RawWave", &waveform);
-	}
+	handler->InitRootOutput(root_tree);
+	if(use_root_fitting){ handler->ToggleFitting(); }
 
 	return (init = true);
 }
@@ -251,37 +247,35 @@ void Scanner::FinalInitialization(){
 		named.Write();
 	}
 	
-	if(!raw_event_mode){
-		// Add all map entries to the output root file.
-		const int num_mod = mapfile->GetMaxModules();
-		const int num_chan = mapfile->GetMaxChannels();
-		MapEntry *entryptr;
-	
-		std::string dir_names[num_mod];
-		std::string chan_names[num_chan];
-		for(int i = 0; i < num_mod; i++){
-			std::stringstream stream;
-			if(i < 10){ stream << "0" << i; }
-			else{ stream << i; }
-			dir_names[i] = "map/mod" + stream.str();
-		}
-		for(int i = 0; i < num_chan; i++){
-			std::stringstream stream;
-			if(i < 10){ stream << "0" << i; }
-			else{ stream << i; }
-			chan_names[i] = "chan" + stream.str();
-		}
-	
-		root_file->mkdir("map");
-		for(int i = 0; i < num_mod; i++){
-			root_file->mkdir(dir_names[i].c_str());
-			root_file->cd(dir_names[i].c_str());
-			for(int j = 0; j < num_chan; j++){
-				entryptr = mapfile->GetMapEntry(i, j);
-				if(entryptr->type == "ignore"){ continue; }
-				TNamed named(chan_names[j].c_str(), (entryptr->type+":"+entryptr->subtype+":"+entryptr->tag).c_str());
-				named.Write();
-			}
+	// Add all map entries to the output root file.
+	const int num_mod = mapfile->GetMaxModules();
+	const int num_chan = mapfile->GetMaxChannels();
+	MapEntry *entryptr;
+
+	std::string dir_names[num_mod];
+	std::string chan_names[num_chan];
+	for(int i = 0; i < num_mod; i++){
+		std::stringstream stream;
+		if(i < 10){ stream << "0" << i; }
+		else{ stream << i; }
+		dir_names[i] = "map/mod" + stream.str();
+	}
+	for(int i = 0; i < num_chan; i++){
+		std::stringstream stream;
+		if(i < 10){ stream << "0" << i; }
+		else{ stream << i; }
+		chan_names[i] = "chan" + stream.str();
+	}
+
+	root_file->mkdir("map");
+	for(int i = 0; i < num_mod; i++){
+		root_file->mkdir(dir_names[i].c_str());
+		root_file->cd(dir_names[i].c_str());
+		for(int j = 0; j < num_chan; j++){
+			entryptr = mapfile->GetMapEntry(i, j);
+			if(entryptr->type == "ignore"){ continue; }
+			TNamed named(chan_names[j].c_str(), (entryptr->type+":"+entryptr->subtype+":"+entryptr->tag).c_str());
+			named.Write();
 		}
 	}
 }
@@ -296,7 +290,6 @@ void Scanner::SyntaxStr(const char *name_, std::string prefix_){
  */
 void Scanner::ArgHelp(std::string prefix_){
 	std::cout << prefix_ << "--force-overwrite - Force an overwrite of the output root file if it exists (default=false)\n";
-	std::cout << prefix_ << "--raw-event-mode  - Write raw channel information to the output root file (default=false)\n";
 	std::cout << prefix_ << "--online-mode     - Plot online root histograms for monitoring data (default=false)\n";
 	std::cout << prefix_ << "--fitting         - Use root fitting for high resolution timing (default=false)\n";
 }
@@ -333,10 +326,6 @@ bool Scanner::SetArgs(std::deque<std::string> &args_, std::string &filename){
 		if(current_arg == "--force-overwrite"){
 			std::cout << "Scanner: Forcing overwrite of output file.\n";
 			force_overwrite = true;
-		}
-		else if(current_arg == "--raw-event-mode"){
-			std::cout << "Scanner: Using raw event output mode.\n";
-			raw_event_mode = true;
 		}
 		else if(current_arg == "--online-mode"){
 			std::cout << "Scanner: Using online mode.\n";

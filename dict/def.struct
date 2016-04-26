@@ -24,36 +24,7 @@
 #   means that they will be included in the Waveform class instead of Structure.
 #
 # Cory R. Thornsberry
-# Last updated: Dec. 15th, 2015
-
-#####################################################################
-# RawEvent
-#####################################################################
-# Class name
-BEGIN_CLASS	RawEvent
-
-# Short class description
-SHORT	Raw pixie16 channel data
-
-# Longer class description
-LONG	Structure for raw pixie channels
-
-# Data types and names
-# type	name	description
-BEGIN_TYPES
-vector:int	raw_mod	The module number.
-vector:int	raw_chan	The channel number.
-vector:double	raw_time	The raw pixie16 system clock time.
-vector:double	raw_energy	The raw pixie energy.
-u_int	raw_mult	Multiplicity of the raw events
-
-# Trace output data types and names (must end with _wave)
-# type	name	description
-vector:int	raw_wave	Integer vector for raw waveforms.
-END_TYPES
-
-# End this class
-END_CLASS
+# Last updated: April 26th, 2015
 
 #####################################################################
 # Trigger

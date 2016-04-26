@@ -24,17 +24,20 @@ class Scanner : public Unpacker{
 	TFile *root_file;
 	TTree *root_tree;
 	
-	RawEventStructure structure; /// Root data structure for storing raw channel event information.
-	RawEventWaveform waveform; /// Root data structure for storing raw waveforms.
-
+	TTree *raw_tree;
+	
 	Plotter *chanCounts; /// 2d root histogram to store number of total channel counts found.
 	Plotter *chanEnergy; /// 2d root histogram to store the energy spectra from all channels.
 	
 	int events_since_last_update; /// The number of processed events since the last online histogram update.
 	int events_between_updates; /// The number of events to process before updating online histograms.
 	
+	int raw_event_module;
+	int raw_event_channel;
+	double raw_event_energy;
+	double raw_event_time;
+	
 	bool force_overwrite;	
-	bool raw_event_mode;
 	bool online_mode;
 	bool use_root_fitting;
 	
