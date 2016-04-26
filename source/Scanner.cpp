@@ -521,6 +521,9 @@ int main(int argc, char *argv[]){
 	// Setup the ScanMain object and link it to the unpacker object.
 	ScanMain scan_main(scanner);
 	
+	// Initialize the scanner.
+	scan_main.Initialize(argc, argv);
+	
 	// Link the unpacker object back to the ScanMain object so we may
 	// access its command line arguments and options.
 	scanner->SetScanMain(&scan_main);
@@ -529,5 +532,5 @@ int main(int argc, char *argv[]){
 	scan_main.SetMessageHeader("Scanner: ");
 
 	// Run the main loop.
-	return scan_main.Execute(argc, argv);
+	return scan_main.Execute();
 }
