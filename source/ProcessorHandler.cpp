@@ -6,7 +6,6 @@
 #include "PhoswichProcessor.hpp"
 #include "LiquidBarProcessor.hpp"
 #include "LiquidProcessor.hpp"
-#include "NonwichProcessor.hpp"
 #include "GenericProcessor.hpp"
 #include "LogicProcessor.hpp"
 
@@ -56,7 +55,6 @@ Processor *ProcessorHandler::AddProcessor(std::string type_, MapFile *map_){
 	else if(type_ == "phoswich"){ proc = (Processor*)(new PhoswichProcessor(map_)); }
 	else if(type_ == "liquidbar"){ proc = (Processor*)(new LiquidBarProcessor(map_)); }
 	else if(type_ == "liquid"){ proc = (Processor*)(new LiquidProcessor(map_)); }
-	else if(type_ == "nonwich"){ proc = (Processor*)(new NonwichProcessor(map_)); }
 	else if(type_ == "generic"){ proc = (Processor*)(new GenericProcessor(map_)); }
 	else if(type_ == "logic"){ proc = (Processor*)(new LogicProcessor(map_)); }
 	else{ return NULL; }
