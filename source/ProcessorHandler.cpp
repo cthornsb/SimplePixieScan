@@ -48,6 +48,15 @@ bool ProcessorHandler::InitRootOutput(TTree *tree_){
 	return true;
 }
 
+bool ProcessorHandler::InitTraceOutput(TTree *tree_){
+	bool retval = true;
+	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
+		iter->proc->ToggleTraces();
+		retval = retval && iter->proc->InitializeTraces(tree_);
+	}
+	return true;
+}
+
 bool ProcessorHandler::CheckProcessor(std::string type_){
 	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
 		if(iter->type == type_){ return false; }

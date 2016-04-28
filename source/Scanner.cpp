@@ -67,6 +67,7 @@ void Scanner::ProcessRawEvent(){
 	if(handler->Process()){
 		// This event had at least one valid signal
 		root_tree->Fill();
+		trace_tree->Fill();
 	}
 	
 	// Zero all of the processors.
@@ -114,6 +115,11 @@ Scanner::~Scanner(){
 			
 			std::cout << "Scanner: Writing " << root_tree->GetEntries() << " processed data entries to root file.\n";
 			root_tree->Write();
+			
+			if(write_traces){
+				std::cout << "Scanner: Writing " << trace_tree->GetEntries() << " raw ADC traces to root file.\n";
+				trace_tree->Write();
+			}
 			
 			// Write debug histograms.
 			chanCounts->GetHist()->Write();
@@ -213,10 +219,10 @@ bool Scanner::Initialize(std::string prefix_){
 	}
 
 	// Setup the root tree for data output.
-	root_tree = new TTree("data", "Pixie16 data");
+	root_tree = new TTree("data", "Pixie data");
 	
 	// Setup the raw data tree for output.
-	raw_tree = new TTree("raw", "Raw Pixie data");
+	raw_tree = new TTree("raw", "Raw pixie data");
 	
 	// Add branches to the raw data tree.
 	raw_tree->Branch("mod", &raw_event_module);
@@ -224,12 +230,15 @@ bool Scanner::Initialize(std::string prefix_){
 	raw_tree->Branch("energy", &raw_event_energy);
 	raw_tree->Branch("time", &raw_event_time);
 
-	// Set processor options.
-	if(use_root_fitting){ handler->ToggleFitting(); }
-	if(write_traces){ handler->ToggleTraces(); }
-	
 	// Add branches to the output tree.
 	handler->InitRootOutput(root_tree);
+
+	// Set processor options.
+	if(use_root_fitting){ handler->ToggleFitting(); }
+	if(write_traces){ 
+		trace_tree = new TTree("trace", "Raw pixie ADC traces");
+		handler->InitTraceOutput(trace_tree); 
+	}
 
 	return (init = true);
 }

@@ -87,6 +87,7 @@ class Processor{
 	bool use_fitting;
 	
 	TBranch *local_branch;
+	TBranch *trace_branch;
 	TF1 *fitting_func;
 
 	FittingFunction *actual_func;
@@ -160,6 +161,8 @@ class Processor{
 	bool ToggleTraces(){ return (write_waveform = !write_waveform); }
 	
 	bool Initialize(TTree *tree_);
+	
+	bool InitializeTraces(TTree *tree_);
 
 	float Status(unsigned long global_events_);
 

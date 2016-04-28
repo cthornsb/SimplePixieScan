@@ -180,6 +180,7 @@ Processor::Processor(std::string name_, std::string type_, MapFile *map_){
 	root_waveform = &dummyTrace;
 	
 	local_branch = NULL;
+	trace_branch = NULL;
 	fitting_func = NULL;
 	actual_func = NULL;
 
@@ -214,6 +215,23 @@ bool Processor::Initialize(TTree *tree_){
 		PrintMsg("Writing raw waveforms to file.");
 		local_branch = tree_->Branch((type+"_trace").c_str(), root_waveform);
 	}
+	
+	return (init = true);
+}
+
+bool Processor::InitializeTraces(TTree *tree_){
+	if(trace_branch || !tree_){ 
+		PrintMsg("Trace output is already initialized!");
+		return false; 
+	}
+	else if(!write_waveform){
+		PrintMsg("Writing of ADC traces is disabled!");
+		return false;
+	}
+	
+	// Add a branch to the tree
+	PrintMsg("Adding branch to ADC trace TTree.");
+	trace_branch = tree_->Branch(type.c_str(), root_waveform);
 	
 	return (init = true);
 }

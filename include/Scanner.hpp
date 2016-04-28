@@ -23,7 +23,7 @@ class Scanner : public Unpacker{
 	
 	TFile *root_file; /// Output root file for storing data.
 	TTree *root_tree; /// Output TTree for storing processed data.
-	
+	TTree *trace_tree; /// Output TTree for storing raw ADC traces.
 	TTree *raw_tree; /// Output TTree for storing raw pixie data.
 	
 	Plotter *chanCounts; /// 2d root histogram to store number of total channel counts found.
