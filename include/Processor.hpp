@@ -157,7 +157,7 @@ class Processor{
 	
 	bool ToggleFitting(){ return (use_fitting = !use_fitting); }
 	
-	bool ToggleTraces(){ std::cout << "HERE!\n"; return (write_waveform = !write_waveform); }
+	bool ToggleTraces(){ return (write_waveform = !write_waveform); }
 	
 	bool Initialize(TTree *tree_);
 

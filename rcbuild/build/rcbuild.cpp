@@ -4,7 +4,7 @@
 
 #include "rcbuild.hpp"
 
-#define VERSION "1.0.3"
+#define VERSION "1.0.4"
 
 bool SplitStr(const std::string &input_, std::string &out1, std::string &out2){
 	out1 = "";
@@ -301,7 +301,7 @@ bool StructureFile::Open(){
 	hppfile << "	std::vector<int> wave;\n";
 	hppfile << "    unsigned int mult;\n\n";
 	hppfile << "  public:\n";
-	hppfile << "	Trace(const std::string &name_=\"\"){ name = name_; }\n\n";
+	hppfile << "	Trace(const std::string &name_=\"\");\n\n";
 	hppfile << "	~Trace(){}\n\n";
 	hppfile << "	void Zero();\n\n";
 	hppfile << "	Trace &operator = (const Trace &other_){ return Set(other_); }\n\n";
@@ -313,6 +313,10 @@ bool StructureFile::Open(){
 	hppfile << "};\n";
 	
 	cppfile << "#include \"Structures.h\"\n\n";
+	cppfile << "Trace::Trace(const std::string &name_/*=\"\"*/){\n";
+	cppfile << "	name = name_;\n";
+	cppfile << "	mult = 0;\n";
+	cppfile << "}\n\n";
 	cppfile << "void Trace::Zero(){\n";
 	cppfile << "	wave.clear();\n";
 	cppfile << "	mult = 0;\n";
@@ -326,14 +330,16 @@ bool StructureFile::Open(){
 	cppfile << "	return *this;\n";
 	cppfile << "}\n\n";
 	cppfile << "void Trace::Append(const std::vector<int> &vec_){\n";
-	cppfile << "	wave = vec_;\n";
+	cppfile << "	wave.reserve(wave.size()+vec_.size());\n";
+	cppfile << "	wave.insert(wave.end(), vec_.begin(), vec_.end());\n";
+	cppfile << "	mult++;\n";
 	cppfile << "}\n\n";
 	cppfile << "void Trace::Append(int *arr_, const size_t &size_){\n";
-	cppfile << "	Zero();\n";
-	cppfile << "	wave.reserve(size_);\n";
+	cppfile << "	wave.reserve(wave.size()+size_);\n";
 	cppfile << "	for(size_t i = 0; i < size_; i++){\n";
 	cppfile << "		wave.push_back(arr_[i]);\n";
 	cppfile << "	}\n";
+	cppfile << "	mult++;\n";
 	cppfile << "}\n";
 
 	linkfile << "#ifdef __CINT__\n\n";
