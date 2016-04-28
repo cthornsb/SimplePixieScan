@@ -4,7 +4,7 @@
 
 #include "rcbuild.hpp"
 
-#define VERSION "1.0.0"
+#define VERSION "1.0.1"
 
 bool SplitStr(const std::string &input_, std::string &out1, std::string &out2){
 	out1 = "";
@@ -95,246 +95,141 @@ StructureEntry::StructureEntry(){
 void StructureEntry::push_back(const std::string &entry){
 	DataType *data = new DataType(entry);
 	
-	if(!data->trace_value){ structure_types.push_back(data); }
-	else{ waveform_types.push_back(data); }
+	structure_types.push_back(data);
 }
 
 void StructureEntry::WriteHeader(std::ofstream *file_){
 	if(!file_ || !file_->good() || file_->eof()){ return; }
 
-	std::string suffix[2] = {"Structure", "Waveform"};
-	for(unsigned short i = 0; i < 2; i++){
-		if(i == 0 && structure_types.size() == 0){ continue; }
-		else if(i == 1 && waveform_types.size() == 0){ continue; }
-	
-		// Write the class description
-		(*file_) << "\n/** " << name << suffix[i] << "\n";
-		(*file_) << " * \\brief " << shorter << "\n";
-		(*file_) << " *\n";
-		(*file_) << " * " << longer << "\n";
-		(*file_) << " */\n";
+	std::string suffix = "Structure";
 
-		(*file_) << "class " << name << suffix[i] << " : public " << suffix[i] << " {\n";
-		(*file_) << "  public:\n";
+	// Write the class description
+	(*file_) << "\n/** " << name << suffix << "\n";
+	(*file_) << " * \\brief " << shorter << "\n";
+	(*file_) << " *\n";
+	(*file_) << " * " << longer << "\n";
+	(*file_) << " */\n";
 
-		if(i == 0){ // Write the structure variables
-			for(std::vector<DataType*>::iterator iter = structure_types.begin(); iter != structure_types.end(); iter++){
-				(*file_) << "\t" << (*iter)->decl << " " << (*iter)->name << "; /// " << (*iter)->descrip << std::endl;
-			}
-		}
-		else{
-			for(std::vector<DataType*>::iterator iter = waveform_types.begin(); iter != waveform_types.end(); iter++){
-				(*file_) << "\t" << (*iter)->decl << " " << (*iter)->name << "; /// " << (*iter)->descrip << std::endl;
-			}
-		}
+	(*file_) << "class " << name << suffix << " : public " << suffix << " {\n";
+	(*file_) << "  public:\n";
 
-		(*file_) << "\n\t/// Default constructor\n";
-		(*file_) << "\t" << name << suffix[i] << "();\n\n";
-
-		(*file_) << "\t/// Copy constructor\n";
-		(*file_) << "\t" << name << suffix[i] << "(const " << name << suffix[i] << " &other_);\n\n";
-
-		(*file_) << "\t/// Destructor. Does nothing\n";
-		(*file_) << "\t~" << name << suffix[i] << "(){}\n\n";
-
-		(*file_) << "\t/// Push back with data\n";
-		(*file_) << "\tvoid Append(";
-		if(i == 0){ // Write the structure variables
-			(*file_) << "const " << structure_types.front()->type << " &" << structure_types.front()->name << "_";
-			for(std::vector<DataType*>::iterator iter = structure_types.begin()+1; iter != structure_types.end(); iter++){
-				if((*iter)->trace_value || (*iter)->mult_value){ continue; }
-				(*file_) << ", const " << (*iter)->type << " &" << (*iter)->name << "_";
-			}
-		}
-		else{ // Write the waveform variables
-			(*file_) << "const " << waveform_types.front()->decl << " &" << waveform_types.front()->name << "_";
-			for(std::vector<DataType*>::iterator iter = waveform_types.begin()+1; iter != waveform_types.end(); iter++){
-				if(!(*iter)->trace_value || (*iter)->mult_value){ continue; }
-				(*file_) << ", const " << (*iter)->decl << " &" << (*iter)->name << "_";
-			}
-		}
-		(*file_) << ");\n\n";
-		
-		if(i == 1){
-			(*file_) << "\t/// Overloaded Append method for pushing back waveforms with arrays\n";
-			(*file_) << "\tvoid Append(";
-			for(std::vector<DataType*>::iterator iter = waveform_types.begin(); iter != waveform_types.end(); iter++){
-				if(!(*iter)->trace_value || (*iter)->mult_value){ continue; }
-				(*file_) << (*iter)->type << " *" << (*iter)->name << "_, ";
-			}
-			(*file_) << " const size_t &size_);\n\n";
-		}
-
-		(*file_) << "\t/// Zero the data " << suffix[i] << "\n";
-		(*file_) << "\tvoid Zero();\n\n";
-
-		(*file_) << "\t/// Assignment operator\n";
-		(*file_) << "\t" << name << suffix[i] << " &operator = (const " << name << suffix[i] << " &other_);\n\n";
-	
-		(*file_) << "\t/// Set all values to that of other_\n";
-		(*file_) << "\t" << name << suffix[i] << " &Set(const " << name << suffix[i] << " &other_);\n\n";
-	
-		(*file_) << "\t/// Set all values to that of other_\n";
-		(*file_) << "\t" << name << suffix[i] << " &Set(" << name << suffix[i] << " *other_);\n\n";
-
-		(*file_) << "\tClassDef(" << name << suffix[i] << ", 1); // " << name << "\n";
-		(*file_) << "};\n";
+	// Write the structure variables
+	for(std::vector<DataType*>::iterator iter = structure_types.begin(); iter != structure_types.end(); iter++){
+		(*file_) << "\t" << (*iter)->decl << " " << (*iter)->name << "; /// " << (*iter)->descrip << std::endl;
 	}
+
+	(*file_) << "\n\t/// Default constructor\n";
+	(*file_) << "\t" << name << suffix << "();\n\n";
+
+	(*file_) << "\t/// Copy constructor\n";
+	(*file_) << "\t" << name << suffix << "(const " << name << suffix << " &other_);\n\n";
+
+	(*file_) << "\t/// Destructor. Does nothing\n";
+	(*file_) << "\t~" << name << suffix << "(){}\n\n";
+
+	(*file_) << "\t/// Push back with data\n";
+	(*file_) << "\tvoid Append(";
+	// Write the structure variables
+	(*file_) << "const " << structure_types.front()->type << " &" << structure_types.front()->name << "_";
+	for(std::vector<DataType*>::iterator iter = structure_types.begin()+1; iter != structure_types.end(); iter++){
+		if((*iter)->trace_value || (*iter)->mult_value){ continue; }
+		(*file_) << ", const " << (*iter)->type << " &" << (*iter)->name << "_";
+	}
+	(*file_) << ");\n\n";
+	
+	(*file_) << "\t/// Zero the data " << suffix << "\n";
+	(*file_) << "\tvoid Zero();\n\n";
+
+	(*file_) << "\t/// Assignment operator\n";
+	(*file_) << "\t" << name << suffix << " &operator = (const " << name << suffix << " &other_);\n\n";
+
+	(*file_) << "\t/// Set all values to that of other_\n";
+	(*file_) << "\t" << name << suffix << " &Set(const " << name << suffix << " &other_);\n\n";
+
+	(*file_) << "\t/// Set all values to that of other_\n";
+	(*file_) << "\t" << name << suffix << " &Set(" << name << suffix << " *other_);\n\n";
+
+	(*file_) << "\tClassDef(" << name << suffix << ", 1); // " << name << "\n";
+	(*file_) << "};\n";
 }
 
 void StructureEntry::WriteSource(std::ofstream *file_){
 	if(!file_ || !file_->good() || file_->eof()){ return; }
 
-	std::string suffix[2] = {"Structure", "Waveform"};
-	for(unsigned short i = 0; i < 2; i++){
-		if(i == 0 && structure_types.size() == 0){ continue; }
-		else if(i == 1 && waveform_types.size() == 0){ continue; }
+	std::string suffix = "Structure";
 
-		(*file_) << "\n///////////////////////////////////////////////////////////\n";
-		(*file_) << "// " << name << suffix[i] << "\n";
-		(*file_) << "///////////////////////////////////////////////////////////\n";
-	
-		// Default constructor
-		(*file_) << name << suffix[i] << "::" << name << suffix[i] << "() : " << suffix[i] << "(\"" << name << suffix[i] << "\") {\n";
-		if(i == 0){
-			for(std::vector<DataType*>::iterator iter = structure_types.begin(); iter != structure_types.end(); iter++){
-				if(!(*iter)->is_vector){ (*file_) << "\t" << (*iter)->name << " = 0;\n"; }
-			}
+	(*file_) << "\n///////////////////////////////////////////////////////////\n";
+	(*file_) << "// " << name << suffix << "\n";
+	(*file_) << "///////////////////////////////////////////////////////////\n";
+
+	// Default constructor
+	(*file_) << name << suffix << "::" << name << suffix << "() : " << suffix << "(\"" << name << suffix << "\") {\n";
+		for(std::vector<DataType*>::iterator iter = structure_types.begin(); iter != structure_types.end(); iter++){
+			if(!(*iter)->is_vector){ (*file_) << "\t" << (*iter)->name << " = 0;\n"; }
 		}
-		else{
-			for(std::vector<DataType*>::iterator iter = waveform_types.begin(); iter != waveform_types.end(); iter++){
-				if(!(*iter)->is_vector){ (*file_) << "\t" << (*iter)->name << " = 0;\n"; }
-			}
-		}
-		(*file_) << "}\n\n";
-	
-		// Copy constructor
-		(*file_) << name << suffix[i] << "::" << name << suffix[i] << "(const " << name << suffix[i] << " &other_) : " << suffix[i] << "(\"" << name << suffix[i] << "\") {\n";
-		(*file_) << "\tSet(other_);\n";
-		(*file_) << "}\n\n";
-	
-		// Append
-		(*file_) << "void " << name << suffix[i] << "::Append(";
-		if(i == 0 && !structure_types.front()->mult_value){ // Write the structure variables
-			(*file_) << "const " << structure_types.front()->type << " &" << structure_types.front()->name << "_";
-			for(std::vector<DataType*>::iterator iter = structure_types.begin()+1; iter != structure_types.end(); iter++){
-				if((*iter)->trace_value || (*iter)->mult_value){ continue; }
-				(*file_) << ", const " << (*iter)->type << " &" << (*iter)->name << "_";
-			}
-			(*file_) << "){\n";
-			for(std::vector<DataType*>::iterator iter = structure_types.begin(); iter != structure_types.end(); iter++){
-				if((*iter)->trace_value){ continue; }
-				else if((*iter)->is_vector){ (*file_) << "\t" << (*iter)->name << ".push_back(" << (*iter)->name << "_);\n"; }
-				else if(!(*iter)->mult_value){ (*file_) << "\t" << (*iter)->name << " = " << (*iter)->name << "_;\n"; }
-				else{ (*file_) << "\t" << (*iter)->name << "++;\n"; }
-			}
-		}
-		else if(!structure_types.front()->mult_value){ // Write the waveform variables
-			(*file_) << "const " << waveform_types.front()->decl << " &" << waveform_types.front()->name << "_";
-			for(std::vector<DataType*>::iterator iter = waveform_types.begin()+1; iter != waveform_types.end(); iter++){
-				if(!(*iter)->trace_value || (*iter)->mult_value){ continue; }
-				(*file_) << ", const " << (*iter)->decl << " &" << (*iter)->name << "_";
-			}
-			(*file_) << "){\n";
-			for(std::vector<DataType*>::iterator iter = waveform_types.begin(); iter != waveform_types.end(); iter++){
-				if(!(*iter)->trace_value){ continue; }
-				else if(!(*iter)->mult_value){ (*file_) << "\t" << (*iter)->name << " = " << (*iter)->name << "_;\n"; }
-				else{ (*file_) << "\t" << (*iter)->name << "++;\n"; }
-			}
-		}
-		(*file_) << "}\n\n";
-		
-		// Add an overloaded append method for waveforms
-		if(i == 1){
-			(*file_) << "void " << name << suffix[i] << "::Append(";
-			for(std::vector<DataType*>::iterator iter = waveform_types.begin(); iter != waveform_types.end(); iter++){
-				if(!(*iter)->trace_value || (*iter)->mult_value){ continue; }
-				(*file_) << (*iter)->type << " *" << (*iter)->name << "_, ";
-			}
-			(*file_) << " const size_t &size_){\n";
-			for(std::vector<DataType*>::iterator iter = waveform_types.begin(); iter != waveform_types.end(); iter++){
-				if(!(*iter)->trace_value || (*iter)->mult_value){ continue; }
-				(*file_) << "\t" << (*iter)->name << ".reserve(size_);\n";
-			}
-			(*file_) << "\tfor(size_t index = 0; index < size_; index++){\n";
-			for(std::vector<DataType*>::iterator iter = waveform_types.begin(); iter != waveform_types.end(); iter++){
-				if(!(*iter)->trace_value || (*iter)->mult_value){ continue; }
-				(*file_) << "\t\t" << (*iter)->name << ".push_back(" << (*iter)->name << "_[index]);\n";
-			}
-			(*file_) << "\t}\n}\n\n";
-		}
-	
-		// Zero
-		(*file_) << "void " << name << suffix[i] << "::Zero(){\n";
-		if(i == 0){
-			for(std::vector<DataType*>::iterator iter = structure_types.begin(); iter != structure_types.end(); iter++){
-				if((*iter)->mult_value){ 
-					(*file_) << "\tif(" << (*iter)->name << " == 0){ return; } // " << suffix[i] << " is already empty\n";
-					continue;
-				}
-			}
-			for(std::vector<DataType*>::iterator iter = structure_types.begin(); iter != structure_types.end(); iter++){
-				if((*iter)->is_vector){ (*file_) << "\t" << (*iter)->name << ".clear();\n"; }
-				else{ (*file_) << "\t" << (*iter)->name << " = 0;\n"; }
-			}
-		}
-		else{
-			for(std::vector<DataType*>::iterator iter = waveform_types.begin(); iter != waveform_types.end(); iter++){
-				if((*iter)->mult_value){ 
-					(*file_) << "\tif(" << (*iter)->name << " == 0){ return; } // " << suffix[i] << " is already empty\n";
-					continue;
-				}
-			}
-			for(std::vector<DataType*>::iterator iter = waveform_types.begin(); iter != waveform_types.end(); iter++){
-				if((*iter)->is_vector){ (*file_) << "\t" << (*iter)->name << ".clear();\n"; }
-				else{ (*file_) << "\t" << (*iter)->name << " = 0;\n"; }
-			}			
-		}
-		(*file_) << "}\n\n";
-	
-		// Assignment operator
-		(*file_) << name << suffix[i] << " &" << name << suffix[i] << "::operator = (const " << name << suffix[i] << " &other_){\n";
-		(*file_) << "\treturn Set(other_);\n";
-		(*file_) << "}\n\n";
-	
-		// Set (const reference)
-		(*file_) << name << suffix[i] << " &" << name << suffix[i] << "::Set(const " << name << suffix[i] << " &other_){\n";
-		if(i == 0){
-			for(std::vector<DataType*>::iterator iter = structure_types.begin(); iter != structure_types.end(); iter++){
-				(*file_) << "\t" << (*iter)->name << " = other_." << (*iter)->name << ";\n";
-			}
-		}
-		else{
-			for(std::vector<DataType*>::iterator iter = waveform_types.begin(); iter != waveform_types.end(); iter++){
-				(*file_) << "\t" << (*iter)->name << " = other_." << (*iter)->name << ";\n";
-			}
-		}
-		(*file_) << "\treturn *this;\n";
-		(*file_) << "}\n\n";
-	
-		// Set (pointer)
-		(*file_) << name << suffix[i] << " &" << name << suffix[i] << "::Set(" << name << suffix[i] << " *other_){\n";
-		if(i == 0){
-			for(std::vector<DataType*>::iterator iter = structure_types.begin(); iter != structure_types.end(); iter++){
-				(*file_) << "\t" << (*iter)->name << " = other_->" << (*iter)->name << ";\n";
-			}
-		}
-		else{
-			for(std::vector<DataType*>::iterator iter = waveform_types.begin(); iter != waveform_types.end(); iter++){
-				(*file_) << "\t" << (*iter)->name << " = other_->" << (*iter)->name << ";\n";
-			}
-		}
-		(*file_) << "\treturn *this;\n";
-		(*file_) << "}\n";
+	(*file_) << "}\n\n";
+
+	// Copy constructor
+	(*file_) << name << suffix << "::" << name << suffix << "(const " << name << suffix << " &other_) : " << suffix << "(\"" << name << suffix << "\") {\n";
+	(*file_) << "\tSet(other_);\n";
+	(*file_) << "}\n\n";
+
+	// Append
+	(*file_) << "void " << name << suffix << "::Append(";
+	// Write the structure variables
+	(*file_) << "const " << structure_types.front()->type << " &" << structure_types.front()->name << "_";
+	for(std::vector<DataType*>::iterator iter = structure_types.begin()+1; iter != structure_types.end(); iter++){
+		if((*iter)->trace_value || (*iter)->mult_value){ continue; }
+		(*file_) << ", const " << (*iter)->type << " &" << (*iter)->name << "_";
 	}
+	(*file_) << "){\n";
+	for(std::vector<DataType*>::iterator iter = structure_types.begin(); iter != structure_types.end(); iter++){
+		if((*iter)->trace_value){ continue; }
+		else if((*iter)->is_vector){ (*file_) << "\t" << (*iter)->name << ".push_back(" << (*iter)->name << "_);\n"; }
+		else if(!(*iter)->mult_value){ (*file_) << "\t" << (*iter)->name << " = " << (*iter)->name << "_;\n"; }
+		else{ (*file_) << "\t" << (*iter)->name << "++;\n"; }
+	}
+	(*file_) << "}\n\n";
+	
+	// Zero
+	(*file_) << "void " << name << suffix << "::Zero(){\n";
+	for(std::vector<DataType*>::iterator iter = structure_types.begin(); iter != structure_types.end(); iter++){
+		if((*iter)->mult_value){ 
+			(*file_) << "\tif(" << (*iter)->name << " == 0){ return; } // " << suffix << " is already empty\n";
+			continue;
+		}
+	}
+	for(std::vector<DataType*>::iterator iter = structure_types.begin(); iter != structure_types.end(); iter++){
+		if((*iter)->is_vector){ (*file_) << "\t" << (*iter)->name << ".clear();\n"; }
+		else{ (*file_) << "\t" << (*iter)->name << " = 0;\n"; }
+	}
+	(*file_) << "}\n\n";
+
+	// Assignment operator
+	(*file_) << name << suffix << " &" << name << suffix << "::operator = (const " << name << suffix << " &other_){\n";
+	(*file_) << "\treturn Set(other_);\n";
+	(*file_) << "}\n\n";
+
+	// Set (const reference)
+	(*file_) << name << suffix << " &" << name << suffix << "::Set(const " << name << suffix << " &other_){\n";
+	for(std::vector<DataType*>::iterator iter = structure_types.begin(); iter != structure_types.end(); iter++){
+		(*file_) << "\t" << (*iter)->name << " = other_." << (*iter)->name << ";\n";
+	}
+	(*file_) << "\treturn *this;\n";
+	(*file_) << "}\n\n";
+
+	// Set (pointer)
+	(*file_) << name << suffix << " &" << name << suffix << "::Set(" << name << suffix << " *other_){\n";
+	for(std::vector<DataType*>::iterator iter = structure_types.begin(); iter != structure_types.end(); iter++){
+		(*file_) << "\t" << (*iter)->name << " = other_->" << (*iter)->name << ";\n";
+	}
+	(*file_) << "\treturn *this;\n";
+	(*file_) << "}\n";
 }
 
 void StructureEntry::WriteLinkDef(std::ofstream *file_){
 	if(structure_types.size() > 0){
 		(*file_) << "#pragma link C++ class " << name << "Structure+;\n";
-	}
-	if(waveform_types.size() > 0){
-		(*file_) << "#pragma link C++ class " << name << "Waveform+;\n";
 	}
 }
 
@@ -343,10 +238,6 @@ void StructureEntry::Clear(){
 		delete (*iter);
 	}
 	structure_types.clear();
-	for(std::vector<DataType*>::iterator iter = waveform_types.begin(); iter != waveform_types.end(); iter++){
-		delete (*iter);
-	}
-	waveform_types.clear();
 }
 
 bool StructureFile::Open(){
@@ -404,20 +295,46 @@ bool StructureFile::Open(){
 	hppfile << "	virtual Structure &Set(Structure *other_){ return *this; }\n\n";
 	hppfile << "    ClassDef(Structure, 1); // Structure\n";
 	hppfile << "};\n\n";
-	hppfile << "class Waveform : public TObject {\n";
+	hppfile << "template <class T=int> class Wave;\n\n";
+	hppfile << "template <class T> class Wave : public TObject {\n";
 	hppfile << "  protected:\n";
-	hppfile << "	std::string name; //! Waveform name\n\n";
+	hppfile << "	std::string name; //! Wave name\n";
+	hppfile << "	std::vector<T> wave;\n\n";
 	hppfile << "  public:\n";
-	hppfile << "	Waveform(const std::string &name_=\"\"){ name = name_; }\n\n";
-	hppfile << "	virtual ~Waveform(){}\n\n";
-	hppfile << "	virtual void Zero(){}\n\n";
-	hppfile << "	virtual Waveform &operator = (const Waveform &other_){ return Set(other_); }\n\n";
-	hppfile << "	virtual Waveform &Set(const Waveform &other_){ return *this; }\n\n";
-	hppfile << "	virtual Waveform &Set(Waveform *other_){ return *this; }\n\n";
-	hppfile << "    ClassDef(Waveform, 1); // Waveform\n";
+	hppfile << "	Wave(const std::string &name_=\"\"){ name = name_; }\n\n";
+	hppfile << "	~Wave(){}\n\n";
+	hppfile << "	void Zero(){ wave.clear(); }\n\n";
+	hppfile << "	Wave &operator = (const Wave &other_){ return Set(other_); }\n\n";
+	hppfile << "	Wave &Set(const Wave &other_);\n\n";
+	hppfile << "	Wave &Set(Wave *other_);\n\n";
+	hppfile << "    void Append(const std::vector<T> &vec_);\n\n";
+	hppfile << "    void Append(T *arr_, const size_t &size_);\n\n";	
+	hppfile << "    ClassDef(Wave, 1); // Wave\n";
 	hppfile << "};\n";
 	
-	cppfile << "#include \"Structures.h\"\n";
+	cppfile << "#include \"Structures.h\"\n\n";
+	cppfile << "template <class T>\n";
+	cppfile << "Wave<T> &Wave<T>::Set(const Wave &other_){\n";
+	cppfile << "	wave = other_.wave;\n";
+	cppfile << "	return *this;\n";
+	cppfile << "}\n\n";
+	cppfile << "template <class T>\n";
+	cppfile << "Wave<T> &Wave<T>::Set(Wave *other_){\n";
+	cppfile << "	wave = other_->wave;\n";
+	cppfile << "	return *this;\n";
+	cppfile << "}\n\n";
+	cppfile << "template <class T>\n";
+	cppfile << "void Wave<T>::Append(const std::vector<T> &vec_){\n";
+	cppfile << "	wave = vec_;\n";
+	cppfile << "}\n\n";
+	cppfile << "template <class T>\n";
+	cppfile << "void Wave<T>::Append(T *arr_, const size_t &size_){\n";
+	cppfile << "	Zero();\n";
+	cppfile << "	wave.reserve(size_);\n";
+	cppfile << "	for(size_t i = 0; i < size_; i++){\n";
+	cppfile << "		wave.push_back(arr_[i]);\n";
+	cppfile << "	}\n";
+	cppfile << "}\n";
 
 	linkfile << "#ifdef __CINT__\n\n";
 	linkfile << "#include <vector>\n\n";
@@ -425,7 +342,7 @@ bool StructureFile::Open(){
 	linkfile << "#pragma link off all classes;\n";
 	linkfile << "#pragma link off all functions;\n\n";
 	linkfile << "#pragma link C++ class Structure+;\n";
-	linkfile << "#pragma link C++ class Waveform+;\n\n";
+	linkfile << "#pragma link C++ class Wave<int>+;\n\n";
 	
 	init = true;
 	

@@ -80,7 +80,7 @@ bool PhoswichProcessor::HandleEvents(){
 	
 		// Copy the trace to the output file.
 		if(write_waveform){
-			waveform.Append((int*)current_event->yvals, current_event->size);
+			waveform.Append(current_event->event->adcTrace);
 		}
 		
 		good_events++;
@@ -97,7 +97,7 @@ PhoswichProcessor::PhoswichProcessor(MapFile *map_) : Processor("Phoswich", "pho
 	fitting_high2 = 20;
 	
 	root_structure = (Structure*)&structure;
-	root_waveform = (Waveform*)&waveform;
+	root_waveform = &waveform;
 	
 	fast_energy_1d = new Plotter("phoswich_h1", "Phoswich Fast LR", "", "Light Response (a.u.)", 200, 0, 20000);
 	slow_energy_1d = new Plotter("phoswich_h2", "Phoswich Slow LR", "", "Light Response (a.u.)", 200, 0, 20000);

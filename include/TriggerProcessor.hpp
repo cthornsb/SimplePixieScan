@@ -11,7 +11,7 @@ class Plotter;
 class TriggerProcessor : public Processor{
   private:
 	TriggerStructure structure;
-	TriggerWaveform waveform;
+	Wave<int> waveform;
 
 	Plotter *energy_1d;
 	Plotter *phase_1d;

@@ -86,7 +86,8 @@ bool LiquidBarProcessor::HandleEvents(){
 		     
 		// Copy the trace to the output file.
 		if(write_waveform){
-			waveform.Append((int*)channel_event_L->yvals, (int*)channel_event_R->yvals, channel_event_L->size);
+			L_waveform.Append(channel_event_L->event->adcTrace);
+			R_waveform.Append(channel_event_R->event->adcTrace);
 		}
 		
 		good_events += 2;
@@ -101,7 +102,7 @@ LiquidBarProcessor::LiquidBarProcessor(MapFile *map_) : Processor("LiquidBar", "
 	fitting_high2 = 50; // 200 ns
 
 	root_structure = (Structure*)&structure;
-	root_waveform = (Waveform*)&waveform;
+	root_waveform = &L_waveform;
 	
 	int minloc = map_->GetFirstOccurance("liquidbar");
 	int maxloc = map_->GetLastOccurance("liquidbar");

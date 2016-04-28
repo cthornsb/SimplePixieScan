@@ -10,7 +10,7 @@
 #include "TGraph.h"
 
 Structure dummyStructure;
-Waveform dummyWaveform;
+Wave<int> dummyWaveform;
 
 ChannelEventPair::ChannelEventPair(){
 	pixieEvent = NULL;

@@ -37,7 +37,7 @@ bool LiquidProcessor::HandleEvents(){
 		     
 		// Copy the trace to the output file.
 		if(write_waveform){
-			waveform.Append((int*)current_event->yvals, current_event->size);
+			waveform.Append(current_event->event->adcTrace);
 		}
 		
 		good_events += 2;
@@ -52,7 +52,7 @@ LiquidProcessor::LiquidProcessor(MapFile *map_) : Processor("Liquid", "liquid", 
 	fitting_high2 = 50; // 200 ns
 
 	root_structure = (Structure*)&structure;
-	root_waveform = (Waveform*)&waveform;
+	root_waveform = &waveform;
 	
 	int minloc = map_->GetFirstOccurance("liquid");
 	int maxloc = map_->GetLastOccurance("liquid");

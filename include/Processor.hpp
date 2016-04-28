@@ -20,10 +20,10 @@ class TF1;
 class TH1;
 
 class Structure;
-class Waveform;
+template <class T> class Wave;
 
 extern Structure dummyStructure;
-extern Waveform dummyWaveform;
+extern Wave<int> dummyWaveform;
 
 class ChannelEventPair{
   public:
@@ -68,7 +68,7 @@ class FittingFunction{
 class Processor{
   protected:
 	Structure *root_structure; /// Root data structure for storing processor-specific information.
-	Waveform *root_waveform; /// Root data structure for storing baseline corrected traces.
+	Wave<int> *root_waveform; /// Root data structure for storing baseline corrected traces.
   
 	clock_t start_time;
 	unsigned long total_time;

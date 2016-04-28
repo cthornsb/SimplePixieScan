@@ -22,7 +22,7 @@ bool TriggerProcessor::HandleEvents(){
 		
 		// Copy the trace to the output file.
 		if(write_waveform){
-			waveform.Append((int*)current_event->yvals, current_event->size);
+			waveform.Append(current_event->event->adcTrace);
 		}
 		
 		good_events++;
@@ -32,7 +32,7 @@ bool TriggerProcessor::HandleEvents(){
 
 TriggerProcessor::TriggerProcessor(MapFile *map_) : Processor("Trigger", "trigger", map_){
 	root_structure = (Structure*)&structure;
-	root_waveform = (Waveform*)&waveform;
+	root_waveform = &waveform;
 	
 	energy_1d = new Plotter("trigger_h1", "Trigger Energy", "", "Energy (a.u.)", 200, 0, 20000);
 	phase_1d = new Plotter("trigger_h2", "Trigger Phase", "", "Phase (ns)", 100, 0, 100);

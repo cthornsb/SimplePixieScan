@@ -24,7 +24,7 @@
 #   means that they will be included in the Waveform class instead of Structure.
 #
 # Cory R. Thornsberry
-# Last updated: April 26th, 2015
+# Last updated: April 28th, 2015
 
 #####################################################################
 # Trigger
@@ -45,10 +45,6 @@ vector:double	trigger_time	The raw pixie16 system clock time.
 vector:double	trigger_tqdc	The energy computed from the trace.
 vector:double	trigger_phase	The trace offset in ns.
 u_int	trigger_mult	Multiplicity of the trigger detector.
-
-# Trace output data types and names (must end with _wave)
-# type	name	description
-vector:int	trigger_wave	Integer vector for trigger pulses.
 END_TYPES
 
 # End this class
@@ -77,11 +73,6 @@ vector:double	vandle_lphase	The left pmt trace offset in ns.
 vector:double	vandle_rphase	The right pmt trace offset in ns.
 vector:int	vandle_loc	Detector location (ID)
 u_int	vandle_mult	Multiplicity of the vandle events.
-
-# Trace output data types and names (must end with _wave)
-# type	name	description
-vector:int	vandle_left_wave	Integer vector for left vandle pulse.
-vector:int	vandle_right_wave	Integer vector for right vandle pulse.
 END_TYPES
 
 # End this class
@@ -110,10 +101,6 @@ vector:double	phoswich_fMPV	The most probable value of the landau function for t
 vector:double	phoswich_fSigma	The sigma (roughly the width) of the landau function for the fast pulse.
 vector:double	phoswich_fChi2	The chi^2/NDF for the fast pulse fit.
 u_int	phoswich_mult	Multiplicity of the phoswich events.
-
-# Trace output data types and names (must end with _wave)
-# type	name	description
-vector:int	phoswich_wave	The phoswich trace.
 END_TYPES
 
 # End this class
@@ -142,11 +129,6 @@ vector:double	liquidbar_lphase	The left pmt trace offset in ns.
 vector:double	liquidbar_rphase	The right pmt trace offset in ns.
 vector:int	liquidbar_loc	Detector location (ID)
 u_int	liquidbar_mult	Multiplicity of the liquidbar events.
-
-# Trace output data types and names (must end with _wave)
-# type	name	description
-vector:int	liquid_left_wave	Integer vector for left liquidbar pulse.
-vector:int	liquid_right_wave	Integer vector for right liquidbar pulse.
 END_TYPES
 
 # End this class
@@ -173,10 +155,6 @@ vector:double	liquid_ltqdc	The pmt long integral computed from the trace.
 vector:double	liquid_phase	The pmt trace offset in ns.
 vector:int	liquid_loc	Detector location (ID)
 u_int	liquid_mult	Multiplicity of the liquid events.
-
-# Trace output data types and names (must end with _wave)
-# type	name	description
-vector:int	liquid_wave	Integer vector for liquid pulse.
 END_TYPES
 
 # End this class
@@ -202,10 +180,6 @@ vector:double	generic_tqdc	The energy computed from the trace.
 vector:double	generic_phase	The trace offset in ns.
 vector:int	generic_loc	Detector location (ID)
 u_int	generic_mult	Multiplicity of the generic type events.
-
-# Trace output data types and names (must end with _wave)
-# type	name	description
-vector:int	generic_wave	Integer vector for generic pulses.
 END_TYPES
 
 # End this class

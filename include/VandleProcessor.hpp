@@ -10,7 +10,8 @@ class MapFile;
 class VandleProcessor : public Processor{
   private:
 	VandleStructure structure;
-	VandleWaveform waveform;  
+	Wave<int> L_waveform;
+	Wave<int> R_waveform;
 
 	Plotter *loc_tdiff_2d;
 	Plotter *loc_energy_2d;

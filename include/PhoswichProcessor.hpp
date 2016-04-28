@@ -10,7 +10,7 @@ class MapFile;
 class PhoswichProcessor : public Processor{
   private:
 	PhoswichStructure structure;
-	PhoswichWaveform waveform;
+	Wave<int> waveform;
   
 	double fast_A; /// The amplitude of the landau function for the fast pulse.
 	double fast_MPV; /// The most probable value of the landau function for the fast pulse.
