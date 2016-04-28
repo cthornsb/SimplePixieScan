@@ -4,7 +4,7 @@
 
 #include "rcbuild.hpp"
 
-#define VERSION "1.0.2"
+#define VERSION "1.0.3"
 
 bool SplitStr(const std::string &input_, std::string &out1, std::string &out2){
 	out1 = "";
@@ -298,11 +298,12 @@ bool StructureFile::Open(){
 	hppfile << "class Trace : public TObject {\n";
 	hppfile << "  protected:\n";
 	hppfile << "	std::string name; //! Trace name\n";
-	hppfile << "	std::vector<int> wave;\n\n";
+	hppfile << "	std::vector<int> wave;\n";
+	hppfile << "    unsigned int mult;\n\n";
 	hppfile << "  public:\n";
 	hppfile << "	Trace(const std::string &name_=\"\"){ name = name_; }\n\n";
 	hppfile << "	~Trace(){}\n\n";
-	hppfile << "	void Zero(){ wave.clear(); }\n\n";
+	hppfile << "	void Zero();\n\n";
 	hppfile << "	Trace &operator = (const Trace &other_){ return Set(other_); }\n\n";
 	hppfile << "	Trace &Set(const Trace &other_);\n\n";
 	hppfile << "	Trace &Set(Trace *other_);\n\n";
@@ -312,6 +313,10 @@ bool StructureFile::Open(){
 	hppfile << "};\n";
 	
 	cppfile << "#include \"Structures.h\"\n\n";
+	cppfile << "void Trace::Zero(){\n";
+	cppfile << "	wave.clear();\n";
+	cppfile << "	mult = 0;\n";
+	cppfile << "}\n\n";
 	cppfile << "Trace &Trace::Set(const Trace &other_){\n";
 	cppfile << "	wave = other_.wave;\n";
 	cppfile << "	return *this;\n";
