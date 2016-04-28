@@ -40,6 +40,7 @@ class Scanner : public Unpacker{
 	bool force_overwrite;
 	bool online_mode;
 	bool use_root_fitting;
+	bool write_traces;
 	
 	std::string output_filename;
 	

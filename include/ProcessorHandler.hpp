@@ -38,6 +38,8 @@ class ProcessorHandler{
 	
 	bool ToggleFitting();
 	
+	bool ToggleTraces();
+	
 	bool InitRootOutput(TTree *tree_);
 	
 	bool CheckProcessor(std::string type_);

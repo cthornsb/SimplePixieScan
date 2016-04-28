@@ -10,7 +10,7 @@
 #include "TGraph.h"
 
 Structure dummyStructure;
-Wave<int> dummyWaveform;
+Trace dummyTrace;
 
 ChannelEventPair::ChannelEventPair(){
 	pixieEvent = NULL;
@@ -177,7 +177,7 @@ Processor::Processor(std::string name_, std::string type_, MapFile *map_){
 	total_events = 0;
 	
 	root_structure = &dummyStructure;
-	root_waveform = &dummyWaveform;
+	root_waveform = &dummyTrace;
 	
 	local_branch = NULL;
 	fitting_func = NULL;
@@ -208,11 +208,11 @@ bool Processor::Initialize(TTree *tree_){
 	
 	// Add a branch to the tree
 	PrintMsg("Adding branch to main TTree.");
-	local_branch = tree_->Branch(name.c_str(), root_structure);
+	local_branch = tree_->Branch(type.c_str(), root_structure);
 	
 	if(write_waveform){
 		PrintMsg("Writing raw waveforms to file.");
-		local_branch = tree_->Branch((name+"Wave").c_str(), root_waveform);
+		local_branch = tree_->Branch((type+"_trace").c_str(), root_waveform);
 	}
 	
 	return (init = true);

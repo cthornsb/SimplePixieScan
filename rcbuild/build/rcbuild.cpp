@@ -4,7 +4,7 @@
 
 #include "rcbuild.hpp"
 
-#define VERSION "1.0.1"
+#define VERSION "1.0.2"
 
 bool SplitStr(const std::string &input_, std::string &out1, std::string &out2){
 	out1 = "";
@@ -295,40 +295,35 @@ bool StructureFile::Open(){
 	hppfile << "	virtual Structure &Set(Structure *other_){ return *this; }\n\n";
 	hppfile << "    ClassDef(Structure, 1); // Structure\n";
 	hppfile << "};\n\n";
-	hppfile << "template <class T=int> class Wave;\n\n";
-	hppfile << "template <class T> class Wave : public TObject {\n";
+	hppfile << "class Trace : public TObject {\n";
 	hppfile << "  protected:\n";
-	hppfile << "	std::string name; //! Wave name\n";
-	hppfile << "	std::vector<T> wave;\n\n";
+	hppfile << "	std::string name; //! Trace name\n";
+	hppfile << "	std::vector<int> wave;\n\n";
 	hppfile << "  public:\n";
-	hppfile << "	Wave(const std::string &name_=\"\"){ name = name_; }\n\n";
-	hppfile << "	~Wave(){}\n\n";
+	hppfile << "	Trace(const std::string &name_=\"\"){ name = name_; }\n\n";
+	hppfile << "	~Trace(){}\n\n";
 	hppfile << "	void Zero(){ wave.clear(); }\n\n";
-	hppfile << "	Wave &operator = (const Wave &other_){ return Set(other_); }\n\n";
-	hppfile << "	Wave &Set(const Wave &other_);\n\n";
-	hppfile << "	Wave &Set(Wave *other_);\n\n";
-	hppfile << "    void Append(const std::vector<T> &vec_);\n\n";
-	hppfile << "    void Append(T *arr_, const size_t &size_);\n\n";	
-	hppfile << "    ClassDef(Wave, 1); // Wave\n";
+	hppfile << "	Trace &operator = (const Trace &other_){ return Set(other_); }\n\n";
+	hppfile << "	Trace &Set(const Trace &other_);\n\n";
+	hppfile << "	Trace &Set(Trace *other_);\n\n";
+	hppfile << "    void Append(const std::vector<int> &vec_);\n\n";
+	hppfile << "    void Append(int *arr_, const size_t &size_);\n\n";	
+	hppfile << "    ClassDef(Trace, 1); // Trace\n";
 	hppfile << "};\n";
 	
 	cppfile << "#include \"Structures.h\"\n\n";
-	cppfile << "template <class T>\n";
-	cppfile << "Wave<T> &Wave<T>::Set(const Wave &other_){\n";
+	cppfile << "Trace &Trace::Set(const Trace &other_){\n";
 	cppfile << "	wave = other_.wave;\n";
 	cppfile << "	return *this;\n";
 	cppfile << "}\n\n";
-	cppfile << "template <class T>\n";
-	cppfile << "Wave<T> &Wave<T>::Set(Wave *other_){\n";
+	cppfile << "Trace &Trace::Set(Trace *other_){\n";
 	cppfile << "	wave = other_->wave;\n";
 	cppfile << "	return *this;\n";
 	cppfile << "}\n\n";
-	cppfile << "template <class T>\n";
-	cppfile << "void Wave<T>::Append(const std::vector<T> &vec_){\n";
+	cppfile << "void Trace::Append(const std::vector<int> &vec_){\n";
 	cppfile << "	wave = vec_;\n";
 	cppfile << "}\n\n";
-	cppfile << "template <class T>\n";
-	cppfile << "void Wave<T>::Append(T *arr_, const size_t &size_){\n";
+	cppfile << "void Trace::Append(int *arr_, const size_t &size_){\n";
 	cppfile << "	Zero();\n";
 	cppfile << "	wave.reserve(size_);\n";
 	cppfile << "	for(size_t i = 0; i < size_; i++){\n";
@@ -342,7 +337,7 @@ bool StructureFile::Open(){
 	linkfile << "#pragma link off all classes;\n";
 	linkfile << "#pragma link off all functions;\n\n";
 	linkfile << "#pragma link C++ class Structure+;\n";
-	linkfile << "#pragma link C++ class Wave<int>+;\n\n";
+	linkfile << "#pragma link C++ class Trace+;\n\n";
 	
 	init = true;
 	

@@ -10,8 +10,8 @@ class MapFile;
 class LiquidBarProcessor : public Processor{
   private:
 	LiquidBarStructure structure;
-	Wave<int> L_waveform;
-	Wave<int> R_waveform;
+	Trace L_waveform;
+	Trace R_waveform;
 
 	double left_short_qdc; /// The integral of the short portion of the left pmt pulse.
 	double left_long_qdc; /// The integral of the long portion of the left pmt pulse.

@@ -10,7 +10,7 @@ class MapFile;
 class LiquidProcessor : public Processor{
   private:
 	LiquidStructure structure;
-	Wave<int> waveform;
+	Trace waveform;
 
 	double short_qdc; /// The integral of the short portion of the left pmt pulse.
 	double long_qdc; /// The integral of the long portion of the left pmt pulse.

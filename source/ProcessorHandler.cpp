@@ -32,6 +32,14 @@ bool ProcessorHandler::ToggleFitting(){
 	return retval;
 }
 
+bool ProcessorHandler::ToggleTraces(){
+	bool retval = true;
+	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
+		retval = retval && iter->proc->ToggleTraces();
+	}
+	return retval;
+}
+
 bool ProcessorHandler::InitRootOutput(TTree *tree_){
 	bool retval = true;
 	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){

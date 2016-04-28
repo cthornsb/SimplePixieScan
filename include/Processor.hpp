@@ -20,10 +20,10 @@ class TF1;
 class TH1;
 
 class Structure;
-template <class T> class Wave;
+class Trace;
 
 extern Structure dummyStructure;
-extern Wave<int> dummyWaveform;
+extern Trace dummyTrace;
 
 class ChannelEventPair{
   public:
@@ -68,7 +68,7 @@ class FittingFunction{
 class Processor{
   protected:
 	Structure *root_structure; /// Root data structure for storing processor-specific information.
-	Wave<int> *root_waveform; /// Root data structure for storing baseline corrected traces.
+	Trace *root_waveform; /// Root data structure for storing baseline corrected traces.
   
 	clock_t start_time;
 	unsigned long total_time;
@@ -156,6 +156,8 @@ class Processor{
 	bool IsInit(){ return init; }
 	
 	bool ToggleFitting(){ return (use_fitting = !use_fitting); }
+	
+	bool ToggleTraces(){ std::cout << "HERE!\n"; return (write_waveform = !write_waveform); }
 	
 	bool Initialize(TTree *tree_);
 

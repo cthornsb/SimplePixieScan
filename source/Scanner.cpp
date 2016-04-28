@@ -87,6 +87,7 @@ Scanner::Scanner(){
 	force_overwrite = false;
 	online_mode = false;
 	use_root_fitting = false;
+	write_traces = false;
 	mapfile = NULL;
 	configfile = NULL;
 	handler = NULL;
@@ -222,10 +223,13 @@ bool Scanner::Initialize(std::string prefix_){
 	raw_tree->Branch("chan", &raw_event_channel);
 	raw_tree->Branch("energy", &raw_event_energy);
 	raw_tree->Branch("time", &raw_event_time);
+
+	// Set processor options.
+	if(use_root_fitting){ handler->ToggleFitting(); }
+	if(write_traces){ handler->ToggleTraces(); }
 	
 	// Add branches to the output tree.
 	handler->InitRootOutput(root_tree);
-	if(use_root_fitting){ handler->ToggleFitting(); }
 
 	return (init = true);
 }
@@ -292,6 +296,7 @@ void Scanner::ArgHelp(std::string prefix_){
 	std::cout << prefix_ << "--force-overwrite - Force an overwrite of the output root file if it exists (default=false)\n";
 	std::cout << prefix_ << "--online-mode     - Plot online root histograms for monitoring data (default=false)\n";
 	std::cout << prefix_ << "--fitting         - Use root fitting for high resolution timing (default=false)\n";
+	std::cout << prefix_ << "--traces          - Dump raw ADC traces to output root file (default=false)\n";
 }
 
 /** 
@@ -334,6 +339,10 @@ bool Scanner::SetArgs(std::deque<std::string> &args_, std::string &filename){
 		else if(current_arg == "--fitting"){
 			std::cout << "Scanner: Toggling root fitting ON.\n";
 			use_root_fitting = true;
+		}
+		else if(current_arg == "--traces"){
+			std::cout << "Scanner: Toggling ADC trace output ON.\n";
+			write_traces = true;
 		}
 		else{ // Not a valid option. Must be a filename.
 			if(count == 0){ filename = current_arg; } // Set the input filename.

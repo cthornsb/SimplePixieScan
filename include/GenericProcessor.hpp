@@ -11,7 +11,7 @@ class Plotter;
 class GenericProcessor : public Processor{
   private:
 	GenericStructure structure;
-	Wave<int> waveform;
+	Trace waveform;
   
 	Plotter *loc_tdiff_2d;
 	Plotter *loc_energy_2d;
