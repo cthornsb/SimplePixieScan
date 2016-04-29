@@ -41,10 +41,10 @@ LONG	Structure for detectors of type "trigger"
 # Data types and names
 # type	name	description
 BEGIN_TYPES
-vector:double	trigger_time	The raw pixie16 system clock time.
-vector:double	trigger_tqdc	The energy computed from the trace.
-vector:double	trigger_phase	The trace offset in ns.
-u_int	trigger_mult	Multiplicity of the trigger detector.
+vector:double	time	The raw pixie16 system clock time.
+vector:double	tqdc	The energy computed from the trace.
+vector:double	phase	The trace offset in ns.
+u_int	mult	Multiplicity of the trigger detector.
 END_TYPES
 
 # End this class
@@ -65,14 +65,14 @@ LONG	Structure for detectors of type "vandlesmall" or "vandlebig"
 # Data types and names
 # type	name	description
 BEGIN_TYPES
-vector:double	vandle_ltdiff	The time of flight of the particle detected by vandle.
-vector:double	vandle_rtdiff	The time of flight of the particle detected by vandle.
-vector:double	vandle_ltqdc	The left pmt energy computed from the trace.
-vector:double	vandle_rtqdc	The right pmt energy computed from the trace.
-vector:double	vandle_lphase	The left pmt trace offset in ns.
-vector:double	vandle_rphase	The right pmt trace offset in ns.
-vector:int	vandle_loc	Detector location (ID)
-u_int	vandle_mult	Multiplicity of the vandle events.
+vector:double	ltdiff	The time of flight of the particle detected by vandle.
+vector:double	rtdiff	The time of flight of the particle detected by vandle.
+vector:double	ltqdc	The left pmt energy computed from the trace.
+vector:double	rtqdc	The right pmt energy computed from the trace.
+vector:double	lphase	The left pmt trace offset in ns.
+vector:double	rphase	The right pmt trace offset in ns.
+vector:int	loc	Detector location (ID)
+u_int	mult	Multiplicity of the vandle events.
 END_TYPES
 
 # End this class
@@ -93,14 +93,14 @@ LONG	Structure for detectors of type "phoswich"
 # Data types and names
 # type	name	description
 BEGIN_TYPES
-vector:double	phoswich_time	The raw pixie16 system clock time.
-vector:double	phoswich_ftqdc	The integral of the fast portion of the pulse.
-vector:double	phoswich_stqdc	The integral of the slow portion of the pulse.
-vector:double	phoswich_fAmp	The amplitude of the landau function for the fast pulse.
-vector:double	phoswich_fMPV	The most probable value of the landau function for the fast pulse.
-vector:double	phoswich_fSigma	The sigma (roughly the width) of the landau function for the fast pulse.
-vector:double	phoswich_fChi2	The chi^2/NDF for the fast pulse fit.
-u_int	phoswich_mult	Multiplicity of the phoswich events.
+vector:double	time	The raw pixie16 system clock time.
+vector:double	ftqdc	The integral of the fast portion of the pulse.
+vector:double	stqdc	The integral of the slow portion of the pulse.
+vector:double	fAmp	The amplitude of the landau function for the fast pulse.
+vector:double	fMPV	The most probable value of the landau function for the fast pulse.
+vector:double	fSigma	The sigma (roughly the width) of the landau function for the fast pulse.
+vector:double	fChi2	The chi^2/NDF for the fast pulse fit.
+u_int	mult	Multiplicity of the phoswich events.
 END_TYPES
 
 # End this class
@@ -121,14 +121,14 @@ LONG	Structure for detectors of type "liquidbar"
 # Data types and names
 # type	name	description
 BEGIN_TYPES
-vector:double	liquidbar_ltdiff	The time of flight of the particle detected by liquidbar.
-vector:double	liquidbar_rtdiff	The time of flight of the particle detected by liquidbar.
-vector:double	liquidbar_stqdc	The short integral computed from both pmt traces.
-vector:double	liquidbar_ltqdc	The long integral computed from both pmt traces.
-vector:double	liquidbar_lphase	The left pmt trace offset in ns.
-vector:double	liquidbar_rphase	The right pmt trace offset in ns.
-vector:int	liquidbar_loc	Detector location (ID)
-u_int	liquidbar_mult	Multiplicity of the liquidbar events.
+vector:double	ltdiff	The time of flight of the particle detected by liquidbar.
+vector:double	rtdiff	The time of flight of the particle detected by liquidbar.
+vector:double	stqdc	The short integral computed from both pmt traces.
+vector:double	ltqdc	The long integral computed from both pmt traces.
+vector:double	lphase	The left pmt trace offset in ns.
+vector:double	rphase	The right pmt trace offset in ns.
+vector:int	loc	Detector location (ID)
+u_int	mult	Multiplicity of the liquidbar events.
 END_TYPES
 
 # End this class
@@ -149,12 +149,12 @@ LONG	Structure for detectors of type "liquid"
 # Data types and names
 # type	name	description
 BEGIN_TYPES
-vector:double	liquid_tdiff	The time of flight of the particle detected by the detector.
-vector:double	liquid_stqdc	The pmt short integral computed from the trace.
-vector:double	liquid_ltqdc	The pmt long integral computed from the trace.
-vector:double	liquid_phase	The pmt trace offset in ns.
-vector:int	liquid_loc	Detector location (ID)
-u_int	liquid_mult	Multiplicity of the liquid events.
+vector:double	tdiff	The time of flight of the particle detected by the detector.
+vector:double	stqdc	The pmt short integral computed from the trace.
+vector:double	ltqdc	The pmt long integral computed from the trace.
+vector:double	phase	The pmt trace offset in ns.
+vector:int	loc	Detector location (ID)
+u_int	mult	Multiplicity of the liquid events.
 END_TYPES
 
 # End this class
@@ -175,11 +175,11 @@ LONG	Structure for detectors of type "generic"
 # Data types and names
 # type	name	description
 BEGIN_TYPES
-vector:double	generic_tdiff	The time of flight of the particle detected by vandle.
-vector:double	generic_tqdc	The energy computed from the trace.
-vector:double	generic_phase	The trace offset in ns.
-vector:int	generic_loc	Detector location (ID)
-u_int	generic_mult	Multiplicity of the generic type events.
+vector:double	tdiff	The time of flight of the particle detected by vandle.
+vector:double	tqdc	The energy computed from the trace.
+vector:double	phase	The trace offset in ns.
+vector:int	loc	Detector location (ID)
+u_int	mult	Multiplicity of the generic type events.
 END_TYPES
 
 # End this class
@@ -200,8 +200,8 @@ LONG	Track the number of occurances of logic signals.
 # Data types and names
 # type	name	description
 BEGIN_TYPES
-vector:int	logic_loc	Signal location (ID).
-u_int	logic_mult	Multiplicity of the logic events.
+vector:int	loc	Signal location (ID).
+u_int	mult	Multiplicity of the logic events.
 END_TYPES
 
 # End this class
