@@ -80,7 +80,6 @@ void Scanner::ProcessRawEvent(){
 		if(events_since_last_update >= events_between_updates){
 			online->Refresh();
 			events_since_last_update = 0;
-			std::cout << "refresh!\n";
 		}
 		else{ events_since_last_update++; }
 	}
