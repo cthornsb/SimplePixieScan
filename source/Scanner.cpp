@@ -64,10 +64,12 @@ void Scanner::ProcessRawEvent(){
 	
 	// Call each processor to do the processing. Each
 	// processor will remove the channel events when finished.
-	if(handler->Process()){
-		// This event had at least one valid signal
+	if(handler->Process()){ // This event had at least one valid signal
+		// Fill the root tree with processed data.
 		root_tree->Fill();
-		trace_tree->Fill();
+
+		// Fill the ADC trace tree with raw traces.		
+		if(write_traces){ trace_tree->Fill(); }
 	}
 	
 	// Zero all of the processors.
