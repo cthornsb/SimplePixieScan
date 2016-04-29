@@ -32,6 +32,8 @@ class Scanner : public Unpacker{
 	int events_since_last_update; /// The number of processed events since the last online histogram update.
 	int events_between_updates; /// The number of events to process before updating online histograms.
 	
+	int loaded_files; /// The number of files which have been processed.
+	
 	int raw_event_module; /// Module ID from the channel event.
 	int raw_event_channel; /// Channel ID from the channel event.
 	double raw_event_energy; /// Raw pixie energy taken directly from the module (a.u.).
@@ -59,6 +61,9 @@ class Scanner : public Unpacker{
 
 	/// Perform last minute procedures before running.
 	void FinalInitialization(); 
+
+	/// Receive various status notifications from the scan.
+	void Notify(const std::string &code_="");
 
 	/// Return the syntax string for this program.
 	void SyntaxStr(const char *name_, std::string prefix_="");

@@ -98,6 +98,7 @@ Scanner::Scanner(){
 	output_filename = "out.root";
 	events_since_last_update = 0;
 	events_between_updates = 5000;
+	loaded_files = 0;
 }
 
 Scanner::~Scanner(){
@@ -131,6 +132,7 @@ Scanner::~Scanner(){
 			root_file->Close();
 		}
 
+		std::cout << "Scanner: Processed " << loaded_files << " files.\n";
 		std::cout << "Scanner: Found " << handler->GetTotalEvents() << " start events.\n";
 		std::cout << "Scanner: Total data time is " << handler->GetDeltaEventTime() << " s.\n";
 	
@@ -248,19 +250,9 @@ bool Scanner::Initialize(std::string prefix_){
 /// Perform last minute procedures before running.
 void Scanner::FinalInitialization(){
 	if(!scan_main){ return; }
-	fileInformation *finfo = scan_main->GetFileInfo();
-	if(!finfo){ return; }
 
 	// Add file header information to the output root file.
-	std::string name, value;
 	root_file->mkdir("head");
-	root_file->cd("head");
-	for(size_t index = 0; index < finfo->size(); index++){
-		finfo->at(index, name, value);
-		std::cout << name << ", " << value << std::endl;
-		TNamed named(name.c_str(), value.c_str());
-		named.Write();
-	}
 	
 	// Add all map entries to the output root file.
 	const int num_mod = mapfile->GetMaxModules();
@@ -284,15 +276,47 @@ void Scanner::FinalInitialization(){
 
 	root_file->mkdir("map");
 	for(int i = 0; i < num_mod; i++){
-		root_file->mkdir(dir_names[i].c_str());
-		root_file->cd(dir_names[i].c_str());
+		bool first_good_channel = true;
 		for(int j = 0; j < num_chan; j++){
 			entryptr = mapfile->GetMapEntry(i, j);
 			if(entryptr->type == "ignore"){ continue; }
+			if(first_good_channel){
+				root_file->mkdir(dir_names[i].c_str());
+				root_file->cd(dir_names[i].c_str());
+				first_good_channel = false;			
+			}
 			TNamed named(chan_names[j].c_str(), (entryptr->type+":"+entryptr->subtype+":"+entryptr->tag).c_str());
 			named.Write();
 		}
 	}
+}
+
+/// Receive various status notifications from the scan.
+void Scanner::Notify(const std::string &code_/*=""*/){
+	if(code_ == "START_SCAN"){  }
+	else if(code_ == "STOP_SCAN"){  }
+	else if(code_ == "SCAN_COMPLETE"){ std::cout << "Scanner: Scan complete.\n"; }
+	else if(code_ == "LOAD_FILE"){
+		std::cout << "Scanner: File loaded.\n";
+		fileInformation *finfo = scan_main->GetFileInfo();
+		if(finfo){
+			loaded_files++;
+			std::stringstream stream;
+			if(loaded_files < 10){ stream << "head/file0" << loaded_files; }
+			else{ stream << "head/file" << loaded_files; }
+			root_file->mkdir(stream.str().c_str());
+			root_file->cd(stream.str().c_str());
+			std::string name, value;
+			for(size_t index = 0; index < finfo->size(); index++){
+				finfo->at(index, name, value);
+				TNamed named(name.c_str(), value.c_str());
+				named.Write();
+			}
+		}
+		else{ std::cout << "Scanner: Failed to fetch input file info!\n"; }
+	}
+	else if(code_ == "REWIND_FILE"){  }
+	else{ std::cout << "Scanner: Unknown notification code '" << code_ << "'!\n"; }
 }
 
 /// Return the syntax string for this program.
@@ -529,14 +553,14 @@ int main(int argc, char *argv[]){
 	
 	// Setup the ScanMain object and link it to the unpacker object.
 	ScanMain scan_main(scanner);
-	
-	// Initialize the scanner.
-	scan_main.Initialize(argc, argv);
 
 	// Link the unpacker object back to the ScanMain object so we may
 	// access its command line arguments and options.
 	scanner->SetScanMain(&scan_main);
 	
+	// Initialize the scanner.
+	scan_main.Initialize(argc, argv);
+
 	// Set the output message prefix.
 	scan_main.SetMessageHeader("Scanner: ");
 
