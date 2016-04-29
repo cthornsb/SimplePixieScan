@@ -96,10 +96,8 @@ BEGIN_TYPES
 vector:double	time	The raw pixie16 system clock time.
 vector:double	ftqdc	The integral of the fast portion of the pulse.
 vector:double	stqdc	The integral of the slow portion of the pulse.
-vector:double	fAmp	The amplitude of the landau function for the fast pulse.
-vector:double	fMPV	The most probable value of the landau function for the fast pulse.
-vector:double	fSigma	The sigma (roughly the width) of the landau function for the fast pulse.
-vector:double	fChi2	The chi^2/NDF for the fast pulse fit.
+vector:double	fAmp	The ADC amplitude of the fast pulse.
+vector:double	phase	The trace offset in ns.
 u_int	mult	Multiplicity of the phoswich events.
 END_TYPES
 

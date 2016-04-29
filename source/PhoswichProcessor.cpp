@@ -75,8 +75,8 @@ bool PhoswichProcessor::HandleEvents(){
 		phase_1d->Fill(current_event->phase); 
 		
 		// Fill the values into the root tree.
-		if(use_fitting){ structure.Append(current_event->event->time, fast_qdc, slow_qdc, fast_A, fast_MPV, fast_Sigma, fast_chi2);	}
-		else{ structure.Append(current_event->event->time, fast_qdc, slow_qdc, current_event->maximum, current_event->phase, 0.0, 0.0); }
+		if(use_fitting){ structure.Append(current_event->event->time, fast_qdc, slow_qdc, fast_A, fast_MPV);	}
+		else{ structure.Append(current_event->event->time, fast_qdc, slow_qdc, current_event->maximum, current_event->phase); }
 	
 		// Copy the trace to the output file.
 		if(write_waveform){
