@@ -18,6 +18,10 @@ class Plotter;
 class TFile;
 class TTree;
 
+///////////////////////////////////////////////////////////////////////////////
+// class simpleUnpacker
+///////////////////////////////////////////////////////////////////////////////
+
 class simpleUnpacker : public Unpacker {
   public:
   	/// Default constructor.
@@ -28,17 +32,21 @@ class simpleUnpacker : public Unpacker {
 	
   private:
 	/** Process all events in the event list.
-	  * \param[in]  addr_ Pointer to a location in memory. Unused by default.
+	  * \param[in]  addr_ Pointer to a location in memory. 
 	  * \return Nothing.
 	  */
 	virtual void ProcessRawEvent(void *addr_=NULL);
 	
 	/** Add an event to generic statistics output.
-	  * \param[in]  event_ Pointer to the current XIA event. Unused by default.
+	  * \param[in]  event_ Pointer to the current XIA event. 
 	  * \return Nothing.
 	  */
 	virtual void RawStats(XiaEvent *event_);
 };
+
+///////////////////////////////////////////////////////////////////////////////
+// class simpleScanner
+///////////////////////////////////////////////////////////////////////////////
 
 class simpleScanner : public ScanInterface {
   public:
@@ -48,29 +56,43 @@ class simpleScanner : public ScanInterface {
 	/// Destructor.
 	~simpleScanner();
 
-	/** Search for an input command and perform the desired action.
-	  * \param[in]  cmd_ The command to interpret. Not used by default.
-	  * \param[out] args_ Vector or arguments to the user command. Not used by default.
-	  * \return True if the command was recognized and false otherwise. Returns false by default.
+	/** ExtraCommands is used to send command strings to classes derived
+	  * from ScanInterface. If ScanInterface receives an unrecognized
+	  * command from the user, it will pass it on to the derived class.
+	  * \param[in]  cmd_ The command to interpret.
+	  * \param[out] arg_ Vector or arguments to the user command.
+	  * \return True if the command was recognized and false otherwise.
 	  */
 	virtual bool ExtraCommands(const std::string &cmd_, std::vector<std::string> &args_);
 	
-	/** Scan input arguments and set class variables.
+	/** ExtraArguments is used to send command line arguments to classes derived
+	  * from ScanInterface. If ScanInterface receives an unrecognized
+	  * argument from the user, it will pass it on to the derived class.
+	  * \param[in]  arg_    The argument to interpret.
+	  * \param[out] others_ The remaining arguments following arg_.
+	  * \param[out] ifname  The input filename to send back to use for reading.
+	  * \return True if the argument was recognized and false otherwise.
 	  */
 	virtual bool ExtraArguments(const std::string &arg_, std::deque<std::string> &others_, std::string &ifname);
 	
-	/** Print an in-terminal help dialogue for recognized commands.
-	  * \param[in]  prefix_ String to append at the start of any output. Not used by default.
+	/** CmdHelp is used to allow a derived class to print a help statement about
+	  * its own commands. This method is called whenever the user enters 'help'
+	  * or 'h' into the interactive terminal (if available).
+	  * \param[in]  prefix_ String to append at the start of any output.
 	  * \return Nothing.
 	  */
 	virtual void CmdHelp();
 	
-	/** Print a command line help dialogue for recognized command line arguments.
+	/** ArgHelp is used to allow a derived class to print a help statment about
+	  * its own command line arguments. This method is called at the end of
+	  * the ScanInterface::help method.
 	  * \return Nothing.
 	  */
 	virtual void ArgHelp();
 	
-	/** Print the usage string for this program.
+	/** SyntaxStr is used to print a linux style usage message to the screen.
+	  * \param[in]  name_ The name of the program.
+	  * \return Nothing.
 	  */
 	virtual void SyntaxStr(char *name_);
 
@@ -78,13 +100,14 @@ class simpleScanner : public ScanInterface {
 	  * memory mode, and a spill has yet to be received. This method may
 	  * be used to update things which need to be updated every so often
 	  * (e.g. a root TCanvas) when working with a low data rate. 
-	  * Does nothing useful by default.
 	  * \return Nothing.
 	  */
 	virtual void IdleTask(){  }
 
 	/** Initialize the map file, the config file, the processor handler, 
 	  * and add all of the required processors.
+	  * \param[in]  prefix_ String to append to the beginning of system output.
+	  * \return True upon successfully initializing and false otherwise.
 	  */
 	virtual bool Initialize(std::string prefix_="");
 	
@@ -94,15 +117,14 @@ class simpleScanner : public ScanInterface {
 	virtual void FinalInitialization();
 	
 	/** Initialize the root output. 
-	  * Does nothing useful by default.
-	  * \param[in]  fname_     Filename of the output root file. Not used by default.
-	  * \param[in]  overwrite_ Set to true if the user wishes to overwrite the output file. Not used by default.
-	  * \return True upon successfully opening the output file and false otherwise. Returns false by default.
+	  * \param[in]  fname_     Filename of the output root file. 
+	  * \param[in]  overwrite_ Set to true if the user wishes to overwrite the output file. 
+	  * \return True upon successfully opening the output file and false otherwise. 
 	  */
 	virtual bool InitRootOutput(std::string fname_, bool overwrite_=true){ return false; }
 
 	/** Receive various status notifications from the scan.
-	  * \param[in] code_ The notification code passed from ScanInterface methods. Not used by default.
+	  * \param[in] code_ The notification code passed from ScanInterface methods.
 	  * \return Nothing.
 	  */
 	virtual void Notify(const std::string &code_="");
@@ -127,10 +149,10 @@ class simpleScanner : public ScanInterface {
 	void ProcessEvents();
 
   private:
-	MapFile *mapfile;
-	ConfigFile *configfile;
-	ProcessorHandler *handler;
-	OnlineProcessor *online;
+	MapFile *mapfile; /// Pointer to the map file to use for channel mapping.
+	ConfigFile *configfile; /// Pointer to the configuration file to use for setting default parameters.
+	ProcessorHandler *handler; /// Pointer to the processor handler to use for controlling detector processors.
+	OnlineProcessor *online; /// Pointer to the online processor to use for online plotting.
 	
 	TFile *root_file; /// Output root file for storing data.
 	TTree *root_tree; /// Output TTree for storing processed data.
@@ -150,13 +172,13 @@ class simpleScanner : public ScanInterface {
 	double raw_event_energy; /// Raw pixie energy taken directly from the module (a.u.).
 	double raw_event_time; /// Raw pixie time taken directly from the module and converted to seconds.
 	
-	bool force_overwrite;
-	bool online_mode;
-	bool use_root_fitting;
-	bool write_traces;
-	bool init;
+	bool force_overwrite; /// Set to true if existing output files will be overwritten.
+	bool online_mode; /// Set to true if online mode is to be used.
+	bool use_root_fitting; /// Set to true if root TF1 fitting is to be used for trace analysis.
+	bool write_traces; /// Set to true if ADC traces are to be written to the output file.
+	bool init; /// Set to true when the initialization process successfully completes.
 	
-	std::string output_filename;
+	std::string output_filename; /// Path to the output root file.
 };
 
 #endif
