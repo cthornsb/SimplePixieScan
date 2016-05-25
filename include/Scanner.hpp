@@ -32,16 +32,17 @@ class simpleUnpacker : public Unpacker {
 	
   private:
 	/** Process all events in the event list.
-	  * \param[in]  addr_ Pointer to a location in memory. 
+	  * \param[in]  addr_ Pointer to a ScanInterface object.
 	  * \return Nothing.
 	  */
-	virtual void ProcessRawEvent(void *addr_=NULL);
+	virtual void ProcessRawEvent(ScanInterface *addr_=NULL);
 	
 	/** Add an event to generic statistics output.
-	  * \param[in]  event_ Pointer to the current XIA event. 
+	  * \param[in]  event_ Pointer to the current XIA event.
+	  * \param[in]  addr_  Pointer to a ScanInterface object.
 	  * \return Nothing.
 	  */
-	virtual void RawStats(XiaEvent *event_);
+	virtual void RawStats(XiaEvent *event_, ScanInterface *addr_=NULL){  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -140,13 +141,13 @@ class simpleScanner : public ScanInterface {
 	  * \param[in]  event_ The raw XiaEvent to add to the channel event deque.
 	  * \return Nothing.
 	  */
-	void AddEvent(XiaEvent *event_);
+	virtual void AddEvent(XiaEvent *event_);
 	
 	/** Process all channel events read in from the rawEvent.
 	  * This method should only be called from simpleUnpacker::ProcessRawEvent().
 	  * \return Nothing.
 	  */
-	void ProcessEvents();
+	virtual void ProcessEvents();
 
   private:
 	MapFile *mapfile; /// Pointer to the map file to use for channel mapping.

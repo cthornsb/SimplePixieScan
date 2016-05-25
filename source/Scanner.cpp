@@ -28,11 +28,9 @@
   * \param[in]  addr_ Pointer to a location in memory. 
   * \return Nothing.
   */
-void simpleUnpacker::ProcessRawEvent(void *addr_/*=NULL*/){
+void simpleUnpacker::ProcessRawEvent(ScanInterface *addr_/*=NULL*/){
 	if(!addr_){ return; }
 	
-	simpleScanner *interface = (simpleScanner*)addr_;
-
 	XiaEvent *current_event = NULL;
 	
 	// Fill the processor event deques with events
@@ -44,18 +42,12 @@ void simpleUnpacker::ProcessRawEvent(void *addr_/*=NULL*/){
 		if(!current_event){ continue; }
 
 		// Send the event to the scan interface object for processing.
-		interface->AddEvent(current_event);
+		addr_->AddEvent(current_event);
 	}
 	
 	// Finish up with this raw event.
-	interface->ProcessEvents();
+	addr_->ProcessEvents();
 }
-
-/** Add an event to generic statistics output.
-  * \param[in]  event_ Pointer to the current XIA event. 
-  * \return Nothing.
-  */
-void simpleUnpacker::RawStats(XiaEvent *event_){  }
 
 ///////////////////////////////////////////////////////////////////////////////
 // class simpleScanner
@@ -121,7 +113,7 @@ simpleScanner::~simpleScanner(){
 		delete online;
 	}
 
-	GetCore()->CloseUnpacker(); // Close the Unpacker object.
+	GetCore()->Close(); // Close the Unpacker object.
 }
 
 /** ExtraCommands is used to send command strings to classes derived
@@ -612,19 +604,18 @@ void simpleScanner::ProcessEvents(){
 
 int main(int argc, char *argv[]){
 	// Define a new unpacker object.
-	ScanInterface *scanner = (ScanInterface*)(new simpleScanner());
+	simpleScanner scanner;
 	
 	// Set the output message prefix.
-	scanner->SetProgramName(std::string(PROG_NAME));	
+	scanner.SetProgramName(std::string(PROG_NAME));	
 	
 	// Initialize the scanner.
-	scanner->Setup(argc, argv);
+	scanner.Setup(argc, argv);
 
 	// Run the main loop.
-	int retval = scanner->Execute();
+	int retval = scanner.Execute();
 	
-	// Cleanup.
-	delete scanner;
-
+	scanner.Close();
+	
 	return retval;
 }
