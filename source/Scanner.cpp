@@ -1,9 +1,5 @@
 #include <iostream>
 
-// PixieCore libraries
-#include "Unpacker.hpp"
-#include "ScanMain.hpp"
-
 // Local files
 #include "Scanner.hpp"
 #include "MapFile.hpp"
@@ -19,11 +15,20 @@
 #include "TH1.h"
 #include "TNamed.h"
 
-/// Process all events in the event list.
-void Scanner::ProcessRawEvent(){
-	PixieEvent *current_event = NULL;
-	ChannelEvent *channel_event = NULL;
-	ChannelEventPair *current_pair = NULL;
+// Define the name of the program.
+#if not defined(PROG_NAME)
+#define PROG_NAME "Scanner"
+#endif
+
+/** Process all events in the event list.
+  * \return Nothing.
+  */
+void simpleUnpacker::ProcessRawEvent(void *addr_/*=NULL*/){
+	if(!addr_){ return; }
+	
+	simpleScanner *interface = (simpleScanner*)addr_;
+
+	XiaEvent *current_event = NULL;
 	
 	// Fill the processor event deques with events
 	while(!rawEvent.empty()){
@@ -33,63 +38,26 @@ void Scanner::ProcessRawEvent(){
 		// Check that this channel event exists.
 		if(!current_event){ continue; }
 
-		channel_event = new ChannelEvent(current_event);
-
-		// Fill the output histograms.
-		chanCounts->Fill(current_event->chanNum, current_event->modNum);
-		chanEnergy->Fill(current_event->energy, current_event->modNum*16+current_event->chanNum);
-
-		// Link the channel event to its corresponding map entry.
-		current_pair = new ChannelEventPair(current_event, channel_event, mapfile->GetMapEntry(current_event));
-
-		// Raw event information. Dump raw event information to root file.
-		raw_event_module = current_event->modNum;
-		raw_event_channel = current_event->chanNum;
-		raw_event_energy = current_event->energy;
-		raw_event_time = current_event->time*8E-9;
-		raw_tree->Fill();
-	
-		// Pass this event to the correct processor
-		if(current_pair->entry->type == "ignore" || !handler->AddEvent(current_pair)){ // Invalid detector type. Delete it
-			delete current_pair;
-		}
-	
-		// This channel is a start signal. Due to the way ScanList
-		// packs the raw event, there may be more than one start signal
-		// per raw event.
-		if(current_pair->entry->tag == "start"){ 
-			handler->AddStart(current_pair);
-		}
+		// Send the event to the scan interface object for processing.
+		interface->AddEvent(current_event);
 	}
 	
-	// Call each processor to do the processing. Each
-	// processor will remove the channel events when finished.
-	if(handler->Process()){ // This event had at least one valid signal
-		// Fill the root tree with processed data.
-		root_tree->Fill();
-
-		// Fill the ADC trace tree with raw traces.		
-		if(write_traces){ trace_tree->Fill(); }
-	}
-	
-	// Zero all of the processors.
-	handler->ZeroAll();
-	
-	// Check for the need to update the online canvas.
-	if(online_mode){
-		if(events_since_last_update >= events_between_updates){
-			online->Refresh();
-			events_since_last_update = 0;
-		}
-		else{ events_since_last_update++; }
-	}
+	// Finish up with this raw event.
+	interface->ProcessEvents();
 }
 
-Scanner::Scanner(){
+/** Add an event to the generic statistics output.
+  * \return Nothing.
+  */
+void simpleUnpacker::RawStats(XiaEvent *event_){  }
+
+/// Default constructor.
+simpleScanner::simpleScanner() : ScanInterface() {
 	force_overwrite = false;
 	online_mode = false;
 	use_root_fitting = false;
 	write_traces = false;
+	init = false;
 	mapfile = NULL;
 	configfile = NULL;
 	handler = NULL;
@@ -100,26 +68,27 @@ Scanner::Scanner(){
 	loaded_files = 0;
 }
 
-Scanner::~Scanner(){
+/// Destructor.
+simpleScanner::~simpleScanner(){
 	if(init){
-		std::cout << "Scanner: Found " << chanCounts->GetHist()->GetEntries() << " total events.\n";
+		std::cout << msgHeader << "Found " << chanCounts->GetHist()->GetEntries() << " total events.\n";
 
 		// If the root file is open, write the tree and histogram.
 		if(root_file->IsOpen()){
 			// Write all online diagnostic histograms to the output root file.
-			std::cout << "Scanner: Writing " << online->WriteHists(root_file) << " histograms to root file.\n";
+			std::cout << msgHeader << "Writing " << online->WriteHists(root_file) << " histograms to root file.\n";
 
 			root_file->cd();
 
 			// Write root trees to output file.
-			std::cout << "Scanner: Writing " << raw_tree->GetEntries() << " raw data entries to root file.\n";
+			std::cout << msgHeader << "Writing " << raw_tree->GetEntries() << " raw data entries to root file.\n";
 			raw_tree->Write();
 			
-			std::cout << "Scanner: Writing " << root_tree->GetEntries() << " processed data entries to root file.\n";
+			std::cout << msgHeader << "Writing " << root_tree->GetEntries() << " processed data entries to root file.\n";
 			root_tree->Write();
 			
 			if(write_traces){
-				std::cout << "Scanner: Writing " << trace_tree->GetEntries() << " raw ADC traces to root file.\n";
+				std::cout << msgHeader << "Writing " << trace_tree->GetEntries() << " raw ADC traces to root file.\n";
 				trace_tree->Write();
 			}
 			
@@ -131,9 +100,9 @@ Scanner::~Scanner(){
 			root_file->Close();
 		}
 
-		std::cout << "Scanner: Processed " << loaded_files << " files.\n";
-		std::cout << "Scanner: Found " << handler->GetTotalEvents() << " start events.\n";
-		std::cout << "Scanner: Total data time is " << handler->GetDeltaEventTime() << " s.\n";
+		std::cout << msgHeader << "Processed " << loaded_files << " files.\n";
+		std::cout << msgHeader << "Found " << handler->GetTotalEvents() << " start events.\n";
+		std::cout << msgHeader << "Total data time is " << handler->GetDeltaEventTime() << " s.\n";
 	
 		delete mapfile;
 		delete configfile;
@@ -142,11 +111,11 @@ Scanner::~Scanner(){
 		delete online;
 	}
 
-	Close(); // Close the Unpacker object.
+	GetCore()->CloseUnpacker(); // Close the Unpacker object.
 }
 
 /// Initialize the map file, the config file, the processor handler, and add all of the required processors.
-bool Scanner::Initialize(std::string prefix_){
+bool simpleScanner::Initialize(std::string prefix_){
 	if(init){ return false; }
 
 	// Setup a 2d histogram for tracking all channel counts.
@@ -187,8 +156,8 @@ bool Scanner::Initialize(std::string prefix_){
 		delete configfile;
 		return false;
 	}
-	event_width = configfile->event_width * 125; // = event_width * 1E-6(s/us) / 8E-9(s/tick)
-	std::cout << prefix_ << "Setting event width to " << configfile->event_width << " μs (" << event_width << " pixie clock ticks).\n";
+	GetCore()->SetEventWidth(configfile->eventWidth * 125); // = eventWidth * 1E-6(s/us) / 8E-9(s/tick)
+	std::cout << prefix_ << "Setting event width to " << configfile->eventWidth << " μs (" << GetCore()->GetEventWidth() << " pixie clock ticks).\n";
 	handler = new ProcessorHandler();
 	
 	// Load all needed processors.
@@ -247,9 +216,7 @@ bool Scanner::Initialize(std::string prefix_){
 }
 
 /// Perform last minute procedures before running.
-void Scanner::FinalInitialization(){
-	if(!scan_main){ return; }
-
+void simpleScanner::FinalInitialization(){
 	// Add file header information to the output root file.
 	root_file->mkdir("head");
 	
@@ -291,13 +258,13 @@ void Scanner::FinalInitialization(){
 }
 
 /// Receive various status notifications from the scan.
-void Scanner::Notify(const std::string &code_/*=""*/){
+void simpleScanner::Notify(const std::string &code_/*=""*/){
 	if(code_ == "START_SCAN"){  }
 	else if(code_ == "STOP_SCAN"){  }
-	else if(code_ == "SCAN_COMPLETE"){ std::cout << "Scanner: Scan complete.\n"; }
+	else if(code_ == "SCAN_COMPLETE"){ std::cout << msgHeader << "Scan complete.\n"; }
 	else if(code_ == "LOAD_FILE"){
-		std::cout << "Scanner: File loaded.\n";
-		fileInformation *finfo = scan_main->GetFileInfo();
+		std::cout << msgHeader << "File loaded.\n";
+		fileInformation *finfo = GetFileInfo();
 		if(finfo){
 			loaded_files++;
 			std::stringstream stream;
@@ -312,42 +279,106 @@ void Scanner::Notify(const std::string &code_/*=""*/){
 				named.Write();
 			}
 		}
-		else{ std::cout << "Scanner: Failed to fetch input file info!\n"; }
+		else{ std::cout << msgHeader << "Failed to fetch input file info!\n"; }
 	}
 	else if(code_ == "REWIND_FILE"){  }
-	else{ std::cout << "Scanner: Unknown notification code '" << code_ << "'!\n"; }
+	else{ std::cout << msgHeader << "Unknown notification code '" << code_ << "'!\n"; }
+}
+
+/** Return a pointer to the Unpacker object to use for data unpacking.
+  * If no object has been initialized, create a new one.
+  * \return Pointer to an Unpacker object.
+  */
+Unpacker *simpleScanner::GetCore(){ 
+	if(!core){ core = (Unpacker*)(new simpleUnpacker()); }
+	return core;
+}
+
+void simpleScanner::AddEvent(XiaEvent *event_){
+	if(!event_){ return; }
+
+	// Link the channel event to its corresponding map entry.
+	ChannelEventPair *pair_ = new ChannelEventPair(event_, new ChannelEvent(event_), mapfile->GetMapEntry(event_));
+
+	// Fill the output histograms.
+	chanCounts->Fill(event_->chanNum, event_->modNum);
+	chanEnergy->Fill(event_->energy, event_->modNum*16+event_->chanNum);
+
+	// Raw event information. Dump raw event information to root file.
+	raw_event_module = event_->modNum;
+	raw_event_channel = event_->chanNum;
+	raw_event_energy = event_->energy;
+	raw_event_time = event_->time*8E-9;
+	raw_tree->Fill();
+	
+	// Pass this event to the correct processor
+	if(pair_->entry->type == "ignore" || !handler->AddEvent(pair_)){ // Invalid detector type. Delete it
+		delete pair_;
+		return;
+	}
+
+	// This channel is a start signal. Due to the way ScanList
+	// packs the raw event, there may be more than one start signal
+	// per raw event.
+	if(pair_->entry->tag == "start"){ 
+		handler->AddStart(pair_);
+	}
+}
+
+void simpleScanner::ProcessEvents(){
+	// Call each processor to do the processing. Each
+	// processor will remove the channel events when finished.
+	if(handler->Process()){ // This event had at least one valid signal
+		// Fill the root tree with processed data.
+		root_tree->Fill();
+
+		// Fill the ADC trace tree with raw traces.		
+		if(write_traces){ trace_tree->Fill(); }
+	}
+	
+	// Zero all of the processors.
+	handler->ZeroAll();
+	
+	// Check for the need to update the online canvas.
+	if(online_mode){
+		if(events_since_last_update >= events_between_updates){
+			online->Refresh();
+			events_since_last_update = 0;
+		}
+		else{ events_since_last_update++; }
+	}
 }
 
 /// Return the syntax string for this program.
-void Scanner::SyntaxStr(const char *name_, std::string prefix_){ 
-	std::cout << prefix_ << "SYNTAX: " << std::string(name_) << " <input> <options> <output>\n"; 
+void simpleScanner::SyntaxStr(char *name_){ 
+	std::cout << " usage: " << std::string(name_) << " [input] [options] [output]\n"; 
 }
 	
 /**
  * \param[in] prefix_
  */
-void Scanner::ArgHelp(std::string prefix_){
-	std::cout << prefix_ << "--force-overwrite - Force an overwrite of the output root file if it exists (default=false)\n";
-	std::cout << prefix_ << "--online-mode     - Plot online root histograms for monitoring data (default=false)\n";
-	std::cout << prefix_ << "--fitting         - Use root fitting for high resolution timing (default=false)\n";
-	std::cout << prefix_ << "--traces          - Dump raw ADC traces to output root file (default=false)\n";
+void simpleScanner::ArgHelp(){
+	std::cout << "   --force-overwrite - Force an overwrite of the output root file if it exists (default=false)\n";
+	std::cout << "   --online-mode     - Plot online root histograms for monitoring data (default=false)\n";
+	std::cout << "   --fitting         - Use root fitting for high resolution timing (default=false)\n";
+	std::cout << "   --traces          - Dump raw ADC traces to output root file (default=false)\n";
 }
 
 /** 
  *	\param[in] prefix_ 
  */
-void Scanner::CmdHelp(std::string prefix_){
+void simpleScanner::CmdHelp(){
 	if(online_mode){
-		std::cout << prefix_ << "refresh <update>           - Set refresh frequency of online diagnostic plots (default=5000).\n";
-		std::cout << prefix_ << "list                       - List all plottable online histograms.\n";
-		std::cout << prefix_ << "set [index] [hist]         - Set the histogram to draw to part of the canvas.\n";
-		std::cout << prefix_ << "xlog [index]               - Toggle the x-axis log/linear scale of a specified histogram.\n";
-		std::cout << prefix_ << "ylog [index]               - Toggle the y-axis log/linear scale of a specified histogram.\n";
-		std::cout << prefix_ << "zlog [index]               - Toggle the z-axis log/linear scale of a specified histogram.\n"; 
-		std::cout << prefix_ << "xrange [index] [min] [max] - Set the x-axis range of a histogram displayed on the canvas.\n";
-		std::cout << prefix_ << "yrange [index] [min] [max] - Set the y-axis range of a histogram displayed on the canvas.\n";
-		std::cout << prefix_ << "unzoom [index] <axis>      - Unzoom the x-axis, the y-axis, or both.\n";
-		std::cout << prefix_ << "range [index] [xmin] [xmax] [ymin] [ymax] - Set the range of the x and y axes.\n";
+		std::cout << "   refresh <update>           - Set refresh frequency of online diagnostic plots (default=5000).\n";
+		std::cout << "   list                       - List all plottable online histograms.\n";
+		std::cout << "   set <index> <hist>         - Set the histogram to draw to part of the canvas.\n";
+		std::cout << "   xlog <index>               - Toggle the x-axis log/linear scale of a specified histogram.\n";
+		std::cout << "   ylog <index>               - Toggle the y-axis log/linear scale of a specified histogram.\n";
+		std::cout << "   zlog <index>               - Toggle the z-axis log/linear scale of a specified histogram.\n"; 
+		std::cout << "   xrange <index> <min> <max> - Set the x-axis range of a histogram displayed on the canvas.\n";
+		std::cout << "   yrange <index> <min> <max> - Set the y-axis range of a histogram displayed on the canvas.\n";
+		std::cout << "   unzoom <index> [axis]      - Unzoom the x-axis, the y-axis, or both.\n";
+		std::cout << "   range <index> <xmin> <xmax> <ymin> <ymax> - Set the range of the x and y axes.\n";
 	}
 }
 
@@ -355,34 +386,28 @@ void Scanner::CmdHelp(std::string prefix_){
  * \param[in] args_
  * \param[out] filename
  */
-bool Scanner::SetArgs(std::deque<std::string> &args_, std::string &filename){
-	int count = 0;
-	std::string current_arg;
-	while(!args_.empty()){
-		current_arg = args_.front();
-		args_.pop_front();
-		
-		if(current_arg == "--force-overwrite"){
-			std::cout << "Scanner: Forcing overwrite of output file.\n";
-			force_overwrite = true;
-		}
-		else if(current_arg == "--online-mode"){
-			std::cout << "Scanner: Using online mode.\n";
-			online_mode = true;
-		}
-		else if(current_arg == "--fitting"){
-			std::cout << "Scanner: Toggling root fitting ON.\n";
-			use_root_fitting = true;
-		}
-		else if(current_arg == "--traces"){
-			std::cout << "Scanner: Toggling ADC trace output ON.\n";
-			write_traces = true;
-		}
-		else{ // Not a valid option. Must be a filename.
-			if(count == 0){ filename = current_arg; } // Set the input filename.
-			else if(count == 1){ output_filename = current_arg; } // Set the output filename prefix.
-			count++;
-		}
+bool simpleScanner::ExtraArguments(const std::string &arg_, std::deque<std::string> &others_, std::string &ifname){
+	static int count = 0;
+	if(arg_ == "--force-overwrite"){
+		std::cout << msgHeader << "Forcing overwrite of output file.\n";
+		force_overwrite = true;
+	}
+	else if(arg_ == "--online-mode"){
+		std::cout << msgHeader << "Using online mode.\n";
+		online_mode = true;
+	}
+	else if(arg_ == "--fitting"){
+		std::cout << msgHeader << "Toggling root fitting ON.\n";
+		use_root_fitting = true;
+	}
+	else if(arg_ == "--traces"){
+		std::cout << msgHeader << "Toggling ADC trace output ON.\n";
+		write_traces = true;
+	}
+	else{ // Not a valid option. Must be a filename.
+		if(count == 0){ ifname = arg_; } // Set the input filename.
+		else if(count == 1){ output_filename = arg_; } // Set the output filename prefix.
+		count++;
 	}
 	
 	return true;
@@ -392,16 +417,16 @@ bool Scanner::SetArgs(std::deque<std::string> &args_, std::string &filename){
   * 
   * \return True if the command is valid and false otherwise.
   */
-bool Scanner::CommandControl(std::string cmd_, const std::vector<std::string> &args_){
+bool simpleScanner::ExtraCommands(const std::string &cmd_, std::vector<std::string> &args_){
 	if(online_mode){
 		if(cmd_ == "refresh"){
 			if(args_.size() >= 1){
 				int frequency = atoi(args_.at(0).c_str());
 				if(frequency > 0){ 
-					std::cout << message_head << "Set canvas update frequency to " << frequency << " events.\n"; 
+					std::cout << msgHeader << "Set canvas update frequency to " << frequency << " events.\n"; 
 					events_between_updates = frequency;
 				}
-				else{ std::cout << message_head << "Failed to set canvas update frequency to " << frequency << " events!\n"; }
+				else{ std::cout << msgHeader << "Failed to set canvas update frequency to " << frequency << " events!\n"; }
 			}
 			else{ online->Refresh(); }
 		}
@@ -412,46 +437,46 @@ bool Scanner::CommandControl(std::string cmd_, const std::vector<std::string> &a
 			if(args_.size() >= 2){
 				int index1 = atoi(args_.at(0).c_str());
 				int index2 = atoi(args_.at(1).c_str());
-				if(online->ChangeHist(index1, args_.at(1))){ std::cout << message_head << "Set TPad " << index1 << " to histogram '" << args_.at(1) << "'.\n"; }
-				else if(online->ChangeHist(index1, index2)){ std::cout << message_head << "Set TPad " << index1 << " to histogram ID " << index2 << ".\n"; }
-				else{ std::cout << message_head << "Failed to set TPad " << index1 << " to histogram '" << args_.at(1) << "'!\n"; }
+				if(online->ChangeHist(index1, args_.at(1))){ std::cout << msgHeader << "Set TPad " << index1 << " to histogram '" << args_.at(1) << "'.\n"; }
+				else if(online->ChangeHist(index1, index2)){ std::cout << msgHeader << "Set TPad " << index1 << " to histogram ID " << index2 << ".\n"; }
+				else{ std::cout << msgHeader << "Failed to set TPad " << index1 << " to histogram '" << args_.at(1) << "'!\n"; }
 			}
 			else{
-				std::cout << message_head << "Invalid number of parameters to 'set'\n";
-				std::cout << message_head << " -SYNTAX- set [index] [hist]\n";
+				std::cout << msgHeader << "Invalid number of parameters to 'set'\n";
+				std::cout << msgHeader << " -SYNTAX- set [index] [hist]\n";
 			}
 		}
 		else if(cmd_ == "xlog"){
 			if(args_.size() >= 1){
 				int index = atoi(args_.at(0).c_str());
-				if(online->ToggleLogX(index)){ std::cout << message_head << "Successfully toggled x-axis log scale for TPad " << index << ".\n"; }
-				else{ std::cout << message_head << "Failed to toggle x-axis log scale for TPad " << index << ".\n"; }
+				if(online->ToggleLogX(index)){ std::cout << msgHeader << "Successfully toggled x-axis log scale for TPad " << index << ".\n"; }
+				else{ std::cout << msgHeader << "Failed to toggle x-axis log scale for TPad " << index << ".\n"; }
 			}
 			else{
-				std::cout << message_head << "Invalid number of parameters to 'xlog'\n";
-				std::cout << message_head << " -SYNTAX- xlog [index]\n";
+				std::cout << msgHeader << "Invalid number of parameters to 'xlog'\n";
+				std::cout << msgHeader << " -SYNTAX- xlog [index]\n";
 			}
 		}
 		else if(cmd_ == "ylog"){
 			if(args_.size() >= 1){
 				int index = atoi(args_.at(0).c_str());
-				if(online->ToggleLogY(index)){ std::cout << message_head << "Successfully toggled y-axis log scale for TPad " << index << ".\n"; }
-				else{ std::cout << message_head << "Failed to toggle y-axis log scale for TPad " << index << ".\n"; }
+				if(online->ToggleLogY(index)){ std::cout << msgHeader << "Successfully toggled y-axis log scale for TPad " << index << ".\n"; }
+				else{ std::cout << msgHeader << "Failed to toggle y-axis log scale for TPad " << index << ".\n"; }
 			}
 			else{
-				std::cout << message_head << "Invalid number of parameters to 'ylog'\n";
-				std::cout << message_head << " -SYNTAX- ylog [index]\n";
+				std::cout << msgHeader << "Invalid number of parameters to 'ylog'\n";
+				std::cout << msgHeader << " -SYNTAX- ylog [index]\n";
 			}
 		}
 		else if(cmd_ == "zlog"){
 			if(args_.size() >= 1){
 				int index = atoi(args_.at(0).c_str());
-				if(online->ToggleLogZ(index)){ std::cout << message_head << "Successfully toggled z-axis log scale for TPad " << index << ".\n"; }
-				else{ std::cout << message_head << "Failed to toggle z-axis log scale for TPad " << index << ".\n"; }
+				if(online->ToggleLogZ(index)){ std::cout << msgHeader << "Successfully toggled z-axis log scale for TPad " << index << ".\n"; }
+				else{ std::cout << msgHeader << "Failed to toggle z-axis log scale for TPad " << index << ".\n"; }
 			}
 			else{
-				std::cout << message_head << "Invalid number of parameters to 'zlog'\n";
-				std::cout << message_head << " -SYNTAX- zlog [index]\n";
+				std::cout << msgHeader << "Invalid number of parameters to 'zlog'\n";
+				std::cout << msgHeader << " -SYNTAX- zlog [index]\n";
 			}
 		}
 		else if(cmd_ == "xrange"){
@@ -460,14 +485,14 @@ bool Scanner::CommandControl(std::string cmd_, const std::vector<std::string> &a
 				float min = atof(args_.at(1).c_str());
 				float max = atof(args_.at(2).c_str());
 				if(max > min){ 
-					if(online->SetXrange(index, min, max)){ std::cout << message_head << "Successfully set range of TPad " << index << ".\n"; }
-					else{ std::cout << message_head << "Failed to set range of TPad " << index << "!\n"; }
+					if(online->SetXrange(index, min, max)){ std::cout << msgHeader << "Successfully set range of TPad " << index << ".\n"; }
+					else{ std::cout << msgHeader << "Failed to set range of TPad " << index << "!\n"; }
 				}
-				else{ std::cout << message_head << "Invalid range for x-axis [" << min << ", " << max << "]\n"; }
+				else{ std::cout << msgHeader << "Invalid range for x-axis [" << min << ", " << max << "]\n"; }
 			}
 			else{
-				std::cout << message_head << "Invalid number of parameters to 'xrange'\n";
-				std::cout << message_head << " -SYNTAX- xrange [index] [min] [max]\n";
+				std::cout << msgHeader << "Invalid number of parameters to 'xrange'\n";
+				std::cout << msgHeader << " -SYNTAX- xrange [index] [min] [max]\n";
 			}
 		}
 		else if(cmd_ == "yrange"){
@@ -476,14 +501,14 @@ bool Scanner::CommandControl(std::string cmd_, const std::vector<std::string> &a
 				float min = atof(args_.at(1).c_str());
 				float max = atof(args_.at(2).c_str());
 				if(max > min){ 
-					if(online->SetYrange(index, min, max)){ std::cout << message_head << "Successfully set range of TPad " << index << ".\n"; }
-					else{ std::cout << message_head << "Failed to set range of TPad " << index << "!\n"; }
+					if(online->SetYrange(index, min, max)){ std::cout << msgHeader << "Successfully set range of TPad " << index << ".\n"; }
+					else{ std::cout << msgHeader << "Failed to set range of TPad " << index << "!\n"; }
 				}
-				else{ std::cout << message_head << "Invalid range for y-axis [" << min << ", " << max << "]\n"; }
+				else{ std::cout << msgHeader << "Invalid range for y-axis [" << min << ", " << max << "]\n"; }
 			}
 			else{
-				std::cout << message_head << "Invalid number of parameters to 'yrange'\n";
-				std::cout << message_head << " -SYNTAX- yrange [index] [min] [max]\n";
+				std::cout << msgHeader << "Invalid number of parameters to 'yrange'\n";
+				std::cout << msgHeader << " -SYNTAX- yrange [index] [min] [max]\n";
 			}
 		}
 		else if(cmd_ == "unzoom"){
@@ -492,22 +517,22 @@ bool Scanner::CommandControl(std::string cmd_, const std::vector<std::string> &a
 				if(args_.size() >= 2){
 					if(args_.at(1) == "x" || args_.at(1) == "X" || args_.at(1) == "0"){
 						online->ResetXrange(index);
-						std::cout << message_head << "Reset range of X axis.\n";
+						std::cout << msgHeader << "Reset range of X axis.\n";
 					}
 					else if(args_.at(1) == "y" || args_.at(1) == "Y" || args_.at(1) == "1"){
 						online->ResetYrange(index);
-						std::cout << message_head << "Reset range of Y axis.\n";
+						std::cout << msgHeader << "Reset range of Y axis.\n";
 					}
-					else{ std::cout << message_head << "Unknown axis (" << args_.at(1) << ")!\n"; }
+					else{ std::cout << msgHeader << "Unknown axis (" << args_.at(1) << ")!\n"; }
 				}
 				else{
 					online->ResetRange(index);
-					std::cout << message_head << "Reset range of X and Y axes.\n";
+					std::cout << msgHeader << "Reset range of X and Y axes.\n";
 				}
 			}
 			else{
-				std::cout << message_head << "Invalid number of parameters to 'unzoom'\n";
-				std::cout << message_head << " -SYNTAX- unzoom [index] <axis>\n";
+				std::cout << msgHeader << "Invalid number of parameters to 'unzoom'\n";
+				std::cout << msgHeader << " -SYNTAX- unzoom [index] <axis>\n";
 			}
 		}
 		else if(cmd_ == "range"){
@@ -518,21 +543,21 @@ bool Scanner::CommandControl(std::string cmd_, const std::vector<std::string> &a
 				float ymin = atof(args_.at(3).c_str());
 				float ymax = atof(args_.at(4).c_str());
 				if(xmax > xmin && ymax > ymin){ 
-					if(online->SetRange(index, xmin, xmax, ymin, ymax)){ std::cout << message_head << "Successfully set range of TPad " << index << ".\n"; }
-					else{ std::cout << message_head << "Failed to set range of TPad " << index << "!\n"; }
+					if(online->SetRange(index, xmin, xmax, ymin, ymax)){ std::cout << msgHeader << "Successfully set range of TPad " << index << ".\n"; }
+					else{ std::cout << msgHeader << "Failed to set range of TPad " << index << "!\n"; }
 				}
 				else{ 
 					if(xmax <= xmin && ymax <= ymin){
-						std::cout << message_head << "Invalid range for x-axis [" << xmin << ", " << xmax;
+						std::cout << msgHeader << "Invalid range for x-axis [" << xmin << ", " << xmax;
 						std::cout << "] and y-axis [" << ymin << ", " << ymax << "]\n"; 
 					}
-					else if(xmax <= xmin){ std::cout << message_head << "Invalid range for x-axis [" << xmin << ", " << xmax << "]\n"; }
-					else{ std::cout << message_head << "Invalid range for y-axis [" << ymin << ", " << ymax << "]\n"; }
+					else if(xmax <= xmin){ std::cout << msgHeader << "Invalid range for x-axis [" << xmin << ", " << xmax << "]\n"; }
+					else{ std::cout << msgHeader << "Invalid range for y-axis [" << ymin << ", " << ymax << "]\n"; }
 				}
 			}
 			else{
-				std::cout << message_head << "Invalid number of parameters to 'range'\n";
-				std::cout << message_head << " -SYNTAX- range [index] [xmin] [xmax] [ymin] [ymax]\n";
+				std::cout << msgHeader << "Invalid number of parameters to 'range'\n";
+				std::cout << msgHeader << " -SYNTAX- range [index] [xmin] [xmax] [ymin] [ymax]\n";
 			}
 		}
 		else{ return false; }
@@ -542,27 +567,21 @@ bool Scanner::CommandControl(std::string cmd_, const std::vector<std::string> &a
 	return true;
 }
 
-/// Print a status message.	
-void Scanner::PrintStatus(std::string prefix_){ 
-}
-
 int main(int argc, char *argv[]){
 	// Define a new unpacker object.
-	Unpacker *scanner = (Unpacker*)(new Scanner());
+	ScanInterface *scanner = (ScanInterface*)(new simpleScanner());
 	
-	// Setup the ScanMain object and link it to the unpacker object.
-	ScanMain scan_main(scanner);
-
-	// Link the unpacker object back to the ScanMain object so we may
-	// access its command line arguments and options.
-	scanner->SetScanMain(&scan_main);
+	// Set the output message prefix.
+	scanner->SetProgramName(std::string(PROG_NAME));	
 	
 	// Initialize the scanner.
-	scan_main.Initialize(argc, argv);
-
-	// Set the output message prefix.
-	scan_main.SetMessageHeader("Scanner: ");
+	scanner->Setup(argc, argv);
 
 	// Run the main loop.
-	return scan_main.Execute();
+	int retval = scanner->Execute();
+	
+	// Cleanup.
+	delete scanner;
+
+	return retval;
 }

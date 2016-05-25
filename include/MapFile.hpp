@@ -6,7 +6,7 @@
 
 double absdiff(const double &v1, const double &v2);
 
-class PixieEvent;
+class XiaEvent;
 
 class MapEntry{
   public:
@@ -69,7 +69,7 @@ class MapFile{
 
 	MapEntry *GetMapEntry(int mod_, int chan_);
 	
-	MapEntry *GetMapEntry(PixieEvent *event_);
+	MapEntry *GetMapEntry(XiaEvent *event_);
 	
 	std::vector<MapEntry> *GetTypes(){ return &types; }
 	

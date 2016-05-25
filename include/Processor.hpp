@@ -4,7 +4,7 @@
 #include <string>
 #include <deque>
 
-#include "PixieEvent.hpp"
+#include "XiaEvent.hpp"
 
 #include "TF1.h"
 #include "TFitResultPtr.h"
@@ -27,13 +27,13 @@ extern Trace dummyTrace;
 
 class ChannelEventPair{
   public:
-  	PixieEvent *pixieEvent;
+  	XiaEvent *pixieEvent;
   	ChannelEvent *channelEvent;
 	MapEntry *entry;
   
 	ChannelEventPair();
 	
-	ChannelEventPair(PixieEvent *p_event_, ChannelEvent *c_event_, MapEntry *entry_);
+	ChannelEventPair(XiaEvent *p_event_, ChannelEvent *c_event_, MapEntry *entry_);
 	
 	~ChannelEventPair();
 	

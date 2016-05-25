@@ -8,7 +8,7 @@ class ConfigFile{
 	void parse_string(const std::string &input_, std::string &name, std::string &value);
 
   public:
-	float event_width;
+	float eventWidth;
   
 	ConfigFile();
 	

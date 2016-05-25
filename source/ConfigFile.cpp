@@ -19,12 +19,12 @@ void ConfigFile::parse_string(const std::string &input_, std::string &name, std:
 }
 
 ConfigFile::ConfigFile(){ 
-	event_width = 0.5; // Default value of 500 ns
+	eventWidth = 0.5; // Default value of 500 ns
 	init = false;	
 }
 
 ConfigFile::ConfigFile(const char *filename_){ 
-	event_width = 0.5; // Default value of 500 ns
+	eventWidth = 0.5; // Default value of 500 ns
 	Load(filename_); 
 }
 
@@ -65,7 +65,7 @@ bool ConfigFile::Load(const char *filename_){
 			values[current_value] += line[index];
 		}
 		
-		if(values[0] == "EVENT_WIDTH"){ event_width = atof(values[1].c_str()); }
+		if(values[0] == "eventWidth"){ eventWidth = atof(values[1].c_str()); }
 	}
 	
 	return true;

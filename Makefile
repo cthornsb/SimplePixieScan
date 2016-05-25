@@ -8,8 +8,8 @@ PIXIE_SUITE_LIB_DIR = $(PIXIE_SUITE_DIR)/exec/lib
 
 #####################################################################
 
-#CFLAGS = -g -Wall -std=c++0x `root-config --cflags`
-CFLAGS = -Wall -O3 -std=c++0x `root-config --cflags`
+CFLAGS = -g -Wall -std=c++0x `root-config --cflags`
+#CFLAGS = -Wall -O3 -std=c++0x `root-config --cflags`
 LDLIBS = -lstdc++ -L$(PIXIE_SUITE_LIB_DIR) -lPixieScan `root-config --libs`
 LDFLAGS = `root-config --glibs`
 

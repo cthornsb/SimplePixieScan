@@ -29,8 +29,8 @@ bool LiquidBarProcessor::HandleEvents(){
 	std::deque<ChannelEventPair*>::iterator iter_L = events.begin();
 	std::deque<ChannelEventPair*>::iterator iter_R = events.begin()+1;
 
-	PixieEvent *current_event_L;
-	PixieEvent *current_event_R;
+	XiaEvent *current_event_L;
+	XiaEvent *current_event_R;
 
 	ChannelEvent *channel_event_L;
 	ChannelEvent *channel_event_R;
