@@ -31,7 +31,7 @@
 void simpleUnpacker::ProcessRawEvent(ScanInterface *addr_/*=NULL*/){
 	if(!addr_){ return; }
 	
-	XiaEvent *current_event = NULL;
+	XiaData *current_event = NULL;
 	
 	// Fill the processor event deques with events
 	while(!rawEvent.empty()){
@@ -112,8 +112,6 @@ simpleScanner::~simpleScanner(){
 		delete root_file;
 		delete online;
 	}
-
-	GetCore()->Close(); // Close the Unpacker object.
 }
 
 /** ExtraCommands is used to send command strings to classes derived
@@ -539,12 +537,12 @@ Unpacker *simpleScanner::GetCore(){
 }
 
 /** Add a channel event to the deque of events to send to the processors.
-  * This method should only be called from simpleUnpacker::ProcessRawEvent().
-  * \param[in]  event_ The raw XiaEvent to add to the channel event deque.
-  * \return Nothing.
+  * This method should only be called from Unpacker::ProcessRawEvent().
+  * \param[in]  event_ The raw XiaData to add.
+  * \return True if the event is added to the processor handler, and false otherwise.
   */
-void simpleScanner::AddEvent(XiaEvent *event_){
-	if(!event_){ return; }
+bool simpleScanner::AddEvent(XiaData *event_){
+	if(!event_){ return false; }
 
 	// Link the channel event to its corresponding map entry.
 	ChannelEventPair *pair_ = new ChannelEventPair(event_, new ChannelEvent(event_), mapfile->GetMapEntry(event_));
@@ -563,7 +561,7 @@ void simpleScanner::AddEvent(XiaEvent *event_){
 	// Pass this event to the correct processor
 	if(pair_->entry->type == "ignore" || !handler->AddEvent(pair_)){ // Invalid detector type. Delete it
 		delete pair_;
-		return;
+		return false;
 	}
 
 	// This channel is a start signal. Due to the way ScanList
@@ -572,13 +570,17 @@ void simpleScanner::AddEvent(XiaEvent *event_){
 	if(pair_->entry->tag == "start"){ 
 		handler->AddStart(pair_);
 	}
+	
+	return true;
 }
 
 /** Process all channel events read in from the rawEvent.
-  * This method should only be called from simpleUnpacker::ProcessRawEvent().
-  * \return Nothing.
+  * This method should only be called from Unpacker::ProcessRawEvent().
+  * \return True if at least one valid signal was found, and false otherwise.
   */
-void simpleScanner::ProcessEvents(){
+bool simpleScanner::ProcessEvents(){
+	bool retval = true;
+
 	// Call each processor to do the processing. Each
 	// processor will remove the channel events when finished.
 	if(handler->Process()){ // This event had at least one valid signal
@@ -588,6 +590,7 @@ void simpleScanner::ProcessEvents(){
 		// Fill the ADC trace tree with raw traces.		
 		if(write_traces){ trace_tree->Fill(); }
 	}
+	else{ retval = false; }
 	
 	// Zero all of the processors.
 	handler->ZeroAll();
@@ -600,6 +603,8 @@ void simpleScanner::ProcessEvents(){
 		}
 		else{ events_since_last_update++; }
 	}
+	
+	return retval;
 }
 
 int main(int argc, char *argv[]){

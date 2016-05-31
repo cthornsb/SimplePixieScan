@@ -42,7 +42,7 @@ class simpleUnpacker : public Unpacker {
 	  * \param[in]  addr_  Pointer to a ScanInterface object.
 	  * \return Nothing.
 	  */
-	virtual void RawStats(XiaEvent *event_, ScanInterface *addr_=NULL){  }
+	virtual void RawStats(XiaData *event_, ScanInterface *addr_=NULL){  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -137,17 +137,17 @@ class simpleScanner : public ScanInterface {
 	virtual Unpacker *GetCore();
 
 	/** Add a channel event to the deque of events to send to the processors.
-	  * This method should only be called from simpleUnpacker::ProcessRawEvent().
-	  * \param[in]  event_ The raw XiaEvent to add to the channel event deque.
-	  * \return Nothing.
+	  * This method should only be called from Unpacker::ProcessRawEvent().
+	  * \param[in]  event_ The raw XiaData to add.
+	  * \return True if the event is added to the processor handler, and false otherwise.
 	  */
-	virtual void AddEvent(XiaEvent *event_);
+	virtual bool AddEvent(XiaData *event_);
 	
 	/** Process all channel events read in from the rawEvent.
-	  * This method should only be called from simpleUnpacker::ProcessRawEvent().
-	  * \return Nothing.
+	  * This method should only be called from Unpacker::ProcessRawEvent().
+	  * \return True if at least one valid signal was found, and false otherwise.
 	  */
-	virtual void ProcessEvents();
+	virtual bool ProcessEvents();
 
   private:
 	MapFile *mapfile; /// Pointer to the map file to use for channel mapping.

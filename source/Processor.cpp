@@ -18,14 +18,14 @@ ChannelEventPair::ChannelEventPair(){
 	entry = NULL;
 }
 
-ChannelEventPair::ChannelEventPair(XiaEvent *pix_event_, ChannelEvent *chan_event_, MapEntry *entry_){
+ChannelEventPair::ChannelEventPair(XiaData *pix_event_, ChannelEvent *chan_event_, MapEntry *entry_){
 	pixieEvent = pix_event_;
 	channelEvent = chan_event_;
 	entry = entry_;
 }
 
 ChannelEventPair::~ChannelEventPair(){
-	if(channelEvent){ delete channelEvent; } // Deleting the ChannelEvent will also delete the underlying XiaEvent.
+	if(channelEvent){ delete channelEvent; } // Deleting the ChannelEvent will also delete the underlying XiaData.
 }
 
 // 1D function to use for pulse fitting
@@ -254,7 +254,7 @@ void Processor::PreProcess(){
 	// Start the timer.
 	StartProcess(); 
 	
-	XiaEvent *current_event;
+	XiaData *current_event;
 	ChannelEvent *channel_event;
 
 	// Iterate over the list of channel events.
