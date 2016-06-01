@@ -498,41 +498,9 @@ void simpleScanner::FinalInitialization(){
 	// Add file header information to the output root file.
 	root_file->mkdir("head");
 	
-	// Add all map entries to the output root file.
-	const int num_mod = mapfile->GetMaxModules();
-	const int num_chan = mapfile->GetMaxChannels();
-	MapEntry *entryptr;
-
-	std::string dir_names[num_mod];
-	std::string chan_names[num_chan];
-	for(int i = 0; i < num_mod; i++){
-		std::stringstream stream;
-		if(i < 10){ stream << "0" << i; }
-		else{ stream << i; }
-		dir_names[i] = "map/mod" + stream.str();
-	}
-	for(int i = 0; i < num_chan; i++){
-		std::stringstream stream;
-		if(i < 10){ stream << "0" << i; }
-		else{ stream << i; }
-		chan_names[i] = "chan" + stream.str();
-	}
-
-	root_file->mkdir("map");
-	for(int i = 0; i < num_mod; i++){
-		bool first_good_channel = true;
-		for(int j = 0; j < num_chan; j++){
-			entryptr = mapfile->GetMapEntry(i, j);
-			if(entryptr->type == "ignore"){ continue; }
-			if(first_good_channel){
-				root_file->mkdir(dir_names[i].c_str());
-				root_file->cd(dir_names[i].c_str());
-				first_good_channel = false;			
-			}
-			TNamed named(chan_names[j].c_str(), (entryptr->type+":"+entryptr->subtype+":"+entryptr->tag).c_str());
-			named.Write();
-		}
-	}
+	// Add map and config file entries to the file.	
+	mapfile->Write(root_file);
+	configfile->Write(root_file);
 }
 
 /** Receive various status notifications from the scan.

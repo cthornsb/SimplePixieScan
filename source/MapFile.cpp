@@ -1,6 +1,9 @@
 #include <fstream>
 #include <sstream>
 
+#include "TFile.h"
+#include "TNamed.h"
+
 #include "XiaData.hpp"
 
 #include "MapFile.hpp"
@@ -341,4 +344,47 @@ void MapFile::PrintAllTypes(){
 		if(iter->type == "ignore"){ continue; }
 		std::cout << " " << iter->print() << std::endl;
 	}
+}
+
+bool MapFile::Write(TFile *f_){
+	if(!f_ || !f_->IsOpen())
+		return false;
+		
+	// Add all map entries to the output root file.
+	const int num_mod = GetMaxModules();
+	const int num_chan = GetMaxChannels();
+	MapEntry *entryptr;
+
+	std::string dir_names[num_mod];
+	std::string chan_names[num_chan];
+	for(int i = 0; i < num_mod; i++){
+		std::stringstream stream;
+		if(i < 10){ stream << "0" << i; }
+		else{ stream << i; }
+		dir_names[i] = "map/mod" + stream.str();
+	}
+	for(int i = 0; i < num_chan; i++){
+		std::stringstream stream;
+		if(i < 10){ stream << "0" << i; }
+		else{ stream << i; }
+		chan_names[i] = "chan" + stream.str();
+	}
+
+	f_->mkdir("map");
+	for(int i = 0; i < num_mod; i++){
+		bool first_good_channel = true;
+		for(int j = 0; j < num_chan; j++){
+			entryptr = GetMapEntry(i, j);
+			if(entryptr->type == "ignore"){ continue; }
+			if(first_good_channel){
+				f_->mkdir(dir_names[i].c_str());
+				f_->cd(dir_names[i].c_str());
+				first_good_channel = false;			
+			}
+			TNamed named(chan_names[j].c_str(), (entryptr->type+":"+entryptr->subtype+":"+entryptr->tag).c_str());
+			named.Write();
+		}
+	}
+	
+	return true;
 }

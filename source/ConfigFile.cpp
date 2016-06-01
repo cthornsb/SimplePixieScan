@@ -1,22 +1,11 @@
 #include <fstream>
+#include <sstream>
 #include <iostream>
 
-#include "ConfigFile.hpp"
+#include "TFile.h"
+#include "TNamed.h"
 
-void ConfigFile::parse_string(const std::string &input_, std::string &name, std::string &value){
-	bool left_side = true;
-	name = ""; value = "";
-	for(size_t index = 0; index < input_.size(); index++){
-		if(left_side){
-			if(input_[index] == ':'){ 
-				left_side = false; 
-				continue;
-			}
-			name += input_[index];
-		}
-		else{ value += input_[index]; }
-	}
-}
+#include "ConfigFile.hpp"
 
 ConfigFile::ConfigFile(){ 
 	eventWidth = 0.5; // Default value of 500 ns
@@ -67,6 +56,21 @@ bool ConfigFile::Load(const char *filename_){
 		
 		if(values[0] == "eventWidth"){ eventWidth = atof(values[1].c_str()); }
 	}
+	
+	return true;
+}
+
+bool ConfigFile::Write(TFile *f_){
+	if(!f_ || !f_->IsOpen())
+		return false;
+
+	f_->mkdir("config");
+	f_->cd("config");
+
+	std::stringstream stream;
+	stream << eventWidth << " us";
+	TNamed named("eventWidth", stream.str().c_str());
+	named.Write();
 	
 	return true;
 }

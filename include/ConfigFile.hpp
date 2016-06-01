@@ -1,6 +1,8 @@
 #ifndef CONFIGFILE_HPP
 #define CONFIGFILE_HPP
 
+class TFile;
+
 class ConfigFile{
   private:
 	bool init;
@@ -17,6 +19,8 @@ class ConfigFile{
 	bool IsInit(){ return init; }
 	
 	bool Load(const char *filename_);
+	
+	bool Write(TFile *f_);
 };
 
 #endif

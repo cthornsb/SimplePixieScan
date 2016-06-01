@@ -7,6 +7,7 @@
 double absdiff(const double &v1, const double &v2);
 
 class XiaData;
+class TFile;
 
 class MapEntry{
   public:
@@ -94,6 +95,8 @@ class MapFile{
 	void PrintAllEntries();
 	
 	void PrintAllTypes();
+	
+	bool Write(TFile *f_);
 };
 
 #endif
