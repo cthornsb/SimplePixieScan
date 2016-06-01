@@ -24,13 +24,30 @@
 // class simpleUnpacker
 ///////////////////////////////////////////////////////////////////////////////
 
+/// Default constructor.
+simpleUnpacker::simpleUnpacker() : Unpacker() {  
+	raw_event_mult = 0;
+	raw_event_start = 0;
+	raw_event_stop = 0;
+	raw_event_btwn = 0;
+	stat_tree = NULL;
+}
+
 /** Process all events in the event list.
   * \param[in]  addr_ Pointer to a location in memory. 
   * \return Nothing.
   */
 void simpleUnpacker::ProcessRawEvent(ScanInterface *addr_/*=NULL*/){
-	if(!addr_){ return; }
+	if(!addr_ || rawEvent.empty()){ return; }
 	
+	// Low-level raw event statistics information.
+	raw_event_mult = (int)rawEvent.size();
+	raw_event_start = GetRealStartTime();
+	if(raw_event_stop != 0) // Get the time since the end of the last raw event.
+		raw_event_btwn = raw_event_start - raw_event_stop;
+	raw_event_stop = GetRealStopTime();
+	stat_tree->Fill();
+
 	XiaData *current_event = NULL;
 	
 	// Fill the processor event deques with events
@@ -47,6 +64,22 @@ void simpleUnpacker::ProcessRawEvent(ScanInterface *addr_/*=NULL*/){
 	
 	// Finish up with this raw event.
 	addr_->ProcessEvents();
+}
+
+/** Initialize the raw event statistics tree.
+  * \return Pointer to the TTree.
+  */
+TTree *simpleUnpacker::InitTree(){
+	// Setup the stats tree for data output.
+	stat_tree = new TTree("stats", "Low-level statistics tree");
+
+	// Add branches to the stats tree.
+	stat_tree->Branch("mult", &raw_event_mult);
+	stat_tree->Branch("start", &raw_event_start);
+	stat_tree->Branch("stop", &raw_event_stop);
+	stat_tree->Branch("Tbtwn", &raw_event_btwn);
+	
+	return stat_tree;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -93,6 +126,9 @@ simpleScanner::~simpleScanner(){
 				std::cout << msgHeader << "Writing " << trace_tree->GetEntries() << " raw ADC traces to root file.\n";
 				trace_tree->Write();
 			}
+			
+			std::cout << msgHeader << "Writing " << stat_tree->GetEntries() << " raw event stats entries to root file.\n";
+			stat_tree->Write();
 			
 			// Write debug histograms.
 			chanCounts->GetHist()->Write();
@@ -433,11 +469,14 @@ bool simpleScanner::Initialize(std::string prefix_){
 	// Setup the raw data tree for output.
 	raw_tree = new TTree("raw", "Raw pixie data");
 	
-	// Add branches to the raw data tree.
-	raw_tree->Branch("mod", &raw_event_module);
-	raw_tree->Branch("chan", &raw_event_channel);
-	raw_tree->Branch("energy", &raw_event_energy);
-	raw_tree->Branch("time", &raw_event_time);
+	// Add branches to the xia data tree.
+	raw_tree->Branch("mod", &xia_data_module);
+	raw_tree->Branch("chan", &xia_data_channel);
+	raw_tree->Branch("energy", &xia_data_energy);
+	raw_tree->Branch("time", &xia_data_time);
+
+	// Initialize the unpacker tree.
+	stat_tree = ((simpleUnpacker*)GetCore())->InitTree();
 
 	// Add branches to the output tree.
 	handler->InitRootOutput(root_tree);
@@ -552,10 +591,10 @@ bool simpleScanner::AddEvent(XiaData *event_){
 	chanEnergy->Fill(event_->energy, event_->modNum*16+event_->chanNum);
 
 	// Raw event information. Dump raw event information to root file.
-	raw_event_module = event_->modNum;
-	raw_event_channel = event_->chanNum;
-	raw_event_energy = event_->energy;
-	raw_event_time = event_->time*8E-9;
+	xia_data_module = event_->modNum;
+	xia_data_channel = event_->chanNum;
+	xia_data_energy = event_->energy;
+	xia_data_time = event_->time*8E-9;
 	raw_tree->Fill();
 	
 	// Pass this event to the correct processor

@@ -25,12 +25,26 @@ class TTree;
 class simpleUnpacker : public Unpacker {
   public:
   	/// Default constructor.
-	simpleUnpacker() : Unpacker() {  }
+	simpleUnpacker();
 	
 	/// Destructor.
 	~simpleUnpacker(){  }
 	
+	TTree *GetTree(){ return stat_tree; }
+
+	/** Initialize the raw event statistics tree.
+	  * \return Pointer to the TTree.
+	  */
+	TTree *InitTree();
+	
   private:
+	int raw_event_mult; /// The multiplicity of the current raw event.
+	double raw_event_start; /// The start time of the current raw event.
+	double raw_event_stop; /// The stop time of the current raw event.
+	double raw_event_btwn; /// The time since the previous raw event ended.
+
+	TTree *stat_tree; /// Output TTree for storing low-level statistics.
+
 	/** Process all events in the event list.
 	  * \param[in]  addr_ Pointer to a ScanInterface object.
 	  * \return Nothing.
@@ -159,6 +173,7 @@ class simpleScanner : public ScanInterface {
 	TTree *root_tree; /// Output TTree for storing processed data.
 	TTree *trace_tree; /// Output TTree for storing raw ADC traces.
 	TTree *raw_tree; /// Output TTree for storing raw pixie data.
+	TTree *stat_tree; /// Output TTree for storing low-level statistics.
 	
 	Plotter *chanCounts; /// 2d root histogram to store number of total channel counts found.
 	Plotter *chanEnergy; /// 2d root histogram to store the energy spectra from all channels.
@@ -168,10 +183,10 @@ class simpleScanner : public ScanInterface {
 	
 	int loaded_files; /// The number of files which have been processed.
 	
-	int raw_event_module; /// Module ID from the channel event.
-	int raw_event_channel; /// Channel ID from the channel event.
-	double raw_event_energy; /// Raw pixie energy taken directly from the module (a.u.).
-	double raw_event_time; /// Raw pixie time taken directly from the module and converted to seconds.
+	int xia_data_module; /// Module ID from the channel event.
+	int xia_data_channel; /// Channel ID from the channel event.
+	double xia_data_energy; /// Raw pixie energy taken directly from the module (a.u.).
+	double xia_data_time; /// Raw pixie time taken directly from the module and converted to seconds.
 	
 	bool force_overwrite; /// Set to true if existing output files will be overwritten.
 	bool online_mode; /// Set to true if online mode is to be used.
