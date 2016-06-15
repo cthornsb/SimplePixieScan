@@ -347,10 +347,10 @@ bool simpleScanner::ExtraArguments(const std::string &arg_, std::deque<std::stri
 /** CmdHelp is used to allow a derived class to print a help statement about
   * its own commands. This method is called whenever the user enters 'help'
   * or 'h' into the interactive terminal (if available).
-  * \param[in]  prefix_ String to append at the start of any output.
+  * \param[in]  prefix_ String to append at the start of any output. Not used by default.
   * \return Nothing.
   */
-void simpleScanner::CmdHelp(){
+void simpleScanner::CmdHelp(const std::string &prefix_/*=""*/){
 	if(online_mode){
 		std::cout << "   refresh <update>           - Set refresh frequency of online diagnostic plots (default=5000).\n";
 		std::cout << "   list                       - List all plottable online histograms.\n";

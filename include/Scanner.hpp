@@ -93,10 +93,10 @@ class simpleScanner : public ScanInterface {
 	/** CmdHelp is used to allow a derived class to print a help statement about
 	  * its own commands. This method is called whenever the user enters 'help'
 	  * or 'h' into the interactive terminal (if available).
-	  * \param[in]  prefix_ String to append at the start of any output.
+	  * \param[in]  prefix_ String to append at the start of any output. Not used by default.
 	  * \return Nothing.
 	  */
-	virtual void CmdHelp();
+	virtual void CmdHelp(const std::string &prefix_="");
 	
 	/** ArgHelp is used to allow a derived class to print a help statment about
 	  * its own command line arguments. This method is called at the end of
