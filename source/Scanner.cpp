@@ -14,6 +14,8 @@
 #include "TTree.h"
 #include "TH1.h"
 #include "TNamed.h"
+#include "TSystem.h"
+#include "TApplication.h"
 
 // Define the name of the program.
 #if not defined(PROG_NAME)
@@ -615,6 +617,9 @@ bool simpleScanner::ProcessEvents(){
 }
 
 int main(int argc, char *argv[]){
+	// Initialize root graphics
+	TApplication *rootapp = new TApplication("rootapp", 0, NULL);
+
 	// Define a new unpacker object.
 	simpleScanner scanner;
 	

@@ -7,8 +7,6 @@
 #include "TH1.h"
 #include "TFile.h"
 #include "TCanvas.h"
-#include "TSystem.h"
-#include "TApplication.h"
 
 TPad *OnlineProcessor::cd(const unsigned int &index_){
 	if(!display_mode || index_ >= num_hists){ return NULL; }
@@ -35,8 +33,8 @@ Plotter* OnlineProcessor::GetPlot(const unsigned int &index_){
 }
 
 /// Activate display of histograms to TCanvas.
-void OnlineProcessor::SetDisplayMode(const unsigned int &cols_/*=2*/, const unsigned int &rows_/*=2*/){
-	if(display_mode){ return; }
+bool OnlineProcessor::SetDisplayMode(const unsigned int &cols_/*=2*/, const unsigned int &rows_/*=2*/){
+	if(display_mode){ return false; }
 
 	num_hists = cols_*rows_;
 	canvas_cols = cols_;
@@ -50,12 +48,10 @@ void OnlineProcessor::SetDisplayMode(const unsigned int &cols_/*=2*/, const unsi
 		which_hists[i] = -1;
 	}
 	
-	// Variables for root graphics
-	rootapp = new TApplication("rootapp", 0, NULL);
-	gSystem->Load("libTree");
-
 	// Setup the root canvas for plotting.
 	can = new TCanvas("scanner_c1", "Scanner Canvas");
+	
+	return (display_mode=true);
 }
 
 bool OnlineProcessor::ChangeHist(const unsigned int &index_, const unsigned int &hist_id_){

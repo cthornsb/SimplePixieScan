@@ -11,7 +11,6 @@ class TCanvas;
 class TPad;
 class TH1;
 class TFile;
-class TApplication;
 
 class OnlineProcessor{
   private:
@@ -28,8 +27,6 @@ class OnlineProcessor{
 	TCanvas *can; /// Root canvas for plotting online data.
 	TPad *pad; /// Pointer to the current TPad for drawing.
 	Plotter *plot; /// Pointer to the current plotter object.
-	
-	TApplication *rootapp; /// Root application for handling graphics.
 	
 	TPad *cd(const unsigned int &index_);
 
@@ -49,7 +46,7 @@ class OnlineProcessor{
 	bool DisplayMode(){ return display_mode; }
 	
 	/// Activate display of histograms to TCanvas.
-	void SetDisplayMode(const unsigned int &cols_=2, const unsigned int &rows_=2);
+	bool SetDisplayMode(const unsigned int &cols_=2, const unsigned int &rows_=2);
 	
 	/// Change the histogram id of one of the canvas pads.
 	bool ChangeHist(const unsigned int &index_, const unsigned int &hist_id_);
