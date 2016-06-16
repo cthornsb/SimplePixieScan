@@ -11,16 +11,80 @@
 
 // Root libraries
 #include "TFile.h"
-#include "TTree.h"
 #include "TH1.h"
 #include "TNamed.h"
-#include "TSystem.h"
+#include "TCanvas.h"
 #include "TApplication.h"
 
 // Define the name of the program.
 #if not defined(PROG_NAME)
 #define PROG_NAME "Scanner"
 #endif
+
+/** Open a TCanvas if this tree has not already done so.
+  * \return Pointer to an open TCanvas.
+  */
+TCanvas *extTree::OpenCanvas(){
+	if(!canvas){
+		std::string canvasName = std::string(this->GetName())+"_c1";
+		std::string canvasTitle = std::string(this->GetName()) + " canvas";
+		canvas = new TCanvas(canvasName.c_str(), canvasTitle.c_str());
+	}
+	
+	return canvas;
+}
+
+/** Named constructor.
+  *	\param[in]  name_ Name of the underlying TTree.
+  * \param[in]  title_ Title of the underlying TTree.
+  */
+extTree::extTree(const char *name_, const char *title_) : TTree(name_, title_){
+	expr = "";
+	gate = "";
+	opt = "";
+	doDraw = false;
+	canvas = NULL;
+}
+
+/// Destructor.
+extTree::~extTree(){
+	if(canvas){
+		canvas->Close();
+		delete canvas;
+	}
+}
+
+/** Safely draw from the underlying TTree using TTree::Draw(). Must preceed calls to SafeDraw().
+  * \param[in]  expr_ Root TFormula expression to draw from the TTree.
+  * \param[in]  gate_ Root selection string to use for plotting.
+  * \param[in]  opt_ Root drawing option.
+  * \return True if the tree is ready to draw and false if the tree is already waiting to draw.
+  */
+bool extTree::SafeDraw(const std::string &expr_, const std::string &gate_/*=""*/, const std::string &opt_/*=""*/){
+	if(doDraw){ return false; }
+	
+	expr = expr_;
+	gate = gate_;
+	opt = opt_;
+	
+	return (doDraw = true);
+}
+
+/** Safely fill the tree and draw a histogram using TTree::Draw() if required.
+  * \return The return value from TTree::Draw().
+  */
+int extTree::SafeFill(){
+	int retval = this->Fill();
+
+	if(doDraw){
+		OpenCanvas()->cd();
+		std::cout << " draw: " << this->Draw(expr.c_str(), gate.c_str(), opt.c_str()) << std::endl;
+		canvas->Update();
+		doDraw = false;
+	}
+
+	return retval;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // class simpleUnpacker
@@ -48,7 +112,7 @@ void simpleUnpacker::ProcessRawEvent(ScanInterface *addr_/*=NULL*/){
 	if(raw_event_stop != 0) // Get the time since the end of the last raw event.
 		raw_event_btwn = raw_event_start - raw_event_stop;
 	raw_event_stop = GetRealStopTime();
-	stat_tree->Fill();
+	stat_tree->SafeFill();
 
 	XiaData *current_event = NULL;
 	
@@ -71,9 +135,9 @@ void simpleUnpacker::ProcessRawEvent(ScanInterface *addr_/*=NULL*/){
 /** Initialize the raw event statistics tree.
   * \return Pointer to the TTree.
   */
-TTree *simpleUnpacker::InitTree(){
+extTree *simpleUnpacker::InitTree(){
 	// Setup the stats tree for data output.
-	stat_tree = new TTree("stats", "Low-level statistics tree");
+	stat_tree = new extTree("stats", "Low-level statistics tree");
 
 	// Add branches to the stats tree.
 	stat_tree->Branch("mult", &raw_event_mult);
@@ -302,6 +366,26 @@ bool simpleScanner::ExtraCommands(const std::string &cmd_, std::vector<std::stri
 				std::cout << msgHeader << " -SYNTAX- range [index] [xmin] [xmax] [ymin] [ymax]\n";
 			}
 		}
+		else if(cmd_ == "draw"){
+			if(args_.size() >= 2){
+				std::string gateStr = (args_.size() >= 3)?args_.at(2):"";
+				std::string optStr = (args_.size() >= 4)?args_.at(3):"";
+				if(args_.at(0) == "data")
+					root_tree->SafeDraw(args_.at(1), gateStr, optStr);
+				else if(args_.at(0) == "raw")
+					raw_tree->SafeDraw(args_.at(1), gateStr, optStr);
+				else if(args_.at(0) == "stats")
+					stat_tree->SafeDraw(args_.at(1), gateStr, optStr);
+				else{
+					std::cout << msgHeader << "Invalid TTree specification!\n";
+					std::cout << msgHeader << " Available trees include 'data', 'raw', and 'stats'.\n";
+				}
+			}
+			else{
+				std::cout << msgHeader << "Invalid number of parameters to 'draw'\n";
+				std::cout << msgHeader << " -SYNTAX- draw <tree> <expr> [gate] [opt]\n";
+			}
+		}
 		else{ return false; }
 	}
 	else{ return false; }
@@ -362,6 +446,7 @@ void simpleScanner::CmdHelp(const std::string &prefix_/*=""*/){
 		std::cout << "   yrange <index> <min> <max> - Set the y-axis range of a histogram displayed on the canvas.\n";
 		std::cout << "   unzoom <index> [axis]      - Unzoom the x-axis, the y-axis, or both.\n";
 		std::cout << "   range <index> <xmin> <xmax> <ymin> <ymax> - Set the range of the x and y axes.\n";
+		std::cout << "   draw <tree> <expr> [gate] [opt]           - Draw a histogram using TTree::Draw().\n";
 	}
 }
 
@@ -466,10 +551,10 @@ bool simpleScanner::Initialize(std::string prefix_){
 	}
 
 	// Setup the root tree for data output.
-	root_tree = new TTree("data", "Pixie data");
+	root_tree = new extTree("data", "Pixie data");
 	
 	// Setup the raw data tree for output.
-	raw_tree = new TTree("raw", "Raw pixie data");
+	raw_tree = new extTree("raw", "Raw pixie data");
 	
 	// Add branches to the xia data tree.
 	raw_tree->Branch("mod", &xia_data_module);
@@ -486,7 +571,7 @@ bool simpleScanner::Initialize(std::string prefix_){
 	// Set processor options.
 	if(use_root_fitting){ handler->ToggleFitting(); }
 	if(write_traces){ 
-		trace_tree = new TTree("trace", "Raw pixie ADC traces");
+		trace_tree = new extTree("trace", "Raw pixie ADC traces");
 		handler->InitTraceOutput(trace_tree); 
 	}
 
@@ -565,7 +650,7 @@ bool simpleScanner::AddEvent(XiaData *event_){
 	xia_data_channel = event_->chanNum;
 	xia_data_energy = event_->energy;
 	xia_data_time = event_->time*8E-9;
-	raw_tree->Fill();
+	raw_tree->SafeFill();
 	
 	// Pass this event to the correct processor
 	if(pair_->entry->type == "ignore" || !handler->AddEvent(pair_)){ // Invalid detector type. Delete it
@@ -594,10 +679,10 @@ bool simpleScanner::ProcessEvents(){
 	// processor will remove the channel events when finished.
 	if(handler->Process()){ // This event had at least one valid signal
 		// Fill the root tree with processed data.
-		root_tree->Fill();
+		root_tree->SafeFill();
 
 		// Fill the ADC trace tree with raw traces.		
-		if(write_traces){ trace_tree->Fill(); }
+		if(write_traces){ trace_tree->SafeFill(); }
 	}
 	else{ retval = false; }
 	
@@ -619,6 +704,10 @@ bool simpleScanner::ProcessEvents(){
 int main(int argc, char *argv[]){
 	// Initialize root graphics
 	TApplication *rootapp = new TApplication("rootapp", 0, NULL);
+	
+	// This is done to keep the compiler from complaining about
+	// unused TApplication variable.
+	rootapp->SetBit(0, false);
 
 	// Define a new unpacker object.
 	simpleScanner scanner;
@@ -633,6 +722,6 @@ int main(int argc, char *argv[]){
 	int retval = scanner.Execute();
 	
 	scanner.Close();
-	
+
 	return retval;
 }

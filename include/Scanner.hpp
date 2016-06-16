@@ -7,6 +7,9 @@
 #include "Unpacker.hpp"
 #include "ScanInterface.hpp"
 
+// Root libraries
+#include "TTree.h"
+
 #include "Structures.h"
 
 class MapFile;
@@ -16,7 +19,49 @@ class OnlineProcessor;
 class Plotter;
 
 class TFile;
-class TTree;
+class TCanvas;
+
+///////////////////////////////////////////////////////////////////////////////
+// class extTree
+///////////////////////////////////////////////////////////////////////////////
+
+class extTree : public TTree {
+  private:
+	bool doDraw; /// Set to true when the user has requested a histogram to be drawn.
+	std::string expr; /// User specified expression to draw using TTree::Draw().
+	std::string gate; /// User specified selection criteria string to use for drawing.
+	std::string opt; /// User specified root drawing option string.
+
+	TCanvas *canvas; /// Canvas for plotting histograms.
+
+	/** Open a TCanvas if this tree has not already done so.
+	  * \return Pointer to an open TCanvas.
+	  */
+	TCanvas *OpenCanvas();
+
+  public:
+	/** Named constructor.
+	  *	\param[in]  name_ Name of the underlying TTree.
+	  * \param[in]  title_ Title of the underlying TTree.
+	  */
+	extTree(const char *name_, const char *title_);
+
+	/// Destructor.
+	~extTree();
+	
+	/** Safely draw from the underlying TTree using TTree::Draw(). Must preceed calls to SafeDraw().
+	  * \param[in]  expr_ Root TFormula expression to draw from the TTree.
+	  * \param[in]  gate_ Root selection string to use for plotting.
+	  * \param[in]  opt_ Root drawing option.
+	  * \return True if the tree is ready to draw and false if the tree is already waiting to draw.
+	  */
+	bool SafeDraw(const std::string &expr_, const std::string &gate_="", const std::string &opt_="");
+	
+	/** Safely fill the tree and draw a histogram using TTree::Draw() if required.
+	  * \return The return value from TTree::Draw().
+	  */
+	int SafeFill();
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 // class simpleUnpacker
@@ -30,12 +75,12 @@ class simpleUnpacker : public Unpacker {
 	/// Destructor.
 	~simpleUnpacker(){  }
 	
-	TTree *GetTree(){ return stat_tree; }
+	extTree *GetTree(){ return stat_tree; }
 
 	/** Initialize the raw event statistics tree.
 	  * \return Pointer to the TTree.
 	  */
-	TTree *InitTree();
+	extTree *InitTree();
 	
   private:
 	int raw_event_mult; /// The multiplicity of the current raw event.
@@ -43,7 +88,7 @@ class simpleUnpacker : public Unpacker {
 	double raw_event_stop; /// The stop time of the current raw event.
 	double raw_event_btwn; /// The time since the previous raw event ended.
 
-	TTree *stat_tree; /// Output TTree for storing low-level statistics.
+	extTree *stat_tree; /// Output TTree for storing low-level statistics.
 
 	/** Process all events in the event list.
 	  * \param[in]  addr_ Pointer to a ScanInterface object.
@@ -170,10 +215,10 @@ class simpleScanner : public ScanInterface {
 	OnlineProcessor *online; /// Pointer to the online processor to use for online plotting.
 	
 	TFile *root_file; /// Output root file for storing data.
-	TTree *root_tree; /// Output TTree for storing processed data.
-	TTree *trace_tree; /// Output TTree for storing raw ADC traces.
-	TTree *raw_tree; /// Output TTree for storing raw pixie data.
-	TTree *stat_tree; /// Output TTree for storing low-level statistics.
+	extTree *root_tree; /// Output TTree for storing processed data.
+	extTree *trace_tree; /// Output TTree for storing raw ADC traces.
+	extTree *raw_tree; /// Output TTree for storing raw pixie data.
+	extTree *stat_tree; /// Output TTree for storing low-level statistics.
 	
 	Plotter *chanCounts; /// 2d root histogram to store number of total channel counts found.
 	Plotter *chanEnergy; /// 2d root histogram to store the energy spectra from all channels.
