@@ -272,7 +272,7 @@ void Processor::PreProcess(){
 		if(current_event->adcTrace.empty()){ continue; }
 
 		// Correct the baseline.
-		if(channel_event->CorrectBaseline() < 0){ continue; }
+		//if(channel_event->CorrectBaseline() < 0){ continue; }
 		
 		// Check for large SNR.
 		if(channel_event->stddev > 3.0){ continue; }

@@ -479,10 +479,10 @@ bool simpleScanner::Initialize(std::string prefix_){
 	if(init){ return false; }
 
 	// Setup a 2d histogram for tracking all channel counts.
-	chanCounts = new Plotter("chanCounts", "Recorded Counts for Module vs. Channel", "COLZ", "Channel", 16, 0, 16, "Module", 14, 0, 14);
+	chanCounts = new Plotter("chanCounts", "Recorded Counts for Module vs. Channel", "COLZ", "Channel", 16, 0, 16, "Module", 6, 0, 6);
 
 	// Setup a 2d histogram for tracking all channel counts.
-	chanEnergy = new Plotter("chanEnergy", "Channel vs. Energy", "COLZ", "Energy (a.u.)", 32768, 0, 32768, "Channel", 224, 0, 224);
+	chanEnergy = new Plotter("chanMaxADC", "Channel vs. Max ADC", "COLZ", "Max ADC Channel", 4096, 0, 4096, "Channel", 96, 0, 96);
 
 	// Initialize the online data processor.
 	online = new OnlineProcessor();
@@ -641,9 +641,13 @@ bool simpleScanner::AddEvent(XiaData *event_){
 	// Link the channel event to its corresponding map entry.
 	ChannelEventPair *pair_ = new ChannelEventPair(event_, new ChannelEvent(event_), mapfile->GetMapEntry(event_));
 
+	// Correct the baseline before using the trace.
+	pair_->channelEvent->CorrectBaseline();
+
 	// Fill the output histograms.
 	chanCounts->Fill(event_->chanNum, event_->modNum);
-	chanEnergy->Fill(event_->energy, event_->modNum*16+event_->chanNum);
+	chanEnergy->Fill(pair_->channelEvent->maximum, event_->modNum*16+event_->chanNum);
+	//chanEnergy->Fill(event_->energy, event_->modNum*16+event_->chanNum);
 
 	// Raw event information. Dump raw event information to root file.
 	xia_data_module = event_->modNum;
