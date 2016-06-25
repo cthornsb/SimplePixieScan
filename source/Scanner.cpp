@@ -386,6 +386,17 @@ bool simpleScanner::ExtraCommands(const std::string &cmd_, std::vector<std::stri
 				std::cout << msgHeader << " -SYNTAX- draw <tree> <expr> [gate] [opt]\n";
 			}
 		}
+		else if(cmd_ == "zero"){
+			if(args_.size() >= 1){
+				int index1 = atoi(args_.at(0).c_str());
+				if(online->Zero(index1)){ std::cout << msgHeader << "Zeroed histogram '" << args_.at(0) << "'.\n"; }
+				else{ std::cout << msgHeader << "Failed to zero histogram '" << args_.at(0) << "'!\n"; }
+			}
+			else{
+				std::cout << msgHeader << "Invalid number of parameters to 'zero'\n";
+				std::cout << msgHeader << " -SYNTAX- zero <hist>\n";
+			}
+		}
 		else{ return false; }
 	}
 	else{ return false; }
@@ -438,6 +449,7 @@ void simpleScanner::CmdHelp(const std::string &prefix_/*=""*/){
 	if(online_mode){
 		std::cout << "   refresh <update>           - Set refresh frequency of online diagnostic plots (default=5000).\n";
 		std::cout << "   list                       - List all plottable online histograms.\n";
+		std::cout << "   zero <hist>                - Zero a histogram.\n";
 		std::cout << "   set <index> <hist>         - Set the histogram to draw to part of the canvas.\n";
 		std::cout << "   xlog <index>               - Toggle the x-axis log/linear scale of a specified histogram.\n";
 		std::cout << "   ylog <index>               - Toggle the y-axis log/linear scale of a specified histogram.\n";

@@ -170,6 +170,16 @@ void OnlineProcessor::Refresh(){
 	can->Update();
 }
 
+/** Zero a diagnostic histogram.
+  *  param[in]  hist_id_ Histogram ID index.
+  *  return True if the histogram exists and false otherwise.
+  */
+bool OnlineProcessor::Zero(const unsigned int &hist_id_){
+	if(hist_id_ >= plottable_hists.size()){ return false; }
+	plottable_hists.at(hist_id_)->Zero();
+	return true;
+}
+
 /// Add a processor's histograms to the list of plottable items.
 void OnlineProcessor::AddHists(Processor *proc){
 	std::vector<Plotter*> processor_hists;

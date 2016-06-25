@@ -77,6 +77,12 @@ class OnlineProcessor{
 	
 	/// Refresh all online plots.
 	void Refresh();
+
+	/** Zero a diagnostic histogram.
+	  *  param[in]  hist_id_ Histogram ID index.
+	  *  return True if the histogram exists and false otherwise.
+	  */
+	bool Zero(const unsigned int &hist_id_);
 	
 	/// Add a processor's histograms to the list of plottable items.
 	void AddHists(Processor *proc_);
