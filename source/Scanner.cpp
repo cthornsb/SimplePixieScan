@@ -4,6 +4,7 @@
 #include "Scanner.hpp"
 #include "MapFile.hpp"
 #include "ConfigFile.hpp"
+#include "CalibFile.hpp"
 #include "Processor.hpp"
 #include "ProcessorHandler.hpp"
 #include "OnlineProcessor.hpp"
@@ -161,6 +162,7 @@ simpleScanner::simpleScanner() : ScanInterface() {
 	init = false;
 	mapfile = NULL;
 	configfile = NULL;
+	calibfile = NULL;
 	handler = NULL;
 	online = NULL;
 	output_filename = "out.root";
@@ -210,6 +212,7 @@ simpleScanner::~simpleScanner(){
 	
 		delete mapfile;
 		delete configfile;
+		delete calibfile;
 		delete handler;
 		delete root_file;
 		delete online;
@@ -523,11 +526,21 @@ bool simpleScanner::Initialize(std::string prefix_){
 	std::cout << prefix_ << "Reading config file ./setup/config.dat\n";
 	configfile = new ConfigFile("./setup/config.dat");
 	if(!configfile->IsInit()){ // Failed to read config file.
-		std::cout << prefix_ << "Failed to read configuration file './setup/configp.dat'.\n";
+		std::cout << prefix_ << "Failed to read configuration file './setup/config.dat'.\n";
 		delete mapfile;
 		delete configfile;
 		return false;
 	}
+	std::cout << prefix_ << "Reading calibration file ./setup/calib.dat\n";	
+	calibfile = new CalibFile("./setup/calib.dat");
+	if(!configfile->IsInit()){ // Failed to read config file.
+		std::cout << prefix_ << "Failed to read calibration file './setup/calib.dat'.\n";
+		delete mapfile;
+		delete configfile;
+		delete calibfile;
+		return false;
+	}
+	
 	GetCore()->SetEventWidth(configfile->eventWidth * 125); // = eventWidth * 1E-6(s/us) / 8E-9(s/tick)
 	std::cout << prefix_ << "Setting event width to " << configfile->eventWidth << " μs (" << GetCore()->GetEventWidth() << " pixie clock ticks).\n";
 	handler = new ProcessorHandler();
@@ -658,7 +671,7 @@ bool simpleScanner::AddEvent(XiaData *event_){
 
 	// Fill the output histograms.
 	chanCounts->Fill(event_->chanNum, event_->modNum);
-	chanEnergy->Fill(pair_->channelEvent->maximum, event_->modNum*16+event_->chanNum);
+	chanEnergy->Fill(calibfile->GetEnergy(event_->modNum*16+event_->chanNum, pair_->channelEvent->maximum), event_->modNum*16+event_->chanNum);
 	//chanEnergy->Fill(event_->energy, event_->modNum*16+event_->chanNum);
 
 	// Raw event information. Dump raw event information to root file.

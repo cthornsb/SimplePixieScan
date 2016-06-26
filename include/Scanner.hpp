@@ -14,6 +14,7 @@
 
 class MapFile;
 class ConfigFile;
+class CalibFile;
 class ProcessorHandler;
 class OnlineProcessor;
 class Plotter;
@@ -211,6 +212,7 @@ class simpleScanner : public ScanInterface {
   private:
 	MapFile *mapfile; /// Pointer to the map file to use for channel mapping.
 	ConfigFile *configfile; /// Pointer to the configuration file to use for setting default parameters.
+	CalibFile *calibfile; /// Pointer to the energy calibration file.
 	ProcessorHandler *handler; /// Pointer to the processor handler to use for controlling detector processors.
 	OnlineProcessor *online; /// Pointer to the online processor to use for online plotting.
 	
