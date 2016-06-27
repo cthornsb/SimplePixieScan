@@ -163,7 +163,7 @@ class simpleScanner : public ScanInterface {
 	  * (e.g. a root TCanvas) when working with a low data rate. 
 	  * \return Nothing.
 	  */
-	virtual void IdleTask(){  }
+	virtual void IdleTask();
 
 	/** Initialize the map file, the config file, the processor handler, 
 	  * and add all of the required processors.

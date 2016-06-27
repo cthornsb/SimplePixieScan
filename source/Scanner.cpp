@@ -15,6 +15,7 @@
 #include "TH1.h"
 #include "TNamed.h"
 #include "TCanvas.h"
+#include "TSystem.h"
 #include "TApplication.h"
 
 // Define the name of the program.
@@ -484,6 +485,16 @@ void simpleScanner::ArgHelp(){
   */
 void simpleScanner::SyntaxStr(char *name_){ 
 	std::cout << " usage: " << std::string(name_) << " [input] [options] [output]\n"; 
+}
+
+/** IdleTask is called whenever a scan is running in shared
+  * memory mode, and a spill has yet to be received. This method may
+  * be used to update things which need to be updated every so often
+  * (e.g. a root TCanvas) when working with a low data rate. 
+  * \return Nothing.
+  */
+void simpleScanner::IdleTask(){
+	gSystem->ProcessEvents();
 }
 
 /** Initialize the map file, the config file, the processor handler, 
