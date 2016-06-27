@@ -1,10 +1,10 @@
 #####################################################################
 
 # Set the PixieSuite core directory
-PIXIE_SUITE_DIR = $(HOME)/Research/PixieSuite
+PIXIE_SUITE_DIR = /opt/PixieSuite2/
 
 # This one will be set automatically.
-PIXIE_SUITE_LIB_DIR = $(PIXIE_SUITE_DIR)/exec/lib
+PIXIE_SUITE_LIB_DIR = $(PIXIE_SUITE_DIR)/lib
 
 #####################################################################
 
@@ -30,7 +30,7 @@ EXEC_DIR = $(TOP_LEVEL)/exec
 RCBUILD_DIR = $(TOP_LEVEL)/rcbuild
 
 # Core files
-SOURCES = Plotter.cpp ProcessorHandler.cpp OnlineProcessor.cpp Processor.cpp ConfigFile.cpp MapFile.cpp Scanner.cpp
+SOURCES = Plotter.cpp ProcessorHandler.cpp OnlineProcessor.cpp Processor.cpp ConfigFile.cpp MapFile.cpp CalibFile.cpp Scanner.cpp
 
 # Processors
 SOURCES += TriggerProcessor.cpp \
