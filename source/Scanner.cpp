@@ -200,7 +200,8 @@ simpleScanner::~simpleScanner(){
 			
 			// Write debug histograms.
 			chanCounts->GetHist()->Write();
-			chanEnergy->GetHist()->Write();
+			chanMaxADC->GetHist()->Write();
+			calMaxADC->GetHist()->Write();
 			
 			// Close the root file.
 			root_file->Close();
@@ -496,8 +497,11 @@ bool simpleScanner::Initialize(std::string prefix_){
 	// Setup a 2d histogram for tracking all channel counts.
 	chanCounts = new Plotter("chanCounts", "Recorded Counts for Module vs. Channel", "COLZ", "Channel", 16, 0, 16, "Module", 6, 0, 6);
 
-	// Setup a 2d histogram for tracking all channel counts.
-	chanEnergy = new Plotter("chanMaxADC", "Channel vs. Max ADC", "COLZ", "Max ADC Channel", 4096, 0, 4096, "Channel", 96, 0, 96);
+	// Setup a 2d histogram for tracking channel energies.
+	chanMaxADC = new Plotter("chanMaxADC", "Channel vs. Max ADC", "COLZ", "Max ADC Channel", 4096, 0, 4096, "Channel", 96, 0, 96);
+
+	// Setup a 2d histogram for tracking calibrated energies.
+	calMaxADC = new Plotter("calMaxADC", "Channel vs. Calibrated Energy", "COLZ", "Calib. Energy (keV)", 1024, 0, 8192, "Channel", 96, 0, 96);
 
 	// Initialize the online data processor.
 	online = new OnlineProcessor();
@@ -507,11 +511,13 @@ bool simpleScanner::Initialize(std::string prefix_){
 	
 		// Add the raw histograms to the online processor.
 		online->AddHist(chanCounts);
-		online->AddHist(chanEnergy);
+		online->AddHist(chanMaxADC);
+		online->AddHist(calMaxADC);
 	
 		// Set the first and second histograms to channel count histogram and energy histogram.
 		online->ChangeHist(0, 0);
 		online->ChangeHist(1, 1);
+		online->ChangeHist(2, 2);
 		online->Refresh();
 	}
 
@@ -667,12 +673,13 @@ bool simpleScanner::AddEvent(XiaData *event_){
 	ChannelEventPair *pair_ = new ChannelEventPair(event_, new ChannelEvent(event_), mapfile->GetMapEntry(event_));
 
 	// Correct the baseline before using the trace.
-	pair_->channelEvent->CorrectBaseline();
+	if(pair_->channelEvent->CorrectBaseline() >= 0.0){
+		chanMaxADC->Fill(pair_->channelEvent->maximum, pair_->entry->location);
+		calMaxADC->Fill(calibfile->GetEnergy(pair_->entry->location, pair_->channelEvent->maximum), pair_->entry->location);
+	}
 
 	// Fill the output histograms.
 	chanCounts->Fill(event_->chanNum, event_->modNum);
-	chanEnergy->Fill(calibfile->GetEnergy(event_->modNum*16+event_->chanNum, pair_->channelEvent->maximum), event_->modNum*16+event_->chanNum);
-	//chanEnergy->Fill(event_->energy, event_->modNum*16+event_->chanNum);
 
 	// Raw event information. Dump raw event information to root file.
 	xia_data_module = event_->modNum;
