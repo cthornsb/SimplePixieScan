@@ -67,8 +67,8 @@ LONG	Structure for detectors of type "vandlesmall" or "vandlebig"
 BEGIN_TYPES
 vector:double	ltdiff	The time of flight of the particle detected by vandle.
 vector:double	rtdiff	The time of flight of the particle detected by vandle.
-vector:double	ltqdc	The left pmt energy computed from the trace.
-vector:double	rtqdc	The right pmt energy computed from the trace.
+vector:double	tqdc	The total light response (sqrt(l*r)).
+vector:double	ypos	The vertical position of the event in the bar.
 vector:double	lphase	The left pmt trace offset in ns.
 vector:double	rphase	The right pmt trace offset in ns.
 vector:int	loc	Detector location (ID)
@@ -123,8 +123,7 @@ vector:double	ltdiff	The time of flight of the particle detected by liquidbar.
 vector:double	rtdiff	The time of flight of the particle detected by liquidbar.
 vector:double	stqdc	The short integral computed from both pmt traces.
 vector:double	ltqdc	The long integral computed from both pmt traces.
-vector:double	lphase	The left pmt trace offset in ns.
-vector:double	rphase	The right pmt trace offset in ns.
+vector:double	ypos	The vertical position of the event in the bar.
 vector:int	loc	Detector location (ID)
 u_int	mult	Multiplicity of the liquidbar events.
 END_TYPES

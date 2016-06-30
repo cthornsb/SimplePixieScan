@@ -68,8 +68,10 @@ bool VandleProcessor::HandleEvents(){
 		loc_R_phase_2d->Fill(channel_event_R->phase, location);
 		loc_1d->Fill(location);		
 		
+		double ypos = 0.3*(channel_event_L->hires_energy-channel_event_R->hires_energy)/(channel_event_L->hires_energy+channel_event_R->hires_energy);
+
 		// Fill the values into the root tree.
-		structure.Append(tdiff_L, tdiff_R, channel_event_L->hires_energy, channel_event_R->hires_energy, channel_event_L->phase, channel_event_R->phase, location);
+		structure.Append(tdiff_L, tdiff_R, std::sqrt(channel_event_L->hires_energy*channel_event_R->hires_energy), ypos, channel_event_L->phase, channel_event_R->phase, location);
 		     
 		// Copy the trace to the output file.
 		if(write_waveform){

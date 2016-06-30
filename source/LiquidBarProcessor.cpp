@@ -81,8 +81,10 @@ bool LiquidBarProcessor::HandleEvents(){
 		loc_psd_2d->Fill(stqdc/ltqdc, location/2);
 		loc_1d->Fill(location/2);		
 		
+		double ypos = 0.1397*(channel_event_L->hires_energy-channel_event_R->hires_energy)/(channel_event_L->hires_energy+channel_event_R->hires_energy);
+		
 		// Fill the values into the root tree.
-		structure.Append(tdiff_L, tdiff_R, stqdc, ltqdc, channel_event_L->phase, channel_event_R->phase, location);
+		structure.Append(tdiff_L, tdiff_R, stqdc, ltqdc, ypos, location);
 		     
 		// Copy the trace to the output file.
 		if(write_waveform){
