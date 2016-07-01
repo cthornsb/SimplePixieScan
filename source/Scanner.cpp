@@ -177,11 +177,20 @@ simpleScanner::~simpleScanner(){
 	if(init){
 		std::cout << msgHeader << "Found " << chanCounts->GetHist()->GetEntries() << " total events.\n";
 
+		// Get the total acquisition time.
+		std::stringstream stream;
+		stream << handler->GetDeltaEventTime() << " s\n";
+
 		// If the root file is open, write the tree and histogram.
 		if(root_file->IsOpen()){
 			// Write all online diagnostic histograms to the output root file.
 			std::cout << msgHeader << "Writing " << online->WriteHists(root_file) << " histograms to root file.\n";
 
+			// Add total data time to the file.
+			root_file->cd(head_path.c_str());
+			TNamed named("Data time", stream.str().c_str());
+			named.Write();
+			
 			root_file->cd();
 
 			// Write root trees to output file.
@@ -210,7 +219,7 @@ simpleScanner::~simpleScanner(){
 
 		std::cout << msgHeader << "Processed " << loaded_files << " files.\n";
 		std::cout << msgHeader << "Found " << handler->GetTotalEvents() << " start events.\n";
-		std::cout << msgHeader << "Total data time is " << handler->GetDeltaEventTime() << " s.\n";
+		std::cout << msgHeader << "Total data time is " << stream.str() << std::endl;
 	
 		delete mapfile;
 		delete configfile;
@@ -648,8 +657,9 @@ void simpleScanner::Notify(const std::string &code_/*=""*/){
 			std::stringstream stream;
 			if(loaded_files < 10){ stream << "head/file0" << loaded_files; }
 			else{ stream << "head/file" << loaded_files; }
-			root_file->mkdir(stream.str().c_str());
-			root_file->cd(stream.str().c_str());
+			head_path = stream.str();
+			root_file->mkdir(head_path.c_str());
+			root_file->cd(head_path.c_str());
 			std::string name, value;
 			for(size_t index = 0; index < finfo->size(); index++){
 				finfo->at(index, name, value);
