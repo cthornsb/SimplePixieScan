@@ -9,9 +9,10 @@
 #ifndef C_IN_VAC
 #define C_IN_VAC 29.9792458 // cm/ns
 #endif
-#define C_IN_LIQUID_BAR 13.2354 // cm/ns (13.2354 +/- 1.09219) CRT Dec. 16th, 2015 bar 1022)
+#define C_IN_LIQUID_BAR 10.3754 // cm/ns
 
-#define LIQUID_BAR_LENGTH 30.48 // cm
+#define LIQUID_BAR_LENGTH 27.94 // cm
+#define TOF_OFFSET 1.346 // ns
 
 const double max_tdiff = ((LIQUID_BAR_LENGTH / C_IN_LIQUID_BAR) / 8E-9); // Maximum time difference between valid vandle pairwise events (pixie clock ticks)
 
@@ -82,9 +83,11 @@ bool LiquidBarProcessor::HandleEvents(){
 		loc_1d->Fill(location/2);		
 		
 		double ypos = 0.1397*(channel_event_L->hires_energy-channel_event_R->hires_energy)/(channel_event_L->hires_energy+channel_event_R->hires_energy);
+		double tof = (tdiff_L + tdiff_R)/2.0 - TOF_OFFSET;
+		double ctof = (0.5/std::sqrt(0.25+ypos*ypos))*tof;
 		
 		// Fill the values into the root tree.
-		structure.Append(tdiff_L, tdiff_R, stqdc, ltqdc, ypos, location);
+		structure.Append(stqdc, ltqdc, ypos, tof, ctof, location);
 		     
 		// Copy the trace to the output file.
 		if(write_waveform){
