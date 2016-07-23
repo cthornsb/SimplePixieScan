@@ -67,8 +67,8 @@ LONG	Structure for detectors of type "vandlesmall" or "vandlebig"
 BEGIN_TYPES
 vector:double	tqdc	The total light response (sqrt(l*r)).
 vector:double	ypos	The vertical position of the event in the bar.
-vector:double	tof	The time of flight of the particle detected by vandle.
 vector:double	ctof	The corrected time of flight of the particle detected by vandle.
+vector:double	energy	Neutron energy calculated from the corrected ToF.
 vector:int	loc	Detector location (ID)
 u_int	mult	Multiplicity of the vandle events.
 END_TYPES

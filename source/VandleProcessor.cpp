@@ -11,6 +11,10 @@
 #endif
 #define C_IN_VANDLE_BAR 13.2354 // cm/ns (13.2354 +/- 1.09219) CRT Dec. 16th, 2015 bar 1022)
 
+#ifndef M_NEUTRON
+#define M_NEUTRON 939.5654133 // MeV/c^2
+#endif
+
 #define VANDLE_BAR_LENGTH 60 // cm
 
 const double max_tdiff = ((VANDLE_BAR_LENGTH / C_IN_VANDLE_BAR) / 8E-9); // Maximum time difference between valid vandle pairwise events (pixie clock ticks)
@@ -80,9 +84,10 @@ bool VandleProcessor::HandleEvents(){
 		double ypos = (tdiff_R - tdiff_L)*C_IN_VANDLE_BAR/200.0; // m
 		double tof = (tdiff_L + tdiff_R)/2.0; // ns
 		double ctof = (0.5/std::sqrt(0.25+ypos*ypos))*tof; // ns
+		double energy = 0.5*M_NEUTRON*2500/(900*ctof*ctof);	
 		
 		// Fill the values into the root tree.
-		structure.Append(std::sqrt(channel_event_L->hires_energy*channel_event_R->hires_energy), ypos, tof, ctof, location);
+		structure.Append(std::sqrt(channel_event_L->hires_energy*channel_event_R->hires_energy), ypos, ctof, energy, location);
 		     
 		// Copy the trace to the output file.
 		if(write_waveform){
