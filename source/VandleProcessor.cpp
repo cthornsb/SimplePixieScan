@@ -64,8 +64,11 @@ bool VandleProcessor::HandleEvents(){
 		double tdiff_R = (current_event_R->time - start->pixieEvent->time)*8 + (channel_event_R->phase - start->channelEvent->phase)*4;
 
 		// Do time alignment.
-		if((*iter_L)->calib)
+		double r0 = 1.0;
+		if((*iter_L)->calib){
 			tdiff_L += (*iter_L)->calib->toffset;
+			r0 = (*iter_L)->calib->r0;
+		}
 
 		if((*iter_R)->calib)
 			tdiff_R += (*iter_R)->calib->toffset;
@@ -80,11 +83,10 @@ bool VandleProcessor::HandleEvents(){
 		loc_R_phase_2d->Fill(channel_event_R->phase, location);
 		loc_1d->Fill(location);		
 		
-		//double ypos = 0.3*(channel_event_L->hires_energy-channel_event_R->hires_energy)/(channel_event_L->hires_energy+channel_event_R->hires_energy);
 		double ypos = (tdiff_R - tdiff_L)*C_IN_VANDLE_BAR/200.0; // m
 		double tof = (tdiff_L + tdiff_R)/2.0; // ns
-		double ctof = (0.5/std::sqrt(0.25+ypos*ypos))*tof; // ns
-		double energy = 0.5*M_NEUTRON*2500/(900*ctof*ctof);	
+		double ctof = (r0/std::sqrt(r0*r0+ypos*ypos))*tof; // ns
+		double energy = 0.5E4*M_NEUTRON*r0*r0/(C_IN_VAC*C_IN_VAC*ctof*ctof); // MeV
 		
 		// Fill the values into the root tree.
 		structure.Append(std::sqrt(channel_event_L->hires_energy*channel_event_R->hires_energy), ypos, ctof, energy, location);
