@@ -2,6 +2,7 @@
 #include <cmath>
 
 #include "VandleProcessor.hpp"
+#include "CalibFile.hpp"
 #include "MapFile.hpp"
 #include "Plotter.hpp"
 
@@ -11,7 +12,6 @@
 #define C_IN_VANDLE_BAR 13.2354 // cm/ns (13.2354 +/- 1.09219) CRT Dec. 16th, 2015 bar 1022)
 
 #define VANDLE_BAR_LENGTH 60 // cm
-#define TOF_OFFSET 2.267 // ns
 
 const double max_tdiff = ((VANDLE_BAR_LENGTH / C_IN_VANDLE_BAR) / 8E-9); // Maximum time difference between valid vandle pairwise events (pixie clock ticks)
 
@@ -58,6 +58,13 @@ bool VandleProcessor::HandleEvents(){
 		// Calculate the time difference between the current event and the start.
 		double tdiff_L = (current_event_L->time - start->pixieEvent->time)*8 + (channel_event_L->phase - start->channelEvent->phase)*4;
 		double tdiff_R = (current_event_R->time - start->pixieEvent->time)*8 + (channel_event_R->phase - start->channelEvent->phase)*4;
+
+		// Do time alignment.
+		if((*iter_L)->calib)
+			tdiff_L += (*iter_L)->calib->toffset;
+
+		if((*iter_R)->calib)
+			tdiff_R += (*iter_R)->calib->toffset;
 		
 		// Get the location of this detector.
 		int location = (*iter_L)->entry->location;
@@ -69,10 +76,11 @@ bool VandleProcessor::HandleEvents(){
 		loc_R_phase_2d->Fill(channel_event_R->phase, location);
 		loc_1d->Fill(location);		
 		
-		double ypos = 0.3*(channel_event_L->hires_energy-channel_event_R->hires_energy)/(channel_event_L->hires_energy+channel_event_R->hires_energy);
-		double tof = (tdiff_L + tdiff_R)/2.0 - TOF_OFFSET;
-		double ctof = (0.5/std::sqrt(0.25+ypos*ypos))*tof;
-
+		//double ypos = 0.3*(channel_event_L->hires_energy-channel_event_R->hires_energy)/(channel_event_L->hires_energy+channel_event_R->hires_energy);
+		double ypos = (tdiff_R - tdiff_L)*C_IN_VANDLE_BAR/200.0; // m
+		double tof = (tdiff_L + tdiff_R)/2.0; // ns
+		double ctof = (0.5/std::sqrt(0.25+ypos*ypos))*tof; // ns
+		
 		// Fill the values into the root tree.
 		structure.Append(std::sqrt(channel_event_L->hires_energy*channel_event_R->hires_energy), ypos, tof, ctof, location);
 		     

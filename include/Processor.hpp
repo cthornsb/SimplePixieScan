@@ -9,6 +9,7 @@
 #include "TF1.h"
 #include "TFitResultPtr.h"
 
+class CalibEntry;
 class MapEntry;
 class MapFile;
 class Plotter;
@@ -29,11 +30,12 @@ class ChannelEventPair{
   public:
   	XiaData *pixieEvent;
   	ChannelEvent *channelEvent;
+  	CalibEntry *calib;
 	MapEntry *entry;
   
 	ChannelEventPair();
 	
-	ChannelEventPair(XiaData *p_event_, ChannelEvent *c_event_, MapEntry *entry_);
+	ChannelEventPair(XiaData *p_event_, ChannelEvent *c_event_, MapEntry *entry_, CalibEntry *calib_);
 	
 	~ChannelEventPair();
 	

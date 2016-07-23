@@ -5,6 +5,7 @@
 #include "Processor.hpp"
 #include "Structures.h"
 #include "MapFile.hpp"
+#include "CalibFile.hpp"
 
 #include "TTree.h"
 #include "TGraph.h"
@@ -15,12 +16,14 @@ Trace dummyTrace;
 ChannelEventPair::ChannelEventPair(){
 	pixieEvent = NULL;
 	channelEvent = NULL;
+	calib = NULL;
 	entry = NULL;
 }
 
-ChannelEventPair::ChannelEventPair(XiaData *pix_event_, ChannelEvent *chan_event_, MapEntry *entry_){
+ChannelEventPair::ChannelEventPair(XiaData *pix_event_, ChannelEvent *chan_event_, MapEntry *entry_, CalibEntry *calib_){
 	pixieEvent = pix_event_;
 	channelEvent = chan_event_;
+	calib = calib_;
 	entry = entry_;
 }
 

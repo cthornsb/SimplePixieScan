@@ -3,38 +3,41 @@
 
 #include <vector>
 
-class calibration{
+class XiaData;
+
+class CalibEntry{
   public:
-	int id;
-	double b;
-	double m;
+	unsigned int id;
+	double r0;
+	double theta;
+	double phi;
+	double toffset;
 	
-	calibration() : id(0), b(0.0), m(1.0){ }
+	CalibEntry() : id(0), r0(0.0), theta(0.0), phi(0.0), toffset(0.0) { }
 	
-	calibration(const int &id_) : id(id_), b(0.0), m(1.0){ }
+	CalibEntry(const int &id_) : id(id_), r0(0.0), theta(0.0), phi(0.0), toffset(0.0) { }
 	
-	calibration(const int &id_, const double &b_, const double &m_) : id(id_), b(b_), m(m_){ }
-	
-	double getEnergy(const double &chan_){ return m*chan_+b; }
-	
-	double getChan(const double &energy_){ return (energy_-b)/m; }
+	CalibEntry(const int &id_, const double &r0_, const double &theta_, const double &phi_, const double &toffset_) : 
+		id(id_), r0(r0_), theta(theta_), phi(phi_), toffset(toffset_) { }
 };
 
 class CalibFile{
   private:
-  	std::vector<calibration> calib;
+  	std::vector<CalibEntry> calib;
 	bool init;
 	
   public:
-	CalibFile() : init(false){ }
+	CalibFile() : init(false) { }
 	
 	CalibFile(const char *filename_);
 	
 	bool IsInit(){ return init; }
 	
 	bool Load(const char *filename_);
+
+	CalibEntry *GetCalibEntry(const unsigned int &id_);
 	
-	double GetEnergy(const int &id_, const double &adc_);
+	CalibEntry *GetCalibEntry(XiaData *event_);
 };
 
 #endif

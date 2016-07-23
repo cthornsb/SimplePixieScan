@@ -3,6 +3,8 @@
 
 #include "CalibFile.hpp"
 
+#include "XiaData.hpp"
+
 CalibFile::CalibFile(const char *filename_){ 
 	Load(filename_); 
 }
@@ -10,26 +12,41 @@ CalibFile::CalibFile(const char *filename_){
 bool CalibFile::Load(const char *filename_){
 	std::ifstream calibfile(filename_);
 	if(!calibfile.good()){
-		std::cout << "calibfile: \033[1;31mERROR! Failed to open input calibration file!\033[0m\n";
+		std::cout << "calibfile: \033[1;31mERROR! Failed to open input CalibEntry file!\033[0m\n";
 		return (init = false);
 	}
 
+	int line_num = 1;
+	int prevID = -1;
 	int readID;
-	double readInter;
-	double readSlope;
+	double readRadius;
+	double readTheta;
+	double readPhi;
+	double readToffset;
 	while(true){
-		calibfile >> readID >> readInter >> readSlope;
+		calibfile >> readID >> readRadius >> readTheta >> readPhi >> readToffset;
 		if(calibfile.eof() || !calibfile.good()){ break; }
-		calib.push_back(calibration(readID, readInter, readSlope));
+		if(readID < 0 || readID <= prevID){
+			std::cout << "CalibFile: \033[1;33mWARNING! On line " << line_num++ << ", invalid id number (" << readID << "). Ignoring.\033[0m\n";
+			continue;
+		}
+		else if(readID > prevID+1){
+			for(int i = prevID; i < readID-1; i++)
+				calib.push_back(CalibEntry(i, 0.5, 0.0, 0.0, 0.0));
+		}
+		prevID = readID;
+		line_num++;
+		calib.push_back(CalibEntry(readID, readRadius, readTheta, readPhi, readToffset));
 	}
 
 	return (init=true);
 }
 
-double CalibFile::GetEnergy(const int &id_, const double &adc_){
-	for(std::vector<calibration>::iterator iter = calib.begin(); iter != calib.end(); iter++){
-		if(iter->id == id_)
-			return iter->getEnergy(adc_);
-	}
-	return adc_;
+CalibEntry *CalibFile::GetCalibEntry(const unsigned int &id_){
+	if(id_ >= calib.size()){ return NULL; }
+	return &calib.at(id_);
+}
+
+CalibEntry *CalibFile::GetCalibEntry(XiaData *event_){
+	return GetCalibEntry(16*event_->modNum+event_->chanNum); 
 }

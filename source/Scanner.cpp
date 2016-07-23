@@ -691,16 +691,16 @@ bool simpleScanner::AddEvent(XiaData *event_){
 	if(!event_){ return false; }
 
 	// Link the channel event to its corresponding map entry.
-	ChannelEventPair *pair_ = new ChannelEventPair(event_, new ChannelEvent(event_), mapfile->GetMapEntry(event_));
+	ChannelEventPair *pair_ = new ChannelEventPair(event_, new ChannelEvent(event_), mapfile->GetMapEntry(event_), calibfile->GetCalibEntry(event_));
 
 	// Correct the baseline before using the trace.
 	if(!pair_->pixieEvent->adcTrace.empty() && pair_->channelEvent->CorrectBaseline() >= 0.0){
 		chanMaxADC->Fill(pair_->channelEvent->maximum, pair_->entry->location);
-		calMaxADC->Fill(calibfile->GetEnergy(pair_->entry->location, pair_->channelEvent->maximum), pair_->entry->location);
+		//calMaxADC->Fill(calibfile->GetEnergy(pair_->entry->location, pair_->channelEvent->maximum), pair_->entry->location);
 	}
 	else{
 		chanMaxADC->Fill(pair_->pixieEvent->energy/8.0, pair_->entry->location);
-		calMaxADC->Fill(calibfile->GetEnergy(pair_->entry->location, pair_->pixieEvent->energy/8.0), pair_->entry->location);
+		//calMaxADC->Fill(calibfile->GetEnergy(pair_->entry->location, pair_->pixieEvent->energy/8.0), pair_->entry->location);
 	}
 
 	// Fill the output histograms.
