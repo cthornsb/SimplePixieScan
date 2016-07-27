@@ -12,10 +12,6 @@
 #include "TH1D.h"
 #include "TMarker.h"
 
-#define XBINS 250
-#define XMIN -80
-#define XMAX -20
-
 bool GetProjectionX(TH1 *h1_, TH2 *h2_, const int &binY_){
 	// Check that the histograms are defined.
 	if(!h1_ || !h2_) return false;
@@ -44,7 +40,7 @@ bool Process(TH2 *h_, TCanvas *can_){
 	
 	can_->cd()->SetLogy();
 	
-	TH1D *h1 = new TH1D("h1", "", XBINS, XMIN, XMAX);
+	TH1D *h1 = new TH1D("h1", "", h_->GetXaxis()->GetNbins(), h_->GetXaxis()->GetXmin(), h_->GetXaxis()->GetXmax());
 	TF1 *f1 = new TF1("f1", "gaus", 0, 1);
 	TFitResultPtr fitResult;
 	TMarker *m1;
