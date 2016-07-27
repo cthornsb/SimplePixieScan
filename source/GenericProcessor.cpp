@@ -1,4 +1,5 @@
 #include "GenericProcessor.hpp"
+#include "CalibFile.hpp"
 #include "MapFile.hpp"
 #include "Plotter.hpp"
 
@@ -15,6 +16,10 @@ bool GenericProcessor::HandleEvents(){
 	
 		// Calculate the time difference between the current event and the start.
 		double tdiff = (current_event->event->time - start->pixieEvent->time)*8 + (current_event->phase - start->channelEvent->phase)*4;
+
+		// Do time alignment.
+		if((*iter)->calib)
+			tdiff += (*iter)->calib->toffset;
 		
 		// Get the location of this detector.
 		int location = (*iter)->entry->location;
@@ -26,7 +31,7 @@ bool GenericProcessor::HandleEvents(){
 		loc_1d->Fill(location);
 	
 		// Fill the values into the root tree.
-		structure.Append(tdiff, current_event->hires_energy, current_event->phase, location);
+		structure.Append(current_event->hires_energy, tdiff, location);
 		
 		// Copy the trace to the output file.
 		if(write_waveform){

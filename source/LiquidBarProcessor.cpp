@@ -2,7 +2,7 @@
 #include <cmath>
 
 #include "LiquidBarProcessor.hpp"
-#include "Structures.h"
+#include "CalibFile.hpp"
 #include "MapFile.hpp"
 #include "Plotter.hpp"
 
@@ -11,8 +11,11 @@
 #endif
 #define C_IN_LIQUID_BAR 10.3754 // cm/ns
 
+#ifndef M_NEUTRON
+#define M_NEUTRON 939.5654133 // MeV/c^2
+#endif
+
 #define LIQUID_BAR_LENGTH 27.94 // cm
-#define TOF_OFFSET 1.346 // ns
 
 const double max_tdiff = ((LIQUID_BAR_LENGTH / C_IN_LIQUID_BAR) / 8E-9); // Maximum time difference between valid vandle pairwise events (pixie clock ticks)
 
@@ -60,6 +63,16 @@ bool LiquidBarProcessor::HandleEvents(){
 		// Calculate the time difference between the current event and the start.
 		double tdiff_L = (current_event_L->time - start->pixieEvent->time)*8 + (channel_event_L->phase - start->channelEvent->phase)*4;
 		double tdiff_R = (current_event_R->time - start->pixieEvent->time)*8 + (channel_event_R->phase - start->channelEvent->phase)*4;
+
+		// Do time alignment.
+		double r0 = 1.0;
+		if((*iter_L)->calib){
+			tdiff_L += (*iter_L)->calib->toffset;
+			r0 = (*iter_L)->calib->r0;
+		}
+
+		if((*iter_R)->calib)
+			tdiff_R += (*iter_R)->calib->toffset;
 		
 		// Get the location of this detector.
 		int location = (*iter_L)->entry->location;
@@ -81,13 +94,14 @@ bool LiquidBarProcessor::HandleEvents(){
 		loc_long_energy_2d->Fill(ltqdc, location/2);
 		loc_psd_2d->Fill(stqdc/ltqdc, location/2);
 		loc_1d->Fill(location/2);		
-		
-		double ypos = 0.1397*(channel_event_L->hires_energy-channel_event_R->hires_energy)/(channel_event_L->hires_energy+channel_event_R->hires_energy);
-		double tof = (tdiff_L + tdiff_R)/2.0 - TOF_OFFSET;
-		double ctof = (0.5/std::sqrt(0.25+ypos*ypos))*tof;
+
+		double ypos = (tdiff_R - tdiff_L)*C_IN_LIQUID_BAR/200.0; // m
+		double tof = (tdiff_L + tdiff_R)/2.0; // ns
+		double ctof = (r0/std::sqrt(r0*r0+ypos*ypos))*tof; // ns
+		double energy = 0.5E4*M_NEUTRON*r0*r0/(C_IN_VAC*C_IN_VAC*ctof*ctof); // MeV
 		
 		// Fill the values into the root tree.
-		structure.Append(stqdc, ltqdc, ypos, tof, ctof, location);
+		structure.Append(stqdc, ltqdc, ypos, ctof, energy, location);
 		     
 		// Copy the trace to the output file.
 		if(write_waveform){
