@@ -1,5 +1,5 @@
 #include "LiquidProcessor.hpp"
-#include "Structures.h"
+#include "CalibFile.hpp"
 #include "MapFile.hpp"
 #include "Plotter.hpp"
 
@@ -17,6 +17,10 @@ bool LiquidProcessor::HandleEvents(){
 
 		// Calculate the time difference between the current event and the start.
 		double tdiff = (current_event->event->time - start->pixieEvent->time)*8 + (current_event->phase - start->channelEvent->phase)*4;
+
+		// Do time alignment.
+		if((*iter)->calib)
+			tdiff += (*iter)->calib->toffset;
 		
 		// Get the location of this detector.
 		int location = (*iter)->entry->location;
@@ -33,14 +37,14 @@ bool LiquidProcessor::HandleEvents(){
 		loc_1d->Fill(location);		
 		
 		// Fill the values into the root tree.
-		structure.Append(tdiff, short_qdc, long_qdc, current_event->phase, location);
+		structure.Append(short_qdc, long_qdc, tdiff, location);
 		     
 		// Copy the trace to the output file.
 		if(write_waveform){
 			waveform.Append(current_event->event->adcTrace);
 		}
 		
-		good_events += 2;
+		good_events++;
 	}
 	return true;
 }
@@ -58,10 +62,10 @@ LiquidProcessor::LiquidProcessor(MapFile *map_) : Processor("Liquid", "liquid", 
 	int maxloc = map_->GetLastOccurance("liquid");
 	
 	if(maxloc-minloc > 1){ // More than one detector. Define 2d plots.
-		loc_tdiff_2d = new Plotter("liquid_h1", "Liquid Location vs. Tdiff", "COLZ", "Tdiff (ns)", 200, -100, 100, "Location", maxloc-minloc, minloc/2, (maxloc+1)/2);
-		loc_short_energy_2d = new Plotter("liquid_h2", "Liquid Location vs. S", "COLZ", "S (a.u.)", 200, 0, 20000, "Location", maxloc-minloc, minloc/2, (maxloc+1)/2);
-		loc_long_energy_2d = new Plotter("liquid_h3", "Liquid Location vs. L", "COLZ", "L (a.u.)", 200, 0, 20000, "Location", maxloc-minloc, minloc/2, (maxloc+1)/2);
-		loc_psd_2d = new Plotter("liquid_h4", "Liquid Location vs. PSD", "COLZ", "PSD (S/L)", 200, 0, 1, "Location", maxloc-minloc, minloc/2, (maxloc+1)/2);
+		loc_tdiff_2d = new Plotter("liquid_h1", "Liquid Location vs. Tdiff", "COLZ", "Tdiff (ns)", 200, -100, 100, "Location", maxloc-minloc, minloc, maxloc+1);
+		loc_short_energy_2d = new Plotter("liquid_h2", "Liquid Location vs. S", "COLZ", "S (a.u.)", 200, 0, 20000, "Location", maxloc-minloc, minloc, maxloc+1);
+		loc_long_energy_2d = new Plotter("liquid_h3", "Liquid Location vs. L", "COLZ", "L (a.u.)", 200, 0, 20000, "Location", maxloc-minloc, minloc, maxloc+1);
+		loc_psd_2d = new Plotter("liquid_h4", "Liquid Location vs. PSD", "COLZ", "PSD (S/L)", 200, 0, 1, "Location", maxloc-minloc, minloc, maxloc+1);
 	}
 	else{ // Only one detector. Define 1d plots instead.
 		loc_tdiff_2d = new Plotter("liquid_h1", "Liquid Tdiff", "", "Tdiff (ns)", 200, -100, 100);

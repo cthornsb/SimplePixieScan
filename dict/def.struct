@@ -41,8 +41,8 @@ LONG	Structure for detectors of type "trigger"
 # Data types and names
 # type	name	description
 BEGIN_TYPES
-vector:double	time	The raw pixie16 system clock time.
 vector:double	tqdc	The energy computed from the trace.
+vector:double	time	The raw pixie16 system clock time.
 vector:double	phase	The trace offset in ns.
 u_int	mult	Multiplicity of the trigger detector.
 END_TYPES
@@ -91,10 +91,10 @@ LONG	Structure for detectors of type "phoswich"
 # Data types and names
 # type	name	description
 BEGIN_TYPES
-vector:double	time	The raw pixie16 system clock time.
 vector:double	ftqdc	The integral of the fast portion of the pulse.
 vector:double	stqdc	The integral of the slow portion of the pulse.
 vector:double	fAmp	The ADC amplitude of the fast pulse.
+vector:double	time	The raw pixie16 system clock time.
 vector:double	phase	The trace offset in ns.
 u_int	mult	Multiplicity of the phoswich events.
 END_TYPES
@@ -144,10 +144,9 @@ LONG	Structure for detectors of type "liquid"
 # Data types and names
 # type	name	description
 BEGIN_TYPES
-vector:double	tdiff	The time of flight of the particle detected by the detector.
 vector:double	stqdc	The pmt short integral computed from the trace.
 vector:double	ltqdc	The pmt long integral computed from the trace.
-vector:double	phase	The pmt trace offset in ns.
+vector:double	tof	The time of flight of the particle detected by the detector.
 vector:int	loc	Detector location (ID)
 u_int	mult	Multiplicity of the liquid events.
 END_TYPES
