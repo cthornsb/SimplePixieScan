@@ -24,11 +24,13 @@ LinkDef.h
 *.ldf
 *.pld
 
-# Executable #
-##############
+# Executables #
+#############*#
 PixieLDF
 run.sh
 *.cmd
+*.a
+tools/exec/*
 
 # Dictionary Files #
 ####################
