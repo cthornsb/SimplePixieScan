@@ -147,6 +147,7 @@ BEGIN_TYPES
 vector:double	stqdc	The pmt short integral computed from the trace.
 vector:double	ltqdc	The pmt long integral computed from the trace.
 vector:double	tof	The time of flight of the particle detected by the detector.
+vector:double	energy	Neutron energy calculated from the tof.
 vector:int	loc	Detector location (ID)
 u_int	mult	Multiplicity of the liquid events.
 END_TYPES

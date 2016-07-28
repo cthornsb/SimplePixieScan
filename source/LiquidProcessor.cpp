@@ -3,6 +3,14 @@
 #include "MapFile.hpp"
 #include "Plotter.hpp"
 
+#ifndef C_IN_VAC
+#define C_IN_VAC 29.9792458 // cm/ns
+#endif
+
+#ifndef M_NEUTRON
+#define M_NEUTRON 939.5654133 // MeV/c^2
+#endif
+
 /// Process all individual events.
 bool LiquidProcessor::HandleEvents(){
 	if(!init){ return false; }
@@ -19,8 +27,11 @@ bool LiquidProcessor::HandleEvents(){
 		double tdiff = (current_event->event->time - start->pixieEvent->time)*8 + (current_event->phase - start->channelEvent->phase)*4;
 
 		// Do time alignment.
-		if((*iter)->calib)
+		double r0 = 1.0;
+		if((*iter)->calib){
 			tdiff += (*iter)->calib->toffset;
+			r0 = (*iter)->calib->r0;
+		}
 		
 		// Get the location of this detector.
 		int location = (*iter)->entry->location;
@@ -36,8 +47,10 @@ bool LiquidProcessor::HandleEvents(){
 		loc_psd_2d->Fill(short_qdc/long_qdc, location);
 		loc_1d->Fill(location);		
 		
+		double energy = 0.5E4*M_NEUTRON*r0*r0/(C_IN_VAC*C_IN_VAC*tdiff*tdiff); // MeV
+		
 		// Fill the values into the root tree.
-		structure.Append(short_qdc, long_qdc, tdiff, location);
+		structure.Append(short_qdc, long_qdc, tdiff, energy, location);
 		     
 		// Copy the trace to the output file.
 		if(write_waveform){
