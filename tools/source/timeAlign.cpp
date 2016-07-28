@@ -28,11 +28,15 @@ bool GetProjectionX(TH1 *h1_, TH2 *h2_, const int &binY_){
 	h1_->Reset();
 
 	// Fill the output histogram.
+	double total = 0.0;
+	double binContent;
 	for(int i = 0; i <= h1_->GetXaxis()->GetNbins()+1; i++){
-		h1_->SetBinContent(i, h2_->GetBinContent(h2_->GetBin(i, binY_)));
+		binContent = h2_->GetBinContent(h2_->GetBin(i, binY_));
+		h1_->SetBinContent(i, binContent);
+		total += binContent;
 	}
 	
-	return true;
+	return (total > 0.0);
 }
 
 bool Process(TH2 *h_, TCanvas *can_){
