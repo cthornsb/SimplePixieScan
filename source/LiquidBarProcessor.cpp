@@ -65,7 +65,7 @@ bool LiquidBarProcessor::HandleEvents(){
 		double tdiff_R = (current_event_R->time - start->pixieEvent->time)*8 + (channel_event_R->phase - start->channelEvent->phase)*4;
 
 		// Do time alignment.
-		double r0 = 1.0;
+		double r0 = 0.5;
 		if((*iter_L)->calib){
 			tdiff_L += (*iter_L)->calib->toffset;
 			r0 = (*iter_L)->calib->r0;

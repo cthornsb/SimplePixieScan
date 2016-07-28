@@ -27,7 +27,7 @@ bool LiquidProcessor::HandleEvents(){
 		double tdiff = (current_event->event->time - start->pixieEvent->time)*8 + (current_event->phase - start->channelEvent->phase)*4;
 
 		// Do time alignment.
-		double r0 = 1.0;
+		double r0 = 0.5;
 		if((*iter)->calib){
 			tdiff += (*iter)->calib->toffset;
 			r0 = (*iter)->calib->r0;
