@@ -16,8 +16,6 @@ bool GetProjectionX(TH1 *h1_, TH2 *h2_, const int &binY_){
 	// Check that the histograms are defined.
 	if(!h1_ || !h2_) return false;
 
-	//std::cout << binY_ << "\t" << h2_->GetYaxis()->GetNbins() << "\t" << h1_->GetXaxis()->GetNbins() << "\t" << h2_->GetXaxis()->GetNbins() << std::endl;
-	
 	// Check for index out of range.
 	if(binY_ < 0 || binY_ > h2_->GetYaxis()->GetNbins()) return false;
 	
@@ -88,6 +86,7 @@ bool Process(TH2 *h_, TCanvas *can_){
 	}
 	
 	delete h1;
+	delete f1;
 	
 	return true;
 }
@@ -204,5 +203,11 @@ int main(int argc, char *argv[]){
 	delete can1;
 	delete can2;
 	
+	return 0;
+}
+
+int timeAlign(){
+	std::cout << "bool GetProjectionX(TH1 *h1_, TH2 *h2_, const int &binY_);\n";
+	std::cout << "bool Process(TH2 *h_, TCanvas *can_);\n";
 	return 0;
 }
