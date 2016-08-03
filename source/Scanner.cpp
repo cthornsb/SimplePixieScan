@@ -109,12 +109,14 @@ void simpleUnpacker::ProcessRawEvent(ScanInterface *addr_/*=NULL*/){
 	if(!addr_ || rawEvent.empty()){ return; }
 	
 	// Low-level raw event statistics information.
-	raw_event_mult = (int)rawEvent.size();
-	raw_event_start = GetRealStartTime();
-	if(raw_event_stop != 0) // Get the time since the end of the last raw event.
-		raw_event_btwn = raw_event_start - raw_event_stop;
-	raw_event_stop = GetRealStopTime();
-	stat_tree->SafeFill();
+	if(stat_tree){
+		raw_event_mult = (int)rawEvent.size();
+		raw_event_start = GetRealStartTime();
+		if(raw_event_stop != 0) // Get the time since the end of the last raw event.
+			raw_event_btwn = raw_event_start - raw_event_stop;
+		raw_event_stop = GetRealStopTime();
+		stat_tree->SafeFill();
+	}
 
 	XiaData *current_event = NULL;
 	
@@ -161,6 +163,7 @@ simpleScanner::simpleScanner() : ScanInterface() {
 	use_root_fitting = false;
 	write_traces = false;
 	write_raw = false;
+	write_stats = false;
 	init = false;
 	mapfile = NULL;
 	configfile = NULL;
@@ -195,21 +198,23 @@ simpleScanner::~simpleScanner(){
 			root_file->cd();
 
 			// Write root trees to output file.
+			std::cout << msgHeader << "Writing " << root_tree->GetEntries() << " processed data entries to root file.\n";
+			root_tree->Write();			
+			
 			if(write_raw){
 				std::cout << msgHeader << "Writing " << raw_tree->GetEntries() << " raw data entries to root file.\n";
 				raw_tree->Write();
 			}
-			
-			std::cout << msgHeader << "Writing " << root_tree->GetEntries() << " processed data entries to root file.\n";
-			root_tree->Write();
 			
 			if(write_traces){
 				std::cout << msgHeader << "Writing " << trace_tree->GetEntries() << " raw ADC traces to root file.\n";
 				trace_tree->Write();
 			}
 			
-			std::cout << msgHeader << "Writing " << stat_tree->GetEntries() << " raw event stats entries to root file.\n";
-			stat_tree->Write();
+			if(write_stats){
+				std::cout << msgHeader << "Writing " << stat_tree->GetEntries() << " raw event stats entries to root file.\n";
+				stat_tree->Write();
+			}
 			
 			// Write debug histograms.
 			chanCounts->GetHist()->Write();
@@ -493,6 +498,7 @@ void simpleScanner::ArgHelp(){
 	std::cout << "   --fitting         - Use root fitting for high resolution timing (default=false)\n";
 	std::cout << "   --traces          - Dump raw ADC traces to output root file (default=false)\n";
 	std::cout << "   --raw             - Dump raw pixie module data to output root file (default=false)\n";
+	std::cout << "   --stats           - Dump event builder information to the output root file (default=false)\n";
 }
 
 /** SyntaxStr is used to print a linux style usage message to the screen.
@@ -618,7 +624,8 @@ bool simpleScanner::Initialize(std::string prefix_){
 	}
 
 	// Initialize the unpacker tree.
-	stat_tree = ((simpleUnpacker*)GetCore())->InitTree();
+	if(write_stats)
+		stat_tree = ((simpleUnpacker*)GetCore())->InitTree();
 
 	// Add branches to the output tree.
 	handler->InitRootOutput(root_tree);
@@ -725,6 +732,7 @@ bool simpleScanner::AddEvent(XiaData *event_){
 	// packs the raw event, there may be more than one start signal
 	// per raw event.
 	if(pair_->entry->tag == "start"){ 
+		std::cout << "start\n";
 		handler->AddStart(pair_);
 	}
 	
