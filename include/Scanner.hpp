@@ -224,7 +224,6 @@ class simpleScanner : public ScanInterface {
 	
 	Plotter *chanCounts; /// 2d root histogram to store number of total channel counts found.
 	Plotter *chanMaxADC; /// 2d root histogram to store the energy spectra from all channels.
-	Plotter *calMaxADC; /// Calibrated 2d histogram of maximum ADC channel.
 	
 	int events_since_last_update; /// The number of processed events since the last online histogram update.
 	int events_between_updates; /// The number of events to process before updating online histograms.
