@@ -696,11 +696,13 @@ bool simpleScanner::AddEvent(XiaData *event_){
 	// Correct the baseline before using the trace.
 	if(!pair_->pixieEvent->adcTrace.empty() && pair_->channelEvent->CorrectBaseline() >= 0.0){
 		chanMaxADC->Fill(pair_->channelEvent->maximum, pair_->entry->location);
-		//calMaxADC->Fill(calibfile->GetEnergy(pair_->entry->location, pair_->channelEvent->maximum), pair_->entry->location);
+		if(pair_->calib && !pair_->calib->Empty())
+			calMaxADC->Fill(pair_->calib->GetCalEnergy(pair_->channelEvent->maximum), pair_->entry->location);
 	}
 	else{
 		chanMaxADC->Fill(pair_->pixieEvent->energy/8.0, pair_->entry->location);
-		//calMaxADC->Fill(calibfile->GetEnergy(pair_->entry->location, pair_->pixieEvent->energy/8.0), pair_->entry->location);
+		if(pair_->calib && !pair_->calib->Empty())
+			calMaxADC->Fill(pair_->calib->GetCalEnergy(pair_->channelEvent->maximum)/8.0, pair_->entry->location);
 	}
 
 	// Fill the output histograms.
