@@ -326,6 +326,20 @@ bool MapFile::Load(const char *filename_){
 	
 	mapfile.close();
 	
+	// Check for at least one start detector.
+	bool validStart = false;
+	for(int i = 0; i < max_modules; i++){
+		for(int j = 0; j < max_channels; j++){
+			if(detectors[i][j].tag == "start"){
+				validStart = true;
+				break;
+			}
+		}
+	}	
+	
+	if(!validStart)
+		std::cout << "MapFile: \033[1;33mWARNING! Found no start detector!\033[0m\n";
+	
 	return init;
 }
 
