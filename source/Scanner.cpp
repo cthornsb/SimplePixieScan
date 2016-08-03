@@ -226,8 +226,8 @@ simpleScanner::~simpleScanner(){
 		}
 
 		std::cout << msgHeader << "Processed " << loaded_files << " files.\n";
-		if(!untriggered_mode)
-			std::cout << msgHeader << "Found " << handler->GetTotalEvents() << " start events.\n";
+		std::cout << msgHeader << "Found " << handler->GetTotalEvents() << " events.\n";
+		if(!untriggered_mode) std::cout << msgHeader << "Found " << handler->GetStartEvents() << " start events.\n";
 		std::cout << msgHeader << "Total data time is " << stream.str() << std::endl;
 	
 		delete mapfile;

@@ -20,6 +20,7 @@ ChannelEventPair dummyStart(dummyEvent, new ChannelEvent(dummyEvent), &dummyEntr
 
 ProcessorHandler::ProcessorHandler(){ 
 	total_events = 0; 
+	start_events = 0;
 	first_event_time = 0.0;
 	delta_event_time = 0.0;
 	untriggered = false;
@@ -93,11 +94,10 @@ bool ProcessorHandler::AddEvent(ChannelEventPair *pair_){
 	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
 		if(pair_->entry->type == iter->type){ 
 			iter->proc->AddEvent(pair_); 
-			if(pair_->entry->tag == "start"){ 
-				if(total_events == 0){ first_event_time = pair_->pixieEvent->time * 8E-9; }
-				delta_event_time = (pair_->pixieEvent->time * 8E-9) - first_event_time;
-				total_events++; 
-			}
+			if(pair_->entry->tag == "start") start_events++;
+			if(total_events == 0){ first_event_time = pair_->pixieEvent->time * 8E-9; }
+			delta_event_time = (pair_->pixieEvent->time * 8E-9) - first_event_time;
+			total_events++; 
 			return true;
 		}
 	}

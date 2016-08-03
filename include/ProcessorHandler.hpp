@@ -23,7 +23,8 @@ class ProcessorHandler{
   private:
 	std::vector<ProcessorEntry> procs; /// Vector of data processors
 	std::vector<ChannelEventPair*> starts; /// Vector of all start events
-	unsigned long total_events; /// Total number of start events received
+	unsigned long total_events; /// Total number of events received
+	unsigned long start_events; /// Total number of start events received
 	double first_event_time; /// Time of the first start event (in s)
 	double delta_event_time; /// Time since the first start event (in s)
 	bool untriggered; /// True if a "start" detector is not used.
@@ -54,6 +55,8 @@ class ProcessorHandler{
 	bool Process();
 	
 	unsigned long GetTotalEvents(){ return total_events; }
+	
+	unsigned long GetStartEvents(){ return start_events; }
 	
 	double GetFirstEventTime(){ return first_event_time; }
 	

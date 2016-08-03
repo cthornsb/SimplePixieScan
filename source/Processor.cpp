@@ -247,7 +247,7 @@ float Processor::Status(unsigned long global_events_){
 		std::cout << " " << name << "Processor: Used " << time_taken << " seconds of CPU time\n";
 		if(total_events > 0){
 			std::cout << " " << name << "Processor: " << total_events << " Total Events (" << 100.0*total_events/global_events_ << "%)\n";
-			std::cout << " " << name << "Processor: " << good_events << " Valid Events (" << 100.0*good_events/total_events << "%)\n";
+			std::cout << " " << name << "Processor: " << good_events << " Valid Events (" << 100.0*good_events/global_events << "%)\n";
 		}
 	}
 	return time_taken;
