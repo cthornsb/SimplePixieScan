@@ -239,6 +239,7 @@ class simpleScanner : public ScanInterface {
 	bool online_mode; /// Set to true if online mode is to be used.
 	bool use_root_fitting; /// Set to true if root TF1 fitting is to be used for trace analysis.
 	bool write_traces; /// Set to true if ADC traces are to be written to the output file.
+	bool write_raw; /// Set to true if raw pixie module data is to be written to the output file.
 	bool init; /// Set to true when the initialization process successfully completes.
 	
 	std::string output_filename; /// Path to the output root file.

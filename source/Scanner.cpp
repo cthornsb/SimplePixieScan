@@ -160,6 +160,7 @@ simpleScanner::simpleScanner() : ScanInterface() {
 	online_mode = false;
 	use_root_fitting = false;
 	write_traces = false;
+	write_raw = false;
 	init = false;
 	mapfile = NULL;
 	configfile = NULL;
@@ -194,8 +195,10 @@ simpleScanner::~simpleScanner(){
 			root_file->cd();
 
 			// Write root trees to output file.
-			std::cout << msgHeader << "Writing " << raw_tree->GetEntries() << " raw data entries to root file.\n";
-			raw_tree->Write();
+			if(write_raw){
+				std::cout << msgHeader << "Writing " << raw_tree->GetEntries() << " raw data entries to root file.\n";
+				raw_tree->Write();
+			}
 			
 			std::cout << msgHeader << "Writing " << root_tree->GetEntries() << " processed data entries to root file.\n";
 			root_tree->Write();
@@ -443,6 +446,10 @@ bool simpleScanner::ExtraArguments(const std::string &arg_, std::deque<std::stri
 		std::cout << msgHeader << "Toggling ADC trace output ON.\n";
 		write_traces = true;
 	}
+	else if(arg_ == "--raw"){
+		std::cout << msgHeader << "Writing raw pixie data to output tree.\n";
+		write_raw = true;
+	}
 	else{ // Not a valid option. Must be a filename.
 		if(count == 0){ ifname = arg_; } // Set the input filename.
 		else if(count == 1){ output_filename = arg_; } // Set the output filename prefix.
@@ -485,6 +492,7 @@ void simpleScanner::ArgHelp(){
 	std::cout << "   --online-mode     - Plot online root histograms for monitoring data (default=false)\n";
 	std::cout << "   --fitting         - Use root fitting for high resolution timing (default=false)\n";
 	std::cout << "   --traces          - Dump raw ADC traces to output root file (default=false)\n";
+	std::cout << "   --raw             - Dump raw pixie module data to output root file (default=false)\n";
 }
 
 /** SyntaxStr is used to print a linux style usage message to the screen.
@@ -599,13 +607,15 @@ bool simpleScanner::Initialize(std::string prefix_){
 	root_tree = new extTree("data", "Pixie data");
 	
 	// Setup the raw data tree for output.
-	raw_tree = new extTree("raw", "Raw pixie data");
+	if(write_raw){
+		raw_tree = new extTree("raw", "Raw pixie data");
 	
-	// Add branches to the xia data tree.
-	raw_tree->Branch("mod", &xia_data_module);
-	raw_tree->Branch("chan", &xia_data_channel);
-	raw_tree->Branch("energy", &xia_data_energy);
-	raw_tree->Branch("time", &xia_data_time);
+		// Add branches to the xia data tree.
+		raw_tree->Branch("mod", &xia_data_module);
+		raw_tree->Branch("chan", &xia_data_channel);
+		raw_tree->Branch("energy", &xia_data_energy);
+		raw_tree->Branch("time", &xia_data_time);
+	}
 
 	// Initialize the unpacker tree.
 	stat_tree = ((simpleUnpacker*)GetCore())->InitTree();
@@ -697,11 +707,13 @@ bool simpleScanner::AddEvent(XiaData *event_){
 	chanCounts->Fill(event_->chanNum, event_->modNum);
 
 	// Raw event information. Dump raw event information to root file.
-	xia_data_module = event_->modNum;
-	xia_data_channel = event_->chanNum;
-	xia_data_energy = event_->energy;
-	xia_data_time = event_->time*8E-9;
-	raw_tree->SafeFill();
+	if(write_raw){
+		xia_data_module = event_->modNum;
+		xia_data_channel = event_->chanNum;
+		xia_data_energy = event_->energy;
+		xia_data_time = event_->time*8E-9;
+		raw_tree->SafeFill();
+	}
 	
 	// Pass this event to the correct processor
 	if(pair_->entry->type == "ignore" || !handler->AddEvent(pair_)){ // Invalid detector type. Delete it
