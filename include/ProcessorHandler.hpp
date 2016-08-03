@@ -22,19 +22,18 @@ struct ProcessorEntry{
 class ProcessorHandler{
   private:
 	std::vector<ProcessorEntry> procs; /// Vector of data processors
-
 	std::vector<ChannelEventPair*> starts; /// Vector of all start events
-	
 	unsigned long total_events; /// Total number of start events received
-	
 	double first_event_time; /// Time of the first start event (in s)
-	
 	double delta_event_time; /// Time since the first start event (in s)
+	bool untriggered; /// True if a "start" detector is not used.
 
   public:
 	ProcessorHandler();
 	
 	~ProcessorHandler();
+	
+	bool ToggleUntriggered(){ return (untriggered = !untriggered); }
 	
 	bool ToggleFitting();
 	

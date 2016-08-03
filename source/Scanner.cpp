@@ -158,6 +158,7 @@ extTree *simpleUnpacker::InitTree(){
 
 /// Default constructor.
 simpleScanner::simpleScanner() : ScanInterface() {
+	untriggered_mode = false;
 	force_overwrite = false;
 	online_mode = false;
 	use_root_fitting = false;
@@ -225,7 +226,8 @@ simpleScanner::~simpleScanner(){
 		}
 
 		std::cout << msgHeader << "Processed " << loaded_files << " files.\n";
-		std::cout << msgHeader << "Found " << handler->GetTotalEvents() << " start events.\n";
+		if(!untriggered_mode)
+			std::cout << msgHeader << "Found " << handler->GetTotalEvents() << " start events.\n";
 		std::cout << msgHeader << "Total data time is " << stream.str() << std::endl;
 	
 		delete mapfile;
@@ -443,6 +445,10 @@ bool simpleScanner::ExtraArguments(const std::string &arg_, std::deque<std::stri
 		std::cout << msgHeader << "Using online mode.\n";
 		online_mode = true;
 	}
+	else if(arg_ == "--untriggered"){
+		std::cout << msgHeader << "Using untriggered mode.\n";
+		untriggered_mode = true;
+	}
 	else if(arg_ == "--fitting"){
 		std::cout << msgHeader << "Toggling root fitting ON.\n";
 		use_root_fitting = true;
@@ -495,6 +501,7 @@ void simpleScanner::CmdHelp(const std::string &prefix_/*=""*/){
 void simpleScanner::ArgHelp(){
 	std::cout << "   --force-overwrite - Force an overwrite of the output root file if it exists (default=false)\n";
 	std::cout << "   --online-mode     - Plot online root histograms for monitoring data (default=false)\n";
+	std::cout << "   --untriggered     - Run without a start detector (default=false)\n";
 	std::cout << "   --fitting         - Use root fitting for high resolution timing (default=false)\n";
 	std::cout << "   --traces          - Dump raw ADC traces to output root file (default=false)\n";
 	std::cout << "   --raw             - Dump raw pixie module data to output root file (default=false)\n";
@@ -637,6 +644,10 @@ bool simpleScanner::Initialize(std::string prefix_){
 		handler->InitTraceOutput(trace_tree); 
 	}
 
+	// Set untriggered mode.
+	if(untriggered_mode)
+		handler->ToggleUntriggered();
+
 	return (init = true);
 }
 
@@ -731,8 +742,7 @@ bool simpleScanner::AddEvent(XiaData *event_){
 	// This channel is a start signal. Due to the way ScanList
 	// packs the raw event, there may be more than one start signal
 	// per raw event.
-	if(pair_->entry->tag == "start"){ 
-		std::cout << "start\n";
+	if(!untriggered_mode && pair_->entry->tag == "start"){ 
 		handler->AddStart(pair_);
 	}
 	

@@ -10,11 +10,19 @@
 #include "LogicProcessor.hpp"
 
 #include "MapFile.hpp"
+#include "CalibFile.hpp"
+
+XiaData *dummyEvent = new XiaData();
+MapEntry dummyEntry;
+CalibEntry dummyCalib;
+
+ChannelEventPair dummyStart(dummyEvent, new ChannelEvent(dummyEvent), &dummyEntry, &dummyCalib);
 
 ProcessorHandler::ProcessorHandler(){ 
 	total_events = 0; 
 	first_event_time = 0.0;
 	delta_event_time = 0.0;
+	untriggered = false;
 }
 
 ProcessorHandler::~ProcessorHandler(){
@@ -106,7 +114,10 @@ bool ProcessorHandler::AddStart(ChannelEventPair *pair_){
 
 bool ProcessorHandler::Process(){
 	// Return false if there are no start events.
-	if(starts.empty()){ return false; }
+	if(starts.empty()){
+		if(untriggered) starts.push_back(&dummyStart);
+		else return false;
+	}
 	
 	bool retval = false;
 	
@@ -117,7 +128,7 @@ bool ProcessorHandler::Process(){
 		for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
 			iter->proc->PreProcess();
 		}
-	
+
 		// After preprocessing has finished, call the processors.
 		for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
 			if(iter->proc->Process(*start)){ retval = true; }
