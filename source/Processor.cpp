@@ -318,6 +318,10 @@ void Processor::PreProcess(){
 		
 		// Set the high resolution time.
 		channel_event->hires_time += channel_event->phase * adcClockInSeconds;
+		
+		// Calibrate the energy, if applicable.
+		if((*iter)->calib)
+			channel_event->hires_energy = (*iter)->calib->GetCalEnergy(channel_event->hires_energy);
 	}
 
 	// Stop the timer.
