@@ -19,7 +19,7 @@ bool GenericProcessor::HandleEvents(){
 
 		// Do time alignment.
 		if((*iter)->calib)
-			tdiff += (*iter)->calib->toffset;
+			tdiff += (*iter)->calib->t0;
 		
 		// Get the location of this detector.
 		int location = (*iter)->entry->location;

@@ -29,7 +29,7 @@ bool LiquidProcessor::HandleEvents(){
 		// Do time alignment.
 		double r0 = 0.5;
 		if((*iter)->calib){
-			tdiff += (*iter)->calib->toffset;
+			tdiff += (*iter)->calib->t0;
 			r0 = (*iter)->calib->r0;
 		}
 		
