@@ -22,9 +22,11 @@ bool CalibFile::Load(const char *filename_){
 	double readRadius;
 	double readTheta;
 	double readPhi;
-	double readToffset;
+	double readt0;
+	double readSlope;
+	double readOffset;
 	while(true){
-		calibfile >> readID >> readRadius >> readTheta >> readPhi >> readToffset;
+		calibfile >> readID >> readRadius >> readTheta >> readPhi >> readt0 >> readSlope >> readOffset;
 		if(calibfile.eof() || !calibfile.good()){ break; }
 		if(readID < 0 || readID <= prevID){
 			std::cout << "CalibFile: \033[1;33mWARNING! On line " << line_num++ << ", invalid id number (" << readID << "). Ignoring.\033[0m\n";
@@ -32,11 +34,11 @@ bool CalibFile::Load(const char *filename_){
 		}
 		else if(readID > prevID+1){
 			for(int i = prevID; i < readID-1; i++)
-				calib.push_back(CalibEntry(i, 0.5, 0.0, 0.0, 0.0));
+				calib.push_back(CalibEntry(i, 0.5, 0.0, 0.0, 0.0, 1.0, 0.0));
 		}
 		prevID = readID;
 		line_num++;
-		calib.push_back(CalibEntry(readID, readRadius, readTheta, readPhi, readToffset));
+		calib.push_back(CalibEntry(readID, readRadius, readTheta, readPhi, readt0, readSlope, readOffset));
 	}
 
 	return (init=true);

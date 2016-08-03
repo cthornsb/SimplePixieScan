@@ -11,14 +11,16 @@ class CalibEntry{
 	double r0;
 	double theta;
 	double phi;
-	double toffset;
+	double t0;
+	double slope;
+	double offset;
 	
-	CalibEntry() : id(0), r0(0.0), theta(0.0), phi(0.0), toffset(0.0) { }
+	CalibEntry() : id(0), r0(0.0), theta(0.0), phi(0.0), t0(0.0), slope(0.0), offset(0.0) { }
 	
-	CalibEntry(const int &id_) : id(id_), r0(0.0), theta(0.0), phi(0.0), toffset(0.0) { }
+	CalibEntry(const int &id_) : id(id_), r0(0.0), theta(0.0), phi(0.0), t0(0.0), slope(0.0), offset(0.0) { }
 	
-	CalibEntry(const int &id_, const double &r0_, const double &theta_, const double &phi_, const double &toffset_) : 
-		id(id_), r0(r0_), theta(theta_), phi(phi_), toffset(toffset_) { }
+	CalibEntry(const int &id_, const double &r0_, const double &theta_, const double &phi_, const double &t0_, const double &slope_, const double &offset_) : 
+		id(id_), r0(r0_), theta(theta_), phi(phi_), t0(t0_), slope(slope_), offset(offset_) { }
 };
 
 class CalibFile{
