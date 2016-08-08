@@ -180,6 +180,30 @@ END_TYPES
 END_CLASS
 
 #####################################################################
+# Hagrid
+#####################################################################
+# Class name
+BEGIN_CLASS	Hagrid
+
+# Short class description
+SHORT	Hagrid gamma data structure
+
+# Longer class description
+LONG	Structure for hagrid (LaBr crystal) detectors.
+
+# Data types and names
+# type	name	description
+BEGIN_TYPES
+vector:double	max	The baseline-corrected maximum ADC channel taken from the trace.
+vector:double	tof	The time of flight of the particle detected by the detector.
+vector:int	loc	Detector location (ID)
+u_int	mult	Multiplicity of the generic type events.
+END_TYPES
+
+# End this class
+END_CLASS
+
+#####################################################################
 # Logic
 #####################################################################
 # Class name

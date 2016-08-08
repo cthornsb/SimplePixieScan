@@ -1,10 +1,10 @@
 #####################################################################
 
 # Set the PixieSuite core directory
-PIXIE_SUITE_DIR = /opt/PixieSuite2/
+PIXIE_SUITE_DIR = $(HOME)/opt/PixieSuite2
 
 # This one will be set automatically.
-PIXIE_SUITE_LIB_DIR = $(PIXIE_SUITE_DIR)/lib
+PIXIE_SUITE_LIB_DIR = $(PIXIE_SUITE_DIR)/exec/lib
 
 #####################################################################
 
@@ -38,6 +38,7 @@ SOURCES += TriggerProcessor.cpp \
            PhoswichProcessor.cpp \
            LiquidBarProcessor.cpp \
            LiquidProcessor.cpp \
+           HagridProcessor.cpp \
            GenericProcessor.cpp \
            LogicProcessor.cpp
 

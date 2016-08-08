@@ -172,6 +172,7 @@ Processor::Processor(std::string name_, std::string type_, MapFile *map_){
 	write_waveform = false;
 	use_color_terminal = true;
 	use_fitting = false;
+	use_integration = true;
 	
 	total_time = 0;
 	start_time = clock();
@@ -283,8 +284,10 @@ void Processor::PreProcess(){
 		// Find the leading edge of the pulse. This will also set the phase of the ChannelEventPair.
 		if(channel_event->FindLeadingEdge() < 0){ continue; }
 
-		// Compute the energy of the pulse within the fitting window.
-		channel_event->hires_energy = channel_event->FindQDC(channel_event->max_index - fitting_low, channel_event->max_index + fitting_high);
+		if(use_integration) // Compute the integral of the pulse within the integration window.
+			channel_event->hires_energy = channel_event->FindQDC(channel_event->max_index - fitting_low, channel_event->max_index + fitting_high);
+		else // Use the maximum ADC channel as the "energy" of the pulse.
+			channel_event->hires_energy = channel_event->maximum;
 		
 		// Set the channel event to valid.
 		channel_event->valid_chan = true;

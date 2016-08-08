@@ -87,6 +87,7 @@ class Processor{
 	bool write_waveform;
 	bool use_color_terminal;
 	bool use_fitting;
+	bool use_integration;
 	
 	TBranch *local_branch;
 	TBranch *trace_branch;
