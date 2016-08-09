@@ -286,8 +286,6 @@ void Processor::PreProcess(){
 
 		if(use_integration) // Compute the integral of the pulse within the integration window.
 			channel_event->hires_energy = channel_event->FindQDC(channel_event->max_index - fitting_low, channel_event->max_index + fitting_high);
-		else // Use the maximum ADC channel as the "energy" of the pulse.
-			channel_event->hires_energy = channel_event->maximum;
 		
 		// Set the channel event to valid.
 		channel_event->valid_chan = true;
