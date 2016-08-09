@@ -220,6 +220,7 @@ simpleScanner::~simpleScanner(){
 			// Write debug histograms.
 			chanCounts->GetHist()->Write();
 			chanMaxADC->GetHist()->Write();
+			chanEnergy->GetHist()->Write();
 			
 			// Close the root file.
 			root_file->Close();
@@ -540,6 +541,9 @@ bool simpleScanner::Initialize(std::string prefix_){
 	// Setup a 2d histogram for tracking channel energies.
 	chanMaxADC = new Plotter("chanMaxADC", "Channel vs. Max ADC", "COLZ", "Max ADC Channel", 4096, 0, 4096, "Channel", 96, 0, 96);
 
+	// Setup a 2d histogram for tracking channel energies.
+	chanEnergy = new Plotter("chanEnergy", "Channel vs. Filter Energy", "COLZ", "Filter Energy", 4096, 0, 32768, "Channel", 96, 0, 96);
+
 	// Initialize the online data processor.
 	online = new OnlineProcessor();
 
@@ -549,10 +553,12 @@ bool simpleScanner::Initialize(std::string prefix_){
 		// Add the raw histograms to the online processor.
 		online->AddHist(chanCounts);
 		online->AddHist(chanMaxADC);
+		online->AddHist(chanEnergy);
 	
 		// Set the first and second histograms to channel count histogram and energy histogram.
 		online->ChangeHist(0, 0);
 		online->ChangeHist(1, 1);
+		online->ChangeHist(2, 2);
 		online->Refresh();
 	}
 
@@ -718,11 +724,10 @@ bool simpleScanner::AddEvent(XiaData *event_){
 	// Correct the baseline before using the trace.
 	if(!pair_->pixieEvent->adcTrace.empty() && pair_->channelEvent->CorrectBaseline() >= 0.0)
 		chanMaxADC->Fill(pair_->channelEvent->maximum, pair_->entry->location);
-	else
-		chanMaxADC->Fill(pair_->pixieEvent->energy/8.0, pair_->entry->location);
-
+	
 	// Fill the output histograms.
 	chanCounts->Fill(event_->chanNum, event_->modNum);
+	chanEnergy->Fill(pair_->pixieEvent->energy, pair_->entry->location);
 
 	// Raw event information. Dump raw event information to root file.
 	if(write_raw){
