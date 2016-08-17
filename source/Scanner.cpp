@@ -158,6 +158,7 @@ extTree *simpleUnpacker::InitTree(){
 
 /// Default constructor.
 simpleScanner::simpleScanner() : ScanInterface() {
+	use_calibrations = true;
 	untriggered_mode = false;
 	force_overwrite = false;
 	online_mode = false;
@@ -454,6 +455,10 @@ bool simpleScanner::ExtraArguments(const std::string &arg_, std::deque<std::stri
 		std::cout << msgHeader << "Toggling root fitting ON.\n";
 		use_root_fitting = true;
 	}
+	else if(arg_ == "--uncal"){
+		std::cout << msgHeader << "Using uncalibrated mode.\n";
+		use_calibrations = false;
+	}
 	else if(arg_ == "--traces"){
 		std::cout << msgHeader << "Toggling ADC trace output ON.\n";
 		write_traces = true;
@@ -719,7 +724,11 @@ bool simpleScanner::AddEvent(XiaData *event_){
 	if(!event_){ return false; }
 
 	// Link the channel event to its corresponding map entry.
-	ChannelEventPair *pair_ = new ChannelEventPair(event_, new ChannelEvent(event_), mapfile->GetMapEntry(event_), calibfile->GetCalibEntry(event_));
+	ChannelEventPair *pair_;
+	if(use_calibrations)
+		pair_ = new ChannelEventPair(event_, new ChannelEvent(event_), mapfile->GetMapEntry(event_), calibfile->GetCalibEntry(event_));
+	else
+		pair_ = new ChannelEventPair(event_, new ChannelEvent(event_), mapfile->GetMapEntry(event_), NULL);
 
 	// Correct the baseline before using the trace.
 	if(!pair_->pixieEvent->adcTrace.empty() && pair_->channelEvent->CorrectBaseline() >= 0.0)
