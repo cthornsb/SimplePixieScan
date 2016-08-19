@@ -583,10 +583,18 @@ bool simpleScanner::Initialize(std::string prefix_){
 		delete configfile;
 		return false;
 	}
-	std::cout << prefix_ << "Reading calibration file ./setup/calib.dat\n";	
-	calibfile = new CalibFile("./setup/calib.dat");
-	if(!configfile->IsInit()){ // Failed to read config file.
-		std::cout << prefix_ << "Failed to read calibration file './setup/calib.dat'.\n";
+	calibfile = new CalibFile();
+	std::cout << prefix_ << "Reading time calibration file ./setup/time.cal\n";
+	if(!calibfile->LoadTimeCal("./setup/time.cal")){ // Failed to read time calibration file.
+		std::cout << prefix_ << "Failed to read time calibration file './setup/time.cal'.\n";
+		delete mapfile;
+		delete configfile;
+		delete calibfile;
+		return false;
+	}
+	std::cout << prefix_ << "Reading energy calibration file ./setup/energy.cal\n";
+	if(!calibfile->LoadEnergyCal("./setup/energy.cal")){ // Failed to read time calibration file.
+		std::cout << prefix_ << "Failed to read energy calibration file './setup/energy.cal'.\n";
 		delete mapfile;
 		delete configfile;
 		delete calibfile;
@@ -728,7 +736,7 @@ bool simpleScanner::AddEvent(XiaData *event_){
 	if(use_calibrations)
 		pair_ = new ChannelEventPair(event_, new ChannelEvent(event_), mapfile->GetMapEntry(event_), calibfile->GetCalibEntry(event_));
 	else
-		pair_ = new ChannelEventPair(event_, new ChannelEvent(event_), mapfile->GetMapEntry(event_), NULL);
+		pair_ = new ChannelEventPair(event_, new ChannelEvent(event_), mapfile->GetMapEntry(event_), &dummyCalib);
 
 	// Correct the baseline before using the trace.
 	if(!pair_->pixieEvent->adcTrace.empty() && pair_->channelEvent->CorrectBaseline() >= 0.0)

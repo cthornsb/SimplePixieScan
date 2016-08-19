@@ -321,8 +321,8 @@ void Processor::PreProcess(){
 		channel_event->hires_time += channel_event->phase * adcClockInSeconds;
 		
 		// Calibrate the energy, if applicable.
-		if((*iter)->calib)
-			channel_event->hires_energy = (*iter)->calib->GetCalEnergy(channel_event->hires_energy);
+		if((*iter)->calib->Energy())
+			channel_event->hires_energy = (*iter)->calib->energyCal->GetCalEnergy(channel_event->hires_energy);
 	}
 
 	// Stop the timer.

@@ -66,13 +66,11 @@ bool LiquidBarProcessor::HandleEvents(){
 
 		// Do time alignment.
 		double r0 = 0.5;
-		if((*iter_L)->calib){
-			tdiff_L += (*iter_L)->calib->t0;
-			r0 = (*iter_L)->calib->r0;
+		if((*iter_L)->calib->Time() && (*iter_R)->calib->Time()){
+			tdiff_L += (*iter_L)->calib->timeCal->t0;
+			tdiff_R += (*iter_R)->calib->timeCal->t0;
+			r0 = (*iter_L)->calib->timeCal->r0;
 		}
-
-		if((*iter_R)->calib)
-			tdiff_R += (*iter_R)->calib->t0;
 		
 		// Get the location of this detector.
 		int location = (*iter_L)->entry->location;

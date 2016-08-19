@@ -18,8 +18,8 @@ bool GenericProcessor::HandleEvents(){
 		double tdiff = (current_event->event->time - start->pixieEvent->time)*8 + (current_event->phase - start->channelEvent->phase)*4;
 
 		// Do time alignment.
-		if((*iter)->calib)
-			tdiff += (*iter)->calib->t0;
+		if((*iter)->calib->Time())
+			tdiff += (*iter)->calib->timeCal->t0;
 		
 		// Get the location of this detector.
 		int location = (*iter)->entry->location;

@@ -15,7 +15,6 @@
 
 XiaData *dummyEvent = new XiaData();
 MapEntry dummyEntry;
-CalibEntry dummyCalib;
 
 ChannelEventPair dummyStart(dummyEvent, new ChannelEvent(dummyEvent), &dummyEntry, &dummyCalib);
 
