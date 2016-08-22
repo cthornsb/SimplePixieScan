@@ -28,10 +28,11 @@ bool LiquidProcessor::HandleEvents(){
 
 		// Do time alignment.
 		double r0 = 0.5;
-		if((*iter)->calib->Time()){
+		if((*iter)->calib->Position())
+			r0 = (*iter)->calib->positionCal->r0;
+		
+		if((*iter)->calib->Time())
 			tdiff += (*iter)->calib->timeCal->t0;
-			r0 = (*iter)->calib->timeCal->r0;
-		}
 		
 		// Get the location of this detector.
 		int location = (*iter)->entry->location;

@@ -583,23 +583,19 @@ bool simpleScanner::Initialize(std::string prefix_){
 		delete configfile;
 		return false;
 	}
+	
 	calibfile = new CalibFile();
 	std::cout << prefix_ << "Reading time calibration file ./setup/time.cal\n";
-	if(!calibfile->LoadTimeCal("./setup/time.cal")){ // Failed to read time calibration file.
+	if(!calibfile->LoadTimeCal("./setup/time.cal")) // Failed to read time calibration file.
 		std::cout << prefix_ << "Failed to read time calibration file './setup/time.cal'.\n";
-		delete mapfile;
-		delete configfile;
-		delete calibfile;
-		return false;
-	}
+	
 	std::cout << prefix_ << "Reading energy calibration file ./setup/energy.cal\n";
-	if(!calibfile->LoadEnergyCal("./setup/energy.cal")){ // Failed to read time calibration file.
+	if(!calibfile->LoadEnergyCal("./setup/energy.cal")) // Failed to read energy calibration file.
 		std::cout << prefix_ << "Failed to read energy calibration file './setup/energy.cal'.\n";
-		delete mapfile;
-		delete configfile;
-		delete calibfile;
-		return false;
-	}
+	
+	std::cout << prefix_ << "Reading position calibration file ./setup/position.cal\n";
+	if(!calibfile->LoadPositionCal("./setup/position.cal")) // Failed to read position calibration file.
+		std::cout << prefix_ << "Failed to read position calibration file './setup/position.cal'.\n";
 	
 	GetCore()->SetEventWidth(configfile->eventWidth * 125); // = eventWidth * 1E-6(s/us) / 8E-9(s/tick)
 	std::cout << prefix_ << "Setting event width to " << configfile->eventWidth << " μs (" << GetCore()->GetEventWidth() << " pixie clock ticks).\n";

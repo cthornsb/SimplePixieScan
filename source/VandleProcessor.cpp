@@ -65,10 +65,12 @@ bool VandleProcessor::HandleEvents(){
 
 		// Do time alignment.
 		double r0 = 0.5;
+		if((*iter_L)->calib->Position())
+			r0 = (*iter_L)->calib->positionCal->r0;
+		
 		if((*iter_L)->calib->Time() && (*iter_R)->calib->Time()){
 			tdiff_L += (*iter_L)->calib->timeCal->t0;
 			tdiff_R += (*iter_R)->calib->timeCal->t0;
-			r0 = (*iter_L)->calib->timeCal->r0;
 		}
 		
 		// Get the location of this detector.
