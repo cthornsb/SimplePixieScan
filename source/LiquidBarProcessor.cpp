@@ -9,7 +9,7 @@
 #ifndef C_IN_VAC
 #define C_IN_VAC 29.9792458 // cm/ns
 #endif
-#define C_IN_LIQUID_BAR 10.3754 // cm/ns
+#define C_IN_LIQUID_BAR 8.845 // cm/ns (8.845 +/- 2.197) CRT Apr. 9th, 2016 bar no. 001 (mr. Napth))
 
 #ifndef M_NEUTRON
 #define M_NEUTRON 939.5654133 // MeV/c^2
