@@ -33,6 +33,15 @@ TimeCal::TimeCal(const std::vector<std::string> &pars_) : CalType(0), t0(0.0) {
 	}
 }
 
+bool TimeCal::GetCalTime(double &T){
+	T = T - t0;
+	return true;
+}
+
+double TimeCal::GetCalTime(const double &time_){
+	return (time_ - t0);
+}
+
 void TimeCal::Print(){
 	std::cout << " id=" << id << ", t0=" << t0 << std::endl;
 }

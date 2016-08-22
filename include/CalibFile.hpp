@@ -47,8 +47,12 @@ class TimeCal : public CalType {
 		CalType(id_), t0(t0_) { }
 		
 	TimeCal(const std::vector<std::string> &pars_);
+
+	bool GetCalTime(double &T);
 	
-	void Print();
+	double GetCalTime(const double &time_);
+	
+	virtual void Print();
 };
 
 class EnergyCal : public CalType {

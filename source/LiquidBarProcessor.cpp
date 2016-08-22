@@ -70,8 +70,8 @@ bool LiquidBarProcessor::HandleEvents(){
 			r0 = (*iter_L)->calib->positionCal->r0;
 		
 		if((*iter_L)->calib->Time() && (*iter_R)->calib->Time()){
-			tdiff_L += (*iter_L)->calib->timeCal->t0;
-			tdiff_R += (*iter_R)->calib->timeCal->t0;
+			(*iter_L)->calib->timeCal->GetCalTime(tdiff_L);
+			(*iter_R)->calib->timeCal->GetCalTime(tdiff_R);
 		}
 		
 		// Get the location of this detector.

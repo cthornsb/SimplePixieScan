@@ -32,7 +32,7 @@ bool LiquidProcessor::HandleEvents(){
 			r0 = (*iter)->calib->positionCal->r0;
 		
 		if((*iter)->calib->Time())
-			tdiff += (*iter)->calib->timeCal->t0;
+			(*iter)->calib->timeCal->GetCalTime(tdiff);
 		
 		// Get the location of this detector.
 		int location = (*iter)->entry->location;

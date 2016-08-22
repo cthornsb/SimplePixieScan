@@ -19,7 +19,7 @@ bool HagridProcessor::HandleEvents(){
 
 		// Do time alignment.
 		if((*iter)->calib->Time())
-			tdiff += (*iter)->calib->timeCal->t0;
+			(*iter)->calib->timeCal->GetCalTime(tdiff);
 		
 		// Get the location of this detector.
 		int location = (*iter)->entry->location;
