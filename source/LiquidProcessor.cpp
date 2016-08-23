@@ -31,8 +31,14 @@ bool LiquidProcessor::HandleEvents(){
 		if((*iter)->calib->Position())
 			r0 = (*iter)->calib->positionCal->r0;
 		
-		if((*iter)->calib->Time())
+		// Do time alignment.
+		if((*iter)->calib->Time()){
 			(*iter)->calib->timeCal->GetCalTime(tdiff);
+
+			// Check that the adjusted time difference is reasonable.
+			if(tdiff < -20 || tdiff > 200)
+				continue;
+		}
 		
 		// Get the location of this detector.
 		int location = (*iter)->entry->location;
