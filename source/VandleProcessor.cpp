@@ -63,15 +63,29 @@ bool VandleProcessor::HandleEvents(){
 		double tdiff_L = (current_event_L->time - start->pixieEvent->time)*8 + (channel_event_L->phase - start->channelEvent->phase)*4;
 		double tdiff_R = (current_event_R->time - start->pixieEvent->time)*8 + (channel_event_R->phase - start->channelEvent->phase)*4;
 
-		// Do time alignment.
+		// Get the detector distance from the target.
 		double r0 = 0.5;
 		if((*iter_L)->calib->Position())
 			r0 = (*iter_L)->calib->positionCal->r0;
 		
-		if((*iter_L)->calib->Time() && (*iter_R)->calib->Time()){
+		double ypos, ctof;
+		if((*iter_L)->calib->Time() && (*iter_R)->calib->Time()){ // Do time alignment.
 			(*iter_L)->calib->timeCal->GetCalTime(tdiff_L);
 			(*iter_R)->calib->timeCal->GetCalTime(tdiff_R);
+
+			// Check that the adjusted time differences are reasonable.
+			if((tdiff_L < -20 || tdiff_L > 200) || (tdiff_R < -20 || tdiff_R > 200))
+				continue;
+
+			ypos = (tdiff_R - tdiff_L)*C_IN_VANDLE_BAR/200.0; // m
+			ctof = (r0/std::sqrt(r0*r0+ypos*ypos))*(tdiff_L + tdiff_R)/2.0; // ns
 		}
+		else{ // No time alignment available.
+			ypos = 0.0;
+			ctof = (tdiff_L + tdiff_R)/2.0; // ns
+		}
+
+		double energy = 0.5E4*M_NEUTRON*r0*r0/(C_IN_VAC*C_IN_VAC*ctof*ctof); // MeV
 		
 		// Get the location of this detector.
 		int location = (*iter_L)->entry->location;
@@ -82,11 +96,6 @@ bool VandleProcessor::HandleEvents(){
 		loc_L_phase_2d->Fill(channel_event_L->phase, location);
 		loc_R_phase_2d->Fill(channel_event_R->phase, location);
 		loc_1d->Fill(location);		
-		
-		double ypos = (tdiff_R - tdiff_L)*C_IN_VANDLE_BAR/200.0; // m
-		double tof = (tdiff_L + tdiff_R)/2.0; // ns
-		double ctof = (r0/std::sqrt(r0*r0+ypos*ypos))*tof; // ns
-		double energy = 0.5E4*M_NEUTRON*r0*r0/(C_IN_VAC*C_IN_VAC*ctof*ctof); // MeV
 		
 		// Fill the values into the root tree.
 		structure.Append(std::sqrt(channel_event_L->hires_energy*channel_event_R->hires_energy), ypos, ctof, energy, location);
