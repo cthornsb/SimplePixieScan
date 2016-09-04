@@ -6,6 +6,7 @@
 
 #include "XiaData.hpp"
 #include "ScanInterface.hpp"
+#include "CTerminal.h"
 
 CalibEntry dummyCalib(new TimeCal(), new EnergyCal(), new PositionCal());
 

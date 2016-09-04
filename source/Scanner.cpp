@@ -430,50 +430,44 @@ bool simpleScanner::ExtraCommands(const std::string &cmd_, std::vector<std::stri
 }
 
 /** ExtraArguments is used to send command line arguments to classes derived
-  * from ScanInterface. If ScanInterface receives an unrecognized
-  * argument from the user, it will pass it on to the derived class.
-  * \param[in]  arg_    The argument to interpret.
-  * \param[out] others_ The remaining arguments following arg_.
-  * \param[out] ifname  The input filename to send back to use for reading.
-  * \return True if the argument was recognized and false otherwise.
+  * from ScanInterface. This method should loop over the optionExt elements
+  * in the vector userOpts and check for those options which have been flagged
+  * as active by ::Setup(). This should be overloaded in the derived class.
+  * \return Nothing.
   */
-bool simpleScanner::ExtraArguments(const std::string &arg_, std::deque<std::string> &others_, std::string &ifname){
-	static int count = 0;
-	if(arg_ == "--force-overwrite"){
-		std::cout << msgHeader << "Forcing overwrite of output file.\n";
-		force_overwrite = true;
-	}
-	else if(arg_ == "--online-mode"){
-		std::cout << msgHeader << "Using online mode.\n";
-		online_mode = true;
-	}
-	else if(arg_ == "--untriggered"){
+void simpleScanner::ExtraArguments(){
+	if(userOpts.at(0).active){ // Untriggered.
 		std::cout << msgHeader << "Using untriggered mode.\n";
-		untriggered_mode = true;
+		untriggered_mode = true;	
 	}
-	else if(arg_ == "--fitting"){
+	if(userOpts.at(1).active){ // Force overwrite.
+		std::cout << msgHeader << "Forcing overwrite of output file.\n";
+		force_overwrite = true;	
+	}
+	if(userOpts.at(2).active){ // Online mode.
+		std::cout << msgHeader << "Using online mode.\n";
+		online_mode = true;	
+	}
+	if(userOpts.at(3).active){ // Root fitting.
 		std::cout << msgHeader << "Toggling root fitting ON.\n";
-		use_root_fitting = true;
+		use_root_fitting = true;	
 	}
-	else if(arg_ == "--uncal"){
+	if(userOpts.at(4).active){ // Uncalibrated mode.
 		std::cout << msgHeader << "Using uncalibrated mode.\n";
-		use_calibrations = false;
+		use_calibrations = false;	
 	}
-	else if(arg_ == "--traces"){
+	if(userOpts.at(5).active){ // Traces.
 		std::cout << msgHeader << "Toggling ADC trace output ON.\n";
-		write_traces = true;
+		write_traces = true;	
 	}
-	else if(arg_ == "--raw"){
+	if(userOpts.at(6).active){ // Raw.
 		std::cout << msgHeader << "Writing raw pixie data to output tree.\n";
-		write_raw = true;
+		write_raw = true;	
 	}
-	else{ // Not a valid option. Must be a filename.
-		if(count == 0){ ifname = arg_; } // Set the input filename.
-		else if(count == 1){ output_filename = arg_; } // Set the output filename prefix.
-		count++;
+	if(userOpts.at(7).active){ // Stats.
+		std::cout << msgHeader << "Writing event builder stats to output tree.\n";
+		write_stats = true;		
 	}
-	
-	return true;
 }
 
 /** CmdHelp is used to allow a derived class to print a help statement about
@@ -499,19 +493,21 @@ void simpleScanner::CmdHelp(const std::string &prefix_/*=""*/){
 	}
 }
 
-/** ArgHelp is used to allow a derived class to print a help statment about
-  * its own command line arguments. This method is called at the end of
-  * the ScanInterface::help method.
+/** ArgHelp is used to allow a derived class to add a command line option
+  * to the main list of options. This method is called at the end of
+  * from the ::Setup method.
+  * Does nothing useful by default.
   * \return Nothing.
   */
 void simpleScanner::ArgHelp(){
-	std::cout << "   --force-overwrite - Force an overwrite of the output root file if it exists (default=false)\n";
-	std::cout << "   --online-mode     - Plot online root histograms for monitoring data (default=false)\n";
-	std::cout << "   --untriggered     - Run without a start detector (default=false)\n";
-	std::cout << "   --fitting         - Use root fitting for high resolution timing (default=false)\n";
-	std::cout << "   --traces          - Dump raw ADC traces to output root file (default=false)\n";
-	std::cout << "   --raw             - Dump raw pixie module data to output root file (default=false)\n";
-	std::cout << "   --stats           - Dump event builder information to the output root file (default=false)\n";
+	AddOption(optionExt("untriggered", no_argument, NULL, 'u', "", "Run without a start detector"));
+	AddOption(optionExt("force", no_argument, NULL, 'f', "", "Force overwrite of the output root file"));
+	AddOption(optionExt("online", no_argument, NULL, 0, "", "Plot online root histograms for monitoring data"));
+	AddOption(optionExt("fitting", no_argument, NULL, 0, "", "Use root fitting for high resolution timing"));
+	AddOption(optionExt("uncal", no_argument, NULL, 0, "", "Do not calibrate channel energies"));
+	AddOption(optionExt("traces", no_argument, NULL, 0, "", "Dump raw ADC traces to output root file"));
+	AddOption(optionExt("raw", no_argument, NULL, 0, "", "Dump raw pixie module data to output root file"));
+	AddOption(optionExt("stats", no_argument, NULL, 0, "", "Dump event builder information to the output root file"));
 }
 
 /** SyntaxStr is used to print a linux style usage message to the screen.

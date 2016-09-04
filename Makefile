@@ -1,16 +1,19 @@
 #####################################################################
 
-# Set the PixieSuite core directory
-PIXIE_SUITE_DIR = $(HOME)/opt/PixieSuite2
+# Set the PixieSuite core directory.
+PIXIE_SUITE_DIR = $(HOME)/opt/paass
 
-# This one will be set automatically.
-PIXIE_SUITE_LIB_DIR = $(PIXIE_SUITE_DIR)/exec/lib
+# Set the include directory.
+PIXIE_SUITE_INC_DIR = $(PIXIE_SUITE_DIR)/install/include
+
+# Set the lib directory.
+PIXIE_SUITE_LIB_DIR = $(PIXIE_SUITE_DIR)/install/lib
 
 #####################################################################
 
 CFLAGS = -g -Wall -std=c++0x `root-config --cflags`
 #CFLAGS = -Wall -O3 -std=c++0x `root-config --cflags`
-LDLIBS = -lstdc++ -L$(PIXIE_SUITE_LIB_DIR) -lPixieScan `root-config --libs`
+LDLIBS = -lstdc++ -L$(PIXIE_SUITE_LIB_DIR) -lScan `root-config --libs`
 LDFLAGS = `root-config --glibs`
 
 COMPILER = g++
@@ -106,7 +109,7 @@ $(EXEC_DIR):
 
 $(OBJ_DIR)/%.o: $(SOURCE_DIR)/%.cpp
 #	Compile C++ source files
-	$(COMPILER) -c $(CFLAGS) -Iinclude -I$(PIXIE_SUITE_DIR)/exec/include $< -o $@
+	$(COMPILER) -c $(CFLAGS) -Iinclude -I$(PIXIE_SUITE_INC_DIR) $< -o $@
 
 ########################################################################
 
