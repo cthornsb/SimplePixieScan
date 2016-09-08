@@ -172,7 +172,6 @@ simpleScanner::simpleScanner() : ScanInterface() {
 	calibfile = NULL;
 	handler = NULL;
 	online = NULL;
-	output_filename = "out.root";
 	events_since_last_update = 0;
 	events_between_updates = 5000;
 	loaded_files = 0;
@@ -615,12 +614,12 @@ bool simpleScanner::Initialize(std::string prefix_){
 	
 	// Initialize the root output file.
 	std::cout << prefix_ << "Initializing root output.\n";
-	if(force_overwrite){ root_file = new TFile(output_filename.c_str(), "RECREATE"); }
-	else{ root_file = new TFile(output_filename.c_str(), "CREATE"); }
+	if(force_overwrite){ root_file = new TFile(GetOutputFilename().c_str(), "RECREATE"); }
+	else{ root_file = new TFile(GetOutputFilename().c_str(), "CREATE"); }
 
 	// Check that the root file is open.
 	if(!root_file->IsOpen()){
-		std::cout << prefix_ << "Failed to open output root file '" << output_filename << "'!\n";
+		std::cout << prefix_ << "Failed to open output root file '" << GetOutputFilename() << "'!\n";
 		root_file->Close();
 		delete root_file;
 		root_file = NULL;

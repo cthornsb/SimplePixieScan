@@ -244,7 +244,6 @@ class simpleScanner : public ScanInterface {
 	bool write_stats; /// Set to true if event builder information is to be written to the output file.
 	bool init; /// Set to true when the initialization process successfully completes.
 	
-	std::string output_filename; /// Path to the output root file.
 	std::string head_path;
 };
 
