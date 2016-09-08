@@ -43,7 +43,8 @@ SOURCES += TriggerProcessor.cpp \
            LiquidProcessor.cpp \
            HagridProcessor.cpp \
            GenericProcessor.cpp \
-           LogicProcessor.cpp
+           LogicProcessor.cpp \
+           TraceProcessor.cpp
 
 OBJECTS = $(addprefix $(OBJ_DIR)/,$(SOURCES:.cpp=.o))
 

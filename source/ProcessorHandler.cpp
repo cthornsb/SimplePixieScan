@@ -9,6 +9,7 @@
 #include "HagridProcessor.hpp"
 #include "GenericProcessor.hpp"
 #include "LogicProcessor.hpp"
+#include "TraceProcessor.hpp"
 
 #include "MapFile.hpp"
 #include "CalibFile.hpp"
@@ -84,6 +85,7 @@ Processor *ProcessorHandler::AddProcessor(std::string type_, MapFile *map_){
 	else if(type_ == "hagrid"){ proc = (Processor*)(new HagridProcessor(map_)); }
 	else if(type_ == "generic"){ proc = (Processor*)(new GenericProcessor(map_)); }
 	else if(type_ == "logic"){ proc = (Processor*)(new LogicProcessor(map_)); }
+	else if(type_ == "trace"){ proc = (Processor*)(new TraceProcessor(map_)); }
 	else{ return NULL; }
 	
 	procs.push_back(ProcessorEntry(proc, type_)); 

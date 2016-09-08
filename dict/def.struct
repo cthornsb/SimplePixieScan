@@ -24,7 +24,7 @@
 #   means that they will be included in the Waveform class instead of Structure.
 #
 # Cory R. Thornsberry
-# Last updated: April 28th, 2015
+# Last updated: August 25th, 2016
 
 #####################################################################
 # Trigger
@@ -45,6 +45,35 @@ vector:double	tqdc	The energy computed from the trace.
 vector:double	time	The raw pixie16 system clock time.
 vector:double	phase	The trace offset in ns.
 u_int	mult	Multiplicity of the trigger detector.
+END_TYPES
+
+# End this class
+END_CLASS
+
+#####################################################################
+# TraceData
+#####################################################################
+# Class name
+BEGIN_CLASS	Trace
+
+# Short class description
+SHORT	Trace data structure
+
+# Longer class description
+LONG	Structure for storing pixie trace information
+
+# Data types and names
+# type	name	description
+BEGIN_TYPES
+vector:double	tdiff	The time difference between this detector and the start.
+vector:float	phase	The offset phase of the pulse.
+vector:float	baseline	The averaged baseline of the pulse.
+vector:float	stddev	The standard deviation of the baseline.
+vector:float	maximum	The baseline corrected maximum ADC value of the pulse.
+vector:float	tqdc	The integrated trace qdc of the pulse.
+vector:int	maxbin	The time bin where the ADC max occurs.
+vector:int	loc	Detector location (ID).
+u_int	mult	Multiplicity.
 END_TYPES
 
 # End this class
