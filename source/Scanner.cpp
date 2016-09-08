@@ -515,7 +515,7 @@ void simpleScanner::ArgHelp(){
   * \return Nothing.
   */
 void simpleScanner::SyntaxStr(char *name_){ 
-	std::cout << " usage: " << std::string(name_) << " [input] [options] [output]\n"; 
+	std::cout << " usage: " << std::string(name_) << " [options]\n"; 
 }
 
 /** IdleTask is called whenever a scan is running in shared
@@ -811,7 +811,8 @@ int main(int argc, char *argv[]){
 	scanner.SetProgramName(std::string(PROG_NAME));	
 	
 	// Initialize the scanner.
-	scanner.Setup(argc, argv);
+	if(!scanner.Setup(argc, argv))
+		return 1;
 
 	// Run the main loop.
 	int retval = scanner.Execute();
