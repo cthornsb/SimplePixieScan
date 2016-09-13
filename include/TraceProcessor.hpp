@@ -12,7 +12,8 @@ class TraceProcessor : public Processor{
 	TraceStructure structure;
 	Trace waveform;
   
-	virtual bool HandleEvents();
+	// Handle an individual event.
+	virtual bool HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEvtR=NULL);
 	
   public:
 	TraceProcessor(MapFile *map_);

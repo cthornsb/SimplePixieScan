@@ -68,44 +68,47 @@ class FittingFunction{
 };
 
 class Processor{
-  protected:
-	Structure *root_structure; /// Root data structure for storing processor-specific information.
-	Trace *root_waveform; /// Root data structure for storing baseline corrected traces.
-  
+  private:
+	std::deque<ChannelEventPair*> events;	  
+
+	std::string name;
+	std::string type;
+	bool init;
+	bool use_color_terminal;
+
 	clock_t start_time;
 	unsigned long total_time;
 	
 	unsigned long good_events;
 	unsigned long total_events;
 	
-	ChannelEventPair *start;
-	std::deque<ChannelEventPair*> events;
-	
-	std::string name;
-	std::string type;
-	bool init;
-	bool write_waveform;
-	bool use_color_terminal;
-	bool use_fitting;
-	bool use_integration;
-	
 	TBranch *local_branch;
 	TBranch *trace_branch;
-	TF1 *fitting_func;
 
-	FittingFunction *actual_func;
-
-	TFitResultPtr fit_result; /// Fit result pointer for storing trace fitting information.
-
-	int fitting_low;
-	int fitting_high;
-	
 	MapFile *mapfile;
 
 	double clockInSeconds; /// One pixie clock is 8 ns
 	double adcClockInSeconds; /// One ADC clock is 4 ns
 	double filterClockInSeconds; /// One filter clock is 8 ns
 
+  protected:
+	Structure *root_structure; /// Root data structure for storing processor-specific information.
+	Trace *root_waveform; /// Root data structure for storing baseline corrected traces.
+
+	bool use_fitting;
+	bool use_integration;
+	bool write_waveform;
+	bool isSingleEnded;
+
+	int fitting_low;
+	int fitting_high;
+
+	ChannelEventPair *start;
+
+	TF1 *fitting_func;
+	FittingFunction *actual_func;
+	TFitResultPtr fit_result; /// Fit result pointer for storing trace fitting information.
+  
 	/// Clear channel events from the queue
 	void ClearEvents();
   
@@ -129,6 +132,10 @@ class Processor{
 	
 	TF1 *SetFitFunction();
 
+	bool HandleSingleEndedEvents();
+	
+	bool HandleDoubleEndedEvents();
+
 	/// Set the fit parameters for the current event.
 	virtual bool SetFitParameters(ChannelEvent *event_, MapEntry *entry_);
 	
@@ -136,13 +143,13 @@ class Processor{
 	virtual bool FitPulse(TGraph *trace_, float &phase);	
 
 	/// Set the CFD parameters for the current event.
-	virtual bool SetCfdParameters(ChannelEvent *event_, MapEntry *entry_){ return true; }
+	virtual bool SetCfdParameters(ChannelEvent *event_, MapEntry *entry_){ return false; }
 
 	/// Perform CFD analysis on a single trace.
 	virtual bool CfdPulse(ChannelEvent *event_, MapEntry *entry_);
 
-	/// Process all individual events.
-	virtual bool HandleEvents();
+	/// Process an individual events.
+	virtual bool HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEvtR=NULL){ return false; }
 
   public:
 	Processor(std::string name_, std::string type_, MapFile *map_);

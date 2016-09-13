@@ -16,7 +16,8 @@ class TriggerProcessor : public Processor{
 	Plotter *energy_1d;
 	Plotter *phase_1d;
 
-	virtual bool HandleEvents();
+	// Handle an individual event.
+	virtual bool HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEvtR=NULL);
 	
   public:
 	TriggerProcessor(MapFile *map_);

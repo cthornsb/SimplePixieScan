@@ -11,8 +11,8 @@ class LogicProcessor : public Processor{
   private:
 	LogicStructure structure;
   
-	/// Process all individual events.
-	virtual bool HandleEvents();
+	// Handle an individual event.
+	virtual bool HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEvtR=NULL);
 	
   public:
 	LogicProcessor(MapFile *map_);

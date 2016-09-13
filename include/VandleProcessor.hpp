@@ -19,7 +19,8 @@ class VandleProcessor : public Processor{
 	Plotter *loc_R_phase_2d;
 	Plotter *loc_1d;
 
-	virtual bool HandleEvents();
+	// Handle an individual event.
+	virtual bool HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEvtR=NULL);
 	
   public:
 	VandleProcessor(MapFile *map_);

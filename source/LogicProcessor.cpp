@@ -3,15 +3,10 @@
 #include "MapFile.hpp"
 
 /// Process all individual events.
-bool LogicProcessor::HandleEvents(){
-	if(!init){ return false; }
-
-	for(std::deque<ChannelEventPair*>::iterator iter = events.begin(); iter != events.end(); iter++){
-		// Fill the values into the root tree.
-		structure.Append((*iter)->entry->location);
-		
-		good_events++;
-	}
+bool LogicProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEvtR/*=NULL*/){
+	// Fill the values into the root tree.
+	structure.Append(chEvt->entry->location);
+	
 	return true;
 }
 

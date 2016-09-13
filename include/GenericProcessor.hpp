@@ -18,7 +18,8 @@ class GenericProcessor : public Processor{
 	Plotter *loc_phase_2d;
 	Plotter *loc_1d;
   
-	virtual bool HandleEvents();
+	// Handle an individual event.
+	virtual bool HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEvtR=NULL);
 	
   public:
 	GenericProcessor(MapFile *map_);

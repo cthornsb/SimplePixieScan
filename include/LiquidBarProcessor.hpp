@@ -27,8 +27,8 @@ class LiquidBarProcessor : public Processor{
 	Plotter *loc_psd_2d;
 	Plotter *loc_1d;
 
-	/// Process all individual events.
-	virtual bool HandleEvents();
+	// Handle an individual event.
+	virtual bool HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEvtR=NULL);
 	
   public:
 	LiquidBarProcessor(MapFile *map_);

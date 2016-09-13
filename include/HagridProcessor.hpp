@@ -17,7 +17,8 @@ class HagridProcessor : public Processor{
 	Plotter *loc_energy_2d;
 	Plotter *loc_1d;
   
-	virtual bool HandleEvents();
+	// Handle an individual event.
+	virtual bool HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEvtR=NULL);
 	
   public:
 	HagridProcessor(MapFile *map_);

@@ -12,60 +12,50 @@
 #endif
 
 /// Process all individual events.
-bool LiquidProcessor::HandleEvents(){
-	if(!init){ return false; }
+bool LiquidProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEvtR/*=NULL*/){
+	ChannelEvent *current_event = chEvt->channelEvent;
 	
-	ChannelEvent *current_event;
+	// Calculate the time difference between the current event and the start.
+	double tdiff = (current_event->event->time - start->pixieEvent->time)*8 + (current_event->phase - start->channelEvent->phase)*4;
 
-	for(std::deque<ChannelEventPair*>::iterator iter = events.begin(); iter != events.end(); iter++){
-		current_event = (*iter)->channelEvent;
+	// Do time alignment.
+	double r0 = 0.5;
+	if(chEvt->calib->Position())
+		r0 = chEvt->calib->positionCal->r0;
 	
-		// Check that the time and energy values are valid
-		if(!current_event->valid_chan){ continue; }
+	// Do time alignment.
+	if(chEvt->calib->Time()){
+		chEvt->calib->timeCal->GetCalTime(tdiff);
 
-		// Calculate the time difference between the current event and the start.
-		double tdiff = (current_event->event->time - start->pixieEvent->time)*8 + (current_event->phase - start->channelEvent->phase)*4;
-
-		// Do time alignment.
-		double r0 = 0.5;
-		if((*iter)->calib->Position())
-			r0 = (*iter)->calib->positionCal->r0;
-		
-		// Do time alignment.
-		if((*iter)->calib->Time()){
-			(*iter)->calib->timeCal->GetCalTime(tdiff);
-
-			// Check that the adjusted time difference is reasonable.
-			if(tdiff < -20 || tdiff > 200)
-				continue;
-		}
-		
-		// Get the location of this detector.
-		int location = (*iter)->entry->location;
-
-		// Compute the trace qdc of the fast and slow component of the left pmt pulse.
-		short_qdc = current_event->IntegratePulse(current_event->max_index + fitting_low, current_event->max_index + fitting_high);
-		long_qdc = current_event->IntegratePulse(current_event->max_index + fitting_low2, current_event->max_index + fitting_high2);	
-
-		// Fill all diagnostic histograms.
-		loc_tdiff_2d->Fill(tdiff, location);
-		loc_short_energy_2d->Fill(short_qdc, location);
-		loc_long_energy_2d->Fill(long_qdc, location);
-		loc_psd_2d->Fill(short_qdc/long_qdc, location);
-		loc_1d->Fill(location);		
-		
-		double energy = 0.5E4*M_NEUTRON*r0*r0/(C_IN_VAC*C_IN_VAC*tdiff*tdiff); // MeV
-		
-		// Fill the values into the root tree.
-		structure.Append(short_qdc, long_qdc, tdiff, energy, location);
-		     
-		// Copy the trace to the output file.
-		if(write_waveform){
-			waveform.Append(current_event->event->adcTrace);
-		}
-		
-		good_events++;
+		// Check that the adjusted time difference is reasonable.
+		if(tdiff < -20 || tdiff > 200)
+			return false;
 	}
+	
+	// Get the location of this detector.
+	int location = chEvt->entry->location;
+
+	// Compute the trace qdc of the fast and slow component of the left pmt pulse.
+	short_qdc = current_event->IntegratePulse(current_event->max_index + fitting_low, current_event->max_index + fitting_high);
+	long_qdc = current_event->IntegratePulse(current_event->max_index + fitting_low2, current_event->max_index + fitting_high2);	
+
+	// Fill all diagnostic histograms.
+	loc_tdiff_2d->Fill(tdiff, location);
+	loc_short_energy_2d->Fill(short_qdc, location);
+	loc_long_energy_2d->Fill(long_qdc, location);
+	loc_psd_2d->Fill(short_qdc/long_qdc, location);
+	loc_1d->Fill(location);		
+	
+	double energy = 0.5E4*M_NEUTRON*r0*r0/(C_IN_VAC*C_IN_VAC*tdiff*tdiff); // MeV
+	
+	// Fill the values into the root tree.
+	structure.Append(short_qdc, long_qdc, tdiff, energy, location);
+	     
+	// Copy the trace to the output file.
+	if(write_waveform){
+		waveform.Append(current_event->event->adcTrace);
+	}
+	
 	return true;
 }
 

@@ -56,34 +56,24 @@ bool PhoswichProcessor::SetCfdParameters(ChannelEvent *event_, MapEntry *entry_)
 }
 
 /// Process all individual events.
-bool PhoswichProcessor::HandleEvents(){
-	if(!init){ return false; }
+bool PhoswichProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEvtR/*=NULL*/){
+	ChannelEvent *current_event = chEvt->channelEvent;
 
-	ChannelEvent *current_event;
-
-	for(std::deque<ChannelEventPair*>::iterator iter = events.begin(); iter != events.end(); iter++){
-		current_event = (*iter)->channelEvent;
+	// Fill all diagnostic histograms.
+	fast_energy_1d->Fill(fast_qdc);
+	slow_energy_1d->Fill(slow_qdc);
+	energy_2d->Fill(slow_qdc, fast_qdc);
+	phase_1d->Fill(current_event->phase); 
 	
-		// Check that the time and energy values are valid
-		if(!current_event->valid_chan){ continue; }
+	// Fill the values into the root tree.
+	if(use_fitting){ structure.Append(fast_qdc, slow_qdc, fast_A, current_event->event->time, fast_MPV);	}
+	else{ structure.Append(fast_qdc, slow_qdc, current_event->maximum, current_event->event->time, current_event->phase); }
 
-		// Fill all diagnostic histograms.
-		fast_energy_1d->Fill(fast_qdc);
-		slow_energy_1d->Fill(slow_qdc);
-		energy_2d->Fill(slow_qdc, fast_qdc);
-		phase_1d->Fill(current_event->phase); 
-		
-		// Fill the values into the root tree.
-		if(use_fitting){ structure.Append(fast_qdc, slow_qdc, fast_A, current_event->event->time, fast_MPV);	}
-		else{ structure.Append(fast_qdc, slow_qdc, current_event->maximum, current_event->event->time, current_event->phase); }
-	
-		// Copy the trace to the output file.
-		if(write_waveform){
-			waveform.Append(current_event->event->adcTrace);
-		}
-		
-		good_events++;
+	// Copy the trace to the output file.
+	if(write_waveform){
+		waveform.Append(current_event->event->adcTrace);
 	}
+
 	return true;
 }
 

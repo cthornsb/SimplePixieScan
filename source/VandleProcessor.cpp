@@ -19,95 +19,63 @@
 
 const double max_tdiff = ((VANDLE_BAR_LENGTH / C_IN_VANDLE_BAR) / 8E-9); // Maximum time difference between valid vandle pairwise events (pixie clock ticks)
 
-bool VandleProcessor::HandleEvents(){
-	if(!init || events.size() <= 1){ 
-		return false;
+bool VandleProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEvtR/*=NULL*/){
+	XiaData *xia_data_L = chEvt->pixieEvent;
+	XiaData *xia_data_R = chEvtR->pixieEvent;
+	
+	ChannelEvent *channel_event_L = chEvt->channelEvent;
+	ChannelEvent *channel_event_R = chEvtR->channelEvent;
+	
+	// Check that the two channels are not separated by too much time.
+	if(absdiff(xia_data_L->time, xia_data_R->time) > (2 * max_tdiff)){ return false; }
+
+	// Calculate the time difference between the current event and the start.
+	double tdiff_L = (xia_data_L->time - start->pixieEvent->time)*8 + (channel_event_L->phase - start->channelEvent->phase)*4;
+	double tdiff_R = (xia_data_R->time - start->pixieEvent->time)*8 + (channel_event_R->phase - start->channelEvent->phase)*4;
+
+	// Get the detector distance from the target.
+	double r0 = 0.5;
+	if(chEvt->calib->Position())
+		r0 = chEvt->calib->positionCal->r0;
+	
+	double ypos, ctof;
+	if(chEvt->calib->Time() && chEvtR->calib->Time()){ // Do time alignment.
+		chEvt->calib->timeCal->GetCalTime(tdiff_L);
+		chEvtR->calib->timeCal->GetCalTime(tdiff_R);
+
+		// Check that the adjusted time differences are reasonable.
+		if((tdiff_L < -20 || tdiff_L > 200) || (tdiff_R < -20 || tdiff_R > 200))
+			return false;
+
+		ypos = (tdiff_R - tdiff_L)*C_IN_VANDLE_BAR/200.0; // m
+		ctof = (r0/std::sqrt(r0*r0+ypos*ypos))*(tdiff_L + tdiff_R)/2.0; // ns
 	}
-	
-	// Sort the vandle event list by channel ID. This way, we will be able
-	// to determine which channels are neighbors and, thus, part of the
-	// same vandle bar.
-	sort(events.begin(), events.end(), &ChannelEventPair::CompareChannel);
-	
-	std::deque<ChannelEventPair*>::iterator iter_L = events.begin();
-	std::deque<ChannelEventPair*>::iterator iter_R = events.begin()+1;
-
-	XiaData *current_event_L;
-	XiaData *current_event_R;
-
-	ChannelEvent *channel_event_L;
-	ChannelEvent *channel_event_R;
-
-	// Pick out pairs of channels representing vandle bars.
-	for(; iter_R != events.end(); iter_L++, iter_R++){
-		current_event_L = (*iter_L)->pixieEvent;
-		current_event_R = (*iter_R)->pixieEvent;
-
-		channel_event_L = (*iter_L)->channelEvent;
-		channel_event_R = (*iter_R)->channelEvent;
-	
-		// Check that the time and energy values are valid
-		if(!channel_event_L->valid_chan || !channel_event_R->valid_chan){ continue; }
-	
-		// Check that these two channels have the correct detector tag.
-		if((*iter_L)->entry->subtype != "left" || 
-		   (*iter_R)->entry->subtype != "right"){ continue; }
-	
-		// Check that these two channels are indeed neighbors. If not, iterate up by one and check again.
-		if((current_event_L->modNum != current_event_R->modNum) || (current_event_L->chanNum+1 != current_event_R->chanNum)){ continue; }
-		
-		// Check that the two channels are not separated by too much time.
-		if(absdiff(current_event_L->time, current_event_R->time) > (2 * max_tdiff)){ continue; }
-
-		// Calculate the time difference between the current event and the start.
-		double tdiff_L = (current_event_L->time - start->pixieEvent->time)*8 + (channel_event_L->phase - start->channelEvent->phase)*4;
-		double tdiff_R = (current_event_R->time - start->pixieEvent->time)*8 + (channel_event_R->phase - start->channelEvent->phase)*4;
-
-		// Get the detector distance from the target.
-		double r0 = 0.5;
-		if((*iter_L)->calib->Position())
-			r0 = (*iter_L)->calib->positionCal->r0;
-		
-		double ypos, ctof;
-		if((*iter_L)->calib->Time() && (*iter_R)->calib->Time()){ // Do time alignment.
-			(*iter_L)->calib->timeCal->GetCalTime(tdiff_L);
-			(*iter_R)->calib->timeCal->GetCalTime(tdiff_R);
-
-			// Check that the adjusted time differences are reasonable.
-			if((tdiff_L < -20 || tdiff_L > 200) || (tdiff_R < -20 || tdiff_R > 200))
-				continue;
-
-			ypos = (tdiff_R - tdiff_L)*C_IN_VANDLE_BAR/200.0; // m
-			ctof = (r0/std::sqrt(r0*r0+ypos*ypos))*(tdiff_L + tdiff_R)/2.0; // ns
-		}
-		else{ // No time alignment available.
-			ypos = 0.0;
-			ctof = (tdiff_L + tdiff_R)/2.0; // ns
-		}
-
-		double energy = 0.5E4*M_NEUTRON*r0*r0/(C_IN_VAC*C_IN_VAC*ctof*ctof); // MeV
-		
-		// Get the location of this detector.
-		int location = (*iter_L)->entry->location;
-		
-		// Fill all diagnostic histograms.
-		loc_tdiff_2d->Fill((tdiff_L + tdiff_R)/2.0, location);
-		loc_energy_2d->Fill(std::sqrt(channel_event_L->hires_energy*channel_event_R->hires_energy), location);
-		loc_L_phase_2d->Fill(channel_event_L->phase, location);
-		loc_R_phase_2d->Fill(channel_event_R->phase, location);
-		loc_1d->Fill(location);		
-		
-		// Fill the values into the root tree.
-		structure.Append(std::sqrt(channel_event_L->hires_energy*channel_event_R->hires_energy), ypos, ctof, energy, location);
-		     
-		// Copy the trace to the output file.
-		if(write_waveform){
-			L_waveform.Append(channel_event_L->event->adcTrace);
-			R_waveform.Append(channel_event_R->event->adcTrace);
-		}
-		
-		good_events += 2;
+	else{ // No time alignment available.
+		ypos = 0.0;
+		ctof = (tdiff_L + tdiff_R)/2.0; // ns
 	}
+
+	double energy = 0.5E4*M_NEUTRON*r0*r0/(C_IN_VAC*C_IN_VAC*ctof*ctof); // MeV
+	
+	// Get the location of this detector.
+	int location = chEvt->entry->location;
+	
+	// Fill all diagnostic histograms.
+	loc_tdiff_2d->Fill((tdiff_L + tdiff_R)/2.0, location);
+	loc_energy_2d->Fill(std::sqrt(channel_event_L->hires_energy*channel_event_R->hires_energy), location);
+	loc_L_phase_2d->Fill(channel_event_L->phase, location);
+	loc_R_phase_2d->Fill(channel_event_R->phase, location);
+	loc_1d->Fill(location);		
+	
+	// Fill the values into the root tree.
+	structure.Append(std::sqrt(channel_event_L->hires_energy*channel_event_R->hires_energy), ypos, ctof, energy, location);
+	     
+	// Copy the trace to the output file.
+	if(write_waveform){
+		L_waveform.Append(channel_event_L->event->adcTrace);
+		R_waveform.Append(channel_event_R->event->adcTrace);
+	}
+		
 	return true;
 }
 

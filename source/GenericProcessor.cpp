@@ -3,48 +3,38 @@
 #include "MapFile.hpp"
 #include "Plotter.hpp"
 
-bool GenericProcessor::HandleEvents(){
-	if(!init){ return false; }
-
-	ChannelEvent *current_event;
-
-	for(std::deque<ChannelEventPair*>::iterator iter = events.begin(); iter != events.end(); iter++){
-		current_event = (*iter)->channelEvent;
-		
-		// Check that the time and energy values are valid
-		if(!current_event->valid_chan){ continue; }
+bool GenericProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEvtR/*=NULL*/){
+	ChannelEvent *current_event = chEvt->channelEvent;
 	
-		// Calculate the time difference between the current event and the start.
-		double tdiff = (current_event->event->time - start->pixieEvent->time)*8 + (current_event->phase - start->channelEvent->phase)*4;
+	// Calculate the time difference between the current event and the start.
+	double tdiff = (current_event->event->time - start->pixieEvent->time)*8 + (current_event->phase - start->channelEvent->phase)*4;
 
-		// Do time alignment.
-		if((*iter)->calib->Time()){
-			(*iter)->calib->timeCal->GetCalTime(tdiff);
+	// Do time alignment.
+	if(chEvt->calib->Time()){
+		chEvt->calib->timeCal->GetCalTime(tdiff);
 
-			// Check that the adjusted time difference is reasonable.
-			if(tdiff < -20 || tdiff > 200)
-				continue;
-		}
-		
-		// Get the location of this detector.
-		int location = (*iter)->entry->location;
-		
-		// Fill all diagnostic histograms.
-		loc_tdiff_2d->Fill(tdiff, location);
-		loc_energy_2d->Fill(current_event->hires_energy, location);
-		loc_phase_2d->Fill(current_event->phase, location);
-		loc_1d->Fill(location);
-	
-		// Fill the values into the root tree.
-		structure.Append(current_event->hires_energy, tdiff, location);
-		
-		// Copy the trace to the output file.
-		if(write_waveform){
-			waveform.Append(current_event->event->adcTrace);
-		}
-		
-		good_events++;
+		// Check that the adjusted time difference is reasonable.
+		if(tdiff < -20 || tdiff > 200)
+			return false;
 	}
+	
+	// Get the location of this detector.
+	int location = chEvt->entry->location;
+	
+	// Fill all diagnostic histograms.
+	loc_tdiff_2d->Fill(tdiff, location);
+	loc_energy_2d->Fill(current_event->hires_energy, location);
+	loc_phase_2d->Fill(current_event->phase, location);
+	loc_1d->Fill(location);
+
+	// Fill the values into the root tree.
+	structure.Append(current_event->hires_energy, tdiff, location);
+	
+	// Copy the trace to the output file.
+	if(write_waveform){
+		waveform.Append(current_event->event->adcTrace);
+	}
+	
 	return true;
 }
 

@@ -103,6 +103,66 @@ TF1 *Processor::SetFitFunction(){
 	return fitting_func;
 }
 
+bool Processor::HandleSingleEndedEvents(){
+	if(!init){ return false; }
+
+	for(std::deque<ChannelEventPair*>::iterator iter = events.begin(); iter != events.end(); iter++){
+		// Check that the time and energy values are valid
+		if(!(*iter)->channelEvent->valid_chan){ continue; }
+		
+		// Process the individual event.
+		if(HandleEvent(*iter))
+			good_events++;
+	}
+
+	return true;
+}
+
+bool Processor::HandleDoubleEndedEvents(){
+	if(!init || events.size() <= 1){ 
+		return false;
+	}
+	
+	// Sort the vandle event list by channel ID. This way, we will be able
+	// to determine which channels are neighbors and, thus, part of the
+	// same vandle bar.
+	sort(events.begin(), events.end(), &ChannelEventPair::CompareChannel);
+	
+	std::deque<ChannelEventPair*>::iterator iter_L = events.begin();
+	std::deque<ChannelEventPair*>::iterator iter_R = events.begin()+1;
+
+	XiaData *current_event_L;
+	XiaData *current_event_R;
+
+	ChannelEvent *channel_event_L;
+	ChannelEvent *channel_event_R;
+
+	// Pick out pairs of channels representing vandle bars.
+	for(; iter_R != events.end(); iter_L++, iter_R++){
+		current_event_L = (*iter_L)->pixieEvent;
+		current_event_R = (*iter_R)->pixieEvent;
+
+		channel_event_L = (*iter_L)->channelEvent;
+		channel_event_R = (*iter_R)->channelEvent;
+	
+		// Check that the time and energy values are valid
+		if(!channel_event_L->valid_chan || !channel_event_R->valid_chan){ continue; }
+	
+		// Check that these two channels have the correct detector tag.
+		if((*iter_L)->entry->subtype != "left" || 
+		   (*iter_R)->entry->subtype != "right"){ continue; }
+	
+		// Check that these two channels are indeed neighbors. If not, iterate up by one and check again.
+		if((current_event_L->modNum != current_event_R->modNum) || (current_event_L->chanNum+1 != current_event_R->chanNum)){ continue; }
+		
+		// Process the individual event.
+		if(HandleEvent(*iter_L, *iter_R))
+			good_events += 2;
+	}
+	
+	return true;
+}
+
 bool Processor::SetFitParameters(ChannelEvent *event_, MapEntry *entry_){
 	if(!event_ || !entry_){ return false; }
 	
@@ -139,6 +199,18 @@ bool Processor::FitPulse(TGraph *trace_, float &phase){
 /// Perform CFD analysis on a single trace.
 bool Processor::CfdPulse(ChannelEvent *event_, MapEntry *entry_){
 	if(!event_ || !entry_){ return false; }
+
+	/*// Set the CFD threshold point of the trace.
+	float cfdF = 0.5;
+	float cfdD = 1;
+	float cfdL = 1;
+	entry_->getArg(0, cfdF);
+	entry_->getArg(1, cfdD);
+	entry_->getArg(2, cfdL);
+	
+	event_->AnalyzeCFD(cfdF, (int)cfdD, (int)cfdL);
+	
+	event_->phase = event_->cfdCrossing;*/
 	
 	// Set the CFD threshold point of the trace.
 	float cfd_threshold = 0.5;
@@ -158,13 +230,6 @@ bool Processor::CfdPulse(ChannelEvent *event_, MapEntry *entry_){
 	return false;
 }
 
-bool Processor::HandleEvents(){
-	for(std::deque<ChannelEventPair*>::iterator iter = events.begin(); iter != events.end(); iter++){
-		good_events++;
-	}
-	return false;
-}
-
 Processor::Processor(std::string name_, std::string type_, MapFile *map_){
 	name = name_;
 	type = type_;
@@ -173,6 +238,7 @@ Processor::Processor(std::string name_, std::string type_, MapFile *map_){
 	use_color_terminal = true;
 	use_fitting = false;
 	use_integration = true;
+	isSingleEnded = true;
 	
 	total_time = 0;
 	start_time = clock();
@@ -337,7 +403,11 @@ bool Processor::Process(ChannelEventPair *start_){
 	start = start_;
 	
 	// Process the individual events.
-	bool retval = HandleEvents();
+	bool retval = false;
+	if(isSingleEnded)
+		retval = HandleSingleEndedEvents();
+	else
+		retval = HandleDoubleEndedEvents();
 	
 	// Stop the timer.
 	StopProcess(); 

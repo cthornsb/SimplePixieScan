@@ -38,8 +38,8 @@ class PhoswichProcessor : public Processor{
 	/// Set the CFD parameters for the current event.
 	virtual bool SetCfdParameters(ChannelEvent *event_, MapEntry *entry_);
 
-	/// Process all individual events.
-	virtual bool HandleEvents();
+	// Handle an individual event.
+	virtual bool HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEvtR=NULL);
 	
   public:
 	PhoswichProcessor(MapFile *map_);
