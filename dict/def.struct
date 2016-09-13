@@ -95,9 +95,10 @@ LONG	Structure for detectors of type "vandlesmall" or "vandlebig"
 # type	name	description
 BEGIN_TYPES
 vector:double	tqdc	The total light response (sqrt(l*r)).
-vector:double	ypos	The vertical position of the event in the bar.
+vector:double	r	The flight path of the neutron corrected for bar position.
+vector:double	theta	The polar angle of the neutron with respect to the beam axis.
+vector:double	phi	The azimuthal angle of the neutron about the beam axis.
 vector:double	ctof	The corrected time of flight of the particle detected by vandle.
-vector:double	energy	Neutron energy calculated from the corrected ToF.
 vector:int	loc	Detector location (ID)
 u_int	mult	Multiplicity of the vandle events.
 END_TYPES
@@ -148,9 +149,10 @@ LONG	Structure for detectors of type "liquidbar"
 BEGIN_TYPES
 vector:double	stqdc	The short integral computed from both pmt traces.
 vector:double	ltqdc	The long integral computed from both pmt traces.
-vector:double	ypos	The vertical position of the event in the bar.
-vector:double	ctof	The corrected time of flight of the particle detected by the bar.
-vector:double	energy	Neutron energy calculated from the corrected ToF.
+vector:double	r	The flight path of the neutron corrected for bar position.
+vector:double	theta	The polar angle of the neutron with respect to the beam axis.
+vector:double	phi	The azimuthal angle of the neutron about the beam axis.
+vector:double	ctof	The corrected time of flight of the particle detected by the liquid bar.
 vector:int	loc	Detector location (ID)
 u_int	mult	Multiplicity of the liquidbar events.
 END_TYPES

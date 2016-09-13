@@ -33,12 +33,14 @@ bool VandleProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 	double tdiff_L = (xia_data_L->time - start->pixieEvent->time)*8 + (channel_event_L->phase - start->channelEvent->phase)*4;
 	double tdiff_R = (xia_data_R->time - start->pixieEvent->time)*8 + (channel_event_R->phase - start->channelEvent->phase)*4;
 
-	// Get the detector distance from the target.
-	double r0 = 0.5;
-	if(chEvt->calib->Position())
+	// Get the detector distance from the target and the detector angle with respect to the beam axis.
+	double r0 = 0.5, theta0 = 0.0;
+	if(chEvt->calib->Position()){
 		r0 = chEvt->calib->positionCal->r0;
+		theta0 = chEvt->calib->positionCal->theta;
+	}
 	
-	double ypos, ctof;
+	double radius, theta, phi, ypos, ctof;
 	if(chEvt->calib->Time() && chEvtR->calib->Time()){ // Do time alignment.
 		chEvt->calib->timeCal->GetCalTime(tdiff_L);
 		chEvtR->calib->timeCal->GetCalTime(tdiff_R);
@@ -48,6 +50,9 @@ bool VandleProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 			return false;
 
 		ypos = (tdiff_R - tdiff_L)*C_IN_VANDLE_BAR/200.0; // m
+		radius = std::sqrt(r0*r0 + ypos*ypos);
+		theta = std::acos(std::cos(theta0)/std::sqrt(1.0+ypos*ypos/(r0*r0)));
+		phi = std::atan2(ypos, r0*std::sin(theta0));
 		ctof = (r0/std::sqrt(r0*r0+ypos*ypos))*(tdiff_L + tdiff_R)/2.0; // ns
 	}
 	else{ // No time alignment available.
@@ -55,7 +60,7 @@ bool VandleProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 		ctof = (tdiff_L + tdiff_R)/2.0; // ns
 	}
 
-	double energy = 0.5E4*M_NEUTRON*r0*r0/(C_IN_VAC*C_IN_VAC*ctof*ctof); // MeV
+	//double energy = 0.5E4*M_NEUTRON*r0*r0/(C_IN_VAC*C_IN_VAC*ctof*ctof); // MeV
 	
 	// Get the location of this detector.
 	int location = chEvt->entry->location;
@@ -68,7 +73,7 @@ bool VandleProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 	loc_1d->Fill(location);		
 	
 	// Fill the values into the root tree.
-	structure.Append(std::sqrt(channel_event_L->hires_energy*channel_event_R->hires_energy), ypos, ctof, energy, location);
+	structure.Append(std::sqrt(channel_event_L->hires_energy*channel_event_R->hires_energy), radius, theta*rad2deg, phi*rad2deg, ctof, location);
 	     
 	// Copy the trace to the output file.
 	if(write_waveform){
@@ -85,6 +90,9 @@ VandleProcessor::VandleProcessor(MapFile *map_) : Processor("Vandle", "vandle", 
 	
 	int minloc = map_->GetFirstOccurance("vandle");
 	int maxloc = map_->GetLastOccurance("vandle");
+	
+	// Set the detector type to a bar.
+	isSingleEnded = false;
 	
 	if(maxloc-minloc > 1){ // More than one detector. Define 2d plots.
 		loc_tdiff_2d = new Plotter("vandle_h1", "Vandle Location vs. Tdiff", "COLZ", "Tdiff (ns)", 200, -100, 100, "Location", maxloc-minloc, minloc, maxloc+1);
