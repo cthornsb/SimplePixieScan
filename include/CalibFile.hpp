@@ -4,6 +4,9 @@
 #include <vector>
 #include <string>
 
+extern const double deg2rad;
+extern const double rad2deg;
+
 class XiaData;
 
 class CalType{

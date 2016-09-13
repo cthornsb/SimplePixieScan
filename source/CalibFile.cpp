@@ -8,7 +8,8 @@
 #include "ScanInterface.hpp"
 #include "CTerminal.h"
 
-#define DEG2RAD 0.0174532925
+const double deg2rad = 0.0174532925;
+const double rad2deg = 57.295779579;
 
 CalibEntry dummyCalib(new TimeCal(), new EnergyCal(), new PositionCal());
 
@@ -17,8 +18,8 @@ PositionCal::PositionCal(const std::vector<std::string> &pars_) : CalType(0), r0
 	for(std::vector<std::string>::const_iterator iter = pars_.begin(); iter != pars_.end(); iter++){
 		if(index == 0) id = strtol(iter->c_str(), NULL, 0);
 		else if(index == 1) r0 = strtod(iter->c_str(), NULL);
-		else if(index == 2) theta = strtod(iter->c_str(), NULL)*DEG2RAD;
-		else if(index == 3) phi = strtod(iter->c_str(), NULL)*DEG2RAD;
+		else if(index == 2) theta = strtod(iter->c_str(), NULL)*deg2rad;
+		else if(index == 3) phi = strtod(iter->c_str(), NULL)*deg2rad;
 		index++;
 	}
 }
