@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cmath>
 #include <time.h>
+#include <algorithm>
 
 #include "Processor.hpp"
 #include "Structures.h"
