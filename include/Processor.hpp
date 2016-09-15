@@ -95,6 +95,7 @@ class Processor{
 	Structure *root_structure; /// Root data structure for storing processor-specific information.
 	Trace *root_waveform; /// Root data structure for storing baseline corrected traces.
 
+	bool use_trace; /// Force the use of the ADC trace. Any events without a trace will be rejected.
 	bool use_fitting;
 	bool use_integration;
 	bool write_waveform;

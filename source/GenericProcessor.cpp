@@ -7,8 +7,15 @@ bool GenericProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *ch
 	ChannelEvent *current_event = chEvt->channelEvent;
 	
 	// Calculate the time difference between the current event and the start.
-	double tdiff = (current_event->event->time - start->pixieEvent->time)*8 + (current_event->phase - start->channelEvent->phase)*4;
-
+	double tdiff;
+	if(!chEvt->pixieEvent->adcTrace.empty()) // Correct for the phases of the start and the current event.
+		tdiff = (current_event->event->time - start->pixieEvent->time)*8 + (current_event->phase - start->channelEvent->phase)*4;
+	else
+		if(!start->pixieEvent->adcTrace.empty()) // Correct for the phase of the start trace.
+			tdiff = (current_event->event->time - start->pixieEvent->time)*8 - start->channelEvent->phase*4;
+		else // No start trace. Cannot correct the phases.
+			tdiff = (current_event->event->time - start->pixieEvent->time)*8;
+		
 	// Do time alignment.
 	if(chEvt->calib->Time()){
 		chEvt->calib->timeCal->GetCalTime(tdiff);
@@ -41,6 +48,10 @@ bool GenericProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *ch
 GenericProcessor::GenericProcessor(MapFile *map_) : Processor("Generic", "generic", map_){
 	root_structure = (Structure*)&structure;
 	root_waveform = &waveform;
+
+	// Do not force the use of a trace. By setting this flag to false,
+	// this processor WILL NOT reject events which do not have an ADC trace.
+	use_trace = false;
 
 	int minloc = map_->GetFirstOccurance("generic");
 	int maxloc = map_->GetLastOccurance("generic");

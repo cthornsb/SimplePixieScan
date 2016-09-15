@@ -237,6 +237,7 @@ Processor::Processor(std::string name_, std::string type_, MapFile *map_){
 	init = false;
 	write_waveform = false;
 	use_color_terminal = true;
+	use_trace = true;
 	use_fitting = false;
 	use_integration = true;
 	isSingleEnded = true;
@@ -340,52 +341,62 @@ void Processor::PreProcess(){
 		channel_event->hires_time = current_event->time * filterClockInSeconds;
 	
 		// Check for trace with zero size.
-		if(current_event->adcTrace.empty()){ continue; }
+		if(current_event->adcTrace.empty()){
+			if(use_trace){
+				// The trace is required by this processor, but does not exist.
+				continue; 
+			}				
+			// The trace is not required by the processor. Set the channel event to valid.
+			channel_event->valid_chan = true;
+		}
+		else{ // The trace exists.
+			// Correct the baseline.
+			if(channel_event->CorrectBaseline() < 0){ continue; }
+		
+			// Check for large SNR.
+			if(channel_event->stddev > 3.0){ continue; }
 
-		// Correct the baseline.
-		if(channel_event->CorrectBaseline() < 0){ continue; }
-		
-		// Check for large SNR.
-		if(channel_event->stddev > 3.0){ continue; }
+			// Find the leading edge of the pulse. This will also set the phase of the ChannelEventPair.
+			if(channel_event->FindLeadingEdge() < 0){ continue; }
 
-		// Find the leading edge of the pulse. This will also set the phase of the ChannelEventPair.
-		if(channel_event->FindLeadingEdge() < 0){ continue; }
-
-		if(use_integration) // Compute the integral of the pulse within the integration window.
-			channel_event->hires_energy = channel_event->FindQDC(channel_event->max_index - fitting_low, channel_event->max_index + fitting_high);
+			if(use_integration) // Compute the integral of the pulse within the integration window.
+				channel_event->hires_energy = channel_event->FindQDC(channel_event->max_index - fitting_low, channel_event->max_index + fitting_high);
 		
-		// Set the channel event to valid.
-		channel_event->valid_chan = true;
+			// Set the channel event to valid.
+			channel_event->valid_chan = true;
 		
-		if(use_fitting){ // Do root fitting for high resolution timing (very slow).
-			if(!fitting_func){ SetFitFunction(); }
+			if(use_fitting){ // Do root fitting for high resolution timing (very slow).
+				if(!fitting_func){ SetFitFunction(); }
 		
-			// "Convert" the trace into a TGraph for fitting.
-			TGraph *graph = new TGraph(channel_event->size, channel_event->xvals, channel_event->yvals);
+				// "Convert" the trace into a TGraph for fitting.
+				TGraph *graph = new TGraph(channel_event->size, channel_event->xvals, channel_event->yvals);
 		
-			// Set the initial fitting parameters.
-			if(SetFitParameters(channel_event, (*iter)->entry)){
-				// Fit the TGraph.
-				if(!FitPulse(graph, channel_event->phase)){
-					// Set the channel event to invalid.
-					channel_event->valid_chan = false;
+				// Set the initial fitting parameters.
+				if(SetFitParameters(channel_event, (*iter)->entry)){
+					// Fit the TGraph.
+					if(!FitPulse(graph, channel_event->phase)){
+						// Set the channel event to invalid.
+						channel_event->valid_chan = false;
+						continue;
+					}
+				}
+			
+				delete graph;
+			}
+			else{ // Do a more simplified CFD analysis to save time.
+				// Set the initial CFD parameters.
+				if(SetCfdParameters(channel_event, (*iter)->entry)){
+					if(!CfdPulse(channel_event, (*iter)->entry)){
+						// Set the channel event to invalid.
+						channel_event->valid_chan = false;
+						continue;
+					}
 				}
 			}
 			
-			delete graph;
+			// Add the phase of the trace to the high resolution time.
+			channel_event->hires_time += channel_event->phase * adcClockInSeconds;
 		}
-		else{ // Do a more simplified CFD analysis to save time.
-			// Set the initial CFD parameters.
-			if(SetCfdParameters(channel_event, (*iter)->entry)){
-				if(!CfdPulse(channel_event, (*iter)->entry)){
-					// Set the channel event to invalid.
-					channel_event->valid_chan = false;
-				}
-			}
-		}
-		
-		// Set the high resolution time.
-		channel_event->hires_time += channel_event->phase * adcClockInSeconds;
 		
 		// Calibrate the energy, if applicable.
 		if((*iter)->calib->Energy())

@@ -12,7 +12,10 @@ bool LogicProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEv
 
 LogicProcessor::LogicProcessor(MapFile *map_) : Processor("Logic", "logic", map_){
 	root_structure = (Structure*)&structure;
-	use_fitting = false; // No fitting for logic pulses.
+
+	// Do not force the use of a trace. By setting this flag to false,
+	// this processor WILL NOT reject events which do not have an ADC trace.
+	use_trace = false;
 }
 
 LogicProcessor::~LogicProcessor(){
