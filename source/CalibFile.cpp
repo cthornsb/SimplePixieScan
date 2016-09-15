@@ -11,7 +11,7 @@
 const double deg2rad = 0.0174532925;
 const double rad2deg = 57.295779579;
 
-CalibEntry dummyCalib(new TimeCal(), new EnergyCal(), new PositionCal());
+CalibEntry dummyCalib(NULL, NULL, NULL);
 
 PositionCal::PositionCal(const std::vector<std::string> &pars_) : CalType(0), r0(0.0), theta(0.0), phi(0.0) { 
 	int index = 0;
@@ -145,7 +145,7 @@ bool CalibFile::_load(const char *filename_, const int &type_){
 		else if(type_==2)
 			position_calib.push_back(PositionCal(values));
 	}
-
+	
 	return true;
 }
 
