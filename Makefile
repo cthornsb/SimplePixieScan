@@ -1,20 +1,35 @@
 #####################################################################
 
 # Set the PixieSuite core directory.
-PIXIE_SUITE_DIR = $(HOME)/opt/paass
+PIXIE_SUITE_DIR = $(HOME)/opt/paass/install
 
 # Set the include directory.
-PIXIE_SUITE_INC_DIR = $(PIXIE_SUITE_DIR)/install/include
+PIXIE_SUITE_INC_DIR = $(PIXIE_SUITE_DIR)/include
 
 # Set the lib directory.
-PIXIE_SUITE_LIB_DIR = $(PIXIE_SUITE_DIR)/install/lib
+PIXIE_SUITE_LIB_DIR = $(PIXIE_SUITE_DIR)/lib
 
 #####################################################################
 
-CFLAGS = -g -Wall -std=c++0x `root-config --cflags`
-#CFLAGS = -Wall -O3 -std=c++0x `root-config --cflags`
-LDLIBS = -lstdc++ -L$(PIXIE_SUITE_LIB_DIR) -lScan `root-config --libs`
+# Use scanor from HHIRF UPAK instead of ScanInterface.
+#USE_SCANOR_READOUT = 1
+
+#####################################################################
+
+CFLAGS = -g
+#CFLAGS = -O3
+
+LDLIBS = -lstdc++ -L$(PIXIE_SUITE_LIB_DIR) -lScan
 LDFLAGS = `root-config --glibs`
+
+# Add the USE_HRIBF preprocessor flag to the CFLAGS variable.
+ifeq ($(USE_SCANOR_READOUT), 1)
+	CFLAGS += -DUSE_HRIBF
+	LDLIBS += -lScanHHIRF
+endif
+
+CFLAGS += -Wall -std=c++0x `root-config --cflags`
+LDLIBS += `root-config --libs`
 
 COMPILER = g++
 

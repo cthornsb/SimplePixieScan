@@ -10,6 +10,10 @@
 #include "OnlineProcessor.hpp"
 #include "Plotter.hpp"
 
+#ifdef USE_HRIBF
+#include "ScanorInterface.hpp"
+#endif
+
 // Root libraries
 #include "TFile.h"
 #include "TH1.h"
@@ -795,6 +799,7 @@ bool simpleScanner::ProcessEvents(){
 	return retval;
 }
 
+#ifndef USE_HRIBF
 int main(int argc, char *argv[]){
 	// Initialize root graphics
 	TApplication *rootapp = new TApplication("rootapp", 0, NULL);
@@ -820,3 +825,28 @@ int main(int argc, char *argv[]){
 
 	return retval;
 }
+#else
+Unpacker *pixieUnpacker = NULL;
+simpleScanner *scanner = NULL;
+
+// Do some startup stuff.
+extern "C" void startup_()
+{
+	scanner = new simpleScanner();	
+
+	// Handle command line arguments.
+	scanner->Setup(fortargc, fortargv); // Getting these from scanor...
+	
+	// Get a pointer to a class derived from Unpacker.
+	pixieUnpacker = scanner->GetCore();
+}
+
+// Catch the exit call from scanor and clean up c++ objects CRT
+extern "C" void cleanup_()
+{
+	// Do some cleanup.
+	std::cout << "\nCleaning up..\n";
+	scanner->Close();
+	delete scanner;
+}
+#endif

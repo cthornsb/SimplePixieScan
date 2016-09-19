@@ -36,3 +36,10 @@ tools/exec/*
 ####################
 rcbuild/rcbuild
 .def.struct.bkp
+
+# DAMM Files #
+##############
+*.drr
+*.his
+*.list
+*.log
