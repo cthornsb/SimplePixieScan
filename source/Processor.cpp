@@ -14,6 +14,9 @@
 Structure dummyStructure;
 Trace dummyTrace;
 
+const double pi = 3.1415926540;
+const double twoPi = 6.283185308;
+
 ChannelEventPair::ChannelEventPair(){
 	pixieEvent = NULL;
 	channelEvent = NULL;
@@ -439,4 +442,22 @@ void Processor::WrapUp(){
 void Processor::Zero(){
 	root_structure->Zero();
 	root_waveform->Zero();
+}
+
+// Return a random number between low and high.
+double drand(const double &low_, const double &high_){
+	return low_+(double(rand())/RAND_MAX)*(high_-low_);
+}
+
+// Return a randum number between 0 and 1.
+double drand(){
+	return double(rand())/RAND_MAX;
+}
+
+// Add angle1 and angle2 and wrap the result between 0 and 2*pi.
+double addAngles(const double &angle1_, const double &angle2_){
+	double output = angle1_ + angle2_;
+	if(output < 0.0) output += twoPi;
+	else if(output > twoPi) output = output - twoPi;
+	return output;
 }

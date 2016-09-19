@@ -37,7 +37,7 @@ bool LiquidBarProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *
 	double r0 = 0.5, theta0 = 0.0;
 	if(chEvt->calib->Position()){
 		r0 = chEvt->calib->positionCal->r0;
-		theta0 = chEvt->calib->positionCal->theta;
+		theta0 = addAngles(chEvt->calib->positionCal->theta, std::atan(drand(-0.015, 0.015)/r0));
 	}
 	
 	double radius, theta, phi, ypos, ctof;
@@ -53,7 +53,7 @@ bool LiquidBarProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *
 		radius = std::sqrt(r0*r0 + ypos*ypos);
 		theta = std::acos(std::cos(theta0)/std::sqrt(1.0+ypos*ypos/(r0*r0)));
 		phi = std::atan2(ypos, r0*std::sin(theta0));
-		ctof = (r0/std::sqrt(r0*r0+ypos*ypos))*(tdiff_L + tdiff_R)/2.0; // ns
+		ctof = (r0/radius)*(tdiff_L + tdiff_R)/2.0; // ns
 	}
 	else{ // No time alignment available.
 		ypos = 0.0;

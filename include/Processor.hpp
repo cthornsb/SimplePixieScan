@@ -26,6 +26,9 @@ class Trace;
 extern Structure dummyStructure;
 extern Trace dummyTrace;
 
+extern const double pi;
+extern const double twoPi;
+
 class ChannelEventPair{
   public:
   	XiaData *pixieEvent;
@@ -188,5 +191,14 @@ class Processor{
 	
 	void Zero();
 };
+
+// Return a random number between low and high.
+double drand(const double &low_, const double &high_);
+
+// Return a randum number between 0 and 1.
+double drand();
+
+// Add angle1 and angle2 and wrap the result between 0 and 2*pi.
+double addAngles(const double &angle1_, const double &angle2_);
 
 #endif
