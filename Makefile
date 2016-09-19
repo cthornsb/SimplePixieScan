@@ -155,7 +155,7 @@ endif
 ########################################################################
 
 tidy: clean_obj clean_dict
-	@rm -f $(EXECUTABLE) ./run.sh
+	@rm -f $(EXEC_DIR)/* ./run.sh
 
 clean: clean_obj
 
