@@ -14,6 +14,10 @@ PIXIE_SUITE_LIB_DIR = $(PIXIE_SUITE_DIR)/lib
 # Use scanor from HHIRF UPAK instead of ScanInterface.
 #USE_SCANOR_READOUT = 1
 
+# Set the HHIRF (UPAK) install directory. 
+# Only used for scanor readout.
+HHIRF_DIR = $(HOME)/opt/hhirf
+
 #####################################################################
 
 CFLAGS = -g
@@ -32,6 +36,10 @@ CFLAGS += -Wall -std=c++0x `root-config --cflags`
 LDLIBS += `root-config --libs`
 
 COMPILER = g++
+LINKER = g++
+ifeq ($(USE_SCANOR_READOUT), 1)
+	LINKER = gfortran
+endif
 
 # Directories
 TOP_LEVEL = $(shell pwd)
@@ -74,7 +82,15 @@ SFLAGS = $(addprefix -l,$(DICT_SOURCE))
 
 OBJECTS += $(ROOT_DICT_OBJ) $(STRUCT_FILE_OBJ)
 
+SCANOR_OBJS = $(HHIRF_DIR)/scanorlib.a \
+              $(HHIRF_DIR)/orphlib.a \
+              $(HHIRF_DIR)/acqlib.a \
+              $(HHIRF_DIR)/ipclib.a
+               
 EXECUTABLE = $(EXEC_DIR)/PixieLDF
+ifeq ($(USE_SCANOR_READOUT), 1)
+	EXECUTABLE = $(EXEC_DIR)/PixieLDF_s
+endif
 
 ########################################################################
 
@@ -91,7 +107,7 @@ dictionary:
 	
 runscript:
 #	Generate the run.sh shell script
-	@$(RCBUILD_DIR)/libpath.sh $(PIXIE_SUITE_LIB_DIR) $(DICT_OBJ_DIR)
+	@$(RCBUILD_DIR)/libpath.sh $(PIXIE_SUITE_LIB_DIR) $(DICT_OBJ_DIR) $(EXECUTABLE)
 
 ########################################################################
 
@@ -130,7 +146,11 @@ $(OBJ_DIR)/%.o: $(SOURCE_DIR)/%.cpp
 ########################################################################
 
 $(EXECUTABLE): $(OBJECTS)
-	$(COMPILER) $(LDFLAGS) $(OBJECTS) -L$(DICT_OBJ_DIR) $(SFLAGS) -o $@ $(LDLIBS)
+ifneq ($(USE_SCANOR_READOUT), 1)
+	$(LINKER) $(LDFLAGS) $(OBJECTS) -L$(DICT_OBJ_DIR) $(SFLAGS) -o $@ $(LDLIBS)
+else
+	$(LINKER) $(LDFLAGS) $(OBJECTS) -L$(DICT_OBJ_DIR) $(SFLAGS) -o $@ $(LDLIBS) $(SCANOR_OBJS)
+endif
 
 ########################################################################
 

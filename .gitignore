@@ -25,8 +25,9 @@ LinkDef.h
 *.pld
 
 # Executables #
-#############*#
+###############
 PixieLDF
+PixieLDF_s
 run.sh
 *.cmd
 *.a
