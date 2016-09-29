@@ -11,6 +11,8 @@
 #include "TTree.h"
 #include "TGraph.h"
 
+#define ADC_TIME_STEP 4
+
 Structure dummyStructure;
 Trace dummyTrace;
 
@@ -35,17 +37,27 @@ ChannelEventPair::~ChannelEventPair(){
 	if(channelEvent){ delete channelEvent; } // Deleting the ChanEvent will also delete the underlying XiaData.
 }
 
-// 1D function to use for pulse fitting
-// x[0] = time t in ns
-// parameters: 4
-//  par[0] = alpha (normalization of pulse 1)
-//  par[1] = phi (phase of pulse 1 in ns)
-//  par[2] = beta (decay parameter of the 1st pulse exponential in ns) (fixed)
-//  par[3] = gamma (width of the inverted square gaussian of the 1st pulse in ns^4) (fixed)
-double FittingFunction::operator () (double *x, double *par){
-	double arg = x[0] - par[1];
-	if(arg >= 0.0){ return par[0]*std::exp(-arg*beta)*(1 - std::exp(-std::pow(arg*gamma, 4.0))); }
-	return 0.0;
+/**The Paulauskas function is described in NIM A 737 (22), with a slight 
+ * adaptation. We use a step function such that f(x < phase) = baseline.
+ * In addition, we also we formulate gamma such that the gamma in the paper is
+ * gamma_prime = 1 / pow(gamma, 0.25).
+ *
+ * The parameters are:
+ * p[0] = baseline
+ * p[1] = amplitude
+ * p[2] = phase
+ * p[3] = beta
+ * p[4] = gamma
+ *
+ * \param[in] x X value.
+ * \param[in] p Paramater values.
+ *
+ * \return the value of the function for the specified x value and parameters.
+ */
+double FittingFunction::operator () (double *x, double *p) {
+	float diff = (x[0] - p[2])/ADC_TIME_STEP;
+	if (diff < 0 ) return p[0];
+	return p[0] + p[1] * std::exp(-diff * beta) * (1 - std::exp(-std::pow(diff * gamma,4)));
 }
 
 FittingFunction::FittingFunction(double beta_/*=0.563362*/, double gamma_/*=0.3049452*/){
@@ -101,7 +113,7 @@ TF1 *Processor::SetFitFunction(){
 	if(!actual_func){ actual_func = new FittingFunction(); }
 	if(fitting_func){ delete fitting_func; }
 	
-	fitting_func = new TF1((type + "_func").c_str(), *actual_func, 0, 1, 2);
+	fitting_func = new TF1((type + "_func").c_str(), *actual_func, 0, 1, 3);
 	use_fitting = true;
 	
 	return fitting_func;
@@ -170,26 +182,37 @@ bool Processor::SetFitParameters(ChanEvent *event_, MapEntry *entry_){
 	if(entry_->getArg(1, gamma)){ actual_func->SetGamma(gamma); }
 
 	// Set initial parameters to those obtained from fit optimizations.
-	fitting_func->SetParameter(0, event_->qdc); // Normalization of pulse
-	fitting_func->SetParameter(1, event_->phase); // Phase (leading edge of pulse) (ns)
+	fitting_func->SetParameter(0, event_->baseline); // Baseline of pulse
+	fitting_func->SetParameter(1, 0.5 * event_->qdc); // Normalization of pulse
+	fitting_func->SetParameter(2, (event_->max_index-fitting_low)*ADC_TIME_STEP); // Phase (leading edge of pulse) (ns)
 	
 	// Set the fitting range.
-	fitting_func->SetRange(event_->max_index-fitting_low, event_->max_index+fitting_high);
+	fitting_func->SetRange((event_->max_index-fitting_low)*ADC_TIME_STEP, (event_->max_index+fitting_high)*ADC_TIME_STEP);
 	
 	return true;
 }
 
-bool Processor::FitPulse(TGraph *trace_, float &phase){
-	if(!trace_){ return false; }
+bool Processor::FitPulse(ChanEvent *event_, MapEntry *entry_){
+	if(!event_ || !entry_){ return false; }
 	
 	// Set the default fitting function.
 	if(!fitting_func){ SetFitFunction(); } 
 
+	// Set the initial fitting parameters.
+	if(!SetFitParameters(event_, entry_))
+		return false;
+
+	// "Convert" the trace into a TGraph for fitting.
+	TGraph *graph = new TGraph(event_->adcTrace.size(), traceX, event_->adcTrace.data());
+
 	// And finally, do the fitting.
-	fit_result = trace_->Fit(fitting_func, "S Q R");
+	fit_result = graph->Fit(fitting_func, "S Q R");
 	
-	// Update the phase of the pulse.
-	phase = fitting_func->GetParameter(1);
+	// Update the trace parameters.
+	event_->baseline = fitting_func->GetParameter(0);
+	event_->phase = fitting_func->GetParameter(2);
+	
+	delete graph;
 	
 	return true;
 }
@@ -197,6 +220,10 @@ bool Processor::FitPulse(TGraph *trace_, float &phase){
 /// Perform CFD analysis on a single trace.
 bool Processor::CfdPulse(ChanEvent *event_, MapEntry *entry_){
 	if(!event_ || !entry_){ return false; }
+
+	// Set the initial CFD parameters.
+	if(!SetCfdParameters(event_, entry_))
+		return false;
 
 	// Set the CFD threshold point of the trace.
 	float cfdF = 0.5;
@@ -206,6 +233,7 @@ bool Processor::CfdPulse(ChanEvent *event_, MapEntry *entry_){
 	entry_->getArg(1, cfdD);
 	entry_->getArg(2, cfdL);
 	
+	// Analyze the trace.
 	event_->AnalyzeCFD(cfdF, (int)cfdD, (int)cfdL);
 	
 	// Set the CFD threshold point of the trace.
@@ -261,7 +289,7 @@ Processor::Processor(std::string name_, std::string type_, MapFile *map_){
 	filterClockInSeconds = 8e-9;
 	
 	for(int i = 0; i < 1250; i++)
-		traceX[i] = i;
+		traceX[i] = i * ADC_TIME_STEP;
 }
 
 Processor::~Processor(){
@@ -358,31 +386,17 @@ void Processor::PreProcess(){
 			current_event->valid_chan = true;
 		
 			if(use_fitting){ // Do root fitting for high resolution timing (very slow).
-				if(!fitting_func){ SetFitFunction(); }
-		
-				// "Convert" the trace into a TGraph for fitting.
-				TGraph *graph = new TGraph(current_event->adcTrace.size(), traceX, current_event->adcTrace.data());
-		
-				// Set the initial fitting parameters.
-				if(SetFitParameters(current_event, (*iter)->entry)){
-					// Fit the TGraph.
-					if(!FitPulse(graph, current_event->phase)){
-						// Set the channel event to invalid.
-						current_event->valid_chan = false;
-						continue;
-					}
+				if(!FitPulse(current_event, (*iter)->entry)){
+					// Set the channel event to invalid.
+					current_event->valid_chan = false;
+					continue;
 				}
-			
-				delete graph;
 			}
 			else{ // Do a more simplified CFD analysis to save time.
-				// Set the initial CFD parameters.
-				if(SetCfdParameters(current_event, (*iter)->entry)){
-					if(!CfdPulse(current_event, (*iter)->entry)){
-						// Set the channel event to invalid.
-						current_event->valid_chan = false;
-						continue;
-					}
+				if(!CfdPulse(current_event, (*iter)->entry)){
+					// Set the channel event to invalid.
+					current_event->valid_chan = false;
+					continue;
 				}
 			}
 			
