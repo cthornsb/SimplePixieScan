@@ -72,7 +72,8 @@ RCBUILD_DIR = $(TOP_LEVEL)/rcbuild
 DIRECTORIES = $(OBJ_DIR) $(EXEC_DIR) $(CONFIG_DIR)
 
 # Core files
-SOURCES = Plotter.cpp ProcessorHandler.cpp OnlineProcessor.cpp Processor.cpp ConfigFile.cpp MapFile.cpp CalibFile.cpp Scanner.cpp
+SOURCES = ChanEvent.cpp Plotter.cpp ProcessorHandler.cpp OnlineProcessor.cpp \
+          Processor.cpp ConfigFile.cpp MapFile.cpp CalibFile.cpp Scanner.cpp
 
 # Processors
 SOURCES += TriggerProcessor.cpp \
