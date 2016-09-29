@@ -9,6 +9,9 @@ PIXIE_SUITE_INC_DIR = $(PIXIE_SUITE_DIR)/include
 # Set the lib directory.
 PIXIE_SUITE_LIB_DIR = $(PIXIE_SUITE_DIR)/lib
 
+# Set the binary install directory.
+INSTALL_DIR = $(HOME)/bin
+
 #####################################################################
 
 # Use scanor from HHIRF UPAK instead of ScanInterface.
@@ -153,6 +156,15 @@ else
 endif
 
 ########################################################################
+
+install: $(ALL_TOOLS)
+	@echo " Installing to "$(INSTALL_DIR)
+	@ln -s $(TOP_LEVEL)/run.sh $(INSTALL_DIR)/simpleScan
+
+########################################################################
+
+uninstall: tidy
+	@rm -f $(INSTALL_DIR)/simpleScan
 
 tidy: clean_obj clean_dict
 	@rm -f $(EXEC_DIR)/* ./run.sh
