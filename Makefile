@@ -14,13 +14,23 @@ INSTALL_DIR = $(HOME)/bin
 
 #####################################################################
 
-# Use scanor from HHIRF UPAK instead of ScanInterface.
+# Set the directory where you plan to run the scan.
+SCAN_DIR = .
+
+# Set the directory containing runtime configuration files.
+CONFIG_DIR = $(SCAN_DIR)/config/default
+
+#####################################################################
+
+# Uncomment to use scanor from HHIRF UPAK instead of ScanInterface.
 #USE_SCANOR_READOUT = 1
 
 # Set the HHIRF (UPAK) install directory. 
 # Only used for scanor readout.
 HHIRF_DIR = $(HOME)/opt/hhirf
 
+#####################################################################
+#              NO USER OPTIONS BELOW THIS POINT                     #
 #####################################################################
 
 CFLAGS = -g
@@ -58,6 +68,9 @@ EXEC_DIR = $(TOP_LEVEL)/exec
 
 RCBUILD_DIR = $(TOP_LEVEL)/rcbuild
 
+# List of directories to generate if they do not exist.
+DIRECTORIES = $(OBJ_DIR) $(EXEC_DIR) $(CONFIG_DIR)
+
 # Core files
 SOURCES = Plotter.cpp ProcessorHandler.cpp OnlineProcessor.cpp Processor.cpp ConfigFile.cpp MapFile.cpp CalibFile.cpp Scanner.cpp
 
@@ -73,6 +86,9 @@ SOURCES += TriggerProcessor.cpp \
            TraceProcessor.cpp
 
 OBJECTS = $(addprefix $(OBJ_DIR)/,$(SOURCES:.cpp=.o))
+
+# Configuration files
+CONFIG_FILES = config.dat energy.cal map.dat position.cal time.cal
 
 # ROOT dictionary stuff
 DICT_SOURCE = RootDict
@@ -97,7 +113,7 @@ endif
 
 ########################################################################
 
-all: directory dictionary runscript $(EXECUTABLE)
+all: config dictionary runscript $(EXECUTABLE)
 #	Create all directories, make all objects, and link executable
 
 dictionary:
@@ -111,35 +127,40 @@ dictionary:
 runscript:
 #	Generate the run.sh shell script
 	@$(RCBUILD_DIR)/libpath.sh $(PIXIE_SUITE_LIB_DIR) $(DICT_OBJ_DIR) $(EXECUTABLE)
-
+ 
+.PHONY: $(CONFIG_FILES) $(DIRECTORIES)
+ 
 ########################################################################
 
-directory: $(OBJ_DIR) $(EXEC_DIR)
-# Setup the configuration directory
-	@if [ ! -d $(TOP_LEVEL)/config/default ]; then \
-		tar -xf $(TOP_LEVEL)/config.tar; \
-		echo "Building configuration directory"; \
-	fi
-# Create a symbolic link to the default config directory
-	@if [ ! -e $(TOP_LEVEL)/setup ]; then \
-		ln -s $(TOP_LEVEL)/config/default $(TOP_LEVEL)/setup; \
-		echo "Creating symbolic link to default configuration directory"; \
+$(CONFIG_FILES): 
+#	Unpack the default configuration files, if needed.
+	@if [ ! -e $(CONFIG_DIR)/$@ ]; then \
+		tar -xf $(TOP_LEVEL)/config.tar -C $(CONFIG_DIR) $@; \
+		echo "Unpacking "$@" to "$(CONFIG_DIR); \
 	fi
 
-$(OBJ_DIR):
-#	Make the object file directory
+$(DIRECTORIES): 
+#	Make the default configuration directory
 	@if [ ! -d $@ ]; then \
 		echo "Making directory: "$@; \
-		mkdir $@; \
+		mkdir -p $@; \
 	fi
 	
-$(EXEC_DIR):
-#	Make the executable directory
-	@if [ ! -d $@ ]; then \
-		echo "Making directory: "$@; \
-		mkdir $@; \
+config: $(DIRECTORIES) $(CONFIG_FILES)
+#	Create a symbolic link to the default config directory
+	@if [ ! -e $(SCAN_DIR)/setup ]; then \
+		ln -s $(CONFIG_DIR) $(SCAN_DIR)/setup; \
+		echo "Creating symbolic link to configuration directory"; \
 	fi
 	
+link: config
+#	Force the creation a symbolic link to the default config directory
+	@rm -f $(SCAN_DIR)/setup
+	@if [ ! -e $(SCAN_DIR)/setup ]; then \
+		ln -s $(CONFIG_DIR) $(SCAN_DIR)/setup; \
+		echo "Creating symbolic link to configuration directory"; \
+	fi
+
 ########################################################################
 
 $(OBJ_DIR)/%.o: $(SOURCE_DIR)/%.cpp
