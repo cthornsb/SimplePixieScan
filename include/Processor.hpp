@@ -5,6 +5,7 @@
 #include <deque>
 
 #include "XiaData.hpp"
+#include "ChanEvent.hpp"
 
 #include "TF1.h"
 #include "TFitResultPtr.h"
@@ -32,13 +33,13 @@ extern const double twoPi;
 class ChannelEventPair{
   public:
   	XiaData *pixieEvent;
-  	ChannelEvent *channelEvent;
+  	ChanEvent *channelEvent;
   	CalibEntry *calib;
 	MapEntry *entry;
   
 	ChannelEventPair();
 	
-	ChannelEventPair(XiaData *p_event_, ChannelEvent *c_event_, MapEntry *entry_, CalibEntry *calib_);
+	ChannelEventPair(XiaData *p_event_, ChanEvent *c_event_, MapEntry *entry_, CalibEntry *calib_);
 	
 	~ChannelEventPair();
 	
@@ -141,16 +142,16 @@ class Processor{
 	bool HandleDoubleEndedEvents();
 
 	/// Set the fit parameters for the current event.
-	virtual bool SetFitParameters(ChannelEvent *event_, MapEntry *entry_);
+	virtual bool SetFitParameters(ChanEvent *event_, MapEntry *entry_);
 	
 	/// Fit a single trace.
 	virtual bool FitPulse(TGraph *trace_, float &phase);	
 
 	/// Set the CFD parameters for the current event.
-	virtual bool SetCfdParameters(ChannelEvent *event_, MapEntry *entry_){ return false; }
+	virtual bool SetCfdParameters(ChanEvent *event_, MapEntry *entry_){ return false; }
 
 	/// Perform CFD analysis on a single trace.
-	virtual bool CfdPulse(ChannelEvent *event_, MapEntry *entry_);
+	virtual bool CfdPulse(ChanEvent *event_, MapEntry *entry_);
 
 	/// Process an individual events.
 	virtual bool HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEvtR=NULL){ return false; }

@@ -13,7 +13,7 @@
 
 /// Process all individual events.
 bool LiquidProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEvtR/*=NULL*/){
-	ChannelEvent *current_event = chEvt->channelEvent;
+	ChanEvent *current_event = chEvt->channelEvent;
 	
 	// Calculate the time difference between the current event and the start.
 	double tdiff = (current_event->event->time - start->pixieEvent->time)*8 + (current_event->phase - start->channelEvent->phase)*4;

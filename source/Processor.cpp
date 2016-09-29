@@ -24,7 +24,7 @@ ChannelEventPair::ChannelEventPair(){
 	entry = NULL;
 }
 
-ChannelEventPair::ChannelEventPair(XiaData *pix_event_, ChannelEvent *chan_event_, MapEntry *entry_, CalibEntry *calib_){
+ChannelEventPair::ChannelEventPair(XiaData *pix_event_, ChanEvent *chan_event_, MapEntry *entry_, CalibEntry *calib_){
 	pixieEvent = pix_event_;
 	channelEvent = chan_event_;
 	calib = calib_;
@@ -32,7 +32,7 @@ ChannelEventPair::ChannelEventPair(XiaData *pix_event_, ChannelEvent *chan_event
 }
 
 ChannelEventPair::~ChannelEventPair(){
-	if(channelEvent){ delete channelEvent; } // Deleting the ChannelEvent will also delete the underlying XiaData.
+	if(channelEvent){ delete channelEvent; } // Deleting the ChanEvent will also delete the underlying XiaData.
 }
 
 // 1D function to use for pulse fitting
@@ -138,8 +138,8 @@ bool Processor::HandleDoubleEndedEvents(){
 	XiaData *current_event_L;
 	XiaData *current_event_R;
 
-	ChannelEvent *channel_event_L;
-	ChannelEvent *channel_event_R;
+	ChanEvent *channel_event_L;
+	ChanEvent *channel_event_R;
 
 	// Pick out pairs of channels representing vandle bars.
 	for(; iter_R != events.end(); iter_L++, iter_R++){
@@ -167,7 +167,7 @@ bool Processor::HandleDoubleEndedEvents(){
 	return true;
 }
 
-bool Processor::SetFitParameters(ChannelEvent *event_, MapEntry *entry_){
+bool Processor::SetFitParameters(ChanEvent *event_, MapEntry *entry_){
 	if(!event_ || !entry_){ return false; }
 	
 	// Set the fixed fitting parameters for a given detector.
@@ -201,7 +201,7 @@ bool Processor::FitPulse(TGraph *trace_, float &phase){
 }
 
 /// Perform CFD analysis on a single trace.
-bool Processor::CfdPulse(ChannelEvent *event_, MapEntry *entry_){
+bool Processor::CfdPulse(ChanEvent *event_, MapEntry *entry_){
 	if(!event_ || !entry_){ return false; }
 
 	/*// Set the CFD threshold point of the trace.
@@ -330,7 +330,9 @@ void Processor::PreProcess(){
 	StartProcess(); 
 	
 	XiaData *current_event;
-	ChannelEvent *channel_event;
+	ChanEvent *channel_event;
+
+	std::cout << name << ": " << events.size() << " events\n";
 
 	// Iterate over the list of channel events.
 	for(std::deque<ChannelEventPair*>::iterator iter = events.begin(); iter != events.end(); iter++){
@@ -399,6 +401,7 @@ void Processor::PreProcess(){
 			
 			// Add the phase of the trace to the high resolution time.
 			channel_event->hires_time += channel_event->phase * adcClockInSeconds;
+			std::cout << " " << current_event->modNum << ":" << current_event->chanNum << " - " << channel_event->hires_time << std::endl;
 		}
 		
 		// Calibrate the energy, if applicable.

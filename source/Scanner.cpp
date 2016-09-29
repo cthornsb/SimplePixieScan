@@ -729,9 +729,9 @@ bool simpleScanner::AddEvent(XiaData *event_){
 	// Link the channel event to its corresponding map entry.
 	ChannelEventPair *pair_;
 	if(use_calibrations)
-		pair_ = new ChannelEventPair(event_, new ChannelEvent(event_), mapfile->GetMapEntry(event_), calibfile->GetCalibEntry(event_));
+		pair_ = new ChannelEventPair(event_, new ChanEvent(event_), mapfile->GetMapEntry(event_), calibfile->GetCalibEntry(event_));
 	else
-		pair_ = new ChannelEventPair(event_, new ChannelEvent(event_), mapfile->GetMapEntry(event_), &dummyCalib);
+		pair_ = new ChannelEventPair(event_, new ChanEvent(event_), mapfile->GetMapEntry(event_), &dummyCalib);
 
 	// Correct the baseline before using the trace.
 	if(!pair_->pixieEvent->adcTrace.empty() && pair_->channelEvent->CorrectBaseline() >= 0.0)

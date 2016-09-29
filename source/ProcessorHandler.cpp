@@ -17,7 +17,7 @@
 XiaData *dummyEvent = new XiaData();
 MapEntry dummyEntry;
 
-ChannelEventPair dummyStart(dummyEvent, new ChannelEvent(dummyEvent), &dummyEntry, &dummyCalib);
+ChannelEventPair dummyStart(dummyEvent, new ChanEvent(dummyEvent), &dummyEntry, &dummyCalib);
 
 ProcessorHandler::ProcessorHandler(){ 
 	total_events = 0; 

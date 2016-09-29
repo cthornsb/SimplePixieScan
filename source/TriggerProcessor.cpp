@@ -3,7 +3,7 @@
 #include "Plotter.hpp"
 
 bool TriggerProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEvtR/*=NULL*/){
-	ChannelEvent *current_event = chEvt->channelEvent;
+	ChanEvent *current_event = chEvt->channelEvent;
 
 	// Fill all diagnostic histograms.
 	energy_1d->Fill(current_event->hires_energy);

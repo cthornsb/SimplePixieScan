@@ -23,8 +23,8 @@ bool LiquidBarProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *
 	XiaData *xia_data_L = chEvt->pixieEvent;
 	XiaData *xia_data_R = chEvtR->pixieEvent;
 	
-	ChannelEvent *channel_event_L = chEvt->channelEvent;
-	ChannelEvent *channel_event_R = chEvtR->channelEvent;
+	ChanEvent *channel_event_L = chEvt->channelEvent;
+	ChanEvent *channel_event_R = chEvtR->channelEvent;
 
 	// Check that the two channels are not separated by too much time.
 	if(absdiff(xia_data_L->time, xia_data_R->time) > (2 * max_tdiff)){ return false; }

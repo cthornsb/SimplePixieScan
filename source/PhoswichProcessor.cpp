@@ -7,7 +7,7 @@
 #include "TFitResultPtr.h"
 
 /// Set the fit parameters for the current event.
-bool PhoswichProcessor::SetFitParameters(ChannelEvent *event_, MapEntry *entry_){
+bool PhoswichProcessor::SetFitParameters(ChanEvent *event_, MapEntry *entry_){
 	if(!event_ || !entry_){ return false; }
 
 	// Set the initial parameters of the fast pulse.
@@ -45,7 +45,7 @@ bool PhoswichProcessor::FitPulse(TGraph *trace_, float &phase){
 }
 
 /// Set the CFD parameters for the current event.
-bool PhoswichProcessor::SetCfdParameters(ChannelEvent *event_, MapEntry *entry_){
+bool PhoswichProcessor::SetCfdParameters(ChanEvent *event_, MapEntry *entry_){
 	if(!event_ || !entry_){ return false; }
 	
 	// Compute the trace qdc of the fast and slow component of the pulse.
@@ -57,7 +57,7 @@ bool PhoswichProcessor::SetCfdParameters(ChannelEvent *event_, MapEntry *entry_)
 
 /// Process all individual events.
 bool PhoswichProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEvtR/*=NULL*/){
-	ChannelEvent *current_event = chEvt->channelEvent;
+	ChanEvent *current_event = chEvt->channelEvent;
 
 	// Fill all diagnostic histograms.
 	fast_energy_1d->Fill(fast_qdc);

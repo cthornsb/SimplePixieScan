@@ -4,7 +4,7 @@
 #include "Plotter.hpp"
 
 bool GenericProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEvtR/*=NULL*/){
-	ChannelEvent *current_event = chEvt->channelEvent;
+	ChanEvent *current_event = chEvt->channelEvent;
 	
 	// Calculate the time difference between the current event and the start.
 	double tdiff;
