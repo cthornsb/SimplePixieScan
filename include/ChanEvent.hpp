@@ -7,19 +7,12 @@
 #include <vector>
 #include <stdlib.h>
 
-class XiaData;
+#include "XiaData.hpp"
 
-class ChanEvent{
+class ChanEvent : public XiaData {
 public:
     bool valid_chan; /// True if the high resolution energy and time are valid.
-    
-    double hires_energy; /// High resolution energy from the integration of pulse fits.
-    double hires_time; /// High resolution time taken from pulse fits (in ns).
-    
-    float *xvals; /// x values used for fitting.
-    float *yvals; /// y values used for fitting (baseline corrected trace).
-    float *cfdvals; /// y values for the cfd analyzed waveform.
-    size_t size; /// Size of xvals and yvals arrays and of trace vector.
+    bool ignore; /// Ignore this event.
     
     float phase; /// Phase (leading edge) of trace (in ADC clock ticks (4E-9 Hz for 250 MHz digitizer)).
     float baseline; /// The baseline of the trace.
@@ -29,10 +22,7 @@ public:
     float cfdCrossing; /// The zero-crossing point of the cfd waveform.
     size_t max_index; /// The index of the maximum trace bin (in ADC clock ticks).
     
-    bool baseline_corrected; /// True if the trace has been baseline corrected.
-    bool ignore; /// Ignore this event.
-    
-    XiaData *event; /// The low level pixie event.
+    float *cfdvals; ///
     
     /// Default constructor.
     ChanEvent();
@@ -43,17 +33,11 @@ public:
     /// Destructor.
     ~ChanEvent();
     
-    /// Correct the trace baseline, baseline standard deviation, and find the pulse maximum.
-    float CorrectBaseline();
-    
-    /// Find the leading edge of the pulse at a given percentage of pulse maximum.
-    float FindLeadingEdge(const float &thresh_=0.05);
+    /// Calculate the trace baseline, baseline standard deviation, and find the pulse maximum.
+    float ComputeBaseline();
     
     /// Integrate the baseline corrected trace in the range [start_, stop_] and return the result.
     float IntegratePulse(const size_t &start_=0, const size_t &stop_=0);
-    
-    /// Integrate the baseline corrected trace in the range [start_, stop_] and return the result.
-    float FindQDC(const size_t &start_=0, const size_t &stop_=0);
     
     /// Perform CFD analysis on the waveform.
     float AnalyzeCFD(const float &F_=0.5, const size_t &D_=1, const size_t &L_=1);

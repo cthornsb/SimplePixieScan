@@ -729,17 +729,17 @@ bool simpleScanner::AddEvent(XiaData *event_){
 	// Link the channel event to its corresponding map entry.
 	ChannelEventPair *pair_;
 	if(use_calibrations)
-		pair_ = new ChannelEventPair(event_, new ChanEvent(event_), mapfile->GetMapEntry(event_), calibfile->GetCalibEntry(event_));
+		pair_ = new ChannelEventPair(new ChanEvent(event_), mapfile->GetMapEntry(event_), calibfile->GetCalibEntry(event_));
 	else
-		pair_ = new ChannelEventPair(event_, new ChanEvent(event_), mapfile->GetMapEntry(event_), &dummyCalib);
+		pair_ = new ChannelEventPair(new ChanEvent(event_), mapfile->GetMapEntry(event_), &dummyCalib);
 
 	// Correct the baseline before using the trace.
-	if(!pair_->pixieEvent->adcTrace.empty() && pair_->channelEvent->CorrectBaseline() >= 0.0)
+	if(!pair_->channelEvent->adcTrace.empty() && pair_->channelEvent->ComputeBaseline() >= 0.0)
 		chanMaxADC->Fill(pair_->channelEvent->maximum, pair_->entry->location);
 	
 	// Fill the output histograms.
 	chanCounts->Fill(event_->chanNum, event_->modNum);
-	chanEnergy->Fill(pair_->pixieEvent->energy, pair_->entry->location);
+	chanEnergy->Fill(pair_->channelEvent->energy, pair_->entry->location);
 
 	// Raw event information. Dump raw event information to root file.
 	if(write_raw){
@@ -749,6 +749,9 @@ bool simpleScanner::AddEvent(XiaData *event_){
 		xia_data_time = event_->time*8E-9;
 		raw_tree->SafeFill();
 	}
+
+	// We no longer need the XiaData since we made a copy of it using ChanEvent.
+	delete event_;
 	
 	// Pass this event to the correct processor
 	if(pair_->entry->type == "ignore" || !handler->AddEvent(pair_)){ // Invalid detector type. Delete it

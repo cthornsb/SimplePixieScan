@@ -8,13 +8,13 @@ bool GenericProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *ch
 	
 	// Calculate the time difference between the current event and the start.
 	double tdiff;
-	if(!chEvt->pixieEvent->adcTrace.empty()) // Correct for the phases of the start and the current event.
-		tdiff = (current_event->event->time - start->pixieEvent->time)*8 + (current_event->phase - start->channelEvent->phase)*4;
+	if(!chEvt->channelEvent->adcTrace.empty()) // Correct for the phases of the start and the current event.
+		tdiff = (current_event->time - start->channelEvent->time)*8 + (current_event->phase - start->channelEvent->phase)*4;
 	else
-		if(!start->pixieEvent->adcTrace.empty()) // Correct for the phase of the start trace.
-			tdiff = (current_event->event->time - start->pixieEvent->time)*8 - start->channelEvent->phase*4;
+		if(!start->channelEvent->adcTrace.empty()) // Correct for the phase of the start trace.
+			tdiff = (current_event->time - start->channelEvent->time)*8 - start->channelEvent->phase*4;
 		else // No start trace. Cannot correct the phases.
-			tdiff = (current_event->event->time - start->pixieEvent->time)*8;
+			tdiff = (current_event->time - start->channelEvent->time)*8;
 		
 	// Do time alignment.
 	if(chEvt->calib->Time()){
@@ -30,16 +30,16 @@ bool GenericProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *ch
 	
 	// Fill all diagnostic histograms.
 	loc_tdiff_2d->Fill(tdiff, location);
-	loc_energy_2d->Fill(current_event->hires_energy, location);
+	loc_energy_2d->Fill(current_event->qdc, location);
 	loc_phase_2d->Fill(current_event->phase, location);
 	loc_1d->Fill(location);
 
 	// Fill the values into the root tree.
-	structure.Append(current_event->hires_energy, tdiff, location);
+	structure.Append(current_event->qdc, tdiff, location);
 	
 	// Copy the trace to the output file.
 	if(write_waveform){
-		waveform.Append(current_event->event->adcTrace);
+		waveform.Append(current_event->adcTrace);
 	}
 	
 	return true;

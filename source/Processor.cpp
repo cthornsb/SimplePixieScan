@@ -17,15 +17,15 @@ Trace dummyTrace;
 const double pi = 3.1415926540;
 const double twoPi = 6.283185308;
 
+int traceX[1250]; // Array of values to use for the x-axis of the trace (up to 5 us long).
+
 ChannelEventPair::ChannelEventPair(){
-	pixieEvent = NULL;
 	channelEvent = NULL;
 	calib = NULL;
 	entry = NULL;
 }
 
-ChannelEventPair::ChannelEventPair(XiaData *pix_event_, ChanEvent *chan_event_, MapEntry *entry_, CalibEntry *calib_){
-	pixieEvent = pix_event_;
+ChannelEventPair::ChannelEventPair(ChanEvent *chan_event_, MapEntry *entry_, CalibEntry *calib_){
 	channelEvent = chan_event_;
 	calib = calib_;
 	entry = entry_;
@@ -135,22 +135,16 @@ bool Processor::HandleDoubleEndedEvents(){
 	std::deque<ChannelEventPair*>::iterator iter_L = events.begin();
 	std::deque<ChannelEventPair*>::iterator iter_R = events.begin()+1;
 
-	XiaData *current_event_L;
-	XiaData *current_event_R;
-
-	ChanEvent *channel_event_L;
-	ChanEvent *channel_event_R;
+	ChanEvent *current_event_L;
+	ChanEvent *current_event_R;
 
 	// Pick out pairs of channels representing vandle bars.
 	for(; iter_R != events.end(); iter_L++, iter_R++){
-		current_event_L = (*iter_L)->pixieEvent;
-		current_event_R = (*iter_R)->pixieEvent;
+		current_event_L = (*iter_L)->channelEvent;
+		current_event_R = (*iter_R)->channelEvent;
 
-		channel_event_L = (*iter_L)->channelEvent;
-		channel_event_R = (*iter_R)->channelEvent;
-	
 		// Check that the time and energy values are valid
-		if(!channel_event_L->valid_chan || !channel_event_R->valid_chan){ continue; }
+		if(!current_event_L->valid_chan || !current_event_R->valid_chan){ continue; }
 	
 		// Check that these two channels have the correct detector tag.
 		if((*iter_L)->entry->subtype != "left" || 
@@ -204,7 +198,7 @@ bool Processor::FitPulse(TGraph *trace_, float &phase){
 bool Processor::CfdPulse(ChanEvent *event_, MapEntry *entry_){
 	if(!event_ || !entry_){ return false; }
 
-	/*// Set the CFD threshold point of the trace.
+	// Set the CFD threshold point of the trace.
 	float cfdF = 0.5;
 	float cfdD = 1;
 	float cfdL = 1;
@@ -214,10 +208,10 @@ bool Processor::CfdPulse(ChanEvent *event_, MapEntry *entry_){
 	
 	event_->AnalyzeCFD(cfdF, (int)cfdD, (int)cfdL);
 	
-	event_->phase = event_->cfdCrossing;*/
+	event_->phase = event_->cfdCrossing;
 	
 	// Set the CFD threshold point of the trace.
-	float cfd_threshold = 0.5;
+	/*float cfd_threshold = 0.5;
 	entry_->getArg(0, cfd_threshold);
 	cfd_threshold *= event_->maximum;
 	
@@ -229,7 +223,7 @@ bool Processor::CfdPulse(ChanEvent *event_, MapEntry *entry_){
 			event_->phase = event_->xvals[index] + (cfd_threshold - event_->yvals[index]) / m;
 			return true;
 		}
-	}
+	}*/
 	
 	return false;
 }
@@ -267,6 +261,9 @@ Processor::Processor(std::string name_, std::string type_, MapFile *map_){
 	clockInSeconds = 8e-9;
 	adcClockInSeconds = 4e-9;
 	filterClockInSeconds = 8e-9;
+	
+	for(int i = 0; i < 1250; i++)
+		traceX[i] = i;
 }
 
 Processor::~Processor(){
@@ -329,8 +326,7 @@ void Processor::PreProcess(){
 	// Start the timer.
 	StartProcess(); 
 	
-	XiaData *current_event;
-	ChanEvent *channel_event;
+	ChanEvent *current_event;
 
 	std::cout << name << ": " << events.size() << " events\n";
 
@@ -338,12 +334,10 @@ void Processor::PreProcess(){
 	for(std::deque<ChannelEventPair*>::iterator iter = events.begin(); iter != events.end(); iter++){
 		total_events++;
 		
-		current_event = (*iter)->pixieEvent;
-		channel_event = (*iter)->channelEvent;
+		current_event = (*iter)->channelEvent;
 	
 		// Set the default values for high resolution energy and time.
-		channel_event->hires_energy = current_event->energy;
-		channel_event->hires_time = current_event->time * filterClockInSeconds;
+		current_event->eventTime = current_event->time * filterClockInSeconds;
 	
 		// Check for trace with zero size.
 		if(current_event->adcTrace.empty()){
@@ -352,36 +346,33 @@ void Processor::PreProcess(){
 				continue; 
 			}				
 			// The trace is not required by the processor. Set the channel event to valid.
-			channel_event->valid_chan = true;
+			current_event->valid_chan = true;
 		}
 		else{ // The trace exists.
-			// Correct the baseline.
-			if(channel_event->CorrectBaseline() < 0){ continue; }
+			// Calculate the baseline.
+			if(current_event->ComputeBaseline() < 0){ continue; }
 		
 			// Check for large SNR.
-			if(channel_event->stddev > 3.0){ continue; }
-
-			// Find the leading edge of the pulse. This will also set the phase of the ChannelEventPair.
-			if(channel_event->FindLeadingEdge() < 0){ continue; }
+			if(current_event->stddev > 3.0){ continue; }
 
 			if(use_integration) // Compute the integral of the pulse within the integration window.
-				channel_event->hires_energy = channel_event->FindQDC(channel_event->max_index - fitting_low, channel_event->max_index + fitting_high);
+				current_event->IntegratePulse(current_event->max_index - fitting_low, current_event->max_index + fitting_high);
 		
 			// Set the channel event to valid.
-			channel_event->valid_chan = true;
+			current_event->valid_chan = true;
 		
 			if(use_fitting){ // Do root fitting for high resolution timing (very slow).
 				if(!fitting_func){ SetFitFunction(); }
 		
 				// "Convert" the trace into a TGraph for fitting.
-				TGraph *graph = new TGraph(channel_event->size, channel_event->xvals, channel_event->yvals);
+				TGraph *graph = new TGraph(current_event->adcTrace.size(), traceX, current_event->adcTrace.data());
 		
 				// Set the initial fitting parameters.
-				if(SetFitParameters(channel_event, (*iter)->entry)){
+				if(SetFitParameters(current_event, (*iter)->entry)){
 					// Fit the TGraph.
-					if(!FitPulse(graph, channel_event->phase)){
+					if(!FitPulse(graph, current_event->phase)){
 						// Set the channel event to invalid.
-						channel_event->valid_chan = false;
+						current_event->valid_chan = false;
 						continue;
 					}
 				}
@@ -390,23 +381,23 @@ void Processor::PreProcess(){
 			}
 			else{ // Do a more simplified CFD analysis to save time.
 				// Set the initial CFD parameters.
-				if(SetCfdParameters(channel_event, (*iter)->entry)){
-					if(!CfdPulse(channel_event, (*iter)->entry)){
+				if(SetCfdParameters(current_event, (*iter)->entry)){
+					if(!CfdPulse(current_event, (*iter)->entry)){
 						// Set the channel event to invalid.
-						channel_event->valid_chan = false;
+						current_event->valid_chan = false;
 						continue;
 					}
 				}
 			}
 			
 			// Add the phase of the trace to the high resolution time.
-			channel_event->hires_time += channel_event->phase * adcClockInSeconds;
-			std::cout << " " << current_event->modNum << ":" << current_event->chanNum << " - " << channel_event->hires_time << std::endl;
+			current_event->eventTime += current_event->phase * adcClockInSeconds;
+			std::cout << " " << current_event->modNum << ":" << current_event->chanNum << " - " << current_event->eventTime << std::endl;
 		}
 		
 		// Calibrate the energy, if applicable.
 		if((*iter)->calib->Energy())
-			channel_event->hires_energy = (*iter)->calib->energyCal->GetCalEnergy(channel_event->hires_energy);
+			current_event->energy = (*iter)->calib->energyCal->GetCalEnergy(current_event->energy);
 	}
 
 	// Stop the timer.

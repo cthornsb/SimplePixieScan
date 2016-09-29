@@ -16,7 +16,7 @@ bool LiquidProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 	ChanEvent *current_event = chEvt->channelEvent;
 	
 	// Calculate the time difference between the current event and the start.
-	double tdiff = (current_event->event->time - start->pixieEvent->time)*8 + (current_event->phase - start->channelEvent->phase)*4;
+	double tdiff = (current_event->time - start->channelEvent->time)*8 + (current_event->phase - start->channelEvent->phase)*4;
 
 	// Do time alignment.
 	double r0 = 0.5;
@@ -53,7 +53,7 @@ bool LiquidProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 	     
 	// Copy the trace to the output file.
 	if(write_waveform){
-		waveform.Append(current_event->event->adcTrace);
+		waveform.Append(current_event->adcTrace);
 	}
 	
 	return true;

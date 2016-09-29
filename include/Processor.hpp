@@ -32,22 +32,21 @@ extern const double twoPi;
 
 class ChannelEventPair{
   public:
-  	XiaData *pixieEvent;
   	ChanEvent *channelEvent;
   	CalibEntry *calib;
 	MapEntry *entry;
   
 	ChannelEventPair();
 	
-	ChannelEventPair(XiaData *p_event_, ChanEvent *c_event_, MapEntry *entry_, CalibEntry *calib_);
+	ChannelEventPair(ChanEvent *c_event_, MapEntry *entry_, CalibEntry *calib_);
 	
 	~ChannelEventPair();
 	
 	/// Return true if the time of arrival for rhs is later than that of lhs.
-	static bool CompareTime(ChannelEventPair *lhs, ChannelEventPair *rhs){ return (lhs->pixieEvent->time < rhs->pixieEvent->time); }
+	static bool CompareTime(ChannelEventPair *lhs, ChannelEventPair *rhs){ return (lhs->channelEvent->time < rhs->channelEvent->time); }
 	
 	/// Return true if lhs has a lower event id (mod * chan) than rhs.
-	static bool CompareChannel(ChannelEventPair *lhs, ChannelEventPair *rhs){ return ((lhs->pixieEvent->modNum*lhs->pixieEvent->chanNum) < (rhs->pixieEvent->modNum*rhs->pixieEvent->chanNum)); }
+	static bool CompareChannel(ChannelEventPair *lhs, ChannelEventPair *rhs){ return ((lhs->channelEvent->modNum*lhs->channelEvent->chanNum) < (rhs->channelEvent->modNum*rhs->channelEvent->chanNum)); }
 };
 
 class FittingFunction{

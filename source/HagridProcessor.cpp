@@ -7,7 +7,7 @@ bool HagridProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 	ChanEvent *current_event = chEvt->channelEvent;
 
 	// Calculate the time difference between the current event and the start.
-	double tdiff = (current_event->event->time - start->pixieEvent->time)*8 + (current_event->phase - start->channelEvent->phase)*4;
+	double tdiff = (current_event->time - start->channelEvent->time)*8 + (current_event->phase - start->channelEvent->phase)*4;
 
 	// Do time alignment.
 	if(chEvt->calib->Time()){
@@ -23,15 +23,15 @@ bool HagridProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 	
 	// Fill all diagnostic histograms.
 	loc_tdiff_2d->Fill(tdiff, location);
-	loc_energy_2d->Fill(current_event->hires_energy, location);
+	loc_energy_2d->Fill(current_event->qdc, location);
 	loc_1d->Fill(location);
 
 	// Fill the values into the root tree.
-	structure.Append(current_event->hires_energy, tdiff, location);
+	structure.Append(current_event->qdc, tdiff, location);
 	
 	// Copy the trace to the output file.
 	if(write_waveform){
-		waveform.Append(current_event->event->adcTrace);
+		waveform.Append(current_event->adcTrace);
 	}
 	
 	return true;

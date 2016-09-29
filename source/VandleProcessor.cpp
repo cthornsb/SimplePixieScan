@@ -19,18 +19,15 @@
 const double max_tdiff = ((VANDLE_BAR_LENGTH / C_IN_VANDLE_BAR) / 8E-9); // Maximum time difference between valid vandle pairwise events (pixie clock ticks)
 
 bool VandleProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEvtR/*=NULL*/){
-	XiaData *xia_data_L = chEvt->pixieEvent;
-	XiaData *xia_data_R = chEvtR->pixieEvent;
-	
 	ChanEvent *channel_event_L = chEvt->channelEvent;
 	ChanEvent *channel_event_R = chEvtR->channelEvent;
 	
 	// Check that the two channels are not separated by too much time.
-	if(absdiff(xia_data_L->time, xia_data_R->time) > (2 * max_tdiff)){ return false; }
+	if(absdiff(channel_event_L->time, channel_event_R->time) > (2 * max_tdiff)){ return false; }
 
 	// Calculate the time difference between the current event and the start.
-	double tdiff_L = (xia_data_L->time - start->pixieEvent->time)*8 + (channel_event_L->phase - start->channelEvent->phase)*4;
-	double tdiff_R = (xia_data_R->time - start->pixieEvent->time)*8 + (channel_event_R->phase - start->channelEvent->phase)*4;
+	double tdiff_L = (channel_event_L->time - start->channelEvent->time)*8 + (channel_event_L->phase - start->channelEvent->phase)*4;
+	double tdiff_R = (channel_event_R->time - start->channelEvent->time)*8 + (channel_event_R->phase - start->channelEvent->phase)*4;
 
 	// Get the detector distance from the target and the detector angle with respect to the beam axis.
 	double r0 = 0.5, theta0 = 0.0;
@@ -66,18 +63,18 @@ bool VandleProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 	
 	// Fill all diagnostic histograms.
 	loc_tdiff_2d->Fill((tdiff_L + tdiff_R)/2.0, location);
-	loc_energy_2d->Fill(std::sqrt(channel_event_L->hires_energy*channel_event_R->hires_energy), location);
+	loc_energy_2d->Fill(std::sqrt(channel_event_L->qdc*channel_event_R->qdc), location);
 	loc_L_phase_2d->Fill(channel_event_L->phase, location);
 	loc_R_phase_2d->Fill(channel_event_R->phase, location);
 	loc_1d->Fill(location);		
 	
 	// Fill the values into the root tree.
-	structure.Append(std::sqrt(channel_event_L->hires_energy*channel_event_R->hires_energy), radius, theta*rad2deg, phi*rad2deg, ctof, location);
+	structure.Append(std::sqrt(channel_event_L->qdc*channel_event_R->qdc), radius, theta*rad2deg, phi*rad2deg, ctof, location);
 	     
 	// Copy the trace to the output file.
 	if(write_waveform){
-		L_waveform.Append(channel_event_L->event->adcTrace);
-		R_waveform.Append(channel_event_R->event->adcTrace);
+		L_waveform.Append(channel_event_L->adcTrace);
+		R_waveform.Append(channel_event_R->adcTrace);
 	}
 		
 	return true;

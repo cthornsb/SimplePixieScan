@@ -20,18 +20,15 @@ const double max_tdiff = ((LIQUID_BAR_LENGTH / C_IN_LIQUID_BAR) / 8E-9); // Maxi
 
 /// Process all individual events.
 bool LiquidBarProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEvtR/*=NULL*/){
-	XiaData *xia_data_L = chEvt->pixieEvent;
-	XiaData *xia_data_R = chEvtR->pixieEvent;
-	
 	ChanEvent *channel_event_L = chEvt->channelEvent;
 	ChanEvent *channel_event_R = chEvtR->channelEvent;
 
 	// Check that the two channels are not separated by too much time.
-	if(absdiff(xia_data_L->time, xia_data_R->time) > (2 * max_tdiff)){ return false; }
+	if(absdiff(channel_event_L->time, channel_event_R->time) > (2 * max_tdiff)){ return false; }
 
 	// Calculate the time difference between the current event and the start.
-	double tdiff_L = (xia_data_L->time - start->pixieEvent->time)*8 + (channel_event_L->phase - start->channelEvent->phase)*4;
-	double tdiff_R = (xia_data_R->time - start->pixieEvent->time)*8 + (channel_event_R->phase - start->channelEvent->phase)*4;
+	double tdiff_L = (channel_event_L->time - start->channelEvent->time)*8 + (channel_event_L->phase - start->channelEvent->phase)*4;
+	double tdiff_R = (channel_event_R->time - start->channelEvent->time)*8 + (channel_event_R->phase - start->channelEvent->phase)*4;
 
 	// Get the detector distance from the target and the detector angle with respect to the beam axis.
 	double r0 = 0.5, theta0 = 0.0;
@@ -88,8 +85,8 @@ bool LiquidBarProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *
 	     
 	// Copy the trace to the output file.
 	if(write_waveform){
-		L_waveform.Append(channel_event_L->event->adcTrace);
-		R_waveform.Append(channel_event_R->event->adcTrace);
+		L_waveform.Append(channel_event_L->adcTrace);
+		R_waveform.Append(channel_event_R->adcTrace);
 	}
 		
 	return true;

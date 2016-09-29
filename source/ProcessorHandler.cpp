@@ -14,10 +14,10 @@
 #include "MapFile.hpp"
 #include "CalibFile.hpp"
 
-XiaData *dummyEvent = new XiaData();
+ChanEvent *dummyEvent = new ChanEvent();
 MapEntry dummyEntry;
 
-ChannelEventPair dummyStart(dummyEvent, new ChanEvent(dummyEvent), &dummyEntry, &dummyCalib);
+ChannelEventPair dummyStart(dummyEvent, &dummyEntry, &dummyCalib);
 
 ProcessorHandler::ProcessorHandler(){ 
 	total_events = 0; 
@@ -98,8 +98,8 @@ bool ProcessorHandler::AddEvent(ChannelEventPair *pair_){
 		if(pair_->entry->type == iter->type){ 
 			iter->proc->AddEvent(pair_); 
 			if(pair_->entry->tag == "start") start_events++;
-			if(total_events == 0){ first_event_time = pair_->pixieEvent->time * 8E-9; }
-			delta_event_time = (pair_->pixieEvent->time * 8E-9) - first_event_time;
+			if(total_events == 0){ first_event_time = pair_->channelEvent->time * 8E-9; }
+			delta_event_time = (pair_->channelEvent->time * 8E-9) - first_event_time;
 			total_events++; 
 			return true;
 		}
