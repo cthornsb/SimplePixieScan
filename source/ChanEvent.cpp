@@ -17,7 +17,7 @@ ChanEvent::ChanEvent(XiaData *event_) : XiaData(event_) {
 }
 
 ChanEvent::~ChanEvent(){
-	if(cfdvals) delete cfdvals;
+	if(cfdvals) delete[] cfdvals;
 }
 
 float ChanEvent::ComputeBaseline(){
@@ -73,10 +73,10 @@ float ChanEvent::AnalyzeCFD(const float &F_/*=0.5*/, const size_t &D_/*=1*/, con
 	float cfdMinimum = 9999;
 	size_t cfdMinIndex = 0;
 	
-	cfdCrossing = -9999;
+	phase = -9999;
 
 	// Compute the cfd waveform.
-	for(size_t cfdIndex = 0; cfdIndex < adcTrace.empty(); ++cfdIndex){
+	for(size_t cfdIndex = 0; cfdIndex < adcTrace.size(); ++cfdIndex){
 		cfdvals[cfdIndex] = 0.0;
 		if(cfdIndex >= L_ + D_ - 1){
 			for(size_t i = 0; i < L_; i++)
@@ -93,13 +93,13 @@ float ChanEvent::AnalyzeCFD(const float &F_/*=0.5*/, const size_t &D_/*=1*/, con
 		// Find the zero-crossing.
 		for(size_t cfdIndex = cfdMinIndex-1; cfdIndex >= 0; cfdIndex--){
 			if(cfdvals[cfdIndex] >= 0.0 && cfdvals[cfdIndex+1] < 0.0){
-				cfdCrossing = cfdIndex - cfdvals[cfdIndex]/(cfdvals[cfdIndex+1]-cfdvals[cfdIndex]);
+				phase = cfdIndex - cfdvals[cfdIndex]/(cfdvals[cfdIndex+1]-cfdvals[cfdIndex]);
 				break;
 			}
 		}
 	}
 
-	return cfdCrossing;
+	return phase;
 }
 
 void ChanEvent::Clear(){
@@ -108,13 +108,13 @@ void ChanEvent::Clear(){
 	baseline = -9999;
 	stddev = -9999;
 	qdc = -9999;
-	cfdCrossing = -9999;
 	max_index = 0;
 
 	valid_chan = false;
 	ignore = false;
 	
-	if(cfdvals) delete cfdvals;
-	
 	cfdvals = NULL;
+	
+	if(cfdvals) 
+		delete[] cfdvals;
 }

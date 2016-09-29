@@ -19,7 +19,6 @@ public:
     float stddev; /// Standard deviation of the baseline.
     float maximum; /// The baseline corrected maximum value of the trace.
     float qdc; /// The calculated (baseline corrected) qdc.
-    float cfdCrossing; /// The zero-crossing point of the cfd waveform.
     size_t max_index; /// The index of the maximum trace bin (in ADC clock ticks).
     
     float *cfdvals; ///

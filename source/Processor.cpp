@@ -208,8 +208,6 @@ bool Processor::CfdPulse(ChanEvent *event_, MapEntry *entry_){
 	
 	event_->AnalyzeCFD(cfdF, (int)cfdD, (int)cfdL);
 	
-	event_->phase = event_->cfdCrossing;
-	
 	// Set the CFD threshold point of the trace.
 	/*float cfd_threshold = 0.5;
 	entry_->getArg(0, cfd_threshold);
@@ -225,7 +223,7 @@ bool Processor::CfdPulse(ChanEvent *event_, MapEntry *entry_){
 		}
 	}*/
 	
-	return false;
+	return (event_->phase > 0);
 }
 
 Processor::Processor(std::string name_, std::string type_, MapFile *map_){
@@ -328,8 +326,6 @@ void Processor::PreProcess(){
 	
 	ChanEvent *current_event;
 
-	std::cout << name << ": " << events.size() << " events\n";
-
 	// Iterate over the list of channel events.
 	for(std::deque<ChannelEventPair*>::iterator iter = events.begin(); iter != events.end(); iter++){
 		total_events++;
@@ -392,7 +388,6 @@ void Processor::PreProcess(){
 			
 			// Add the phase of the trace to the high resolution time.
 			current_event->eventTime += current_event->phase * adcClockInSeconds;
-			std::cout << " " << current_event->modNum << ":" << current_event->chanNum << " - " << current_event->eventTime << std::endl;
 		}
 		
 		// Calibrate the energy, if applicable.
