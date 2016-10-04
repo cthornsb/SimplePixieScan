@@ -216,7 +216,6 @@ bool Processor::FitPulse(ChanEvent *event_, MapEntry *entry_){
 	TGraph *graph = new TGraph(event_->traceLength);
 	for(size_t graphIndex = 0; graphIndex < event_->traceLength; graphIndex++)
 		graph->SetPoint(graphIndex, traceX[graphIndex], event_->adcTrace[graphIndex]);
-	}
 
 	// And finally, do the fitting.
 	fit_result = graph->Fit(fitting_func, "S Q R");
