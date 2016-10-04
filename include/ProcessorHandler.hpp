@@ -51,6 +51,8 @@ class ProcessorHandler{
 	bool AddEvent(ChannelEventPair *pair_);
 	
 	bool AddStart(ChannelEventPair *pair_);
+
+	bool PreProcess();
 	
 	bool Process();
 	

@@ -115,9 +115,6 @@ class Processor{
 	FittingFunction *actual_func;
 	TFitResultPtr fit_result; /// Fit result pointer for storing trace fitting information.
   
-	/// Clear channel events from the queue
-	void ClearEvents();
-  
 	/// Start the process timer
 	void StartProcess(){ start_time = clock(); }
 	

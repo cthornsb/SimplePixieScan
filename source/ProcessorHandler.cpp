@@ -115,7 +115,20 @@ bool ProcessorHandler::AddStart(ChannelEventPair *pair_){
 	return true;
 }
 
+bool ProcessorHandler::PreProcess(){
+	// First call the preprocessors. The preprocessor will calculate the phase of the trace
+	// by doing a CFD analysis or using the root fitting routine.
+	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
+		iter->proc->PreProcess();
+	}
+	
+	return true;
+}
+
 bool ProcessorHandler::Process(){
+	// Call all processor preprocess routines.
+	PreProcess();
+
 	// Return false if there are no start events.
 	if(starts.empty()){
 		if(untriggered) starts.push_back(&dummyStart);
@@ -124,15 +137,9 @@ bool ProcessorHandler::Process(){
 	
 	bool retval = false;
 	
+	// After preprocessing has finished, call the processors.
 	// Iterate over all start events in the starts vector.
 	for(std::vector<ChannelEventPair*>::iterator start = starts.begin(); start != starts.end(); start++){
-		// First call the preprocessors. The preprocessor will calculate the phase of the trace
-		// by doing a CFD analysis.
-		for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
-			iter->proc->PreProcess();
-		}
-
-		// After preprocessing has finished, call the processors.
 		for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
 			if(iter->proc->Process(*start)){ retval = true; }
 		}

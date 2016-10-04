@@ -65,13 +65,6 @@ FittingFunction::FittingFunction(double beta_/*=0.563362*/, double gamma_/*=0.30
 	gamma = gamma_;
 }
 
-void Processor::ClearEvents(){
-	for(std::deque<ChannelEventPair*>::iterator iter = events.begin(); iter != events.end(); iter++){
-		delete (*iter);
-	}
-	events.clear();
-}
-
 void Processor::PrintMsg(const std::string &msg_){
 	std::cout << name << "Processor: " << msg_ << std::endl; 
 }
@@ -307,7 +300,6 @@ Processor::Processor(std::string name_, std::string type_, MapFile *map_){
 
 Processor::~Processor(){
 	// Ensure there are no events left in the queue
-	if(!events.empty()){ ClearEvents(); }
 	if(fitting_func){ delete fitting_func; }
 	if(actual_func){ delete actual_func; }
 }
@@ -349,15 +341,15 @@ bool Processor::InitializeTraces(TTree *tree_){
 
 float Processor::Status(unsigned long global_events_){
 	float time_taken = 0.0;
-	if(init){
-		// output the time usage and the number of valid events
-		time_taken = ((float)total_time)/CLOCKS_PER_SEC;
-		std::cout << " " << name << "Processor: Used " << time_taken << " seconds of CPU time\n";
-		if(total_events > 0){
-			std::cout << " " << name << "Processor: " << total_events << " Total Events (" << 100.0*total_events/global_events_ << "%)\n";
-			std::cout << " " << name << "Processor: " << good_events << " Valid Events (" << 100.0*good_events/global_events_ << "%)\n";
-		}
+	
+	// output the time usage and the number of valid events
+	time_taken = ((float)total_time)/CLOCKS_PER_SEC;
+	std::cout << " " << name << "Processor: Used " << time_taken << " seconds of CPU time\n";
+	if(total_events > 0){
+		std::cout << " " << name << "Processor: " << total_events << " Total Events (" << 100.0*total_events/global_events_ << "%)\n";
+		if(init) std::cout << " " << name << "Processor: " << good_events << " Valid Events (" << 100.0*good_events/global_events_ << "%)\n";
 	}
+	
 	return time_taken;
 }
 
