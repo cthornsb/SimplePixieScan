@@ -15,7 +15,7 @@ INSTALL_DIR = $(HOME)/bin
 #####################################################################
 
 # Set the directory where you plan to run the scan.
-SCAN_DIR = .
+SCAN_DIR = $(HOME)/scan
 
 # Set the directory containing runtime configuration files.
 CONFIG_DIR = $(SCAN_DIR)/config/default
@@ -72,8 +72,8 @@ RCBUILD_DIR = $(TOP_LEVEL)/rcbuild
 DIRECTORIES = $(OBJ_DIR) $(EXEC_DIR) $(CONFIG_DIR)
 
 # Core files
-SOURCES = ChanEvent.cpp Plotter.cpp ProcessorHandler.cpp OnlineProcessor.cpp \
-          Processor.cpp ConfigFile.cpp MapFile.cpp CalibFile.cpp Scanner.cpp
+SOURCES = Plotter.cpp ProcessorHandler.cpp OnlineProcessor.cpp Processor.cpp \
+          ConfigFile.cpp MapFile.cpp CalibFile.cpp Scanner.cpp
 
 # Processors
 SOURCES += TriggerProcessor.cpp \

@@ -5,7 +5,6 @@
 #include <deque>
 
 #include "XiaData.hpp"
-#include "ChanEvent.hpp"
 
 #include "TF1.h"
 #include "TFitResultPtr.h"
@@ -29,6 +28,8 @@ extern Trace dummyTrace;
 
 extern const double pi;
 extern const double twoPi;
+
+typedef ChannelEvent ChanEvent;
 
 class ChannelEventPair{
   public:
