@@ -27,6 +27,21 @@
 #define PROG_NAME "Scanner"
 #endif
 
+const unsigned int fileFooterWord = 0x20464f45; // "EOF "
+const unsigned int fileHeaderWord = 0x44414548; // "HEAD"
+const unsigned int dataHeaderWord = 0x41544144; // "DATA"
+
+void writeFileInfo(std::ofstream &file_, const std::string &str_){
+	unsigned short dummy = str_.size() + 2;
+	file_.write((char *)&dummy, 2);
+	dummy = (str_.size() + 2) % 4;
+	file_.write(str_.c_str(), str_.size());
+	if(dummy > 0){ // Pad with whitespace.
+		std::string tempStr(dummy, ' ');
+		file_.write(tempStr.c_str(), dummy);
+	}
+}
+
 /** Open a TCanvas if this tree has not already done so.
   * \return Pointer to an open TCanvas.
   */
@@ -232,6 +247,9 @@ simpleScanner::~simpleScanner(){
 			delete root_file;
 		}
 		else{
+			// Close the file.
+			psort_file.write((char *)&fileFooterWord, 4);
+		
 			std::cout << msgHeader << "Wrote " << psort_file.tellp() << " B to output file.\n";
 			
 			// Close the presort file.
@@ -715,14 +733,15 @@ void simpleScanner::Notify(const std::string &code_/*=""*/){
 		fileInformation *finfo = GetFileInfo();
 		if(finfo){
 			loaded_files++;
+			std::string name, value;
 			if(!presort_mode){
+				// Write header information to the output root file.
 				std::stringstream stream;
 				if(loaded_files < 10){ stream << "head/file0" << loaded_files; }
 				else{ stream << "head/file" << loaded_files; }
 				head_path = stream.str();
 				root_file->mkdir(head_path.c_str());
 				root_file->cd(head_path.c_str());
-				std::string name, value;
 				for(size_t index = 0; index < finfo->size(); index++){
 					finfo->at(index, name, value);
 					TNamed named(name.c_str(), value.c_str());
@@ -730,6 +749,27 @@ void simpleScanner::Notify(const std::string &code_/*=""*/){
 				}
 			}
 			else{
+				// Write header information to the output presort file.
+				unsigned short dummy;
+				
+				if(loaded_files > 1)
+					psort_file.write((char *)&fileFooterWord, 4);
+				
+				psort_file.write((char *)&fileHeaderWord, 4);
+				
+				dummy = (unsigned short)loaded_files;
+				psort_file.write((char *)&dummy, 2);
+				dummy = (unsigned short)finfo->size();
+				psort_file.write((char *)&dummy, 2);
+				
+				for(size_t index = 0; index < finfo->size(); index++){
+					finfo->at(index, name, value);
+
+					writeFileInfo(psort_file, name);
+					writeFileInfo(psort_file, value);
+				}
+				
+				psort_file.write((char *)&dataHeaderWord, 4);
 			}
 		}
 		else{ std::cout << msgHeader << "Failed to fetch input file info!\n"; }
