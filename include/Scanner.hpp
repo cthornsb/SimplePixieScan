@@ -2,6 +2,7 @@
 #define SCANNER_HPP
 
 #include <string>
+#include <fstream>
 
 // PixieCore libraries
 #include "Unpacker.hpp"
@@ -11,6 +12,8 @@
 #include "TTree.h"
 
 #include "Structures.h"
+
+class ChannelEventPair;
 
 class MapFile;
 class ConfigFile;
@@ -214,6 +217,10 @@ class simpleScanner : public ScanInterface {
 	ProcessorHandler *handler; /// Pointer to the processor handler to use for controlling detector processors.
 	OnlineProcessor *online; /// Pointer to the online processor to use for online plotting.
 	
+	std::deque<ChannelEventPair*> chanEventList;
+	
+	std::ofstream psort_file;
+	
 	TFile *root_file; /// Output root file for storing data.
 	extTree *root_tree; /// Output TTree for storing processed data.
 	extTree *trace_tree; /// Output TTree for storing raw ADC traces.
@@ -234,6 +241,7 @@ class simpleScanner : public ScanInterface {
 	double xia_data_energy; /// Raw pixie energy taken directly from the module (a.u.).
 	double xia_data_time; /// Raw pixie time taken directly from the module and converted to seconds.
 	
+	bool presort_mode; ///
 	bool use_calibrations; /// Set to true if the calibration file is to be used.
 	bool untriggered_mode; /// Set to true if a start detector is not to be used.
 	bool force_overwrite; /// Set to true if existing output files will be overwritten.

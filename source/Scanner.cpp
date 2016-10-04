@@ -162,6 +162,7 @@ extTree *simpleUnpacker::InitTree(){
 
 /// Default constructor.
 simpleScanner::simpleScanner() : ScanInterface() {
+	presort_mode = false;
 	use_calibrations = true;
 	untriggered_mode = false;
 	force_overwrite = false;
@@ -242,6 +243,9 @@ simpleScanner::~simpleScanner(){
 		delete root_file;
 		delete online;
 	}
+	
+	// Close the presort file.
+	psort_file.close();
 }
 
 /** ExtraCommands is used to send command strings to classes derived
@@ -471,6 +475,10 @@ void simpleScanner::ExtraArguments(){
 		std::cout << msgHeader << "Writing event builder stats to output tree.\n";
 		write_stats = true;		
 	}
+	if(userOpts.at(8).active){ // Presort.
+		std::cout << msgHeader << "Using presort mode.\n";
+		presort_mode = true;	
+	}
 }
 
 /** CmdHelp is used to allow a derived class to print a help statement about
@@ -511,6 +519,7 @@ void simpleScanner::ArgHelp(){
 	AddOption(optionExt("traces", no_argument, NULL, 0, "", "Dump raw ADC traces to output root file"));
 	AddOption(optionExt("raw", no_argument, NULL, 0, "", "Dump raw pixie module data to output root file"));
 	AddOption(optionExt("stats", no_argument, NULL, 0, "", "Dump event builder information to the output root file"));
+	AddOption(optionExt("presort", no_argument, NULL, 'P', "", "Write an intermediate binary output file containing presorted data"));
 }
 
 /** SyntaxStr is used to print a linux style usage message to the screen.
@@ -620,6 +629,11 @@ bool simpleScanner::Initialize(std::string prefix_){
 	std::cout << prefix_ << "Initializing root output.\n";
 	if(force_overwrite){ root_file = new TFile(GetOutputFilename().c_str(), "RECREATE"); }
 	else{ root_file = new TFile(GetOutputFilename().c_str(), "CREATE"); }
+
+	if(presort_mode){
+		std::cout << prefix_ << "Initializing presort output file.\n";
+		psort_file.open("temp.pst");
+	}
 
 	// Check that the root file is open.
 	if(!root_file->IsOpen()){
@@ -734,7 +748,7 @@ bool simpleScanner::AddEvent(XiaData *event_){
 		pair_ = new ChannelEventPair(new ChanEvent(event_), mapfile->GetMapEntry(event_), &dummyCalib);
 
 	// Correct the baseline before using the trace.
-	if(!pair_->channelEvent->adcTrace.empty() && pair_->channelEvent->ComputeBaseline() >= 0.0)
+	if(pair_->channelEvent->traceLength != 0 && pair_->channelEvent->ComputeBaseline() >= 0.0)
 		chanMaxADC->Fill(pair_->channelEvent->maximum, pair_->entry->location);
 	
 	// Fill the output histograms.
@@ -765,6 +779,9 @@ bool simpleScanner::AddEvent(XiaData *event_){
 	if(!untriggered_mode && pair_->entry->tag == "start"){ 
 		handler->AddStart(pair_);
 	}
+
+	// Add this event to the list of all events.
+	chanEventList.push_back(pair_);
 	
 	return true;
 }
@@ -789,6 +806,33 @@ bool simpleScanner::ProcessEvents(){
 	
 	// Zero all of the processors.
 	handler->ZeroAll();
+	
+	if(presort_mode){
+		// Get the length of the raw event.
+		size_t totalRawEventLength = 0;
+		for(std::deque<ChannelEventPair*>::iterator iter = chanEventList.begin(); iter != chanEventList.end(); ++iter){ 
+			totalRawEventLength += (*iter)->channelEvent->GetLength();
+		}
+		
+		// Write the 2-word raw event header.
+		const unsigned int buffHeader = 0x544E5645; // "EVNT"
+		psort_file.write((char *)&buffHeader, 4);
+		psort_file.write((char *)&totalRawEventLength, 4);
+		
+		// Write the event data.
+		for(std::deque<ChannelEventPair*>::iterator iter = chanEventList.begin(); iter != chanEventList.end(); ++iter){ 
+			// Write each event to the presort file.
+			(*iter)->channelEvent->writeRaw(psort_file);	
+		}
+	}
+	
+	// Clear all events from the channel event list.
+	while(!chanEventList.empty()){
+		if(presort_mode)
+			chanEventList.front()->channelEvent->Write(psort_file);
+		delete chanEventList.front();
+		chanEventList.pop_front(); // Remove this event from the raw event deque.
+	}	
 	
 	// Check for the need to update the online canvas.
 	if(online_mode){

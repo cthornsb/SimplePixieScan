@@ -298,7 +298,7 @@ bool StructureFile::Open(){
 	hppfile << "class Trace : public TObject {\n";
 	hppfile << "  protected:\n";
 	hppfile << "	std::string name; //! Trace name\n";
-	hppfile << "	std::vector<int> wave;\n";
+	hppfile << "	std::vector<unsigned short> wave;\n";
 	hppfile << "    unsigned int mult;\n\n";
 	hppfile << "  public:\n";
 	hppfile << "	Trace(const std::string &name_=\"\");\n\n";
@@ -307,8 +307,7 @@ bool StructureFile::Open(){
 	hppfile << "	Trace &operator = (const Trace &other_){ return Set(other_); }\n\n";
 	hppfile << "	Trace &Set(const Trace &other_);\n\n";
 	hppfile << "	Trace &Set(Trace *other_);\n\n";
-	hppfile << "    void Append(const std::vector<int> &vec_);\n\n";
-	hppfile << "    void Append(int *arr_, const size_t &size_);\n\n";	
+	hppfile << "    void Append(unsigned short *arr_, const size_t &size_);\n\n";	
 	hppfile << "    ClassDef(Trace, 1); // Trace\n";
 	hppfile << "};\n";
 	
@@ -329,12 +328,7 @@ bool StructureFile::Open(){
 	cppfile << "	wave = other_->wave;\n";
 	cppfile << "	return *this;\n";
 	cppfile << "}\n\n";
-	cppfile << "void Trace::Append(const std::vector<int> &vec_){\n";
-	cppfile << "	wave.reserve(wave.size()+vec_.size());\n";
-	cppfile << "	wave.insert(wave.end(), vec_.begin(), vec_.end());\n";
-	cppfile << "	mult++;\n";
-	cppfile << "}\n\n";
-	cppfile << "void Trace::Append(int *arr_, const size_t &size_){\n";
+	cppfile << "void Trace::Append(unsigned short *arr_, const size_t &size_){\n";
 	cppfile << "	wave.reserve(wave.size()+size_);\n";
 	cppfile << "	for(size_t i = 0; i < size_; i++){\n";
 	cppfile << "		wave.push_back(arr_[i]);\n";

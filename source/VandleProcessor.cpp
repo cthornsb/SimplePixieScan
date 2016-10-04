@@ -71,12 +71,6 @@ bool VandleProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 	// Fill the values into the root tree.
 	structure.Append(std::sqrt(channel_event_L->qdc*channel_event_R->qdc), radius, theta*rad2deg, phi*rad2deg, ctof, location);
 	     
-	// Copy the trace to the output file.
-	if(write_waveform){
-		L_waveform.Append(channel_event_L->adcTrace);
-		R_waveform.Append(channel_event_R->adcTrace);
-	}
-		
 	return true;
 }
 

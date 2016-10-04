@@ -16,11 +16,6 @@ bool TraceProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEv
 	structure.Append(tdiff, current_event->phase, current_event->baseline, current_event->stddev, 
 	                 current_event->maximum, current_event->qdc, (int)current_event->max_index, location);
 	
-	// Copy the trace to the output file.
-	if(write_waveform){
-		waveform.Append(current_event->adcTrace);
-	}
-
 	return true;
 }
 

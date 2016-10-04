@@ -19,7 +19,7 @@ Trace dummyTrace;
 const double pi = 3.1415926540;
 const double twoPi = 6.283185308;
 
-int traceX[1250]; // Array of values to use for the x-axis of the trace (up to 5 us long).
+unsigned short traceX[1250]; // Array of values to use for the x-axis of the trace (up to 5 us long).
 
 ChannelEventPair::ChannelEventPair(){
 	channelEvent = NULL;
@@ -129,6 +129,10 @@ bool Processor::HandleSingleEndedEvents(){
 		// Process the individual event.
 		if(HandleEvent(*iter))
 			good_events++;
+			
+		// Copy the trace to the output file.
+		if(write_waveform)
+			root_waveform->Append((*iter)->channelEvent->adcTrace, (*iter)->channelEvent->traceLength);
 	}
 
 	return true;
@@ -168,6 +172,12 @@ bool Processor::HandleDoubleEndedEvents(){
 		// Process the individual event.
 		if(HandleEvent(*iter_L, *iter_R))
 			good_events += 2;
+
+		// Copy the trace to the output file.
+		if(write_waveform){
+			root_waveform->Append(current_event_L->adcTrace, current_event_L->traceLength);
+			root_waveformR->Append(current_event_R->adcTrace, current_event_R->traceLength);
+		}
 	}
 	
 	return true;
@@ -203,7 +213,10 @@ bool Processor::FitPulse(ChanEvent *event_, MapEntry *entry_){
 		return false;
 
 	// "Convert" the trace into a TGraph for fitting.
-	TGraph *graph = new TGraph(event_->adcTrace.size(), traceX, event_->adcTrace.data());
+	TGraph *graph = new TGraph(event_->traceLength);
+	for(size_t graphIndex = 0; graphIndex < event_->traceLength; graphIndex++)
+		graph->SetPoint(graphIndex, traceX[graphIndex], event_->adcTrace[graphIndex]);
+	}
 
 	// And finally, do the fitting.
 	fit_result = graph->Fit(fitting_func, "S Q R");
@@ -273,6 +286,7 @@ Processor::Processor(std::string name_, std::string type_, MapFile *map_){
 	
 	root_structure = &dummyStructure;
 	root_waveform = &dummyTrace;
+	root_waveformR = &dummyTrace;
 	
 	local_branch = NULL;
 	trace_branch = NULL;
@@ -364,7 +378,7 @@ void Processor::PreProcess(){
 		current_event->eventTime = current_event->time * filterClockInSeconds;
 	
 		// Check for trace with zero size.
-		if(current_event->adcTrace.empty()){
+		if(current_event->traceLength){
 			if(use_trace){
 				// The trace is required by this processor, but does not exist.
 				continue; 
@@ -438,8 +452,9 @@ bool Processor::Process(ChannelEventPair *start_){
   * rely upon events which are contained within this processor.
   */
 void Processor::WrapUp(){
-	// Clean up all channel events which we've been given
-	ClearEvents();
+	// No need to delete anything. Scanner will delete all events.
+	// We simply need to clear our deque of events.
+	events.clear();
 }
 
 void Processor::Zero(){

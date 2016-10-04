@@ -51,11 +51,6 @@ bool LiquidProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 	// Fill the values into the root tree.
 	structure.Append(short_qdc, long_qdc, tdiff, energy, location);
 	     
-	// Copy the trace to the output file.
-	if(write_waveform){
-		waveform.Append(current_event->adcTrace);
-	}
-	
 	return true;
 }
 

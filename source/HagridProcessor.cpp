@@ -29,11 +29,6 @@ bool HagridProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 	// Fill the values into the root tree.
 	structure.Append(current_event->qdc, tdiff, location);
 	
-	// Copy the trace to the output file.
-	if(write_waveform){
-		waveform.Append(current_event->adcTrace);
-	}
-	
 	return true;
 }
 
