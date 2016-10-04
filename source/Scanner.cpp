@@ -32,13 +32,13 @@ const unsigned int fileHeaderWord = 0x44414548; // "HEAD"
 const unsigned int dataHeaderWord = 0x41544144; // "DATA"
 
 void writeFileInfo(std::ofstream &file_, const std::string &str_){
-	unsigned short dummy = str_.size() + 2;
-	file_.write((char *)&dummy, 2);
-	dummy = (str_.size() + 2) % 4;
+	unsigned short dummy1 = ((unsigned short)str_.size() + 2) + (str_.size() + 2) % 4;
+	unsigned short dummy2 = (str_.size() + 2) % 4;
+	file_.write((char *)&dummy1, 2);
 	file_.write(str_.c_str(), str_.size());
-	if(dummy > 0){ // Pad with whitespace.
-		std::string tempStr(dummy, ' ');
-		file_.write(tempStr.c_str(), dummy);
+	if(dummy2 > 0){ // Pad with whitespace.
+		std::string tempStr(dummy2, ' ');
+		file_.write(tempStr.c_str(), dummy2);
 	}
 }
 
