@@ -740,16 +740,24 @@ Unpacker *simpleScanner::GetCore(){
 bool simpleScanner::AddEvent(XiaData *event_){
 	if(!event_){ return false; }
 
+	// Check that this channel is defined in the map.
+	MapEntry *mapentry = mapfile->GetMapEntry(event_);
+	if(!mapentry || mapentry->type == "ignore"){
+		delete event_;
+		return false;
+	}
+
 	// Link the channel event to its corresponding map entry.
 	ChannelEventPair *pair_;
 	if(use_calibrations)
-		pair_ = new ChannelEventPair(new ChanEvent(event_), mapfile->GetMapEntry(event_), calibfile->GetCalibEntry(event_));
+		pair_ = new ChannelEventPair(new ChanEvent(event_), mapentry, calibfile->GetCalibEntry(event_));
 	else
-		pair_ = new ChannelEventPair(new ChanEvent(event_), mapfile->GetMapEntry(event_), &dummyCalib);
+		pair_ = new ChannelEventPair(new ChanEvent(event_), mapentry, &dummyCalib);
 
 	// Correct the baseline before using the trace.
-	if(pair_->channelEvent->traceLength != 0 && pair_->channelEvent->ComputeBaseline() >= 0.0)
+	if(pair_->channelEvent->traceLength != 0 && pair_->channelEvent->ComputeBaseline() >= 0.0){
 		chanMaxADC->Fill(pair_->channelEvent->maximum, pair_->entry->location);
+	}
 	
 	// Fill the output histograms.
 	chanCounts->Fill(event_->chanNum, event_->modNum);
@@ -768,7 +776,7 @@ bool simpleScanner::AddEvent(XiaData *event_){
 	delete event_;
 	
 	// Pass this event to the correct processor
-	if(pair_->entry->type == "ignore" || !handler->AddEvent(pair_)){ // Invalid detector type. Delete it
+	if(!handler->AddEvent(pair_)){ // Invalid detector type. Delete it
 		delete pair_;
 		return false;
 	}
@@ -811,7 +819,7 @@ bool simpleScanner::ProcessEvents(){
 		// Get the length of the raw event.
 		size_t totalRawEventLength = 0;
 		for(std::deque<ChannelEventPair*>::iterator iter = chanEventList.begin(); iter != chanEventList.end(); ++iter){ 
-			totalRawEventLength += (*iter)->channelEvent->GetLength();
+			totalRawEventLength += (*iter)->channelEvent->getEventLength();
 		}
 		
 		// Write the 2-word raw event header.
@@ -822,14 +830,12 @@ bool simpleScanner::ProcessEvents(){
 		// Write the event data.
 		for(std::deque<ChannelEventPair*>::iterator iter = chanEventList.begin(); iter != chanEventList.end(); ++iter){ 
 			// Write each event to the presort file.
-			(*iter)->channelEvent->writeRaw(psort_file);	
+			(*iter)->channelEvent->writeRaw(psort_file);
 		}
 	}
 	
 	// Clear all events from the channel event list.
 	while(!chanEventList.empty()){
-		if(presort_mode)
-			chanEventList.front()->channelEvent->Write(psort_file);
 		delete chanEventList.front();
 		chanEventList.pop_front(); // Remove this event from the raw event deque.
 	}	
