@@ -258,9 +258,11 @@ simpleScanner::~simpleScanner(){
 			psort_file.write((char *)&fileFooterWord, 4);
 			psort_file.write((char *)&endBufferWord, 4);
 		
-			// Write the maximum raw event spill length to the header.
-			psort_file.seekp(8, std::ios::beg);
-			psort_file.write((char *)&maxSpillLength, 4);
+			// Write the maximum raw event spill length and the total time to the header.
+			PLD_header tempHeader;
+			tempHeader.SetMaxSpillSize(maxSpillLength);
+			tempHeader.SetRunTime(handler->GetDeltaEventTime());
+			tempHeader.OverwriteValues(&psort_file);
 		
 			std::cout << msgHeader << "Wrote " << psort_file.tellp() << " B to output file.\n";
 			
@@ -903,6 +905,9 @@ bool simpleScanner::ProcessEvents(){
 	return retval;
 }
 
+/** Write pixie events in the raw event to the output presort file.
+  * \param[in]  forceWrite Close the raw event spill even if the threshold has not been reached.
+  */
 void simpleScanner::HandlePresortOutput(bool forceWrite/*=false*/){
 	// This is a new raw event spill.
 	if(currSpillLength == 0){
