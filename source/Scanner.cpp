@@ -764,17 +764,18 @@ void simpleScanner::Notify(const std::string &code_/*=""*/){
 				// Write header information to the output presort file.
 				if(GetFileFormat() == 0){
 					PLD_header tempHeader;
-					tempHeader.SetTitle("pizza");
+					tempHeader.SetFacility(std::string(GetLdfHeader()->GetFacility()));
 					tempHeader.SetFormat("PRESORTPIXIEDATA");
-					tempHeader.SetMaxSpillSize(20000);
+					tempHeader.SetStartDateTime(std::string(GetLdfHeader()->GetDate()));
+					tempHeader.SetEndDateTime(std::string(GetLdfHeader()->GetDate()));					
+					tempHeader.SetTitle(std::string(GetLdfHeader()->GetRunTitle()));
+					tempHeader.SetRunNumber(GetLdfHeader()->GetRunNumber());
 					tempHeader.Write(&psort_file);
 				}
 				else{
 					GetPldHeader()->SetFormat("PRESORTPIXIEDATA");
-					GetPldHeader()->SetMaxSpillSize(20000);
 					GetPldHeader()->Write(&psort_file);
 				}
-
 			}
 		}
 		else{ std::cout << msgHeader << "Failed to fetch input file info!\n"; }
