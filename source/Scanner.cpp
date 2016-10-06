@@ -30,6 +30,7 @@
 const unsigned int fileFooterWord = 0x20464f45; // "EOF "
 const unsigned int fileHeaderWord = 0x44414548; // "HEAD"
 const unsigned int dataHeaderWord = 0x41544144; // "DATA"
+const unsigned int endBufferWord = 0xFFFFFFFF;
 
 void writeFileInfo(std::ofstream &file_, const std::string &str_){
 	unsigned short dummy1 = ((unsigned short)str_.size() + 2) + (str_.size() + 2) % 4;
@@ -192,6 +193,9 @@ simpleScanner::simpleScanner() : ScanInterface() {
 	calibfile = NULL;
 	handler = NULL;
 	online = NULL;
+	spillThreshold = 10000;
+	currSpillLength = 0;
+	maxSpillLength = 0;
 	events_since_last_update = 0;
 	events_between_updates = 5000;
 	loaded_files = 0;
@@ -246,9 +250,13 @@ simpleScanner::~simpleScanner(){
 			root_file->Close();
 			delete root_file;
 		}
-		else{
+		else if(presort_mode){
+			// Write the remaining sorted data to the output file.
+			HandlePresortOutput(true);
+
 			// Close the file.
 			psort_file.write((char *)&fileFooterWord, 4);
+			psort_file.write((char *)&endBufferWord, 4);
 		
 			std::cout << msgHeader << "Wrote " << psort_file.tellp() << " B to output file.\n";
 			
@@ -750,26 +758,19 @@ void simpleScanner::Notify(const std::string &code_/*=""*/){
 			}
 			else{
 				// Write header information to the output presort file.
-				unsigned short dummy;
-				
-				if(loaded_files > 1)
-					psort_file.write((char *)&fileFooterWord, 4);
-				
-				psort_file.write((char *)&fileHeaderWord, 4);
-				
-				dummy = (unsigned short)loaded_files;
-				psort_file.write((char *)&dummy, 2);
-				dummy = (unsigned short)finfo->size();
-				psort_file.write((char *)&dummy, 2);
-				
-				for(size_t index = 0; index < finfo->size(); index++){
-					finfo->at(index, name, value);
-
-					writeFileInfo(psort_file, name);
-					writeFileInfo(psort_file, value);
+				if(GetFileFormat() == 0){
+					PLD_header tempHeader;
+					tempHeader.SetTitle("pizza");
+					tempHeader.SetFormat("PRESORTPIXIEDATA");
+					tempHeader.SetMaxSpillSize(20000);
+					tempHeader.Write(&psort_file);
 				}
-				
-				psort_file.write((char *)&dataHeaderWord, 4);
+				else{
+					GetPldHeader()->SetFormat("PRESORTPIXIEDATA");
+					GetPldHeader()->SetMaxSpillSize(20000);
+					GetPldHeader()->Write(&psort_file);
+				}
+
 			}
 		}
 		else{ std::cout << msgHeader << "Failed to fetch input file info!\n"; }
@@ -871,33 +872,20 @@ bool simpleScanner::ProcessEvents(){
 		// Call each processor's preprocess routine.
 		// The preprocessors will calculate high res timing, energy, etc.
 		handler->PreProcess();
-	
-		// Get the length of the raw event.
-		size_t totalRawEventLength = 0;
-		for(std::deque<ChannelEventPair*>::iterator iter = chanEventList.begin(); iter != chanEventList.end(); ++iter){ 
-			totalRawEventLength += (*iter)->channelEvent->getEventLength();
-		}
-		totalRawEventLength++; // Account for the event length word.
-		
-		// The 1-word raw event header gives the length of the raw event in 4-byte words.
-		psort_file.write((char *)&totalRawEventLength, 4);
-		
-		// Write the event data.
-		for(std::deque<ChannelEventPair*>::iterator iter = chanEventList.begin(); iter != chanEventList.end(); ++iter){ 
-			// Write each event to the presort file.
-			(*iter)->channelEvent->writeRaw(psort_file);
-		}
+
+		// Write the sorted data to the output file.
+		HandlePresortOutput();
 	}
 
 	// Zero all of the processors.
 	handler->ZeroAll();
-	
+
 	// Clear all events from the channel event list.
 	while(!chanEventList.empty()){
 		delete chanEventList.front();
 		chanEventList.pop_front(); // Remove this event from the raw event deque.
-	}	
-	
+	}
+
 	// Check for the need to update the online canvas.
 	if(online_mode){
 		if(events_since_last_update >= events_between_updates){
@@ -908,6 +896,68 @@ bool simpleScanner::ProcessEvents(){
 	}
 	
 	return retval;
+}
+
+bool simpleScanner::HandlePresortOutput(bool forceWrite/*=false*/){
+	// This is a new raw event spill.
+	if(currSpillLength == 0){
+		// The 1-word DATA identifier.
+		psort_file.write((char *)&dataHeaderWord, 4);
+		
+		// This is where we would write the length of the raw event "spill".
+		// Since we don't currently know how long it will be we will use a placeholder for now.
+		// We will save the index so we may overwrite it with the correct value later.
+		spillLengthIndex = psort_file.tellp();
+		
+		// Write a 0xFFFFFFFF as a placeholder.
+		psort_file.write((char *)&endBufferWord, 4);
+		
+		// Update the current length of our raw event spill.
+		// We will need to subtract these two words later, but we
+		// need this now to prevent writing the header more than once.
+		currSpillLength += 2; 
+	}
+
+	// If there are events in the raw event, write it to the file.
+	if(!chanEventList.empty()){
+		// Write the event data.
+		for(std::deque<ChannelEventPair*>::iterator iter = chanEventList.begin(); iter != chanEventList.end(); ++iter){ 
+			// Write each event to the presort file.
+			(*iter)->channelEvent->writeRaw(psort_file);
+
+			// Add the length of the event.
+			currSpillLength += (*iter)->channelEvent->getEventLength();
+		}
+
+		// Close the raw event with a delimiter.
+		psort_file.write((char *)&endBufferWord, 4);
+	
+		// Account for the delimiter.
+		currSpillLength++;
+	}
+
+	// Check if we have enough data to close the spill.
+	if(currSpillLength >= spillThreshold + 2 || forceWrite){
+		// Close the spill with a delimiter.
+		psort_file.write((char *)&endBufferWord, 4);
+
+		// Remove the length of the header from the spill length.
+		currSpillLength = currSpillLength - 2;
+		
+		// Overwrite the 1-word raw event spill length in 4-byte words.
+		psort_file.seekp(spillLengthIndex, std::ios::beg);
+		psort_file.write((char *)&currSpillLength, 4);
+		psort_file.seekp(0, std::ios::end);
+
+		// Keep track of the maximum raw event length. Required for later scanning.
+		if(currSpillLength > maxSpillLength)
+			maxSpillLength = currSpillLength;
+	
+		// Reset the spill length.
+		currSpillLength = 0;
+	}
+	
+	return false;
 }
 
 #ifndef USE_HRIBF

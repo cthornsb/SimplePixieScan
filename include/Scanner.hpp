@@ -210,6 +210,8 @@ class simpleScanner : public ScanInterface {
 	  */
 	virtual bool ProcessEvents();
 
+	bool HandlePresortOutput(bool forceWrite=false);
+
   private:
 	MapFile *mapfile; /// Pointer to the map file to use for channel mapping.
 	ConfigFile *configfile; /// Pointer to the configuration file to use for setting default parameters.
@@ -219,6 +221,10 @@ class simpleScanner : public ScanInterface {
 	
 	std::deque<ChannelEventPair*> chanEventList;
 	
+	std::streampos spillLengthIndex;
+	unsigned int spillThreshold;
+	unsigned int currSpillLength;
+	unsigned int maxSpillLength;
 	std::ofstream psort_file;
 	
 	TFile *root_file; /// Output root file for storing data.
