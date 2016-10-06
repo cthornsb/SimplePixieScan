@@ -258,6 +258,10 @@ simpleScanner::~simpleScanner(){
 			psort_file.write((char *)&fileFooterWord, 4);
 			psort_file.write((char *)&endBufferWord, 4);
 		
+			// Write the maximum raw event spill length to the header.
+			psort_file.seekp(8, std::ios::beg);
+			psort_file.write((char *)&maxSpillLength, 4);
+		
 			std::cout << msgHeader << "Wrote " << psort_file.tellp() << " B to output file.\n";
 			
 			// Close the presort file.
