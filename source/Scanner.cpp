@@ -903,7 +903,7 @@ bool simpleScanner::ProcessEvents(){
 	return retval;
 }
 
-bool simpleScanner::HandlePresortOutput(bool forceWrite/*=false*/){
+void simpleScanner::HandlePresortOutput(bool forceWrite/*=false*/){
 	// This is a new raw event spill.
 	if(currSpillLength == 0){
 		// The 1-word DATA identifier.
@@ -961,8 +961,6 @@ bool simpleScanner::HandlePresortOutput(bool forceWrite/*=false*/){
 		// Reset the spill length.
 		currSpillLength = 0;
 	}
-	
-	return false;
 }
 
 #ifndef USE_HRIBF

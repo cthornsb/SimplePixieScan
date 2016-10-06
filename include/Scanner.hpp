@@ -210,7 +210,10 @@ class simpleScanner : public ScanInterface {
 	  */
 	virtual bool ProcessEvents();
 
-	bool HandlePresortOutput(bool forceWrite=false);
+	/** Write pixie events in the raw event to the output presort file.
+	  * \param[in]  forceWrite Close the raw event spill even if the threshold has not been reached.
+	  */
+	void HandlePresortOutput(bool forceWrite=false);
 
   private:
 	MapFile *mapfile; /// Pointer to the map file to use for channel mapping.
