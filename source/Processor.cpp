@@ -369,7 +369,7 @@ void Processor::PreProcess(){
 		current_event->eventTime = current_event->time * filterClockInSeconds;
 	
 		// Check for trace with zero size.
-		if(current_event->traceLength){
+		if(current_event->traceLength == 0){
 			if(use_trace){
 				// The trace is required by this processor, but does not exist.
 				continue; 
