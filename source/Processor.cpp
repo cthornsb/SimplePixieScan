@@ -366,7 +366,7 @@ void Processor::PreProcess(){
 		current_event = (*iter)->channelEvent;
 	
 		// Set the default values for high resolution energy and time.
-		current_event->eventTime = current_event->time * filterClockInSeconds;
+		current_event->hiresTime = current_event->time * filterClockInSeconds;
 	
 		// Check for trace with zero size.
 		if(current_event->traceLength == 0){
@@ -384,10 +384,8 @@ void Processor::PreProcess(){
 			// Check for large SNR.
 			//if(current_event->stddev > 3.0){ continue; }
 
-			if(use_integration){ // Compute the integral of the pulse within the integration window.
+			if(use_integration) // Compute the integral of the pulse within the integration window.
 				current_event->IntegratePulse(current_event->max_index - fitting_low, current_event->max_index + fitting_high);
-				current_event->energy = current_event->qdc;
-			}
 		
 			// Set the channel event to valid.
 			current_event->valid_chan = true;
@@ -408,12 +406,16 @@ void Processor::PreProcess(){
 			}
 			
 			// Add the phase of the trace to the high resolution time.
-			current_event->eventTime += current_event->phase * adcClockInSeconds;
+			current_event->hiresTime += current_event->phase * adcClockInSeconds;
 		}
 		
 		// Calibrate the energy, if applicable.
-		if((*iter)->calib->Energy())
-			current_event->energy = (*iter)->calib->energyCal->GetCalEnergy(current_event->energy);
+		if((*iter)->calib->Energy()){
+			if(use_integration)
+				current_event->qdc = (*iter)->calib->energyCal->GetCalEnergy(current_event->qdc);
+			else
+				current_event->energy = (*iter)->calib->energyCal->GetCalEnergy(current_event->energy);
+		}
 	}
 
 	// Stop the timer.

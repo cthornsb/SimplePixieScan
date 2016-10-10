@@ -94,6 +94,11 @@ class simpleUnpacker : public Unpacker {
 
 	extTree *stat_tree; /// Output TTree for storing low-level statistics.
 
+	/** Return a pointer to a new XiaData channel event.
+	  * \return A pointer to a new XiaData.
+	  */
+	virtual XiaData *GetNewEvent();
+
 	/** Process all events in the event list.
 	  * \param[in]  addr_ Pointer to a ScanInterface object.
 	  * \return Nothing.

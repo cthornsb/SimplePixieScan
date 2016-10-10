@@ -121,6 +121,13 @@ simpleUnpacker::simpleUnpacker() : Unpacker() {
 	stat_tree = NULL;
 }
 
+/** Return a pointer to a new XiaData channel event.
+  * \return A pointer to a new XiaData.
+  */
+XiaData *simpleUnpacker::GetNewEvent(){ 
+	return (XiaData*)(new ChanEvent()); 
+}
+
 /** Process all events in the event list.
   * \param[in]  addr_ Pointer to a location in memory. 
   * \return Nothing.
@@ -767,7 +774,7 @@ void simpleScanner::Notify(const std::string &code_/*=""*/){
 				if(GetFileFormat() == 0){
 					PLD_header tempHeader;
 					tempHeader.SetFacility(std::string(GetLdfHeader()->GetFacility()));
-					tempHeader.SetFormat("PRESORTPIXIEDATA");
+					tempHeader.SetFormat("PRESORTED_EVENTS");
 					tempHeader.SetStartDateTime(std::string(GetLdfHeader()->GetDate()));
 					tempHeader.SetEndDateTime(std::string(GetLdfHeader()->GetDate()));					
 					tempHeader.SetTitle(std::string(GetLdfHeader()->GetRunTitle()));
@@ -775,7 +782,7 @@ void simpleScanner::Notify(const std::string &code_/*=""*/){
 					tempHeader.Write(&psort_file);
 				}
 				else{
-					GetPldHeader()->SetFormat("PRESORTPIXIEDATA");
+					GetPldHeader()->SetFormat("PRESORTED_EVENTS");
 					GetPldHeader()->Write(&psort_file);
 				}
 			}
@@ -933,7 +940,7 @@ void simpleScanner::HandlePresortOutput(bool forceWrite/*=false*/){
 		// Write the event data.
 		for(std::deque<ChannelEventPair*>::iterator iter = chanEventList.begin(); iter != chanEventList.end(); ++iter){ 
 			// Write each event to the presort file.
-			(*iter)->channelEvent->writeRaw(psort_file);
+			(*iter)->channelEvent->writeEvent(&psort_file, NULL);
 
 			// Add the length of the event.
 			currSpillLength += (*iter)->channelEvent->getEventLength();
