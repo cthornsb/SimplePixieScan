@@ -50,6 +50,13 @@ bool ProcessorHandler::ToggleTraces(){
 	return retval;
 }
 
+bool ProcessorHandler::SetPresortMode(bool state_/*=true*/){
+	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
+		iter->proc->SetPresortMode(state_);
+	}
+	return state_;
+}
+
 bool ProcessorHandler::InitRootOutput(TTree *tree_){
 	bool retval = true;
 	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){

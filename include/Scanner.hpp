@@ -255,7 +255,9 @@ class simpleScanner : public ScanInterface {
 	double xia_data_energy; /// Raw pixie energy taken directly from the module (a.u.).
 	double xia_data_time; /// Raw pixie time taken directly from the module and converted to seconds.
 	
-	bool presort_mode; ///
+	bool presortData; /// True if the incoming data is in presorted format.
+	bool firstEvent; /// True if the first event has yet to be processed.
+	bool writePresort; /// True if presorted data is to be written to file.
 	bool use_calibrations; /// Set to true if the calibration file is to be used.
 	bool untriggered_mode; /// Set to true if a start detector is not to be used.
 	bool force_overwrite; /// Set to true if existing output files will be overwritten.

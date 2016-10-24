@@ -40,6 +40,8 @@ class ProcessorHandler{
 	
 	bool ToggleTraces();
 	
+	bool SetPresortMode(bool state_=true);
+	
 	bool InitRootOutput(TTree *tree_);
 	
 	bool InitTraceOutput(TTree *tree_);

@@ -269,6 +269,7 @@ Processor::Processor(std::string name_, std::string type_, MapFile *map_){
 	use_fitting = false;
 	use_integration = true;
 	isSingleEnded = true;
+	presortData = false;
 	
 	total_time = 0;
 	start_time = clock();
@@ -364,49 +365,56 @@ void Processor::PreProcess(){
 		total_events++;
 		
 		current_event = (*iter)->channelEvent;
-	
-		// Set the default values for high resolution energy and time.
-		current_event->hiresTime = current_event->time * filterClockInSeconds;
-	
-		// Check for trace with zero size.
-		if(current_event->traceLength == 0){
-			if(use_trace){
-				// The trace is required by this processor, but does not exist.
-				continue; 
-			}				
-			// The trace is not required by the processor. Set the channel event to valid.
-			current_event->valid_chan = true;
-		}
-		else{ // The trace exists.
-			// Calculate the baseline.
-			if(current_event->ComputeBaseline() < 0){ continue; }
 		
-			// Check for large SNR.
-			//if(current_event->stddev > 3.0){ continue; }
+		if(!presortData){
+			// Set the default values for high resolution energy and time.
+			current_event->hiresTime = current_event->time * filterClockInSeconds;
+		
+			// Check for trace with zero size.
+			if(current_event->traceLength == 0){
+				if(use_trace && !presortData){
+					// The trace is required by this processor, but does not exist.
+					continue; 
+				}				
+				// The trace is not required by the processor. Set the channel event to valid.
+				current_event->valid_chan = true;
+			}
+			else{ // The trace exists.
+				// Calculate the baseline.
+				if(current_event->ComputeBaseline() < 0){ continue; }
+		
+				// Check for large SNR.
+				//if(current_event->stddev > 3.0){ continue; }
 
-			if(use_integration) // Compute the integral of the pulse within the integration window.
-				current_event->IntegratePulse(current_event->max_index - fitting_low, current_event->max_index + fitting_high);
+				if(use_integration) // Compute the integral of the pulse within the integration window.
+					current_event->IntegratePulse(current_event->max_index - fitting_low, current_event->max_index + fitting_high);
 		
-			// Set the channel event to valid.
-			current_event->valid_chan = true;
+				// Set the channel event to valid.
+				current_event->valid_chan = true;
 		
-			if(use_fitting){ // Do root fitting for high resolution timing (very slow).
-				if(!FitPulse(current_event, (*iter)->entry)){
-					// Set the channel event to invalid.
-					current_event->valid_chan = false;
-					continue;
+				if(use_fitting){ // Do root fitting for high resolution timing (very slow).
+					if(!FitPulse(current_event, (*iter)->entry)){
+						// Set the channel event to invalid.
+						current_event->valid_chan = false;
+						continue;
+					}
 				}
-			}
-			else{ // Do a more simplified CFD analysis to save time.
-				if(!CfdPulse(current_event, (*iter)->entry)){
-					// Set the channel event to invalid.
-					current_event->valid_chan = false;
-					continue;
+				else{ // Do a more simplified CFD analysis to save time.
+					if(!CfdPulse(current_event, (*iter)->entry)){
+						// Set the channel event to invalid.
+						current_event->valid_chan = false;
+						continue;
+					}
 				}
-			}
 			
-			// Add the phase of the trace to the high resolution time.
-			current_event->hiresTime += current_event->phase * adcClockInSeconds;
+				// Add the phase of the trace to the high resolution time.
+				current_event->hiresTime += current_event->phase * adcClockInSeconds;
+			}
+		}
+		else{
+			// This event is from a presorted file. We assume that the event
+			// has already passed a screening and is valid to use.
+			current_event->valid_chan = true;
 		}
 		
 		// Calibrate the energy, if applicable.

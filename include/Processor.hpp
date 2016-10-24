@@ -79,6 +79,7 @@ class Processor{
 	std::string type;
 	bool init;
 	bool use_color_terminal;
+	bool presortData; /// True if data is being read in from a presort file.
 
 	clock_t start_time;
 	unsigned long total_time;
@@ -172,6 +173,8 @@ class Processor{
 	bool ToggleFitting(){ return (use_fitting = !use_fitting); }
 	
 	bool ToggleTraces(){ return (write_waveform = !write_waveform); }
+	
+	bool SetPresortMode(bool state_=true){ return (presortData = state_); }
 	
 	bool Initialize(TTree *tree_);
 	

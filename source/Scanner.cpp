@@ -185,7 +185,9 @@ extTree *simpleUnpacker::InitTree(){
 
 /// Default constructor.
 simpleScanner::simpleScanner() : ScanInterface() {
-	presort_mode = false;
+	presortData = false;
+	firstEvent = true;
+	writePresort = false;
 	use_calibrations = true;
 	untriggered_mode = false;
 	force_overwrite = false;
@@ -218,7 +220,7 @@ simpleScanner::~simpleScanner(){
 		stream << handler->GetDeltaEventTime() << " s\n";
 
 		// If the root file is open, write the tree and histogram.
-		if(!presort_mode && root_file->IsOpen()){
+		if(!writePresort && root_file->IsOpen()){
 			// Write all online diagnostic histograms to the output root file.
 			std::cout << msgHeader << "Writing " << online->WriteHists(root_file) << " histograms to root file.\n";
 
@@ -257,7 +259,7 @@ simpleScanner::~simpleScanner(){
 			root_file->Close();
 			delete root_file;
 		}
-		else if(presort_mode){
+		else if(writePresort){
 			// Write the remaining sorted data to the output file.
 			HandlePresortOutput(true);
 
@@ -519,7 +521,7 @@ void simpleScanner::ExtraArguments(){
 	}
 	if(userOpts.at(8).active){ // Presort.
 		std::cout << msgHeader << "Using presort mode.\n";
-		presort_mode = true;	
+		writePresort = true;	
 	}
 }
 
@@ -667,7 +669,7 @@ bool simpleScanner::Initialize(std::string prefix_){
 		}
 	}
 	
-	if(!presort_mode){
+	if(!writePresort){
 		// Initialize the root output file.
 		std::cout << prefix_ << "Initializing root output.\n";
 		if(force_overwrite){ root_file = new TFile(GetOutputFilename().c_str(), "RECREATE"); }
@@ -729,7 +731,7 @@ bool simpleScanner::Initialize(std::string prefix_){
   * /return Nothing.
   */
 void simpleScanner::FinalInitialization(){
-	if(!presort_mode){
+	if(!writePresort){
 		// Add file header information to the output root file.
 		root_file->mkdir("head");
 	
@@ -755,7 +757,7 @@ void simpleScanner::Notify(const std::string &code_/*=""*/){
 		if(finfo){
 			loaded_files++;
 			std::string name, value;
-			if(!presort_mode){
+			if(!writePresort){
 				// Write header information to the output root file.
 				std::stringstream stream;
 				if(loaded_files < 10){ stream << "head/file0" << loaded_files; }
@@ -810,19 +812,40 @@ Unpacker *simpleScanner::GetCore(){
 bool simpleScanner::AddEvent(XiaData *event_){
 	if(!event_){ return false; }
 
+	if(firstEvent){ // This is the first event to be processed.
+		if(this->GetFileFormat() == 2){ // Reading presorted data from file.
+			handler->SetPresortMode(true);
+			presortData = true;
+		}
+		
+		firstEvent = false;
+	}
+
 	// Check that this channel is defined in the map.
 	MapEntry *mapentry = mapfile->GetMapEntry(event_);
 	if(!mapentry || mapentry->type == "ignore"){
 		delete event_;
 		return false;
 	}
-
+	
+	ChanEvent *current_event = NULL;
+	
+	if(!presortData){ // Non presorted data. Create a new ChanEvent.
+		current_event = new ChanEvent(event_);
+		
+		// We no longer need the XiaData since we made a copy of it using ChanEvent.
+		delete event_;
+	}
+	else{ // We already have a ChanEvent. Convert XiaData pointer to ChanEvent pointer.
+		current_event = (ChanEvent*)event_;
+	}
+	
 	// Link the channel event to its corresponding map entry.
 	ChannelEventPair *pair_;
 	if(use_calibrations)
-		pair_ = new ChannelEventPair(new ChanEvent(event_), mapentry, calibfile->GetCalibEntry(event_));
+		pair_ = new ChannelEventPair(current_event, mapentry, calibfile->GetCalibEntry(event_));
 	else
-		pair_ = new ChannelEventPair(new ChanEvent(event_), mapentry, &dummyCalib);
+		pair_ = new ChannelEventPair(current_event, mapentry, &dummyCalib);
 
 	// Correct the baseline before using the trace.
 	if(pair_->channelEvent->traceLength != 0 && pair_->channelEvent->ComputeBaseline() >= 0.0){
@@ -830,21 +853,18 @@ bool simpleScanner::AddEvent(XiaData *event_){
 	}
 	
 	// Fill the output histograms.
-	chanCounts->Fill(event_->chanNum, event_->modNum);
+	chanCounts->Fill(current_event->chanNum, current_event->modNum);
 	chanEnergy->Fill(pair_->channelEvent->energy, pair_->entry->location);
 
 	// Raw event information. Dump raw event information to root file.
 	if(write_raw){
-		xia_data_module = event_->modNum;
-		xia_data_channel = event_->chanNum;
-		xia_data_energy = event_->energy;
-		xia_data_time = event_->time*8E-9;
+		xia_data_module = current_event->modNum;
+		xia_data_channel = current_event->chanNum;
+		xia_data_energy = current_event->energy;
+		xia_data_time = current_event->time*8E-9;
 		raw_tree->SafeFill();
 	}
 
-	// We no longer need the XiaData since we made a copy of it using ChanEvent.
-	delete event_;
-	
 	// Pass this event to the correct processor
 	if(!handler->AddEvent(pair_)){ // Invalid detector type. Delete it
 		delete pair_;
@@ -871,7 +891,7 @@ bool simpleScanner::AddEvent(XiaData *event_){
 bool simpleScanner::ProcessEvents(){
 	bool retval = true;
 
-	if(!presort_mode){
+	if(!writePresort){
 		// Call each processor to do the processing.
 		if(handler->Process()){ // This event had at least one valid signal
 			// Fill the root tree with processed data.
