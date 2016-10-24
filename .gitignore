@@ -23,6 +23,7 @@ LinkDef.h
 ##############
 *.ldf
 *.pld
+*.out
 
 # Executables #
 ###############
