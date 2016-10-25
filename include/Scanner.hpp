@@ -250,9 +250,8 @@ class simpleScanner : public ScanInterface {
 	
 	int loaded_files; /// The number of files which have been processed.
 	
-	int xia_data_module; /// Module ID from the channel event.
-	int xia_data_channel; /// Channel ID from the channel event.
-	double xia_data_energy; /// Raw pixie energy taken directly from the module (a.u.).
+	unsigned short xia_data_location; /// ID = (16*mod + chan); taken from the channel event.
+	unsigned short xia_data_energy; /// Raw pixie energy taken directly from the module (a.u.).
 	double xia_data_time; /// Raw pixie time taken directly from the module and converted to seconds.
 	
 	bool recordAllStarts; /// True if the user wishes to record all start events to the output file.

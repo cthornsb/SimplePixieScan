@@ -699,8 +699,7 @@ bool simpleScanner::Initialize(std::string prefix_){
 			raw_tree = new extTree("raw", "Raw pixie data");
 	
 			// Add branches to the xia data tree.
-			raw_tree->Branch("mod", &xia_data_module);
-			raw_tree->Branch("chan", &xia_data_channel);
+			raw_tree->Branch("loc", &xia_data_location);
 			raw_tree->Branch("energy", &xia_data_energy);
 			raw_tree->Branch("time", &xia_data_time);
 		}
@@ -828,6 +827,18 @@ bool simpleScanner::AddEvent(XiaData *event_){
 		firstEvent = false;
 	}
 
+	// Fill the output histograms.
+	chanCounts->Fill(event_->chanNum, event_->modNum);
+	chanEnergy->Fill(event_->energy, 16*event_->modNum + event_->chanNum);
+
+	// Raw event information. Dump raw event information to root file.
+	if(write_raw){
+		xia_data_location = 16*event_->modNum + event_->chanNum;
+		xia_data_energy = event_->energy;
+		xia_data_time = event_->time*8E-9;
+		raw_tree->SafeFill();
+	}
+
 	// Check that this channel is defined in the map.
 	MapEntry *mapentry = mapfile->GetMapEntry(event_);
 	if(!mapentry || mapentry->type == "ignore"){
@@ -859,19 +870,6 @@ bool simpleScanner::AddEvent(XiaData *event_){
 		chanMaxADC->Fill(pair_->channelEvent->maximum, pair_->entry->location);
 	}
 	
-	// Fill the output histograms.
-	chanCounts->Fill(current_event->chanNum, current_event->modNum);
-	chanEnergy->Fill(pair_->channelEvent->energy, pair_->entry->location);
-
-	// Raw event information. Dump raw event information to root file.
-	if(write_raw){
-		xia_data_module = current_event->modNum;
-		xia_data_channel = current_event->chanNum;
-		xia_data_energy = current_event->energy;
-		xia_data_time = current_event->time*8E-9;
-		raw_tree->SafeFill();
-	}
-
 	// Pass this event to the correct processor
 	if(!handler->AddEvent(pair_)){ // Invalid detector type. Delete it
 		delete pair_;
