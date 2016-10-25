@@ -255,6 +255,7 @@ class simpleScanner : public ScanInterface {
 	double xia_data_energy; /// Raw pixie energy taken directly from the module (a.u.).
 	double xia_data_time; /// Raw pixie time taken directly from the module and converted to seconds.
 	
+	bool nonStartEvents; /// True if the current event list has at least one non-start.
 	bool presortData; /// True if the incoming data is in presorted format.
 	bool firstEvent; /// True if the first event has yet to be processed.
 	bool writePresort; /// True if presorted data is to be written to file.

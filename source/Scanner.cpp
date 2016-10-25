@@ -185,6 +185,7 @@ extTree *simpleUnpacker::InitTree(){
 
 /// Default constructor.
 simpleScanner::simpleScanner() : ScanInterface() {
+	nonStartEvents = false;
 	presortData = false;
 	firstEvent = true;
 	writePresort = false;
@@ -871,11 +872,15 @@ bool simpleScanner::AddEvent(XiaData *event_){
 		return false;
 	}
 
-	// This channel is a start signal. Due to the way ScanList
-	// packs the raw event, there may be more than one start signal
-	// per raw event.
 	if(!untriggered_mode && pair_->entry->tag == "start"){ 
+		// This channel is a start signal. Due to the way ScanList
+		// packs the raw event, there may be more than one start signal
+		// per raw event.
 		handler->AddStart(pair_);
+	}
+	else{
+		// The event list has at least one non-start event.
+		nonStartEvents = true;
 	}
 
 	// Add this event to the list of all events.
@@ -891,24 +896,31 @@ bool simpleScanner::AddEvent(XiaData *event_){
 bool simpleScanner::ProcessEvents(){
 	bool retval = true;
 
-	if(!writePresort){
-		// Call each processor to do the processing.
-		if(handler->Process()){ // This event had at least one valid signal
-			// Fill the root tree with processed data.
-			root_tree->SafeFill();
+	// Check that at least one of the events in the event list is not a
+	// start event. This is done to avoid writing a lot of useless data
+	// to the output file in the event of a high trigger rate.
+	if(nonStartEvents){
+		if(!writePresort){
+			// Call each processor to do the processing.
+			if(handler->Process()){ // This event had at least one valid signal
+				// Fill the root tree with processed data.
+				root_tree->SafeFill();
 
-			// Fill the ADC trace tree with raw traces.		
-			if(write_traces){ trace_tree->SafeFill(); }
+				// Fill the ADC trace tree with raw traces.		
+				if(write_traces){ trace_tree->SafeFill(); }
+			}
+			else{ retval = false; }
 		}
-		else{ retval = false; }
-	}
-	else{
-		// Call each processor's preprocess routine.
-		// The preprocessors will calculate high res timing, energy, etc.
-		handler->PreProcess();
+		else{
+			// Call each processor's preprocess routine.
+			// The preprocessors will calculate high res timing, energy, etc.
+			handler->PreProcess();
 
-		// Write the sorted data to the output file.
-		HandlePresortOutput();
+			// Write the sorted data to the output file.
+			HandlePresortOutput();
+		}
+		
+		nonStartEvents = false;
 	}
 
 	// Zero all of the processors.
