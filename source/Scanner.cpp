@@ -185,6 +185,7 @@ extTree *simpleUnpacker::InitTree(){
 
 /// Default constructor.
 simpleScanner::simpleScanner() : ScanInterface() {
+	recordAllStarts = false;
 	nonStartEvents = false;
 	presortData = false;
 	firstEvent = true;
@@ -524,6 +525,10 @@ void simpleScanner::ExtraArguments(){
 		std::cout << msgHeader << "Using presort mode.\n";
 		writePresort = true;	
 	}
+	if(userOpts.at(9).active){ // Record all starts.
+		std::cout << msgHeader << "Recording all start events to output file.\n";
+		recordAllStarts = true;
+	}
 }
 
 /** CmdHelp is used to allow a derived class to print a help statement about
@@ -565,6 +570,7 @@ void simpleScanner::ArgHelp(){
 	AddOption(optionExt("raw", no_argument, NULL, 0, "", "Dump raw pixie module data to output root file"));
 	AddOption(optionExt("stats", no_argument, NULL, 0, "", "Dump event builder information to the output root file"));
 	AddOption(optionExt("presort", no_argument, NULL, 'P', "", "Write an intermediate binary output file containing presorted data"));
+	AddOption(optionExt("record", no_argument, NULL, 0, "", "Write all start events to output file even when no other events are found"));
 }
 
 /** SyntaxStr is used to print a linux style usage message to the screen.
@@ -899,7 +905,7 @@ bool simpleScanner::ProcessEvents(){
 	// Check that at least one of the events in the event list is not a
 	// start event. This is done to avoid writing a lot of useless data
 	// to the output file in the event of a high trigger rate.
-	if(nonStartEvents){
+	if(nonStartEvents || recordAllStarts){
 		if(!writePresort){
 			// Call each processor to do the processing.
 			if(handler->Process()){ // This event had at least one valid signal
