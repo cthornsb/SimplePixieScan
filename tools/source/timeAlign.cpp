@@ -26,8 +26,15 @@ bool Process(TH2 *h_, TCanvas *can_){
 
 	double xmin, xmax;
 
-	std::ofstream ofile("fitresults.dat");
-	ofile << "id\tA\tmean\tsigma\tchi2\n";
+	std::ofstream ofile1("fitresults.dat");
+	ofile1 << "id\tA\tmean\tsigma\tchi2\n";
+	
+	std::ofstream ofile2("time.cal");
+	ofile2 << "#Set the time offset for a given scan channel (16*m + c, where m is the module\n";
+	ofile2 << "# module and c is the channel) relative to the start detector. The following\n";
+	ofile2 << "# operation is applied, T = T' - t0 where T is the calibrated time, T' is\n";
+	ofile2 << "# the uncalibrated time, and t0 is given below (all in ns).\n";
+	ofile2 << "#id	t0(ns)\n";
 
 	for(int i = 1; i <= h_->GetYaxis()->GetNbins(); i++){
 		std::cout << " Processing channel ID " << i << "... ";
@@ -56,7 +63,8 @@ bool Process(TH2 *h_, TCanvas *can_){
 			
 			// Output the fit results.
 			std::cout << "  Fit: chi^2 = " << f1->GetChisquare()/f1->GetNDF() << ", t0 = " << f1->GetParameter(1) << " ns\n";
-			ofile << stream.str() << "\t" << f1->GetParameter(0) << "\t" << f1->GetParameter(1) << "\t" << f1->GetParameter(2) << "\t" << f1->GetChisquare()/f1->GetNDF() << std::endl;
+			ofile1 << stream.str() << "\t" << f1->GetParameter(0) << "\t" << f1->GetParameter(1) << "\t" << f1->GetParameter(2) << "\t" << f1->GetChisquare()/f1->GetNDF() << std::endl;
+			ofile2 << stream.str() << "\t" << f1->GetParameter(1) << std::endl;
 			
 			can_->WaitPrimitive();
 		}
