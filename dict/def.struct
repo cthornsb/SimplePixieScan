@@ -99,6 +99,7 @@ vector:double	r	The flight path of the neutron corrected for bar position.
 vector:double	theta	The polar angle of the neutron with respect to the beam axis.
 vector:double	phi	The azimuthal angle of the neutron about the beam axis.
 vector:double	ctof	The corrected time of flight of the particle detected by vandle.
+vector:double	energy	Neutron energy calculated from the tof.
 vector:int	loc	Detector location (ID)
 u_int	mult	Multiplicity of the vandle events.
 END_TYPES
@@ -153,6 +154,7 @@ vector:double	r	The flight path of the neutron corrected for bar position.
 vector:double	theta	The polar angle of the neutron with respect to the beam axis.
 vector:double	phi	The azimuthal angle of the neutron about the beam axis.
 vector:double	ctof	The corrected time of flight of the particle detected by the liquid bar.
+vector:double	energy	Neutron energy calculated from the corrected tof.
 vector:int	loc	Detector location (ID)
 u_int	mult	Multiplicity of the liquidbar events.
 END_TYPES

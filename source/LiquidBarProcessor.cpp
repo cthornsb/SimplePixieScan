@@ -57,7 +57,7 @@ bool LiquidBarProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *
 		ctof = (tdiff_L + tdiff_R)/2.0; // ns
 	}
 
-	//double energy = 0.5E4*M_NEUTRON*r0*r0/(C_IN_VAC*C_IN_VAC*ctof*ctof); // MeV
+	double energy = 0.5E4*M_NEUTRON*r0*r0/(C_IN_VAC*C_IN_VAC*ctof*ctof); // MeV
 	
 	// Get the location of this detector.
 	int location = chEvt->entry->location;
@@ -81,7 +81,7 @@ bool LiquidBarProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *
 	loc_1d->Fill(location/2);		
 
 	// Fill the values into the root tree.
-	structure.Append(stqdc, ltqdc, radius, theta*rad2deg, phi*rad2deg, ctof, location);
+	structure.Append(stqdc, ltqdc, radius, theta*rad2deg, phi*rad2deg, ctof, energy, location);
 	     
 	return true;
 }

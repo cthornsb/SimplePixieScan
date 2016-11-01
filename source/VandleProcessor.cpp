@@ -56,7 +56,7 @@ bool VandleProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 		ctof = (tdiff_L + tdiff_R)/2.0; // ns
 	}
 
-	//double energy = 0.5E4*M_NEUTRON*r0*r0/(C_IN_VAC*C_IN_VAC*ctof*ctof); // MeV
+	double energy = 0.5E4*M_NEUTRON*r0*r0/(C_IN_VAC*C_IN_VAC*ctof*ctof); // MeV
 	
 	// Get the location of this detector.
 	int location = chEvt->entry->location;
@@ -69,7 +69,7 @@ bool VandleProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 	loc_1d->Fill(location);		
 	
 	// Fill the values into the root tree.
-	structure.Append(std::sqrt(channel_event_L->qdc*channel_event_R->qdc), radius, theta*rad2deg, phi*rad2deg, ctof, location);
+	structure.Append(std::sqrt(channel_event_L->qdc*channel_event_R->qdc), radius, theta*rad2deg, phi*rad2deg, ctof, energy, location);
 	     
 	return true;
 }
