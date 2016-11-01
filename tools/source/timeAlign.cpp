@@ -12,14 +12,24 @@
 #include "TH1D.h"
 #include "TMarker.h"
 
-#include "main.hpp"
+#include "simpleTool.hpp"
 
-bool Process(TH2 *h_, TCanvas *can_){
-	if(!h_ || !can_) return false;
+class timeAlign : public simpleHistoFitter {
+  private:
+	bool scanArgs();
+
+  public:
+	timeAlign() : simpleHistoFitter() { }
+
+	bool process();
+};
+
+bool timeAlign::process(){
+	if(!h2d || !can2) return false;
 	
-	can_->cd()->SetLogy();
+	can2->cd()->SetLogy();
 	
-	TH1D *h1 = new TH1D("h1", "", h_->GetXaxis()->GetNbins(), h_->GetXaxis()->GetXmin(), h_->GetXaxis()->GetXmax());
+	TH1D *h1 = new TH1D("h1", "", h2d->GetXaxis()->GetNbins(), h2d->GetXaxis()->GetXmin(), h2d->GetXaxis()->GetXmax());
 	TF1 *f1 = new TF1("f1", "gaus", 0, 1);
 	TFitResultPtr fitResult;
 	TMarker *m1;
@@ -36,22 +46,22 @@ bool Process(TH2 *h_, TCanvas *can_){
 	ofile2 << "# the uncalibrated time, and t0 is given below (all in ns).\n";
 	ofile2 << "#id	t0(ns)\n";
 
-	for(int i = 1; i <= h_->GetYaxis()->GetNbins(); i++){
+	for(int i = 1; i <= h2d->GetYaxis()->GetNbins(); i++){
 		std::cout << " Processing channel ID " << i << "... ";
-		if(GetProjectionX(h1, h_, i)){ 
+		if(getProjectionX(h1, h2d, i)){ 
 			std::cout << "DONE\n";
 
-			std::stringstream stream; stream << h_->GetYaxis()->GetBinLowEdge(i);
+			std::stringstream stream; stream << h2d->GetYaxis()->GetBinLowEdge(i);
 			h1->SetTitle(stream.str().c_str());
 			
-			can_->Clear();
+			can2->Clear();
 			h1->Draw();
-			can_->Update();
+			can2->Update();
 			
-			m1 = (TMarker*)can_->WaitPrimitive("TMarker");
+			m1 = (TMarker*)can2->WaitPrimitive("TMarker");
 			xmin = m1->GetX();
 			m1->Delete();
-			m1 = (TMarker*)can_->WaitPrimitive("TMarker");
+			m1 = (TMarker*)can2->WaitPrimitive("TMarker");
 			xmax = m1->GetX();
 			m1->Delete();
 			
@@ -66,7 +76,7 @@ bool Process(TH2 *h_, TCanvas *can_){
 			ofile1 << stream.str() << "\t" << f1->GetParameter(0) << "\t" << f1->GetParameter(1) << "\t" << f1->GetParameter(2) << "\t" << f1->GetChisquare()/f1->GetNDF() << std::endl;
 			ofile2 << stream.str() << "\t" << f1->GetParameter(1) << std::endl;
 			
-			can_->WaitPrimitive();
+			can2->WaitPrimitive();
 		}
 		else std::cout << "FAILED\n";
 	}
@@ -78,5 +88,7 @@ bool Process(TH2 *h_, TCanvas *can_){
 }
 
 int main(int argc, char *argv[]){
-	return Execute(argc, argv);
+	timeAlign obj;
+	
+	return obj.execute(argc, argv);
 }
