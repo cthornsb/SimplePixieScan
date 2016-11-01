@@ -15,9 +15,6 @@
 #include "simpleTool.hpp"
 
 class timeAlign : public simpleHistoFitter {
-  private:
-	bool scanArgs();
-
   public:
 	timeAlign() : simpleHistoFitter() { }
 

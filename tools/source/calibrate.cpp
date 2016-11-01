@@ -16,9 +16,6 @@
 #include "simpleTool.hpp"
 
 class calibrator : public simpleHistoFitter {
-  private:
-	bool scanArgs();
-
   public:
 	calibrator() : simpleHistoFitter() { }
 
