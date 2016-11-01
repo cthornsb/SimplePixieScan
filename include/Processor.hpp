@@ -114,7 +114,6 @@ class Processor{
 
 	TF1 *fitting_func;
 	FittingFunction *actual_func;
-	TFitResultPtr fit_result; /// Fit result pointer for storing trace fitting information.
   
 	/// Start the process timer
 	void StartProcess(){ start_time = clock(); }

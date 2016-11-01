@@ -30,12 +30,12 @@ bool PhoswichProcessor::FitPulse(TGraph *trace_, float &phase){
 	if(!trace_){ return false; }
 	
 	// Fit the fast pulse.
-	fit_result = trace_->Fit(fitting_func, "SQRE");
+	trace_->Fit(fitting_func, "QRE");
 	
 	fast_A = fitting_func->GetParameter(0);
 	fast_MPV = fitting_func->GetParameter(1);
 	fast_Sigma = fitting_func->GetParameter(2);
-	fast_chi2 = fit_result->Chi2()/fit_result->Ndf();
+	fast_chi2 = fitting_func->GetChisquare()/fitting_func->GetNDF();
 	fast_qdc = fitting_func->Integral(fast_x1, fast_x2);
 
 	// Compute the phase by subtracting the pulse HWHM from the most-probable-value.

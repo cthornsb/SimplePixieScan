@@ -57,7 +57,7 @@ ChannelEventPair::~ChannelEventPair(){
 double FittingFunction::operator () (double *x, double *p) {
 	float diff = (x[0] - p[2])/ADC_TIME_STEP;
 	if (diff < 0 ) return p[0];
-	return p[0] + p[1] * std::exp(-diff * beta) * (1 - std::exp(-std::pow(diff * gamma,4)));
+	return p[0] + p[1] * std::exp(-diff * p[3]) * (1 - std::exp(-std::pow(diff * p[4],4)));
 }
 
 FittingFunction::FittingFunction(double beta_/*=0.563362*/, double gamma_/*=0.3049452*/){
@@ -106,7 +106,7 @@ TF1 *Processor::SetFitFunction(){
 	if(!actual_func){ actual_func = new FittingFunction(); }
 	if(fitting_func){ delete fitting_func; }
 	
-	fitting_func = new TF1((type + "_func").c_str(), *actual_func, 0, 1, 3);
+	fitting_func = new TF1((type + "_func").c_str(), *actual_func, 0, 1, 5);
 	use_fitting = true;
 	
 	return fitting_func;
@@ -186,8 +186,10 @@ bool Processor::SetFitParameters(ChanEvent *event_, MapEntry *entry_){
 
 	// Set initial parameters to those obtained from fit optimizations.
 	fitting_func->SetParameter(0, event_->baseline); // Baseline of pulse
-	fitting_func->SetParameter(1, 0.5 * event_->qdc); // Normalization of pulse
+	fitting_func->SetParameter(1, 1.5 * event_->qdc); // Normalization of pulse
 	fitting_func->SetParameter(2, (event_->max_index-fitting_low)*ADC_TIME_STEP); // Phase (leading edge of pulse) (ns)
+	fitting_func->SetParameter(3, beta);
+	fitting_func->SetParameter(4, gamma);
 	
 	// Set the fitting range.
 	fitting_func->SetRange((event_->max_index-fitting_low)*ADC_TIME_STEP, (event_->max_index+fitting_high)*ADC_TIME_STEP);
@@ -211,11 +213,11 @@ bool Processor::FitPulse(ChanEvent *event_, MapEntry *entry_){
 		graph->SetPoint(graphIndex, traceX[graphIndex], event_->adcTrace[graphIndex]);
 
 	// And finally, do the fitting.
-	fit_result = graph->Fit(fitting_func, "S Q R");
+	graph->Fit(fitting_func, "Q R");
 	
 	// Update the trace parameters.
 	event_->baseline = fitting_func->GetParameter(0);
-	event_->phase = fitting_func->GetParameter(2);
+	event_->phase = fitting_func->GetParameter(2)/4.0;
 	
 	delete graph;
 	
