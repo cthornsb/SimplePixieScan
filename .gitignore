@@ -24,6 +24,7 @@ LinkDef.h
 *.ldf
 *.pld
 *.out
+*.cal
 
 # Executables #
 ###############
