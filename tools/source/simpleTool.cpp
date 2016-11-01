@@ -24,8 +24,11 @@ simpleTool::simpleTool(){
 	infile = NULL;
 	outfile = NULL;
 	
+	intree = NULL;
+	outtree = NULL;
+	
 	input_filename = "";
-	input_objname = "";
+	input_objname = "data";
 	output_filename = "";
 	output_objname = "";
 	
@@ -175,6 +178,15 @@ TFile *simpleTool::openInputFile(){
 	return infile;
 }
 
+TTree *simpleTool::loadInputTree(){
+	intree = (TTree*)infile->Get(input_objname.c_str());
+	if(!intree){
+		std::cout << " Error! Failed to load input TTree '" << input_objname << "'.\n";
+		return NULL;
+	}
+	return intree;
+}
+
 TFile *simpleTool::openOutputFile(){
 	outfile = new TFile(output_filename.c_str(), "RECREATE");
 	if(!outfile->IsOpen()){
@@ -266,15 +278,12 @@ TH2 *simpleHistoFitter::fillHistogram(){
 		}
 	}
 	else{
-		TTree *tree = (TTree*)infile->Get(input_objname.c_str());
-		if(!tree){
-			std::cout << " Error! Failed to load input histogram '" << input_objname << "'.\n";
+		if(!intree && !loadInputTree())
 			return NULL;
-		}
 	
 		std::cout << " " << input_objname << "->Draw(\"" << draw_string << "\", \"\", \"COLZ\");\n";
 		std::cout << " Filling TH2... " << std::flush;
-		if(tree->Draw(draw_string.c_str(), "", "COLZ") > 0){
+		if(intree->Draw(draw_string.c_str(), "", "COLZ") > 0){
 			std::cout << "DONE\n";
 		}
 		else{
@@ -282,7 +291,7 @@ TH2 *simpleHistoFitter::fillHistogram(){
 			return NULL;
 		}
 	
-		h2d = (TH2*)(tree->GetHistogram()->Clone("h2d"));
+		h2d = (TH2*)(intree->GetHistogram()->Clone("h2d"));
 	}
 
 	if(!output_filename.empty()){

@@ -22,6 +22,9 @@ class simpleTool{
 	TFile *infile;
 	TFile *outfile;
 	
+	TTree *intree;
+	TTree *outtree;
+	
 	std::string input_filename;
 	std::string input_objname;
 	std::string output_filename;
@@ -50,6 +53,8 @@ class simpleTool{
 	TCanvas *openCanvas2(const std::string &title_="Canvas");
 	
 	TFile *openInputFile();
+	
+	TTree *loadInputTree();
 	
 	TFile *openOutputFile();
 	
