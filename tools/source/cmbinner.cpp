@@ -97,11 +97,17 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 	
 	TH2D *h2d = new TH2D("h2d", "CoM Angle vs. ctof", 500, -10, 100, 38, 0, 180);
 	
+	unsigned int badCount = 0;
 	for(unsigned int i = 0; i < intree->GetEntries(); i++){
 		intree->GetEntry(i);
 		
 		if(!mcarlo){
 			for(unsigned int j = 0; j < ptr->ctof.size(); j++){
+				if(ptr->r.at(j) >= 0.65){
+					badCount++;
+					continue;
+				}
+		
 				ctof = ptr->ctof.at(j);
 				energy = ptr->energy.at(j);
 				theta = ptr->theta.at(j);
@@ -129,6 +135,7 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 	h2d->Write();
 	
 	std::cout << "\n Done! Wrote " << outtree->GetEntries() << " entries to '" << output_filename << "'.\n";
+	std::cout << "  Rejected " << badCount << " events.\n";
 	
 	return 0;
 }
