@@ -95,7 +95,7 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 	outtree->Branch("lab", &theta);
 	outtree->Branch("com", &angleCOM);
 	
-	TH2D *h2d = new TH2D("h2d", "CoM Angle vs. ctof", 500, -10, 100, 38, 0, 180);
+	TH2D *h2d = new TH2D("h2d", "CoM Angle vs. ctof", 500, -10, 100, 36, 0, 180);
 	
 	unsigned int badCount = 0;
 	for(unsigned int i = 0; i < intree->GetEntries(); i++){
