@@ -95,6 +95,8 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 	outtree->Branch("lab", &theta);
 	outtree->Branch("com", &angleCOM);
 	
+	TH2D *h2d = new TH2D("h2d", "CoM Angle vs. ctof", 500, -10, 100, 38, 0, 180);
+	
 	for(unsigned int i = 0; i < intree->GetEntries(); i++){
 		intree->GetEntry(i);
 		
@@ -108,6 +110,7 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 				angleCOM = rxn.GetEjectile()->comAngle[0];
 			
 				outtree->Fill();
+				h2d->Fill(ctof, angleCOM);
 			}
 		}
 		else{
@@ -123,6 +126,7 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 	
 	outfile->cd();
 	outtree->Write();
+	h2d->Write();
 	
 	std::cout << "\n Done! Wrote " << outtree->GetEntries() << " entries to '" << output_filename << "'.\n";
 	
