@@ -17,7 +17,7 @@ INSTALL_DIR = $(HOME)/bin
 CFLAGS = -g -Wall -std=c++0x -Iinclude -I../include -I$(PIXIE_SUITE_INC_DIR)
 #CFLAGS = -Wall -O3 -std=c++0x
 RFLAGS = `root-config --cflags --glibs`
-LDLIBS = `root-config --libs`
+LDLIBS = `root-config --libs` -lSpectrum
 
 COMPILER = g++
 
@@ -36,7 +36,8 @@ BUILD_OBJ = $(OBJ_DIR)/cmcalc.o $(OBJ_DIR)/simpleTool.o
 TIME_ALIGN = $(EXEC_DIR)/timeAlign.a
 CALIBRATE = $(EXEC_DIR)/calibrate.a
 CMBINNER = $(EXEC_DIR)/cmbinner.a
-ALL_TOOLS = $(TIME_ALIGN) $(CALIBRATE) $(CMBINNER)
+SPEC_FITTER = $(EXEC_DIR)/specFitter.a
+ALL_TOOLS = $(TIME_ALIGN) $(CALIBRATE) $(CMBINNER) $(SPEC_FITTER)
 
 # ROOT dictionary stuff
 DICT_SOURCE = RootDict
