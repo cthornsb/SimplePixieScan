@@ -205,6 +205,8 @@ simpleHistoFitter::simpleHistoFitter() : simpleTool() {
 	h2d = NULL;
 
 	draw_string = "";
+	
+	debug = false;
 }
 
 bool simpleHistoFitter::getProjectionX(TH1 *h1_, TH2 *h2_, const int &binY_){
@@ -257,9 +259,23 @@ bool simpleHistoFitter::getProjectionY(TH1 *h1_, TH2 *h2_, const int &binX_){
 	return (total > 0.0);
 }
 
+double simpleHistoFitter::getMaximum(TH1 *h1_, const double &lowVal_, const double &highVal_, double &mean){
+	double maximum = -9999;
+	int lowBin = h1_->FindBin(lowVal_);
+	int highBin = h1_->FindBin(highVal_);
+	for(int i = lowBin; i <= highBin; i++){
+		if(h1_->GetBinContent(i) > maximum){
+			maximum = h1_->GetBinContent(i);
+			mean = h1_->GetBinCenter(i);
+		}
+	}
+	return maximum;
+}
+
 void simpleHistoFitter::addOptions(){
-	addOption(optionExt("draw", required_argument, NULL, 'd', "<drawstr>", "Root draw string to fill the 2d histogram."), userOpts, optstr);
-	addOption(optionExt("save", optional_argument, NULL, 's', "[name]", "Write the 2d histogram to the output file."), userOpts, optstr);
+	addOption(optionExt("draw", required_argument, NULL, 0, "<drawstr>", "Root draw string to fill the 2d histogram."), userOpts, optstr);
+	addOption(optionExt("save", optional_argument, NULL, 0, "[name]", "Write the 2d histogram to the output file."), userOpts, optstr);
+	addOption(optionExt("debug", no_argument, NULL, 'd', "", "Enable debug mode."), userOpts, optstr);
 }
 
 void simpleHistoFitter::processArgs(){
@@ -267,6 +283,8 @@ void simpleHistoFitter::processArgs(){
 		draw_string = userOpts.at(0).argument;
 	if(userOpts.at(1).active)
 		output_objname = userOpts.at(1).argument;
+	if(userOpts.at(2).active)
+		debug = true;
 }
 
 TH2 *simpleHistoFitter::fillHistogram(){
@@ -314,16 +332,21 @@ TH2 *simpleHistoFitter::fillHistogram(){
 int simpleHistoFitter::execute(int argc, char *argv[]){
 	if(!setup(argc, argv))
 		return 1;
+
+	if(output_filename.empty()){
+		std::cout << " Error: Output filename not specified!\n";
+		return 2;
+	}
 	
 	if(!openInputFile())
-		return 2;
+		return 3;
 
 	openCanvas1();
 	can1->SetLogz();
 	can1->cd();
 		
 	if(!fillHistogram())
-		return 3;
+		return 4;
 		
 	h2d->Draw("COLZ");
 	can1->Update();
@@ -331,7 +354,7 @@ int simpleHistoFitter::execute(int argc, char *argv[]){
 	openCanvas2();
 
 	if(!process())
-		return 4;
+		return 5;
 	
 	return 0;
 }

@@ -74,9 +74,13 @@ class simpleHistoFitter : public simpleTool {
 
 	std::string draw_string;
 
+	bool debug;
+
 	bool getProjectionX(TH1 *h1_, TH2 *h2_, const int &binY_);
 	
 	bool getProjectionY(TH1 *h1_, TH2 *h2_, const int &binX_);	
+
+	double getMaximum(TH1 *h1_, const double &lowVal_, const double &highVal_, double &mean);
 
 	void addOptions();
 	
