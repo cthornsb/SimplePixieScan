@@ -110,19 +110,24 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 	if(!(userInput == "y" || userInput == "Y" || userInput == "yes"))
 		return 3;
 
+	if(!rxn.IsAboveThreshold()){
+		std::cout << " Error: Energy is below reaction threshold by " << (rxn.GetThresholdEnergy() - rxn.GetBeamEnergy()) << " MeV.\n";
+		return 4;
+	}
+
 	if(!openInputFile()){
 		std::cout << " Error: Failed to load input file \"" << input_filename << "\".\n";
-		return 4;
+		return 5;
 	}
 		
 	if(!loadInputTree()){
 		std::cout << " Error: Failed to load TTree \"" << input_objname << "\".\n";
-		return 5;
+		return 6;
 	}
 	
 	if(!openOutputFile()){
 		std::cout << " Error: Failed to load output file \"" << output_filename << "\".\n";
-		return 6;
+		return 7;
 	}
 
 	double ctof, energy, theta, angleCOM;
@@ -141,7 +146,7 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 
 	if(!branch){
 		std::cout << " Error: Failed to load branch \"vandle\" from input TTree.\n";
-		return 7;
+		return 8;
 	}
 
 	outtree = new TTree("data", "CM Angles");
