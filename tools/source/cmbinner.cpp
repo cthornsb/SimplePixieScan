@@ -14,9 +14,11 @@
 class simpleComCalculator : public simpleTool {
   private:
 	bool mcarlo;
+	
+	std::string configFilename;
 
   public:
-	simpleComCalculator() : simpleTool(), mcarlo(false) { }
+	simpleComCalculator() : simpleTool(), mcarlo(false), configFilename("") { }
 	
 	void addOptions();
 	
@@ -27,11 +29,14 @@ class simpleComCalculator : public simpleTool {
 
 void simpleComCalculator::addOptions(){
 	addOption(optionExt("mcarlo", no_argument, NULL, 'm', "", "Read from a VANDMC monte carlo file."), userOpts, optstr);
+	addOption(optionExt("config", required_argument, NULL, 'c', "", "Read reaction information from an input file."), userOpts, optstr);
 }
 
 void simpleComCalculator::processArgs(){
 	if(userOpts.at(0).active)
 		mcarlo = true;
+	if(userOpts.at(1).active)
+		configFilename = userOpts.at(1).argument;
 }
 
 int simpleComCalculator::execute(int argc, char *argv[]){
@@ -41,6 +46,35 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 	if(output_filename.empty()){
 		std::cout << " Error: Output filename not specified!\n";
 		return 2;
+	}
+
+	reaction rxn;
+	if(!configFilename.empty()){
+		std::ifstream configFile(configFilename.c_str());
+		if(!configFile.good()){
+			std::cout << " Error: Failed to load input configuration file.\n";
+			return 3;
+		}
+		float Z, A, BEA, state;
+		configFile >> Z >> A >> BEA;
+		rxn.SetBeam(Z, A, BEA);
+		configFile >> Z >> A >> BEA;
+		rxn.SetTarget(Z, A, BEA);
+		configFile >> Z >> A >> BEA >> state;
+		rxn.SetRecoil(Z, A, BEA);
+		rxn.SetRecoilEx(state);
+		configFile >> Z >> A >> BEA >> state;
+		rxn.SetEjectile(Z, A, BEA);
+		rxn.SetEjectileEx(state);
+		configFile >> state;
+		rxn.SetEbeam(state);
+	}
+	else{
+		rxn.SetBeam(2, 4, 7.073915);
+		rxn.SetTarget(9, 19, 7.779015);
+		rxn.SetRecoil(11, 22, 7.915709);
+		rxn.SetEjectile(0, 1);
+		rxn.SetEbeam(5.05);
 	}
 	
 	if(!openInputFile()){
@@ -76,13 +110,6 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 		std::cout << " Error: Failed to load branch \"vandle\" from input TTree.\n";
 		return 6;
 	}
-
-	reaction rxn;
-	rxn.SetBeam(2, 4, 7.073915);
-	rxn.SetTarget(9, 19, 7.779015);
-	rxn.SetRecoil(11, 22, 7.915709);
-	rxn.SetEjectile(0, 1);
-	rxn.SetEbeam(5.05);
 
 	rxn.Print();
 
