@@ -48,6 +48,7 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 		return 2;
 	}
 
+	std::string userInput;
 	reaction rxn;
 	if(!configFilename.empty()){
 		std::ifstream configFile(configFilename.c_str());
@@ -70,26 +71,58 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 		rxn.SetEbeam(state);
 	}
 	else{
-		rxn.SetBeam(2, 4, 7.073915);
-		rxn.SetTarget(9, 19, 7.779015);
-		rxn.SetRecoil(11, 22, 7.915709);
-		rxn.SetEjectile(0, 1);
-		rxn.SetEbeam(5.05);
-	}
+		// Save the configuration file.
+		bool saveToFile = false;
+		std::ofstream outConfig;
+		std::cout << " Manual reaction configuration mode.\n";
+		std::cout << " Save when finished? (y/n) "; std::cin >> userInput;
+		if(userInput == "y" || userInput == "Y" || userInput == "yes"){
+			std::cout << " Enter config filename: "; std::cin >> userInput;
+			outConfig.open(userInput.c_str());
+			saveToFile = true;
+		}
 	
+		float Z, A, BEA, state;
+		std::cout << " Enter beam Z, A, and BE/A: "; std::cin >> Z >> A >> BEA;
+		if(saveToFile) outConfig << Z << "\t" << A << "\t" << BEA << "\n";
+		rxn.SetBeam(Z, A, BEA);
+		std::cout << " Enter target Z, A, and BE/A: "; std::cin >> Z >> A >> BEA;
+		if(saveToFile) outConfig << Z << "\t" << A << "\t" << BEA << "\n";
+		rxn.SetTarget(Z, A, BEA);
+		std::cout << " Enter recoil Z, A, BE/A, and excitation: "; std::cin >> Z >> A >> BEA >> state;
+		if(saveToFile) outConfig << Z << "\t" << A << "\t" << BEA << "\t" << state << "\n";
+		rxn.SetRecoil(Z, A, BEA);
+		rxn.SetRecoilEx(state);
+		std::cout << " Enter ejectile Z, A, BE/A, and excitation: "; std::cin >> Z >> A >> BEA >> state;
+		if(saveToFile) outConfig << Z << "\t" << A << "\t" << BEA << "\t" << state << "\n";
+		rxn.SetEjectile(Z, A, BEA);
+		rxn.SetEjectileEx(state);
+		std::cout << " Enter beam energy: "; std::cin >> state;
+		if(saveToFile) outConfig << state << "\n";
+		rxn.SetEbeam(state);
+		std::cout << std::endl;
+		outConfig.close();
+	}
+
+	// Make sure all settings are correct.
+	rxn.Print();
+	std::cout << "\n  Correct? (y/n) "; std::cin >> userInput;
+	if(!(userInput == "y" || userInput == "Y" || userInput == "yes"))
+		return 3;
+
 	if(!openInputFile()){
 		std::cout << " Error: Failed to load input file \"" << input_filename << "\".\n";
-		return 3;
+		return 4;
 	}
 		
 	if(!loadInputTree()){
 		std::cout << " Error: Failed to load TTree \"" << input_objname << "\".\n";
-		return 4;
+		return 5;
 	}
 	
 	if(!openOutputFile()){
 		std::cout << " Error: Failed to load output file \"" << output_filename << "\".\n";
-		return 5;
+		return 6;
 	}
 
 	double ctof, energy, theta, angleCOM;
@@ -108,10 +141,8 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 
 	if(!branch){
 		std::cout << " Error: Failed to load branch \"vandle\" from input TTree.\n";
-		return 6;
+		return 7;
 	}
-
-	rxn.Print();
 
 	outtree = new TTree("data", "CM Angles");
 	
