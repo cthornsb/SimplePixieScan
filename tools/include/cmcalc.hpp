@@ -86,6 +86,8 @@ class reaction{
 	
 	bool IsAboveThreshold(){ return ((Ecm + Qfinal >= 0.0) ? true : false); }
 
+	bool IsNormalKinematics(){ return ((Mtarg >= Mbeam ) ? true : false); }
+
 	double SetBeam(const int &Z_, const int &A_, const double &BE_A_=0.0);
 
 	double SetTarget(const int &Z_, const int &A_, const double &BE_A_=0.0);

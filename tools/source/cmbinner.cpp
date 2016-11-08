@@ -14,11 +14,12 @@
 class simpleComCalculator : public simpleTool {
   private:
 	bool mcarlo;
+	bool inverse;
 	
 	std::string configFilename;
 
   public:
-	simpleComCalculator() : simpleTool(), mcarlo(false), configFilename("") { }
+	simpleComCalculator() : simpleTool(), mcarlo(false), inverse(false), configFilename("") { }
 	
 	void addOptions();
 	
@@ -115,6 +116,9 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 		return 4;
 	}
 
+	if(!rxn.IsNormalKinematics())
+		inverse = true;
+
 	if(!openInputFile()){
 		std::cout << " Error: Failed to load input file \"" << input_filename << "\".\n";
 		return 5;
@@ -176,7 +180,8 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 				theta = ptr->theta.at(j);
 		
 				rxn.SetLabAngle(theta);
-				angleCOM = rxn.GetEjectile()->comAngle[0];
+				if(!inverse) angleCOM = rxn.GetEjectile()->comAngle[0];
+				else angleCOM = 180 - rxn.GetEjectile()->comAngle[0];
 			
 				outtree->Fill();
 				h2d->Fill(ctof, angleCOM);
