@@ -164,8 +164,13 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 	
 	TH2D *h2d = new TH2D("h2d", "CoM Angle vs. ctof", 500, -10, 100, 36, 0, 180);
 	
+	progressBar pbar;
+	pbar.start(intree->GetEntries());
+
 	unsigned int badCount = 0;
 	for(unsigned int i = 0; i < intree->GetEntries(); i++){
+		pbar.check(i);
+
 		intree->GetEntry(i);
 		
 		if(!mcarlo){
@@ -202,7 +207,7 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 	outtree->Write();
 	h2d->Write();
 	
-	std::cout << "\n Done! Wrote " << outtree->GetEntries() << " entries to '" << output_filename << "'.\n";
+	std::cout << "\n\n Done! Wrote " << outtree->GetEntries() << " entries to '" << output_filename << "'.\n";
 	std::cout << "  Rejected " << badCount << " events.\n";
 	
 	return 0;

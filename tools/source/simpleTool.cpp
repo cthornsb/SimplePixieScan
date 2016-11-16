@@ -12,6 +12,25 @@
 #include "simpleTool.hpp"
 
 ///////////////////////////////////////////////////////////////////////////////
+// class progressBar
+///////////////////////////////////////////////////////////////////////////////
+
+void progressBar::start(const unsigned int &numEntries_){ 
+	numEntries = numEntries_;
+	chunkSize = numEntries / length;
+	std::cout << "\n Processing " << numEntries << " events.\n";
+	std::cout << "  Working - 0% [" << progStr << "] 100%\r" << std::flush;
+}
+
+void progressBar::check(const unsigned int &entry_){
+	if(entry_ % chunkSize == 0 && entry_ != 0){
+		progStr[chunkCount] = '=';
+		std::cout << "  Working - 0% [" << progStr << "] 100%\r" << std::flush;
+		chunkCount++;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // class simpleTool
 ///////////////////////////////////////////////////////////////////////////////
 
