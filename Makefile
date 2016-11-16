@@ -93,6 +93,7 @@ CONFIG_FILES = config.dat energy.cal map.dat position.cal time.cal
 
 # ROOT dictionary stuff
 DICT_SOURCE = RootDict
+PCM_FILE = $(DICT_SOURCE)_rdict.pcm
 STRUCT_FILE_OBJ = $(OBJ_DIR)/Structures.o
 
 ROOT_DICT = $(DICT_DIR)/$(DICT_SOURCE).cpp
@@ -151,15 +152,15 @@ config: $(DIRECTORIES) $(CONFIG_FILES)
 #	Create a symbolic link to the default config directory
 	@if [ ! -e $(SCAN_DIR)/setup ]; then \
 		ln -s $(CONFIG_DIR) $(SCAN_DIR)/setup; \
-		echo "Creating symbolic link to configuration directory"; \
+		echo "Creating symbolic link to "$(CONFIG_DIR)" in "$(SCAN_DIR); \
 	fi
-	
-link: config
+
+link: $(DIRECTORIES) $(CONFIG_FILES)
 #	Force the creation a symbolic link to the default config directory
 	@rm -f $(SCAN_DIR)/setup
 	@if [ ! -e $(SCAN_DIR)/setup ]; then \
 		ln -s $(CONFIG_DIR) $(SCAN_DIR)/setup; \
-		echo "Creating symbolic link to configuration directory"; \
+		echo "Creating symbolic link to "$(CONFIG_DIR)" in "$(SCAN_DIR); \
 	fi
 
 ########################################################################
@@ -179,9 +180,16 @@ endif
 
 ########################################################################
 
-install: $(ALL_TOOLS)
-	@echo " Installing to "$(INSTALL_DIR)
-	@ln -s $(TOP_LEVEL)/run.sh $(INSTALL_DIR)/simpleScan
+install: all
+	@rm -f $(INSTALL_DIR)/simpleScan
+	@echo "Installing simpleScan to "$(INSTALL_DIR);
+	@ln -s $(TOP_LEVEL)/run.sh $(INSTALL_DIR)/simpleScan;
+	@if [ -d $(SCAN_DIR) ]; then \
+		if [ -e $(PCM_FILE) ]; then \
+			cp $(PCM_FILE) $(SCAN_DIR); \
+			echo "Copying root PCM file "$(PCM_FILE)" to "$(SCAN_DIR); \
+		fi \
+	fi
 
 ########################################################################
 
