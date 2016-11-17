@@ -33,11 +33,12 @@ OBJ_DIR = $(TOP_LEVEL)/obj
 BUILD_OBJ = $(OBJ_DIR)/cmcalc.o $(OBJ_DIR)/simpleTool.o
 
 # Tools
-TIME_ALIGN = $(EXEC_DIR)/timeAlign.a
-CALIBRATE = $(EXEC_DIR)/calibrate.a
-CMBINNER = $(EXEC_DIR)/cmbinner.a
-SPEC_FITTER = $(EXEC_DIR)/specFitter.a
-ALL_TOOLS = $(TIME_ALIGN) $(CALIBRATE) $(CMBINNER) $(SPEC_FITTER)
+ALL_TOOLS = timeAlign \
+            calibrate \
+            cmbinner \
+            specFitter
+EXE_NAMES = $(addprefix $(EXEC_DIR)/, $(addsuffix .a, $(ALL_TOOLS)))
+INSTALLED = $(addprefix $(INSTALL_DIR)/, $(ALL_TOOLS))
 
 # ROOT dictionary stuff
 DICT_SOURCE = RootDict
@@ -51,8 +52,10 @@ BUILD_OBJ += $(ROOT_DICT_OBJ) $(STRUCT_FILE_OBJ)
 
 ########################################################################
 
-all: $(EXEC_DIR) $(OBJ_DIR) $(BUILD_OBJ) $(ALL_TOOLS)
+all: $(EXEC_DIR) $(OBJ_DIR) $(BUILD_OBJ) $(EXE_NAMES)
 #	Create all directories, make all objects, and link executables
+
+.PHONY: $(ALL_TOOLS) $(INSTALLED)
 
 ########################################################################
 
@@ -82,18 +85,21 @@ $(EXEC_DIR)/%.a: $(SOURCE_DIR)/%.cpp $(BUILD_OBJ)
 
 ########################################################################
 
-install: $(ALL_TOOLS)
-	@echo " Installing to "$(INSTALL_DIR)
-	@ln -s $(TIME_ALIGN) $(INSTALL_DIR)/timeAlign
-	@ln -s $(CALIBRATE) $(INSTALL_DIR)/calibrate
-	@ln -s $(CMBINNER) $(INSTALL_DIR)/cmbinner
+$(ALL_TOOLS):
+	@echo " Installing "$(INSTALL_DIR)/$@
+	@rm -f $(INSTALL_DIR)/$@
+	@ln -s $(EXEC_DIR)/$@.a $(INSTALL_DIR)/$@
+
+install: all $(ALL_TOOLS)
+	@echo "Finished installing tools to "$(INSTALL_DIR)
 
 ########################################################################
 
-uninstall: clean
-	@rm -f $(INSTALL_DIR)/timeAlign
-	@rm -f $(INSTALL_DIR)/calibrate
-	@rm -f $(INSTALL_DIR)/cmbinner
+$(INSTALLED):
+	@rm -f $@
+
+uninstall: clean $(INSTALLED)
+	@echo "Finished uninstalling";
 
 clean:
 	@echo "Cleaning up..."
