@@ -626,35 +626,45 @@ bool simpleScanner::Initialize(std::string prefix_){
 		online->Refresh();
 	}
 
+	std::string setupDirectory = this->GetSetupFilename();
+	if(setupDirectory.empty()) setupDirectory = "./setup/";
+	else if(setupDirectory.back() != '/') setupDirectory += '/';
+	std::cout << prefix_ << "Using setup directory \"" << setupDirectory << "\".\n";
+
 	// Initialize map file, config file, and processor handler.
-	std::cout << prefix_ << "Reading map file ./setup/map.dat\n";
-	mapfile = new MapFile("./setup/map.dat");
+	std::string currentFile = setupDirectory + "map.dat";
+	std::cout << prefix_ << "Reading map file " << currentFile << "\n";
+	mapfile = new MapFile(currentFile.c_str());
 	if(!mapfile->IsInit()){ // Failed to read map file.
-		std::cout << prefix_ << "Failed to read map file './setup/map.dat'.\n";
+		std::cout << prefix_ << "Failed to read map file '" << setupDirectory << "'.\n";
 		delete mapfile;
 		return false;
 	}
-	std::cout << prefix_ << "Reading config file ./setup/config.dat\n";
-	configfile = new ConfigFile("./setup/config.dat");
+	currentFile = setupDirectory + "config.dat";
+	std::cout << prefix_ << "Reading config file " << currentFile << "\n";
+	configfile = new ConfigFile(currentFile.c_str());
 	if(!configfile->IsInit()){ // Failed to read config file.
-		std::cout << prefix_ << "Failed to read configuration file './setup/config.dat'.\n";
+		std::cout << prefix_ << "Failed to read configuration file '" << setupDirectory << "'.\n";
 		delete mapfile;
 		delete configfile;
 		return false;
 	}
 	
 	calibfile = new CalibFile();
-	std::cout << prefix_ << "Reading time calibration file ./setup/time.cal\n";
-	if(!calibfile->LoadTimeCal("./setup/time.cal")) // Failed to read time calibration file.
-		std::cout << prefix_ << "Failed to read time calibration file './setup/time.cal'.\n";
+	currentFile = setupDirectory + "time.cal";
+	std::cout << prefix_ << "Reading time calibration file " << currentFile << "\n";
+	if(!calibfile->LoadTimeCal(currentFile.c_str())) // Failed to read time calibration file.
+		std::cout << prefix_ << "Failed to read time calibration file '" << setupDirectory << "'.\n";
 	
-	std::cout << prefix_ << "Reading energy calibration file ./setup/energy.cal\n";
-	if(!calibfile->LoadEnergyCal("./setup/energy.cal")) // Failed to read energy calibration file.
-		std::cout << prefix_ << "Failed to read energy calibration file './setup/energy.cal'.\n";
+	currentFile = setupDirectory + "energy.cal";
+	std::cout << prefix_ << "Reading energy calibration file " << currentFile << "\n";
+	if(!calibfile->LoadEnergyCal(currentFile.c_str())) // Failed to read energy calibration file.
+		std::cout << prefix_ << "Failed to read energy calibration file '" << setupDirectory << "'.\n";
 	
-	std::cout << prefix_ << "Reading position calibration file ./setup/position.cal\n";
-	if(!calibfile->LoadPositionCal("./setup/position.cal")) // Failed to read position calibration file.
-		std::cout << prefix_ << "Failed to read position calibration file './setup/position.cal'.\n";
+	currentFile = setupDirectory + "position.cal";
+	std::cout << prefix_ << "Reading position calibration file " << currentFile << "\n";
+	if(!calibfile->LoadPositionCal(currentFile.c_str())) // Failed to read position calibration file.
+		std::cout << prefix_ << "Failed to read position calibration file '" << setupDirectory << "'.\n";
 	
 	GetCore()->SetEventWidth(configfile->eventWidth * 125); // = eventWidth * 1E-6(s/us) / 8E-9(s/tick)
 	std::cout << prefix_ << "Setting event width to " << configfile->eventWidth << " μs (" << GetCore()->GetEventWidth() << " pixie clock ticks).\n";
