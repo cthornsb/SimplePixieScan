@@ -208,9 +208,10 @@ bool Processor::FitPulse(ChanEvent *event_, MapEntry *entry_){
 		return false;
 
 	// "Convert" the trace into a TGraph for fitting.
-	TGraph *graph = new TGraph(event_->traceLength);
-	for(size_t graphIndex = 0; graphIndex < event_->traceLength; graphIndex++)
-		graph->SetPoint(graphIndex, traceX[graphIndex], event_->adcTrace[graphIndex]);
+	int startIndex = event_->max_index-fitting_low;
+	TGraph *graph = new TGraph(fitting_low + fitting_high);
+	for(int graphIndex = 0; graphIndex < (fitting_low + fitting_high); graphIndex++)
+		graph->SetPoint(graphIndex, traceX[startIndex+graphIndex], event_->adcTrace[startIndex+graphIndex]);
 
 	// And finally, do the fitting.
 	graph->Fit(fitting_func, "Q R");
