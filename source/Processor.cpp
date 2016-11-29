@@ -243,21 +243,6 @@ bool Processor::CfdPulse(ChanEvent *event_, MapEntry *entry_){
 	// Analyze the trace.
 	event_->AnalyzeCFD(cfdF, (int)cfdD, (int)cfdL);
 	
-	// Set the CFD threshold point of the trace.
-	/*float cfd_threshold = 0.5;
-	entry_->getArg(0, cfd_threshold);
-	cfd_threshold *= event_->maximum;
-	
-	// Search for the threshold crossing point.
-	for(size_t index = event_->max_index-fitting_low; index < event_->max_index-1; index++){
-		if(event_->yvals[index] <= cfd_threshold && event_->yvals[index+1] >= cfd_threshold){
-			// Do interpolation to find the crossing point.
-			double m = (event_->yvals[index+1] - event_->yvals[index]) / (event_->xvals[index+1] - event_->xvals[index]);
-			event_->phase = event_->xvals[index] + (cfd_threshold - event_->yvals[index]) / m;
-			return true;
-		}
-	}*/
-	
 	return (event_->phase > 0);
 }
 
