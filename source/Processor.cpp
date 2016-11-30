@@ -185,12 +185,12 @@ bool Processor::SetFitParameters(ChanEvent *event_, MapEntry *entry_){
 	if(entry_->getArg(1, gamma)){ actual_func->SetGamma(gamma); }
 
 	// Set initial parameters to those obtained from fit optimizations.
-	fitting_func->SetParameter(0, event_->baseline); // Baseline of pulse
-	fitting_func->SetParameter(1, 1.5 * event_->qdc); // Normalization of pulse
+	fitting_func->FixParameter(0, event_->baseline); // Baseline of pulse
+	fitting_func->SetParameter(1, 0.5 * event_->qdc); // Normalization of pulse
 	fitting_func->SetParameter(2, (event_->max_index-fitting_low)*ADC_TIME_STEP); // Phase (leading edge of pulse) (ns)
 	fitting_func->SetParameter(3, beta);
 	fitting_func->SetParameter(4, gamma);
-	
+
 	// Set the fitting range.
 	fitting_func->SetRange((event_->max_index-fitting_low)*ADC_TIME_STEP, (event_->max_index+fitting_high)*ADC_TIME_STEP);
 	
