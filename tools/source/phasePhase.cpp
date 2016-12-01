@@ -126,14 +126,14 @@ bool phasePhase::processArgs(){
 		}
 		std::cout << " Set stop detector ID to " << stopID << " (" << stopID/16 << ", " << stopID%16 << ").\n";
 	}
-	if(userOpts.at(2).active){ // --runs
+	if(userOpts.at(2).active){ // --file
 		std::string userID = userOpts.at(2).argument;
 		if(userID.find(':') != std::string::npos){
 			startFile = strtol(userID.substr(0, userID.find_first_of(':')).c_str(), NULL, 0);
 			stopFile = strtol(userID.substr(userID.find_first_of(':')+1).c_str(), NULL, 0);
 		}
 		else{
-			std::cout << " Error: Invalid file range specification (" << startFile << ")!\n";
+			std::cout << " Error: Invalid file range specification (" << userID << ")!\n";
 			std::cout << "  File range must be given as pair delimited with ':' e.g. \"1:32\".\n";
 			return false;
 		}
