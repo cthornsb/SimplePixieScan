@@ -10,6 +10,7 @@
 class TApplication;
 class TCanvas;
 class TFile;
+class TTree;
 class TH1;
 class TH2;
 
