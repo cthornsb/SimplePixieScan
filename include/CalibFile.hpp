@@ -8,16 +8,19 @@ extern const double deg2rad;
 extern const double rad2deg;
 
 class XiaData;
+class TFile;
 
 class CalType{
   public:
 	unsigned int id;
 	
-	CalType() : id(0) { }
+	bool defaultVals;
+
+	CalType() : id(0), defaultVals(true) { }
 	
-	CalType(const int &id_) : id(id_) { }
+	CalType(const int &id_) : id(id_), defaultVals(true) { }
 	
-	virtual void Print(){ }
+	virtual std::string Print(bool fancy=true){ return ""; }
 };
 
 class PositionCal : public CalType {
@@ -35,7 +38,7 @@ class PositionCal : public CalType {
 		
 	PositionCal(const std::vector<std::string> &pars_);
 	
-	virtual void Print();
+	virtual std::string Print(bool fancy=true);
 };
 
 class TimeCal : public CalType {
@@ -55,7 +58,7 @@ class TimeCal : public CalType {
 	
 	double GetCalTime(const double &time_);
 	
-	virtual void Print();
+	virtual std::string Print(bool fancy=true);
 };
 
 class EnergyCal : public CalType {
@@ -72,7 +75,7 @@ class EnergyCal : public CalType {
 	
 	double GetCalEnergy(const double &adc_);
 
-	virtual void Print();
+	virtual std::string Print(bool fancy=true);
 
   private:
 	std::vector<double> vals;
@@ -133,6 +136,8 @@ class CalibFile{
 	CalibEntry *GetCalibEntry(XiaData *event_);
 	
 	void Debug(int mode);
+
+	bool Write(TFile *f_);
 };
 
 extern CalibEntry dummyCalib;

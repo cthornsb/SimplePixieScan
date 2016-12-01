@@ -219,7 +219,7 @@ simpleScanner::~simpleScanner(){
 
 		// Get the total acquisition time.
 		std::stringstream stream;
-		stream << handler->GetDeltaEventTime() << " s\n";
+		stream << handler->GetDeltaEventTime() << " s";
 
 		// If the root file is open, write the tree and histogram.
 		if(!writePresort && root_file->IsOpen()){
@@ -754,6 +754,9 @@ void simpleScanner::FinalInitialization(){
 		// Add map and config file entries to the file.	
 		mapfile->Write(root_file);
 		configfile->Write(root_file);
+
+		// Add calibration entries to the file.
+		calibfile->Write(root_file);
 	}
 	else{
 	}

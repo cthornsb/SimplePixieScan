@@ -1,6 +1,10 @@
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include <cmath>
+
+#include "TFile.h"
+#include "TObjString.h"
 
 #include "CalibFile.hpp"
 
@@ -14,6 +18,7 @@ const double rad2deg = 57.295779579;
 CalibEntry dummyCalib(NULL, NULL, NULL);
 
 PositionCal::PositionCal(const std::vector<std::string> &pars_) : CalType(0), r0(0.0), theta(0.0), phi(0.0) { 
+	defaultVals = false;
 	int index = 0;
 	for(std::vector<std::string>::const_iterator iter = pars_.begin(); iter != pars_.end(); iter++){
 		if(index == 0) id = strtol(iter->c_str(), NULL, 0);
@@ -24,11 +29,15 @@ PositionCal::PositionCal(const std::vector<std::string> &pars_) : CalType(0), r0
 	}
 }
 
-void PositionCal::Print(){
-	std::cout << " id=" << id << ", r0=" << r0 << ", theta=" << theta << ", phi=" << phi << std::endl;
+std::string PositionCal::Print(bool fancy/*=true*/){
+	std::stringstream output;
+	if(fancy) output << " id=" << id << ", r0=" << r0 << ", theta=" << theta << ", phi=" << phi;
+	else output << id << "\t" << r0 << "\t" << theta;
+	return output.str();
 }
 
 TimeCal::TimeCal(const std::vector<std::string> &pars_) : CalType(0), t0(0.0) { 
+	defaultVals = false;
 	int index = 0;
 	for(std::vector<std::string>::const_iterator iter = pars_.begin(); iter != pars_.end(); iter++){
 		if(index == 0) id = strtol(iter->c_str(), NULL, 0);
@@ -46,11 +55,15 @@ double TimeCal::GetCalTime(const double &time_){
 	return (time_ - t0);
 }
 
-void TimeCal::Print(){
-	std::cout << " id=" << id << ", t0=" << t0 << std::endl;
+std::string TimeCal::Print(bool fancy/*=true*/){
+	std::stringstream output;
+	if(fancy) output << " id=" << id << ", t0=" << t0;
+	else output << id << "\t" << t0;
+	return output.str();
 }
 
 EnergyCal::EnergyCal(const std::vector<std::string> &pars_) : CalType(0) { 
+	defaultVals = false;
 	int index = 0;
 	for(std::vector<std::string>::const_iterator iter = pars_.begin(); iter != pars_.end(); iter++){
 		if(index == 0) id = strtol(iter->c_str(), NULL, 0);
@@ -75,16 +88,19 @@ double EnergyCal::GetCalEnergy(const double &adc_){
 	return output;
 }
 
-void EnergyCal::Print(){
+std::string EnergyCal::Print(bool fancy/*=true*/){
+	std::stringstream output;
 	int index = 0;
-	std::cout << " id=" << id;
+	if(fancy) output << " id=" << id;
+	else output << id;
 	if(!vals.empty()){
 		for(std::vector<double>::iterator iter = vals.begin(); iter != vals.end(); iter++){
-			std::cout << ", p" << index++ << "=" << (*iter);
+			if(fancy) output << ", p" << index++ << "=" << (*iter);
+			else output << "\t" << (*iter);
 		}
-		std::cout << std::endl;
 	}
-	else{ std::cout << ", EMPTY\n"; }
+	else if(fancy){ output << ", EMPTY"; }
+	return output.str();
 }
 
 bool CalibFile::_load(const char *filename_, const int &type_){
@@ -211,16 +227,59 @@ void CalibFile::Debug(int mode){
 	if(mode==0 || mode==3){
 		std::cout << "Timing calibration:\n";
 		for(size_t i = 0; i < time_calib.size(); i++)
-			time_calib[i].Print();
+			std::cout << time_calib[i].Print() << std::endl;
 	}
 	if(mode==1 || mode==3){
 		std::cout << "Energy calibration:\n";
 		for(size_t i = 0; i < energy_calib.size(); i++)
-			energy_calib[i].Print();
+			std::cout << energy_calib[i].Print() << std::endl;
 	}
 	if(mode==2 || mode==3){
 		std::cout << "Position calibration:\n";
 		for(size_t i = 0; i < position_calib.size(); i++)
-			position_calib[i].Print();
+			std::cout << position_calib[i].Print() << std::endl;
 	}
+}
+
+bool CalibFile::Write(TFile *f_){
+	if(!f_ || !f_->IsOpen())
+		return false;
+
+	// Make the calibration directory.
+	f_->mkdir("calib");
+
+	// Make the time calibration directory.
+	f_->mkdir("calib/time");
+	f_->cd("calib/time");
+
+	for(std::vector<TimeCal>::iterator iter = time_calib.begin(); iter != time_calib.end(); ++iter){
+		if(iter->defaultVals) continue; // Skip entries with default values.
+		TObjString str(iter->Print(false).c_str());
+		str.Write();
+	}
+
+	// Make the energy calibration directory.
+	f_->mkdir("calib/energy");
+	f_->cd("calib/energy");
+
+	for(std::vector<EnergyCal>::iterator iter = energy_calib.begin(); iter != energy_calib.end(); ++iter){
+		if(iter->defaultVals) continue; // Skip entries with default values.
+		TObjString str(iter->Print(false).c_str());
+		str.Write();
+	}
+	
+	// Make the position calibration directory.
+	f_->mkdir("calib/position");
+	f_->cd("calib/position");
+
+	for(std::vector<PositionCal>::iterator iter = position_calib.begin(); iter != position_calib.end(); ++iter){
+		if(iter->defaultVals) continue; // Skip entries with default values.
+		TObjString str(iter->Print(false).c_str());
+		str.Write();
+	}
+	
+	// Return to the top level directory.
+	f_->cd();
+
+	return true;
 }
