@@ -75,7 +75,11 @@ unsigned int MapEntry::increment(){
 }
 
 std::string MapEntry::print(){
-	return (type+":"+subtype+":"+tag);
+	std::stringstream output; 
+	output << type << ":" << subtype << ":" << tag;
+	for(std::vector<float>::iterator iter = args.begin(); iter != args.end(); ++iter)
+		output << " " << *iter;
+	return output.str();
 }
 
 void MapFile::clear_entries(){
@@ -395,7 +399,7 @@ bool MapFile::Write(TFile *f_){
 				f_->cd(dir_names[i].c_str());
 				first_good_channel = false;			
 			}
-			TNamed named(chan_names[j].c_str(), (entryptr->type+":"+entryptr->subtype+":"+entryptr->tag).c_str());
+			TNamed named(chan_names[j].c_str(), entryptr->print().c_str());
 			named.Write();
 		}
 	}
