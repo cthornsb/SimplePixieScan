@@ -110,7 +110,7 @@ bool simpleTool::setup(int argc, char *argv[]){
 	struct option zero_opt { 0, 0, 0, 0 };
 	longOpts.push_back(zero_opt);
 	
-		int idx = 0;
+	int idx = 0;
 	int retval = 0;
 
 	//getopt_long is not POSIX compliant. It is provided by GNU. This may mean
@@ -158,12 +158,7 @@ bool simpleTool::setup(int argc, char *argv[]){
 		}
 	}//while
 	
-	processArgs();
-	
-	if(input_filename.empty()){
-		std::cout << " Error: Input filename not specified!\n";
-		return false;
-	}
+	if(!processArgs()) return false;
 	
 	return true;
 }
@@ -189,6 +184,11 @@ TCanvas *simpleTool::openCanvas2(const std::string &title_/*="Canvas"*/){
 }
 
 TFile *simpleTool::openInputFile(){
+	if(infile != NULL && infile->IsOpen()){
+		infile->Close();
+		delete infile;
+		intree = NULL;	
+	}
 	infile = new TFile(input_filename.c_str(), "READ");
 	if(!infile->IsOpen()){
 		std::cout << " Error! Failed to open input file '" << input_filename << "'.\n";
@@ -207,6 +207,11 @@ TTree *simpleTool::loadInputTree(){
 }
 
 TFile *simpleTool::openOutputFile(){
+	if(outfile != NULL && outfile->IsOpen()){
+		outfile->Close();
+		delete outfile;
+		outtree = NULL;	
+	}
 	outfile = new TFile(output_filename.c_str(), "RECREATE");
 	if(!outfile->IsOpen()){
 		std::cout << " Error! Failed to open input file '" << output_filename << "'.\n";
@@ -297,13 +302,15 @@ void simpleHistoFitter::addOptions(){
 	addOption(optionExt("debug", no_argument, NULL, 'd', "", "Enable debug mode."), userOpts, optstr);
 }
 
-void simpleHistoFitter::processArgs(){
+bool simpleHistoFitter::processArgs(){
 	if(userOpts.at(0).active)
 		draw_string = userOpts.at(0).argument;
 	if(userOpts.at(1).active)
 		output_objname = userOpts.at(1).argument;
 	if(userOpts.at(2).active)
 		debug = true;
+
+	return true;
 }
 
 TH2 *simpleHistoFitter::fillHistogram(){
@@ -350,7 +357,12 @@ TH2 *simpleHistoFitter::fillHistogram(){
 
 int simpleHistoFitter::execute(int argc, char *argv[]){
 	if(!setup(argc, argv))
+		return 0;
+
+	if(input_filename.empty()){
+		std::cout << " Error: Input filename not specified!\n";
 		return 1;
+	}
 
 	if(output_filename.empty()){
 		std::cout << " Error: Output filename not specified!\n";

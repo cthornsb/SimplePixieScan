@@ -23,26 +23,33 @@ class simpleComCalculator : public simpleTool {
 	
 	void addOptions();
 	
-	void processArgs();
+	bool processArgs();
 	
 	int execute(int argc, char *argv[]);
 };
 
 void simpleComCalculator::addOptions(){
 	addOption(optionExt("mcarlo", no_argument, NULL, 'm', "", "Read from a VANDMC monte carlo file."), userOpts, optstr);
-	addOption(optionExt("config", required_argument, NULL, 'c', "", "Read reaction information from an input file."), userOpts, optstr);
+	addOption(optionExt("config", required_argument, NULL, 'c', "<fname>", "Read reaction information from an input file."), userOpts, optstr);
 }
 
-void simpleComCalculator::processArgs(){
+bool simpleComCalculator::processArgs(){
 	if(userOpts.at(0).active)
 		mcarlo = true;
 	if(userOpts.at(1).active)
 		configFilename = userOpts.at(1).argument;
+
+	return true;
 }
 
 int simpleComCalculator::execute(int argc, char *argv[]){
 	if(!setup(argc, argv))
+		return 0;
+
+	if(input_filename.empty()){
+		std::cout << " Error: Input filename not specified!\n";
 		return 1;
+	}
 
 	if(output_filename.empty()){
 		std::cout << " Error: Output filename not specified!\n";

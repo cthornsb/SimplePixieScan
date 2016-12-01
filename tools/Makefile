@@ -36,7 +36,8 @@ BUILD_OBJ = $(OBJ_DIR)/cmcalc.o $(OBJ_DIR)/simpleTool.o
 ALL_TOOLS = timeAlign \
             calibrate \
             cmbinner \
-            specFitter
+            specFitter \
+            phasePhase
 EXE_NAMES = $(addprefix $(EXEC_DIR)/, $(addsuffix .a, $(ALL_TOOLS)))
 INSTALLED = $(addprefix $(INSTALL_DIR)/, $(ALL_TOOLS))
 

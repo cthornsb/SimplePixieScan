@@ -52,7 +52,7 @@ class simpleTool{
 	
 	virtual void addOptions(){ }
 	
-	virtual void processArgs(){ }
+	virtual bool processArgs(){ return true; }
 
   public:
 	simpleTool();
@@ -99,7 +99,7 @@ class simpleHistoFitter : public simpleTool {
 
 	void addOptions();
 	
-	void processArgs();
+	bool processArgs();
 	
   public:
 	simpleHistoFitter();
