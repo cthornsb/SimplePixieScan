@@ -17,8 +17,10 @@ class particle{
 	double E[2];
 	double labAngle[2];
 	double comAngle[2];
+
+	bool inverseKin;
 	
-	particle(){ }
+	particle() : inverseKin(false) { }
 	
 	particle(const double &thetaLab_, const double &Vcm_, const double &partVcm_, const double &mass_);
 	
@@ -26,7 +28,7 @@ class particle{
 
 	bool calculateCOM(const double &thetaCOM_, const double &Vcm_, const double &partVcm_, const double &mass_);
 	
-	std::string print();
+	std::string print(bool bothSolutions=true);
 };
 
 class reaction{

@@ -70,6 +70,12 @@ bool particle::calculate(const double &thetaLab_, const double &Vcm_, const doub
 		E[1] = -1;
 		comAngle[1] = -1;
 	}
+
+	// Correct the CoM angle for inverse kinematics.
+	if(inverseKin) {
+		comAngle[0] = 180 - comAngle[0];
+		if(comAngle[1] >= 0) comAngle[1] = 180 - comAngle[1];
+	}
 	
 	return true;
 }
@@ -92,15 +98,20 @@ bool particle::calculateCOM(const double &thetaCOM_, const double &Vcm_, const d
 	labAngle[0] = dabs(std::atan2(sinTheta, Vcm_/partVcm_ + cosTheta) * 180 / pi);
 	labAngle[1] = -1;
 	
+	// Correct the CoM angle for inverse kinematics.
+	if(inverseKin) comAngle[0] = 180 - comAngle[0];
+
 	return true;
 }
 
-std::string particle::print(){
+std::string particle::print(bool bothSolutions/*=true*/){
 	std::stringstream stream;
 	if(v[0] >= 0.0) stream << comAngle[0] << "\t" << labAngle[0] << "\t" << E[0] << "\t" << v[0];
 	else stream << "undefined\tundefined\tundefined\tundefined";
-	if(v[1] >= 0.0) stream << "\t" << comAngle[1] << "\t" << labAngle[1] << "\t" << E[1] << "\t" << v[1];
-	else stream << "\tundefined\tundefined\tundefined\tundefined";
+	if(bothSolutions){
+		if(v[1] >= 0.0) stream << "\t" << comAngle[1] << "\t" << labAngle[1] << "\t" << E[1] << "\t" << v[1];
+		else stream << "\tundefined\tundefined\tundefined\tundefined";
+	}
 	return stream.str();
 }
 
@@ -256,7 +267,11 @@ void reaction::Print(){
 	std::cout << "  G.S. Q-value (MeV)         = " << Qgs << std::endl;
 	std::cout << "  Final Q-value (MeV)        = " << Qfinal << std::endl;
 	
-	if(Mtarg < Mbeam) std::cout << "\n  Inverse Kinematics\n";
+	if(Mtarg < Mbeam){
+		std::cout << "\n  Inverse Kinematics\n";
+		ejectPart.inverseKin = true;
+		recoilPart.inverseKin = true;
+	}
 	else std::cout << "\n  Normal Kinematics\n";
 	
 	if(Ecm + Qfinal > 0.0) std::cout << "  Above Threshold\n";
