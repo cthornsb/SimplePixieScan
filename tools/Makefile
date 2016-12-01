@@ -37,7 +37,8 @@ ALL_TOOLS = timeAlign \
             calibrate \
             cmbinner \
             specFitter \
-            phasePhase
+            phasePhase \
+            mapReader
 EXE_NAMES = $(addprefix $(EXEC_DIR)/, $(addsuffix .a, $(ALL_TOOLS)))
 INSTALLED = $(addprefix $(INSTALL_DIR)/, $(ALL_TOOLS))
 
