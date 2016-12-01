@@ -1,5 +1,6 @@
 #include <iostream>
 #include <sstream>
+#include <fstream>
 #include <string>
 #include <cmath>
 
@@ -116,6 +117,69 @@ void reaction::Calculate(){
 	
 	recoilMaxAngle = recoilVcm > Vcm ? 180.0 : std::asin(recoilVcm/Vcm)*180/pi;
 	ejectMaxAngle = ejectVcm > Vcm ? 180.0 : std::asin(ejectVcm/Vcm)*180/pi;
+}
+
+bool reaction::Read(const char *fname_/*=NULL*/){
+	std::string userInput;
+	if(fname_ != NULL){
+		std::ifstream configFile(fname_);
+		if(!configFile.good()){
+			std::cout << " Error: Failed to load input configuration file.\n";
+			return false;
+		}
+		float Z, A, BEA, state;
+		configFile >> Z >> A >> BEA;
+		SetBeam(Z, A, BEA);
+		configFile >> Z >> A >> BEA;
+		SetTarget(Z, A, BEA);
+		configFile >> Z >> A >> BEA >> state;
+		SetRecoil(Z, A, BEA);
+		SetRecoilEx(state);
+		configFile >> Z >> A >> BEA >> state;
+		SetEjectile(Z, A, BEA);
+		SetEjectileEx(state);
+		configFile >> state;
+		SetEbeam(state);
+	}
+	else{
+		// Save the configuration file.
+		bool saveToFile = false;
+		std::ofstream outConfig;
+		std::cout << " Manual reaction configuration mode.\n";
+		std::cout << " Save when finished? (y/n) "; std::cin >> userInput;
+		if(userInput == "y" || userInput == "Y" || userInput == "yes"){
+			std::cout << " Enter config filename: "; std::cin >> userInput;
+			outConfig.open(userInput.c_str());
+			saveToFile = true;
+		}
+	
+		float Z, A, BEA, state;
+		std::cout << " Enter beam Z, A, and BE/A: "; std::cin >> Z >> A >> BEA;
+		if(saveToFile) outConfig << Z << "\t" << A << "\t" << BEA << "\n";
+		SetBeam(Z, A, BEA);
+		std::cout << " Enter target Z, A, and BE/A: "; std::cin >> Z >> A >> BEA;
+		if(saveToFile) outConfig << Z << "\t" << A << "\t" << BEA << "\n";
+		SetTarget(Z, A, BEA);
+		std::cout << " Enter recoil Z, A, BE/A, and excitation: "; std::cin >> Z >> A >> BEA >> state;
+		if(saveToFile) outConfig << Z << "\t" << A << "\t" << BEA << "\t" << state << "\n";
+		SetRecoil(Z, A, BEA);
+		SetRecoilEx(state);
+		std::cout << " Enter ejectile Z, A, BE/A, and excitation: "; std::cin >> Z >> A >> BEA >> state;
+		if(saveToFile) outConfig << Z << "\t" << A << "\t" << BEA << "\t" << state << "\n";
+		SetEjectile(Z, A, BEA);
+		SetEjectileEx(state);
+		std::cout << " Enter beam energy: "; std::cin >> state;
+		if(saveToFile) outConfig << state << "\n";
+		SetEbeam(state);
+		std::cout << std::endl;
+		outConfig.close();
+		std::cout << "  Manual setup complete!";
+		if(saveToFile) 
+			std::cout << " Wrote reaction information to file " << userInput;
+		std::cout << std::endl;
+	}
+
+	return true;
 }
 
 double reaction::SetBeam(const int &Z_, const int &A_, const double &BE_A_/*=0.0*/){

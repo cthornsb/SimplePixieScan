@@ -58,58 +58,17 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 
 	std::string userInput;
 	reaction rxn;
-	if(!configFilename.empty()){
-		std::ifstream configFile(configFilename.c_str());
-		if(!configFile.good()){
-			std::cout << " Error: Failed to load input configuration file.\n";
-			return 3;
-		}
-		float Z, A, BEA, state;
-		configFile >> Z >> A >> BEA;
-		rxn.SetBeam(Z, A, BEA);
-		configFile >> Z >> A >> BEA;
-		rxn.SetTarget(Z, A, BEA);
-		configFile >> Z >> A >> BEA >> state;
-		rxn.SetRecoil(Z, A, BEA);
-		rxn.SetRecoilEx(state);
-		configFile >> Z >> A >> BEA >> state;
-		rxn.SetEjectile(Z, A, BEA);
-		rxn.SetEjectileEx(state);
-		configFile >> state;
-		rxn.SetEbeam(state);
-	}
-	else{
-		// Save the configuration file.
-		bool saveToFile = false;
-		std::ofstream outConfig;
-		std::cout << " Manual reaction configuration mode.\n";
-		std::cout << " Save when finished? (y/n) "; std::cin >> userInput;
-		if(userInput == "y" || userInput == "Y" || userInput == "yes"){
-			std::cout << " Enter config filename: "; std::cin >> userInput;
-			outConfig.open(userInput.c_str());
-			saveToFile = true;
-		}
-	
-		float Z, A, BEA, state;
-		std::cout << " Enter beam Z, A, and BE/A: "; std::cin >> Z >> A >> BEA;
-		if(saveToFile) outConfig << Z << "\t" << A << "\t" << BEA << "\n";
-		rxn.SetBeam(Z, A, BEA);
-		std::cout << " Enter target Z, A, and BE/A: "; std::cin >> Z >> A >> BEA;
-		if(saveToFile) outConfig << Z << "\t" << A << "\t" << BEA << "\n";
-		rxn.SetTarget(Z, A, BEA);
-		std::cout << " Enter recoil Z, A, BE/A, and excitation: "; std::cin >> Z >> A >> BEA >> state;
-		if(saveToFile) outConfig << Z << "\t" << A << "\t" << BEA << "\t" << state << "\n";
-		rxn.SetRecoil(Z, A, BEA);
-		rxn.SetRecoilEx(state);
-		std::cout << " Enter ejectile Z, A, BE/A, and excitation: "; std::cin >> Z >> A >> BEA >> state;
-		if(saveToFile) outConfig << Z << "\t" << A << "\t" << BEA << "\t" << state << "\n";
-		rxn.SetEjectile(Z, A, BEA);
-		rxn.SetEjectileEx(state);
-		std::cout << " Enter beam energy: "; std::cin >> state;
-		if(saveToFile) outConfig << state << "\n";
-		rxn.SetEbeam(state);
-		std::cout << std::endl;
-		outConfig.close();
+
+	// Read the reaction parameters from the config file.
+	bool setupComplete;
+	if(!configFilename.empty())
+		setupComplete = rxn.Read(configFilename.c_str());
+	else
+		setupComplete = rxn.Read();
+
+	if(!setupComplete){			
+		std::cout << " Error: Failed to setup reaction parameters!\n";
+		return 3;
 	}
 
 	// Make sure all settings are correct.

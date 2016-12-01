@@ -54,6 +54,8 @@ class reaction{
 	             EXeject(0.0), EXrecoil(0.0), 
 	             Ebeam(0.0), Ecm(0.0), Qgs(0.0) {}
 
+	bool Read(const char *fname_=NULL);
+
 	particle *GetRecoil(){ return &recoilPart; }
 	
 	particle *GetEjectile(){ return &ejectPart; }
