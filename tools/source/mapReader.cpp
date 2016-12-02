@@ -16,9 +16,6 @@ class mapReader : public simpleTool {
 
 	const std::string pathPrefix = "/map/mod";
 
-	const std::string chanNames[16] = {"chan00", "chan01", "chan02", "chan03", "chan04", "chan05", "chan06", "chan07",
-                                           "chan08", "chan09", "chan10", "chan11", "chan12", "chan13", "chan14", "chan15"};
-
 	int startMod;
 	int stopMod;
 
