@@ -5,7 +5,8 @@
 
 #include "TFile.h"
 #include "TTree.h"
-#include "TNamed.h"
+#include "TObject.h"
+#include "TCollection.h" // TIter class
 
 #include "simpleTool.hpp"
 
@@ -47,13 +48,22 @@ bool mapReader::process(int mod, std::ofstream *file_){
 		currentName += std::string(padding - stream.str().length(), '0');
 	currentName += stream.str() + "/";
 
+	// Load the currect directory.
+	TDirectory *dir = infile->GetDirectory(currentName.c_str());
+	
+	// Failed to load directory.
+	if(!dir) return false;
+
+	// Get list of map entries.
+	TIter iter(dir->GetListOfKeys());
+
 	bool output = false;
-	for(int i = 0; i < 16; i++){
-		TNamed *named = (TNamed*)infile->Get((currentName+chanNames[i]).c_str());
-		if(!named) continue;
+	while(true){
+		TObject *obj = iter();
+		if(!obj) break;
 
 		// Write the map entry to the file.
-		(*file_) << mod << " " << i << " " << named->GetTitle() << std::endl;
+		(*file_) << obj->GetName() << std::endl;
 
 		output = true;
 	}

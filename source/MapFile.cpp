@@ -2,7 +2,7 @@
 #include <sstream>
 
 #include "TFile.h"
-#include "TNamed.h"
+#include "TObjString.h"
 
 #include "XiaData.hpp"
 
@@ -397,10 +397,12 @@ bool MapFile::Write(TFile *f_){
 			if(first_good_channel){
 				f_->mkdir(dir_names[i].c_str());
 				f_->cd(dir_names[i].c_str());
-				first_good_channel = false;			
+				first_good_channel = false;		
 			}
-			TNamed named(chan_names[j].c_str(), entryptr->print().c_str());
-			named.Write();
+			std::stringstream stream;
+			stream << i << " " << j << " " << entryptr->print();
+			TObjString str(stream.str().c_str());
+			str.Write();
 		}
 	}
 	
