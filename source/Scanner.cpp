@@ -650,21 +650,28 @@ bool simpleScanner::Initialize(std::string prefix_){
 		return false;
 	}
 	
+	bool hadErrors = false;
 	calibfile = new CalibFile();
 	currentFile = setupDirectory + "time.cal";
 	std::cout << prefix_ << "Reading time calibration file " << currentFile << "\n";
-	if(!calibfile->LoadTimeCal(currentFile.c_str())) // Failed to read time calibration file.
+	if(!calibfile->LoadTimeCal(currentFile.c_str())){ // Failed to read time calibration file.
 		std::cout << prefix_ << "Failed to read time calibration file '" << setupDirectory << "'.\n";
+		hadErrors = true;	
+	}
 	
 	currentFile = setupDirectory + "energy.cal";
 	std::cout << prefix_ << "Reading energy calibration file " << currentFile << "\n";
-	if(!calibfile->LoadEnergyCal(currentFile.c_str())) // Failed to read energy calibration file.
+	if(!calibfile->LoadEnergyCal(currentFile.c_str())){ // Failed to read energy calibration file.
 		std::cout << prefix_ << "Failed to read energy calibration file '" << setupDirectory << "'.\n";
+		hadErrors = true;	
+	}
 	
 	currentFile = setupDirectory + "position.cal";
 	std::cout << prefix_ << "Reading position calibration file " << currentFile << "\n";
-	if(!calibfile->LoadPositionCal(currentFile.c_str())) // Failed to read position calibration file.
+	if(!calibfile->LoadPositionCal(currentFile.c_str())){ // Failed to read position calibration file.
 		std::cout << prefix_ << "Failed to read position calibration file '" << setupDirectory << "'.\n";
+		hadErrors = true;	
+	}
 	
 	GetCore()->SetEventWidth(configfile->eventWidth * 125); // = eventWidth * 1E-6(s/us) / 8E-9(s/tick)
 	std::cout << prefix_ << "Setting event width to " << configfile->eventWidth << " μs (" << GetCore()->GetEventWidth() << " pixie clock ticks).\n";
@@ -682,7 +689,21 @@ bool simpleScanner::Initialize(std::string prefix_){
 				// Initialize all online diagnostic plots.
 				online->AddHists(proc);
 			}
-			else{ std::cout << prefix_ << "Failed to add " << iter->type << " processor to the processor list!\n"; }
+			else{ 
+				std::cout << prefix_ << "Failed to add " << iter->type << " processor to the processor list!\n"; 
+				hadErrors = true;			
+			}
+		}
+	}
+
+	if(hadErrors){
+		std::string userInput;
+		while(true){
+			std::cout << prefix_ << "Encountered errors during initialization. Continue? (y,n) ";
+			std::cin >> userInput;
+			if(userInput == "y" || userInput == "Y") break;
+			else if(userInput == "n" || userInput == "N") return false; // Hard abort.
+			std::cout << prefix_ << "Invalid input (" << userInput << ").\n";
 		}
 	}
 	
