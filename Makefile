@@ -98,10 +98,11 @@ CONFIG_FILES = config.dat energy.cal map.dat position.cal time.cal
 DICT_SOURCE = SimpleScanDict
 PCM_FILE = $(DICT_SOURCE)_rdict.pcm
 STRUCT_FILE_OBJ = $(OBJ_DIR)/Structures.o
+DICT_SHARED_LIB = lib$(DICT_SOURCE).so
 
 ROOT_DICT = $(DICT_DIR)/$(DICT_SOURCE).cpp
 ROOT_DICT_OBJ = $(DICT_OBJ_DIR)/$(DICT_SOURCE).o
-ROOT_DICT_SLIB = $(DICT_OBJ_DIR)/$(DICT_SOURCE).so
+ROOT_DICT_SLIB = $(DICT_OBJ_DIR)/lib$(DICT_SOURCE).so
 SFLAGS = $(addprefix -l,$(DICT_SOURCE))
 
 OBJECTS += $(ROOT_DICT_OBJ) $(STRUCT_FILE_OBJ)
@@ -184,9 +185,11 @@ endif
 ########################################################################
 
 install: all
-	@rm -f $(INSTALL_DIR)/simpleScan
-	@echo "Installing simpleScan to "$(INSTALL_DIR);
+	@rm -f $(INSTALL_DIR)/simpleScan $(LIB_INSTALL_DIR)/$(DICT_SHARED_LIB)
+	@echo "Installing simpleScan to "$(INSTALL_DIR)
 	@ln -s $(TOP_LEVEL)/run.sh $(INSTALL_DIR)/simpleScan;
+	@echo "Installing libSimpleScanDict.so to "$(LIB_INSTALL_DIR)
+	@ln -s $(ROOT_DICT_SLIB) $(LIB_INSTALL_DIR)/$(DICT_SHARED_LIB)
 	@if [ -d $(SCAN_DIR) ]; then \
 		if [ -e $(PCM_FILE) ]; then \
 			cp $(PCM_FILE) $(SCAN_DIR); \
@@ -198,6 +201,7 @@ install: all
 
 uninstall: tidy
 	@rm -f $(INSTALL_DIR)/simpleScan
+	@rm -f $(LIB_INSTALL_DIR)/$(DICT_SHARED_LIB)
 
 tidy: clean_obj clean_dict
 	@rm -f $(EXEC_DIR)/* ./run.sh
