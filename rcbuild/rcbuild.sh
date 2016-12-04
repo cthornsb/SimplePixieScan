@@ -70,9 +70,9 @@ BUILDER_SRC=rcbuild.cpp
 DEF_FILE=$DICT_DIR/def.struct
 DEF_FILE_BKP=$DICT_DIR/.def.struct.bkp
 
-DICT_SOURCE=RootDict.cpp
-DICT_OBJ=RootDict.o
-DICT_SHARED=libRootDict.so
+DICT_SOURCE=SimpleScanDict.cpp
+DICT_OBJ=SimpleScanDict.o
+DICT_SHARED=libSimpleScanDict.so
 
 declare -i LEVEL_NEEDED=0
 declare -i RETVAL=0
@@ -114,15 +114,15 @@ else
 						echo " Nothing to be done for "$DICT_SHARED
 						exit 0
 					else
-						# Need to build shared library libRootDict.so
+						# Need to build shared library libSimpleScanDict.so
 						LEVEL_NEEDED=1
 					fi
 				else
-					# Need to build RootDict.o
+					# Need to build SimpleScanDict.o
 					LEVEL_NEEDED=2
 				fi
 			else
-				# Need to use rootcint to generate RootDict.cpp
+				# Need to use rootcint to generate SimpleScanDict.cpp
 				LEVEL_NEEDED=3
 			fi
 		else

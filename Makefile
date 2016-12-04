@@ -12,6 +12,9 @@ PIXIE_SUITE_LIB_DIR = $(PIXIE_SUITE_DIR)/lib
 # Set the binary install directory.
 INSTALL_DIR = $(HOME)/bin
 
+# Set the library install directory.
+LIB_INSTALL_DIR = $(HOME)/lib
+
 #####################################################################
 
 # Set the directory where you plan to run the scan.
@@ -92,7 +95,7 @@ OBJECTS = $(addprefix $(OBJ_DIR)/,$(SOURCES:.cpp=.o))
 CONFIG_FILES = config.dat energy.cal map.dat position.cal time.cal
 
 # ROOT dictionary stuff
-DICT_SOURCE = RootDict
+DICT_SOURCE = SimpleScanDict
 PCM_FILE = $(DICT_SOURCE)_rdict.pcm
 STRUCT_FILE_OBJ = $(OBJ_DIR)/Structures.o
 

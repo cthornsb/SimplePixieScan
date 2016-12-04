@@ -12,9 +12,9 @@ setup
 ##############
 *.root
 *.dat
-RootDict_rdict.pcm
-RootDict.cpp
-RootDict.h
+SimpleScanDict_rdict.pcm
+SimpleScanDict.cpp
+SimpleScanDict.h
 Structures.cpp
 Structures.h
 LinkDef.h
