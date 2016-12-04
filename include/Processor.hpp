@@ -107,8 +107,8 @@ class Processor{
 	bool write_waveform;
 	bool isSingleEnded;
 
-	int fitting_low;
-	int fitting_high;
+	int fitting_low, fitting_low2;
+	int fitting_high, fitting_high2;
 
 	ChannelEventPair *start;
 

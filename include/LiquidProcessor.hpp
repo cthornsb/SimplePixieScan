@@ -15,9 +15,6 @@ class LiquidProcessor : public Processor{
 	double short_qdc; /// The integral of the short portion of the left pmt pulse.
 	double long_qdc; /// The integral of the long portion of the left pmt pulse.
 
-	int fitting_low2; /// Lower limit of the long fitting integral (in adc clock ticks).
-	int fitting_high2; /// Upper limit of the long fitting integral (in adc clock ticks).
-
 	Plotter *loc_tdiff_2d;
 	Plotter *loc_short_energy_2d;
 	Plotter *loc_long_energy_2d;
