@@ -192,7 +192,7 @@ class Processor{
 	
 	void Zero();
 
-	void RemoveAllUntriggered();
+	void RemoveByTag(const std::string &tag_, const bool &withTag_=true);
 };
 
 // Return a random number between low and high.

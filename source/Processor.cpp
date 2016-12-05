@@ -454,10 +454,11 @@ void Processor::Zero(){
 	root_waveform->Zero();
 }
 
-void Processor::RemoveAllUntriggered(){
+void Processor::RemoveByTag(const std::string &tag_, const bool &withTag_/*=true*/){
 	std::deque<ChannelEventPair*> tempList;
 	while(!events.empty()){
-		if(events.front()->entry->tag == "untriggered") tempList.push_back(events.front());
+		if((withTag_ && events.front()->entry->tag == tag_) || (!withTag_ && events.front()->entry->tag != tag_)) 
+			tempList.push_back(events.front());
 		events.pop_front();
 	}
 	for(std::deque<ChannelEventPair*>::iterator iter = tempList.begin(); iter != tempList.end(); ++iter){

@@ -144,7 +144,7 @@ bool ProcessorHandler::Process(){
 		else if(untrigChannel){
 			starts.push_back(&dummyStart);
 			for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
-				iter->proc->RemoveAllUntriggered();
+				iter->proc->RemoveByTag("untriggered");
 			}
 		}
 		else return false;
