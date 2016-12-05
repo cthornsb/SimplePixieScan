@@ -118,8 +118,17 @@ bool ProcessorHandler::AddEvent(ChannelEventPair *pair_){
 
 bool ProcessorHandler::AddStart(ChannelEventPair *pair_){
 	if(!pair_){ return false; }
+
+	static int numStartWarnings = 0;
 	
 	starts.push_back(pair_);
+
+	if(starts.size() == 2 && numStartWarnings < 10){
+		double tdiff = starts.at(1)->channelEvent->time - starts.at(0)->channelEvent->time;
+		std::cout << " Warning! Multiple starts in start list (tdiff = " << tdiff << " ticks). Consider decreasing event window.\n";
+		if(++numStartWarnings == 10)
+			std::cout << "  NOTE: Suppressing further warnings about multiple starts.\n";
+	}
 
 	return true;
 }
@@ -153,11 +162,8 @@ bool ProcessorHandler::Process(){
 	bool retval = false;
 	
 	// After preprocessing has finished, call the processors.
-	// Iterate over all start events in the starts vector.
-	for(std::vector<ChannelEventPair*>::iterator start = starts.begin(); start != starts.end(); start++){
-		for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
-			if(iter->proc->Process(*start)){ retval = true; }
-		}
+	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
+		if(iter->proc->Process(starts.front())){ retval = true; }
 	}
 	
 	return retval;
