@@ -191,6 +191,8 @@ class Processor{
 	void WrapUp();
 	
 	void Zero();
+
+	void RemoveAllUntriggered();
 };
 
 // Return a random number between low and high.

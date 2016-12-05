@@ -28,6 +28,7 @@ class ProcessorHandler{
 	double first_event_time; /// Time of the first start event (in s)
 	double delta_event_time; /// Time since the first start event (in s)
 	bool untriggered; /// True if a "start" detector is not used.
+	bool untrigChannel; /// True if at least one untriggered channel was added.
 
   public:
 	ProcessorHandler();

@@ -454,6 +454,18 @@ void Processor::Zero(){
 	root_waveform->Zero();
 }
 
+void Processor::RemoveAllUntriggered(){
+	std::deque<ChannelEventPair*> tempList;
+	while(!events.empty()){
+		if(events.front()->entry->tag == "untriggered") tempList.push_back(events.front());
+		events.pop_front();
+	}
+	for(std::deque<ChannelEventPair*>::iterator iter = tempList.begin(); iter != tempList.end(); ++iter){
+		events.push_back(*iter);
+	}
+	tempList.clear();
+}
+
 // Return a random number between low and high.
 double drand(const double &low_, const double &high_){
 	return low_+(double(rand())/RAND_MAX)*(high_-low_);

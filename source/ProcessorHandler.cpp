@@ -25,6 +25,7 @@ ProcessorHandler::ProcessorHandler(){
 	first_event_time = 0.0;
 	delta_event_time = 0.0;
 	untriggered = false;
+	untrigChannel = false;
 }
 
 ProcessorHandler::~ProcessorHandler(){
@@ -105,6 +106,7 @@ bool ProcessorHandler::AddEvent(ChannelEventPair *pair_){
 		if(pair_->entry->type == iter->type){ 
 			iter->proc->AddEvent(pair_); 
 			if(pair_->entry->tag == "start") start_events++;
+			else if(pair_->entry->tag == "untriggered") untrigChannel = true;
 			if(total_events == 0){ first_event_time = pair_->channelEvent->time * 8E-9; }
 			delta_event_time = (pair_->channelEvent->time * 8E-9) - first_event_time;
 			total_events++; 
@@ -139,6 +141,12 @@ bool ProcessorHandler::Process(){
 	// Return false if there are no start events.
 	if(starts.empty()){
 		if(untriggered) starts.push_back(&dummyStart);
+		else if(untrigChannel){
+			starts.push_back(&dummyStart);
+			for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
+				iter->proc->RemoveAllUntriggered();
+			}
+		}
 		else return false;
 	}
 	
@@ -166,4 +174,6 @@ void ProcessorHandler::ZeroAll(){
 		iter->proc->WrapUp();
 		iter->proc->Zero();
 	}
+
+	untrigChannel = false;
 }
