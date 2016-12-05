@@ -35,10 +35,6 @@ bool LiquidProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 	// Get the location of this detector.
 	int location = chEvt->entry->location;
 
-	// Compute the trace qdc of the fast and slow component of the left pmt pulse.
-	/*short_qdc = current_event->IntegratePulse(current_event->max_index + fitting_low, current_event->max_index + fitting_high);
-	long_qdc = current_event->IntegratePulse(current_event->max_index + fitting_low2, current_event->max_index + fitting_high2);	*/
-
 	short_qdc = current_event->qdc;
 	long_qdc = current_event->qdc2;
 

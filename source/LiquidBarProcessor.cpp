@@ -62,18 +62,10 @@ bool LiquidBarProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *
 	// Get the location of this detector.
 	int location = chEvt->entry->location;
 
-	/*// Compute the trace qdc of the fast and slow component of the left pmt pulse.
-	left_short_qdc = channel_event_L->IntegratePulse(channel_event_L->max_index + fitting_low, channel_event_L->max_index + fitting_high);
-	left_long_qdc = channel_event_L->IntegratePulse(channel_event_L->max_index + fitting_low2, channel_event_L->max_index + fitting_high2);	
-
-	// Compute the trace qdc of the fast and slow component of the right pmt pulse.
-	right_short_qdc = channel_event_R->IntegratePulse(channel_event_R->max_index + fitting_low, channel_event_R->max_index + fitting_high);
-	right_long_qdc = channel_event_R->IntegratePulse(channel_event_R->max_index + fitting_low2, channel_event_R->max_index + fitting_high2);	
-	
-	double stqdc = std::sqrt(left_short_qdc*right_short_qdc);
-	double ltqdc = std::sqrt(left_long_qdc*right_long_qdc);*/
-
+	// Compute the trace qdc of the fast component of the left and right pmt pulses.
 	double stqdc = (double)std::sqrt(channel_event_L->qdc*channel_event_R->qdc);
+
+	// Compute the trace qdc of the slow component of the left and right pmt pulses.
 	double ltqdc = (double)std::sqrt(channel_event_L->qdc2*channel_event_R->qdc2);
 	
 	// Fill all diagnostic histograms.
