@@ -405,11 +405,6 @@ void Processor::PreProcess(){
 				current_event->hiresTime += current_event->phase * adcClockInSeconds;
 			}
 		}
-		else{
-			// This event is from a presorted file. We assume that the event
-			// has already passed a screening and is valid to use.
-			current_event->valid_chan = true;
-		}
 		
 		// Calibrate the energy, if applicable.
 		if((*iter)->calib->Energy()){
