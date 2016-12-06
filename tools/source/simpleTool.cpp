@@ -363,21 +363,16 @@ int simpleHistoFitter::execute(int argc, char *argv[]){
 		std::cout << " Error: Input filename not specified!\n";
 		return 1;
 	}
-
-	if(output_filename.empty()){
-		std::cout << " Error: Output filename not specified!\n";
-		return 2;
-	}
 	
 	if(!openInputFile())
-		return 3;
+		return 2;
 
 	openCanvas1();
 	can1->SetLogz();
 	can1->cd();
 		
 	if(!fillHistogram())
-		return 4;
+		return 3;
 		
 	h2d->Draw("COLZ");
 	can1->Update();
@@ -385,7 +380,7 @@ int simpleHistoFitter::execute(int argc, char *argv[]){
 	openCanvas2();
 
 	if(!process())
-		return 5;
+		return 4;
 	
 	return 0;
 }
