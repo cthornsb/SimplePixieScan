@@ -43,14 +43,13 @@ EXE_NAMES = $(addprefix $(EXEC_DIR)/, $(addsuffix .a, $(ALL_TOOLS)))
 INSTALLED = $(addprefix $(INSTALL_DIR)/, $(ALL_TOOLS))
 
 # ROOT dictionary stuff
-DICT_SOURCE = RootDict
+DICT_SOURCE = SimpleScanDict
 STRUCT_FILE_OBJ = ../obj/Structures.o
 
 ROOT_DICT_OBJ = ../dict/obj/$(DICT_SOURCE).o
-ROOT_DICT_SLIB = ../dict/obj/$(DICT_SOURCE).so
 SFLAGS = $(addprefix -l,$(DICT_SOURCE))
 
-BUILD_OBJ += $(ROOT_DICT_OBJ) $(STRUCT_FILE_OBJ)
+SIMPLE_SCAN_OBJ = $(ROOT_DICT_OBJ) $(STRUCT_FILE_OBJ)
 
 ########################################################################
 
@@ -83,7 +82,7 @@ $(OBJ_DIR)/%.o: $(SOURCE_DIR)/%.cpp
 
 $(EXEC_DIR)/%.a: $(SOURCE_DIR)/%.cpp $(BUILD_OBJ)
 #	Compile C++ source files
-	$(COMPILER) $(CFLAGS) $< $(RFLAGS) $(BUILD_OBJ) -L$(PIXIE_SUITE_LIB_DIR) -lScan -L$(DICT_OBJ_DIR) $(SFLAGS) -o $@ $(LDLIBS)
+	$(COMPILER) $(CFLAGS) $< $(RFLAGS) $(BUILD_OBJ) $(SIMPLE_SCAN_OBJ) -L$(PIXIE_SUITE_LIB_DIR) -lScan -L$(DICT_OBJ_DIR) $(SFLAGS) -o $@ $(LDLIBS)
 
 ########################################################################
 
