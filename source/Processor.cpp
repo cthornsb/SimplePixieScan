@@ -457,7 +457,7 @@ void Processor::Zero(){
 void Processor::RemoveByTag(const std::string &tag_, const bool &withTag_/*=true*/){
 	std::deque<ChannelEventPair*> tempList;
 	while(!events.empty()){
-		if((withTag_ && events.front()->entry->tag == tag_) || (!withTag_ && events.front()->entry->tag != tag_)) 
+		if((withTag_ && events.front()->entry->hasTag(tag_)) || (!withTag_ && events.front()->entry->hasTag(tag_))) 
 			tempList.push_back(events.front());
 		events.pop_front();
 	}

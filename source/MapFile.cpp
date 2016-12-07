@@ -70,6 +70,10 @@ bool MapEntry::getArg(const size_t &index_, float &arg){
 	return true;
 }
 
+bool MapEntry::hasTag(const std::string &tag_){
+	return (tag.find(tag_) != std::string::npos);
+}
+
 unsigned int MapEntry::increment(){
 	return ++location;
 }
@@ -334,7 +338,7 @@ bool MapFile::Load(const char *filename_){
 	bool validStart = false;
 	for(int i = 0; i < max_modules; i++){
 		for(int j = 0; j < max_channels; j++){
-			if(detectors[i][j].tag == "start"){
+			if(detectors[i][j].hasTag("start")){
 				validStart = true;
 				break;
 			}

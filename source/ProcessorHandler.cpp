@@ -105,8 +105,8 @@ bool ProcessorHandler::AddEvent(ChannelEventPair *pair_){
 	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
 		if(pair_->entry->type == iter->type){ 
 			iter->proc->AddEvent(pair_); 
-			if(pair_->entry->tag == "start") start_events++;
-			else if(pair_->entry->tag == "untriggered") untrigChannel = true;
+			if(pair_->entry->hasTag("start")) start_events++;
+			else if(pair_->entry->hasTag("untriggered")) untrigChannel = true;
 			if(total_events == 0){ first_event_time = pair_->channelEvent->time * 8E-9; }
 			delta_event_time = (pair_->channelEvent->time * 8E-9) - first_event_time;
 			total_events++; 

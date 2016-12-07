@@ -916,7 +916,7 @@ bool simpleScanner::AddEvent(XiaData *event_){
 		return false;
 	}
 
-	if(!untriggered_mode && pair_->entry->tag == "start"){ 
+	if(!untriggered_mode && pair_->entry->hasTag("start")){ 
 		// This channel is a start signal. Due to the way ScanList
 		// packs the raw event, there may be more than one start signal
 		// per raw event.

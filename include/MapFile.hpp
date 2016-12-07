@@ -41,6 +41,8 @@ class MapEntry{
 	
 	bool getArg(const size_t &index_, float &arg);
 	
+	bool hasTag(const std::string &tag_);
+
 	std::string print();
 };
 
