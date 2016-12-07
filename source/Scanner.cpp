@@ -1016,10 +1016,14 @@ void simpleScanner::HandlePresortOutput(bool forceWrite/*=false*/){
 		// Write the event data.
 		for(std::deque<ChannelEventPair*>::iterator iter = chanEventList.begin(); iter != chanEventList.end(); ++iter){ 
 			// Write each event to the presort file.
-			(*iter)->channelEvent->writeEvent(&psort_file, NULL);
+			int numBytesWritten = (*iter)->channelEvent->writeEvent(&psort_file, NULL, (*iter)->entry->hasTag("recordTrace"));
+
+			if(numBytesWritten % 4 != 0)
+				std::cout << msgHeader << "Warning! Number of bytes written to presort file not divisible by 4!\n";
 
 			// Add the length of the event.
-			currSpillLength += (*iter)->channelEvent->getEventLength();
+			if(numBytesWritten >= 0)
+				currSpillLength += numBytesWritten/4;
 		}
 
 		// Close the raw event with a delimiter.
