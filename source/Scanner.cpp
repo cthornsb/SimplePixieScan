@@ -119,8 +119,6 @@ simpleUnpacker::simpleUnpacker() : Unpacker() {
 	raw_event_stop = 0;
 	raw_event_btwn = 0;
 	stat_tree = NULL;
-	
-	SetRawEventMode(2);
 }
 
 /** Return a pointer to a new XiaData channel event.

@@ -76,9 +76,13 @@ bool ConfigFile::Write(TFile *f_){
 	std::stringstream stream1, stream2, stream3;
 	stream1 << "eventWidth " << eventWidth << " us";
 	stream2 << "eventDelay " << eventDelay << " us";
-	stream3 << "buildMethod
-	TObjString str(stream.str().c_str());
-	str.Write();
+	stream3 << "buildMethod " << buildMethod;
+	TObjString str1(stream1.str().c_str());
+	TObjString str2(stream2.str().c_str());
+	TObjString str3(stream3.str().c_str());
+	str1.Write();
+	str2.Write();
+	str3.Write();
 	
 	return true;
 }
