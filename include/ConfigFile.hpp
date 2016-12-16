@@ -11,6 +11,8 @@ class ConfigFile{
 
   public:
 	float eventWidth;
+	float eventDelay;
+	int buildMethod;
   
 	ConfigFile();
 	

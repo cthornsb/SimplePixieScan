@@ -3,17 +3,21 @@
 #include <iostream>
 
 #include "TFile.h"
-#include "TNamed.h"
+#include "TObjString.h"
 
 #include "ConfigFile.hpp"
 
 ConfigFile::ConfigFile(){ 
 	eventWidth = 0.5; // Default value of 500 ns
+	eventDelay = 0.0; // Default value of 0 ns
+	buildMethod = 0;
 	init = false;	
 }
 
 ConfigFile::ConfigFile(const char *filename_){ 
 	eventWidth = 0.5; // Default value of 500 ns
+	eventDelay = 0.0; // Default value of 0 ns
+	buildMethod = 0;
 	Load(filename_); 
 }
 
@@ -55,6 +59,8 @@ bool ConfigFile::Load(const char *filename_){
 		}
 		
 		if(values[0] == "eventWidth"){ eventWidth = atof(values[1].c_str()); }
+		else if(values[0] == "eventDelay"){ eventDelay = atof(values[1].c_str()); }
+		else if(values[0] == "buildMethod"){ buildMethod = atoi(values[1].c_str()); }
 	}
 	
 	return true;
@@ -67,10 +73,12 @@ bool ConfigFile::Write(TFile *f_){
 	f_->mkdir("config");
 	f_->cd("config");
 
-	std::stringstream stream;
-	stream << eventWidth << " us";
-	TNamed named("eventWidth", stream.str().c_str());
-	named.Write();
+	std::stringstream stream1, stream2, stream3;
+	stream1 << "eventWidth " << eventWidth << " us";
+	stream2 << "eventDelay " << eventDelay << " us";
+	stream3 << "buildMethod
+	TObjString str(stream.str().c_str());
+	str.Write();
 	
 	return true;
 }

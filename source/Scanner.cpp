@@ -119,6 +119,8 @@ simpleUnpacker::simpleUnpacker() : Unpacker() {
 	raw_event_stop = 0;
 	raw_event_btwn = 0;
 	stat_tree = NULL;
+	
+	SetRawEventMode(2);
 }
 
 /** Return a pointer to a new XiaData channel event.
@@ -674,7 +676,11 @@ bool simpleScanner::Initialize(std::string prefix_){
 	}
 	
 	GetCore()->SetEventWidth(configfile->eventWidth * 125); // = eventWidth * 1E-6(s/us) / 8E-9(s/tick)
+	GetCore()->SetEventDelay(configfile->eventDelay * 125); // = eventDelay * 1E-6(s/us) / 8E-9(s/tick)
+	GetCore()->SetRawEventMode(configfile->buildMethod);
 	std::cout << prefix_ << "Setting event width to " << configfile->eventWidth << " μs (" << GetCore()->GetEventWidth() << " pixie clock ticks).\n";
+	std::cout << prefix_ << "Setting event delay to " << configfile->eventDelay << " μs (" << GetCore()->GetEventDelay() << " pixie clock ticks).\n";
+	std::cout << prefix_ << "Setting raw event builder mode to (" << configfile->buildMethod << ").\n";
 	handler = new ProcessorHandler();
 	
 	// Load all needed processors.
