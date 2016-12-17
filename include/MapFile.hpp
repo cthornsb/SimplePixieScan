@@ -92,6 +92,8 @@ class MapFile{
 	
 	int GetLastOccurance(const std::string &type_);
 	
+	bool GetFirstStart(int &mod, int &chan);
+
 	bool Load(const char *filename_);
 
 	void PrintAllEntries();

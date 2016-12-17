@@ -170,6 +170,15 @@ int MapFile::GetLastOccurance(const std::string &type_){
 	return -1;
 }
 
+bool MapFile::GetFirstStart(int &mod, int &chan){
+	for(mod = 0; mod < max_modules; mod++){
+		for(chan = 0; chan < max_channels; chan++){
+			if(detectors[mod][chan].hasTag("start")) return true;
+		}
+	}
+	return false;
+}
+
 bool MapFile::Load(const char *filename_){
 	clear_entries();
 

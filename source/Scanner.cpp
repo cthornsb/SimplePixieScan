@@ -676,11 +676,17 @@ bool simpleScanner::Initialize(std::string prefix_){
 	GetCore()->SetEventWidth(configfile->eventWidth * 125); // = eventWidth * 1E-6(s/us) / 8E-9(s/tick)
 	GetCore()->SetEventDelay(configfile->eventDelay * 125); // = eventDelay * 1E-6(s/us) / 8E-9(s/tick)
 	GetCore()->SetRawEventMode(configfile->buildMethod);
-	std::cout << prefix_ << "Setting event width to " << configfile->eventWidth << " μs (" << GetCore()->GetEventWidth() << " pixie clock ticks).\n";
-	std::cout << prefix_ << "Setting event delay to " << configfile->eventDelay << " μs (" << GetCore()->GetEventDelay() << " pixie clock ticks).\n";
-	std::cout << prefix_ << "Setting raw event builder mode to (" << configfile->buildMethod << ").\n";
+	std::cout << prefix_ << "Set event width to " << configfile->eventWidth << " μs (" << GetCore()->GetEventWidth() << " pixie clock ticks).\n";
+	std::cout << prefix_ << "Set event delay to " << configfile->eventDelay << " μs (" << GetCore()->GetEventDelay() << " pixie clock ticks).\n";
+	std::cout << prefix_ << "Set raw event builder mode to (" << configfile->buildMethod << ").\n";
 	handler = new ProcessorHandler();
 	
+	int startMod, startChan;
+	if(mapfile->GetFirstStart(startMod, startChan)){
+		GetCore()->SetStartChannel(startMod, startChan);
+		std::cout << prefix_ << "Set start channel to (" << startMod << ", " << startChan << ").\n";
+	}
+
 	// Load all needed processors.
 	std::vector<MapEntry> *types = mapfile->GetTypes();
 	for(std::vector<MapEntry>::iterator iter = types->begin(); iter != types->end(); iter++){
