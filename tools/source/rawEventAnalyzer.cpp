@@ -79,8 +79,6 @@ void rawEventAnalyzer::getEntry(){
 	int goodCounts = 0;
 	int badCounts = 0;
 	
-	intree->Show(0);
-	
 	int count = 0;
 	for(long long entry = startEntry; entry < stopEntry; entry++){
 		intree->GetEntry(entry);
