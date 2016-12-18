@@ -114,10 +114,6 @@ int extTree::SafeFill(){
 
 /// Default constructor.
 simpleUnpacker::simpleUnpacker() : Unpacker() {  
-	raw_event_mult = 0;
-	raw_event_start = 0;
-	raw_event_stop = 0;
-	raw_event_btwn = 0;
 	stat_tree = NULL;
 }
 
@@ -136,14 +132,7 @@ void simpleUnpacker::ProcessRawEvent(ScanInterface *addr_/*=NULL*/){
 	if(!addr_ || rawEvent.empty()){ return; }
 	
 	// Low-level raw event statistics information.
-	if(stat_tree){
-		raw_event_mult = (int)rawEvent.size();
-		raw_event_start = GetRealStartTime();
-		if(raw_event_stop != 0) // Get the time since the end of the last raw event.
-			raw_event_btwn = raw_event_start - raw_event_stop;
-		raw_event_stop = GetRealStopTime();
-		stat_tree->SafeFill();
-	}
+	if(stat_tree) stat_tree->SafeFill();
 
 	XiaData *current_event = NULL;
 	
@@ -171,11 +160,13 @@ extTree *simpleUnpacker::InitTree(){
 	stat_tree = new extTree("stats", "Low-level statistics tree");
 
 	// Add branches to the stats tree.
-	stat_tree->Branch("mult", &raw_event_mult);
-	stat_tree->Branch("start", &raw_event_start);
-	stat_tree->Branch("stop", &raw_event_stop);
-	stat_tree->Branch("Tbtwn", &raw_event_btwn);
-	
+	stat_tree->Branch("trig", GetStartEventTime());
+	stat_tree->Branch("start", GetRawEventStartTime());
+	stat_tree->Branch("stop", GetRawEventStopTime());
+	stat_tree->Branch("chanTime", GetRawEventChanTime());
+	stat_tree->Branch("chanID", GetRawEventChanID());
+	stat_tree->Branch("inEvent", GetRawEventFlag());
+
 	return stat_tree;
 }
 

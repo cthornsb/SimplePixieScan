@@ -87,11 +87,6 @@ class simpleUnpacker : public Unpacker {
 	extTree *InitTree();
 	
   private:
-	int raw_event_mult; /// The multiplicity of the current raw event.
-	double raw_event_start; /// The start time of the current raw event.
-	double raw_event_stop; /// The stop time of the current raw event.
-	double raw_event_btwn; /// The time since the previous raw event ended.
-
 	extTree *stat_tree; /// Output TTree for storing low-level statistics.
 
 	/** Return a pointer to a new XiaData channel event.
