@@ -148,6 +148,8 @@ void rawEventAnalyzer::getEntry(){
 	}
 
 	for(iterX = trigTimes.begin(); iterX != trigTimes.end(); ++iterX){
+		if(count++ % 2 == 0) line->SetLineColor(kBlue);
+		else line->SetLineColor(kGreen+1);
 		line->DrawLine(*iterX-earliestTime, 0, *iterX-earliestTime, 100);
 	}
 	
@@ -171,7 +173,6 @@ rawEventAnalyzer::rawEventAnalyzer() : simpleTool(), startEntry(0), numEntries(1
 	box->SetFillColor(kBlue);
 	
 	line = new TLine();
-	line->SetLineColor(kBlue);
 	line->SetLineStyle(2);
 
 	marker = new TMarker();
