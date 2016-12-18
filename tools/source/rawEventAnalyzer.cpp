@@ -130,6 +130,11 @@ void rawEventAnalyzer::getEntry(){
 		if(tempTime > maxTime) maxTime = tempTime;
 	}
 
+	for(iterX = startTimes.begin(), iterY = stopTimes.begin(); iterX != startTimes.end() && iterY != stopTimes.end(); ++iterX, ++iterY){
+		if(*iterX-earliestTime < minTime) minTime = *iterX-earliestTime;
+		if(*iterY-earliestTime > maxTime) maxTime = *iterY-earliestTime;
+	}
+
 	std::cout << startCounts << " start events, " << goodCounts << " in raw events, " << badCounts << " outside of raw event.\n";
 
 	openCanvas1()->cd()->DrawFrame(minTime, 0, maxTime, 100);
