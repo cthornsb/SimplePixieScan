@@ -7,6 +7,7 @@
 #include "TTree.h"
 #include "TBranch.h"
 #include "TCanvas.h"
+#include "TH1F.h"
 
 #include "simpleTool.hpp"
 
@@ -65,7 +66,8 @@ bool rawEventAnalyzer::setAddresses(){
 void rawEventAnalyzer::getEntry(){
 	if(!intree) return;
 
-	std::vector<double> x, y;
+	std::vector<double> x;
+	std::vector<int> y;
 	std::vector<int> colors;
 	
 	std::vector<double> trigTimes;
@@ -121,26 +123,33 @@ void rawEventAnalyzer::getEntry(){
 	double tempTime;
 	double minTime = 1E30;
 	double maxTime = 0;
-	std::vector<double>::iterator iterX, iterY;
+	int minID = 10000;
+	int maxID = 0;
+	std::vector<double>::iterator iter1, iter2;
+	std::vector<int>::iterator iter3;
 	std::vector<int>::iterator iterC;
 	
-	for(iterX = x.begin(), iterY = y.begin(); iterX != x.end() && iterY != y.end(); ++iterX, ++iterY){
-		tempTime = *iterX-earliestTime;
+	for(iter1 = x.begin(), iter3 = y.begin(); iter1 != x.end() && iter3 != y.end(); ++iter1, ++iter3){
+		tempTime = *iter1-earliestTime;
 		if(tempTime < minTime) minTime = tempTime;
 		if(tempTime > maxTime) maxTime = tempTime;
+		if(*iter3 < minID) minID = *iter3;
+		if(*iter3 > maxID) maxID = *iter3;
 	}
 
-	for(iterX = startTimes.begin(), iterY = stopTimes.begin(); iterX != startTimes.end() && iterY != stopTimes.end(); ++iterX, ++iterY){
-		if(*iterX-earliestTime < minTime) minTime = *iterX-earliestTime;
-		if(*iterY-earliestTime > maxTime) maxTime = *iterY-earliestTime;
+	for(iter1 = startTimes.begin(), iter2 = stopTimes.begin(); iter1 != startTimes.end() && iter2 != stopTimes.end(); ++iter1, ++iter2){
+		if(*iter1-earliestTime < minTime) minTime = *iter1-earliestTime;
+		if(*iter2-earliestTime > maxTime) maxTime = *iter2-earliestTime;
 	}
 
 	std::cout << startCounts << " start events, " << goodCounts << " in raw events, " << badCounts << " outside of raw event.\n";
 
-	openCanvas1()->cd()->DrawFrame(minTime, 0, maxTime, 100);
+	TH1F *frame = openCanvas1()->cd()->DrawFrame(minTime, minID, maxTime, maxID);
+	frame->GetXaxis()->SetTitle("Time (ns)");
+	frame->GetYaxis()->SetTitle("Location ID");
 
 	count = 0;
-	for(iterX = startTimes.begin(), iterY = stopTimes.begin(); iterX != startTimes.end() && iterY != stopTimes.end(); ++iterX, ++iterY){
+	for(iter1 = startTimes.begin(), iter2 = stopTimes.begin(); iter1 != startTimes.end() && iter2 != stopTimes.end(); ++iter1, ++iter2){
 		if(count++ % 2 == 0){
 			box->SetFillColor(kBlue);
 			box->SetFillStyle(3004);
@@ -149,13 +158,13 @@ void rawEventAnalyzer::getEntry(){
 			box->SetFillColor(kGreen+1);
 			box->SetFillStyle(3005);
 		}
-		box->DrawBox(*iterX-earliestTime, 0, *iterY-earliestTime, 100);
+		box->DrawBox(*iter1-earliestTime, minID, *iter2-earliestTime, maxID);
 	}
 
-	for(iterX = trigTimes.begin(); iterX != trigTimes.end(); ++iterX){
+	for(iter1 = trigTimes.begin(); iter1 != trigTimes.end(); ++iter1){
 		if(count++ % 2 == 0) line->SetLineColor(kBlue);
 		else line->SetLineColor(kGreen+1);
-		line->DrawLine(*iterX-earliestTime, 0, *iterX-earliestTime, 100);
+		line->DrawLine(*iter1-earliestTime, minID, *iter1-earliestTime, maxID);
 	}
 	
 	count = 0;
