@@ -11,6 +11,8 @@
 
 #include "simpleTool.hpp"
 
+#define TIME_MULTIPLIER 8 // ns per system clock tick
+
 std::vector<double> *chanTime;
 std::vector<int> *chanID;
 std::vector<bool> *inEvent;
@@ -87,10 +89,10 @@ void rawEventAnalyzer::getEntry(){
 	for(long long entry = startEntry; entry < stopEntry; entry++){
 		intree->GetEntry(entry);
 	
-		startTimes.push_back(rawEventStartTime);
-		stopTimes.push_back(rawEventStopTime);
+		startTimes.push_back(rawEventStartTime*TIME_MULTIPLIER);
+		stopTimes.push_back(rawEventStopTime*TIME_MULTIPLIER);
 		
-		if(startEventTime > 0) trigTimes.push_back(startEventTime);
+		if(startEventTime > 0) trigTimes.push_back(startEventTime*TIME_MULTIPLIER);
 
 		int currentColor;
 		if(count++ % 2 == 0) currentColor = kBlue;
@@ -98,14 +100,14 @@ void rawEventAnalyzer::getEntry(){
 		
 		if(startEventTime > 0){
 			y.push_back(0);
-			x.push_back(startEventTime);
+			x.push_back(startEventTime*TIME_MULTIPLIER);
 			colors.push_back(currentColor);
 			startCounts++;
 		}
 
 		for(size_t i = 0; i < chanTime->size(); i++){
 			y.push_back(chanID->at(i));
-			x.push_back(chanTime->at(i));
+			x.push_back(chanTime->at(i)*TIME_MULTIPLIER);
 			if(inEvent->at(i)){
 				colors.push_back(currentColor);
 				goodCounts++;
