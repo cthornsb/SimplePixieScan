@@ -25,6 +25,8 @@ class rawEventAnalyzer : public simpleTool {
   private:
   	long long startEntry;
   	long long numEntries;
+  	
+  	bool absoluteTime;
 
 	TBox *box = NULL;
 	TLine *line = NULL;
@@ -115,10 +117,14 @@ void rawEventAnalyzer::getEntry(){
 		}
 	}
 
-	double earliestTime = 1E15;
-	for(std::vector<double>::iterator iter = x.begin(); iter != x.end(); ++iter){
-		if(*iter < earliestTime) earliestTime = *iter;
+	double earliestTime;
+	if(!absoluteTime){
+		earliestTime = 1E15;
+		for(std::vector<double>::iterator iter = x.begin(); iter != x.end(); ++iter){
+			if(*iter < earliestTime) earliestTime = *iter;
+		}
 	}
+	else earliestTime = 0;
 	
 	double tempTime;
 	double minTime = 1E30;
@@ -182,7 +188,7 @@ void rawEventAnalyzer::getEntry(){
 	}
 }
 
-rawEventAnalyzer::rawEventAnalyzer() : simpleTool(), startEntry(0), numEntries(1) { 
+rawEventAnalyzer::rawEventAnalyzer() : simpleTool(), startEntry(0), numEntries(1), absoluteTime(false) { 
 	box = new TBox();
 	box->SetFillColor(kBlue);
 	
@@ -205,7 +211,8 @@ rawEventAnalyzer::~rawEventAnalyzer(){
 
 void rawEventAnalyzer::addOptions(){
 	addOption(optionExt("start", required_argument, NULL, 's', "<start-entry>", "Specify the first tree entry."), userOpts, optstr);
-	addOption(optionExt("num", required_argument, NULL, 'N', "<num-entries>", "Specify the number of entries to read."), userOpts, optstr);
+	addOption(optionExt("number", required_argument, NULL, 'N', "<num-entries>", "Specify the number of entries to read."), userOpts, optstr);
+	addOption(optionExt("absolute", no_argument, NULL, 'a', "", "Output absolute time instead of time relative to the earliest event."), userOpts, optstr);
 }
 
 bool rawEventAnalyzer::processArgs(){
@@ -223,6 +230,8 @@ bool rawEventAnalyzer::processArgs(){
 			return false;
 		}
 	}
+	if(userOpts.at(2).active)
+		absoluteTime = true;
 		
 	return true;
 }
