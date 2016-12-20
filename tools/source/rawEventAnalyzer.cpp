@@ -181,7 +181,8 @@ void rawEventAnalyzer::getEntry(){
 		marker->DrawMarker(x.at(index)-earliestTime, y.at(index));
 	}
 	
-	can1->WaitPrimitive();
+	// Wait for the user to issue ctrl^c or ctrl^z.
+	this->wait();
 	
 	if(!output_filename.empty()){
 		outfile->cd();

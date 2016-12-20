@@ -14,6 +14,17 @@ class TTree;
 class TH1;
 class TH2;
 
+extern bool SIGNAL_INTERRUPT;
+extern bool SIGNAL_TERMSTOP;
+
+void sig_int_handler(int ignore_);
+
+void sig_tstp_handler(int ignore_);
+
+void setup_signal_handlers();
+
+void unset_signal_handlers();
+
 class progressBar{
   public:
 	unsigned int numEntries;
@@ -81,6 +92,8 @@ class simpleTool{
 	TFile *getInputFile(){ return infile; }
 	
 	TFile *getOutputFile(){ return outfile; }
+	
+	void wait();
 };
 
 class simpleHistoFitter : public simpleTool {

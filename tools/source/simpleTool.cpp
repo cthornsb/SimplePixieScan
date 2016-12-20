@@ -1,8 +1,11 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
+#include <signal.h>
+#include <unistd.h>
 
 #include "TApplication.h"
+#include "TSystem.h"
 #include "TCanvas.h"
 #include "TFile.h"
 #include "TTree.h"
@@ -10,6 +13,59 @@
 #include "TH2.h"
 
 #include "simpleTool.hpp"
+
+#define USLEEP_WAIT_TIME 1E4 // = 0.01 seconds
+
+///////////////////////////////////////////////////////////////////////////////
+// signalHandler
+///////////////////////////////////////////////////////////////////////////////
+
+bool SIGNAL_INTERRUPT = false;
+bool SIGNAL_TERMSTOP = false;
+
+bool check_signals(char &code){
+	code = 0x0;
+	if(SIGNAL_INTERRUPT){ // ctrl-c (SIGINT)
+		SIGNAL_INTERRUPT = false;
+		code = 'c';
+		return true;
+	}
+	if(SIGNAL_TERMSTOP){ // ctrl-z (SIGTSTP)
+		SIGNAL_TERMSTOP = false;
+		code = 'z';
+		return true;
+	}
+	return false;
+}
+
+void sig_int_handler(int ignore_){
+	SIGNAL_INTERRUPT = true;
+}
+
+void sig_tstp_handler(int ignore_){
+	SIGNAL_TERMSTOP = true;
+}
+
+void setup_signal_handlers(){ 
+	// Handle ctrl-c press (SIGINT)
+	if(signal(SIGINT, SIG_IGN) != SIG_IGN){	
+		if(signal(SIGINT, sig_int_handler) == SIG_ERR){
+			throw std::runtime_error(" Error setting up SIGINT signal handler!");
+		}
+	}
+
+	// Handle ctrl-z press (SIGTSTP)
+	if(signal(SIGTSTP, SIG_IGN) != SIG_IGN){
+		if(signal(SIGTSTP, sig_tstp_handler) == SIG_ERR){
+			throw std::runtime_error(" Error setting up SIGTSTP signal handler!");
+		}
+	}
+}
+
+void unset_signal_handlers(){
+	signal(SIGINT, SIG_DFL);
+	signal(SIGTSTP, SIG_DFL);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // class progressBar
@@ -218,6 +274,19 @@ TFile *simpleTool::openOutputFile(){
 		return NULL;
 	}
 	return outfile;
+}
+
+void simpleTool::wait(){
+	setup_signal_handlers();
+	char signal_return;
+	std::cout << " Press ctrl^c or ctrl^z to exit.\n";
+	while(!check_signals(signal_return)){
+		gSystem->ProcessEvents();
+		usleep(USLEEP_WAIT_TIME);
+	}
+	if(signal_return == 'c') std::cout << " Received SIGINT (ctrl^c) signal.\n";
+	else if(signal_return == 'z') std::cout << " Received SIGTSTP (ctrl^z) signal.\n";
+	unset_signal_handlers();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
