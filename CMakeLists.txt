@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 2.8.11)
 
-project (tgrapher)
+project (SimplePixieScan)
 
 #Compile with c++11 or c++0x depending on the compiler version
 if (CMAKE_COMPILER_IS_GNUCXX)
@@ -79,6 +79,3 @@ add_subdirectory(source)
 if(BUILD_TOOLS)
 	add_subdirectory(tools)
 endif()
-
-#Install include directories to support the shared library.
-#install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_PREFIX})

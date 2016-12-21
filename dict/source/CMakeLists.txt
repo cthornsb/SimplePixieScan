@@ -16,6 +16,9 @@ add_custom_target(GenerateDict ALL DEPENDS ${STRUCTURES_SOURCE} ${STRUCTURES_HEA
 #Use rcbuild to generate data structure source files.
 add_custom_command(OUTPUT ${STRUCTURES_SOURCE} ${STRUCTURES_HEADER} ${LINKDEF_FILE} COMMAND rcbuild ${DEF_STRUCT_FILE} --dir ${ROOT_DICT_BUILD_DIR} DEPENDS ${DEF_STRUCT_FILE} VERBATIM)
 
+#Install the new Structures file.
+install(FILES ${STRUCTURES_HEADER} DESTINATION include)
+
 #Copy the new Structures file to the top-level include directory.
 add_custom_command(OUTPUT ${COPIED_STRUCTURES_HEADER} COMMAND cp ${STRUCTURES_HEADER} ${COPIED_STRUCTURES_HEADER} DEPENDS ${STRUCTURES_HEADER} VERBATIM)
 
