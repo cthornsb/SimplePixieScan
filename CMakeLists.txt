@@ -49,6 +49,7 @@ endif(CMAKE_BUILD_TYPE MATCHES "Debug")
 
 #Install options
 option(BUILD_TOOLS "Build and install tool programs." OFF)
+option(INSTALL_CONFIG "Copy default configuration files." OFF)
 
 #------------------------------------------------------------------------------
 
@@ -75,6 +76,19 @@ add_subdirectory(dict)
 
 include_directories(include)
 add_subdirectory(source)
+
+set(CONFIG_INSTALL_DIR "${TOP_DIRECTORY}/config" CACHE PATH "Path to configuration file install directory.")
+
+if(INSTALL_CONFIG)
+	set(DEFAULT_CONFIG_DIR "${TOP_DIRECTORY}/config")
+	set(DEFAULT_CONFIG_FILES "config.dat" "energy.cal" "map.dat" "position.cal" "time.cal")
+	
+	#Install default config files.
+	foreach(configFile ${DEFAULT_CONFIG_FILES})
+		add_custom_target(${configFile} ALL DEPENDS ${CONFIG_INSTALL_DIR}/${configFile})
+		add_custom_command(OUTPUT ${CONFIG_INSTALL_DIR}/${configFile} COMMAND mkdir -p ${CONFIG_INSTALL_DIR} && cp ${DEFAULT_CONFIG_DIR}/${configFile} ${CONFIG_INSTALL_DIR}/ DEPENDS ${DEFAULT_CONFIG_DIR}/${configFile} VERBATIM)
+	endforeach(configFile)
+endif()
 
 if(BUILD_TOOLS)
 	add_subdirectory(tools)
