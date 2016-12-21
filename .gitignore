@@ -4,15 +4,9 @@
 build/
 install/
 
-# Config files #
-################
-config/*
-setup
-
 # ROOT Files #
 ##############
 *.root
-*.dat
 *.pcm
 
 # Data Files #

@@ -1,0 +1,3 @@
+#Set the energy calibration for a given scan channel (16*m + c, where m is the module
+# module and c is the channel) using the nth order polynomial p0 + p1*x + ... + pn*x^n.
+#id	p0	p1	...	pn

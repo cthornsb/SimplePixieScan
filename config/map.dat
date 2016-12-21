@@ -1,0 +1,5 @@
+0 0 trigger::start          # Start detector
+#0 1 trigger::               # Detector in coincidence
+#0 2:15 ignore::             # Empty channels
+#1 0:15e vandle:left:  # Vandle left
+#1 0:15o vandle:right: # Vandle right

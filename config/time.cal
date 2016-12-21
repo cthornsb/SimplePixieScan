@@ -1,0 +1,5 @@
+#Set the time offset for a given scan channel (16*m + c, where m is the module
+# module and c is the channel) relative to the start detector. The following
+# operation is applied, T = T' - t0 where T is the calibrated time, T' is
+# the uncalibrated time, and t0 is given below (all in ns).
+#id	t0(ns)
