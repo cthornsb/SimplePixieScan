@@ -36,7 +36,7 @@ bool VandleProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 		theta0 = addAngles(chEvt->calib->positionCal->theta, std::atan(drand(-0.015, 0.015)/r0));
 	}
 	
-	double radius, theta, phi, ypos, ctof;
+	double radius=r0, theta=0.0, phi=0.0, ypos=0.0, ctof=0.0;
 	if(chEvt->calib->Time() && chEvtR->calib->Time()){ // Do time alignment.
 		chEvt->calib->timeCal->GetCalTime(tdiff_L);
 		chEvtR->calib->timeCal->GetCalTime(tdiff_R);

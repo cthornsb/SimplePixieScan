@@ -386,8 +386,8 @@ bool MapFile::Write(TFile *f_){
 	const int num_chan = GetMaxChannels();
 	MapEntry *entryptr;
 
-	std::string dir_names[num_mod];
-	std::string chan_names[num_chan];
+	std::string *dir_names = new std::string[num_mod];
+	std::string *chan_names = new std::string[num_chan];
 	for(int i = 0; i < num_mod; i++){
 		std::stringstream stream;
 		if(i < 10){ stream << "0" << i; }
@@ -418,6 +418,9 @@ bool MapFile::Write(TFile *f_){
 			str.Write();
 		}
 	}
+	
+	delete[] dir_names;
+	delete[] chan_names;
 	
 	return true;
 }
