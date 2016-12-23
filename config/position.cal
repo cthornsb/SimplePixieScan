@@ -1,0 +1,3 @@
+#Set the detector position for a given scan channel (16*m + c, where m is the module
+# module and c is the channel) in spherical coordinates.
+#id	r0(m)	theta(deg)	phi(deg)

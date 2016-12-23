@@ -1,23 +1,13 @@
-# Compiled Source #
-###################
+# CMake directories #
+#####################
 *.o
-*.so
-
-# Config files #
-################
-config/*
-setup
+build/
+install/
 
 # ROOT Files #
 ##############
 *.root
-*.dat
-SimpleScanDict_rdict.pcm
-SimpleScanDict.cpp
-SimpleScanDict.h
-Structures.cpp
-Structures.h
-LinkDef.h
+*.pcm
 
 # Data Files #
 ##############
@@ -28,17 +18,11 @@ LinkDef.h
 
 # Executables #
 ###############
-PixieLDF
-PixieLDF_s
-run.sh
 *.cmd
-*.a
-tools/exec/*
 
-# Dictionary Files #
+# Dictionary files #
 ####################
-rcbuild/rcbuild
-.def.struct.bkp
+Structures.h
 
 # DAMM Files #
 ##############

@@ -448,11 +448,9 @@ void StructureFile::Close(){
 }
 
 void help(char * prog_name_){
-	std::cout << "  SYNTAX: " << prog_name_ << " [input] <options>\n";
+	std::cout << "  SYNTAX: " << prog_name_ << " <input> [options]\n";
 	std::cout << "   Available options:\n";
-	std::cout << "    --src-dir [dir]  | Specify the source directory (default=./src/).\n";
-	std::cout << "    --inc-dir [dir]  | Specify the include directory (default=./include/).\n";
-	std::cout << "    --dict-dir [dir] | Specify the dictionary directory (default=./dict/).\n";
+	std::cout << "    --dir <path> | Specify the top-level directory (default=./).\n";
 }
 
 int main(int argc, char *argv[]){
@@ -462,31 +460,13 @@ int main(int argc, char *argv[]){
 		return 1;
 	}
 
-	std::string src_dir = "./src/";
-	std::string inc_dir = "./include/";
-	std::string dict_dir = "./dict/";
+	std::string dict_dir = "./";
 
 	int index = 2;
 	while(index < argc){
-		if(strcmp(argv[index], "--src-dir") == 0){
+		if(strcmp(argv[index], "--dir") == 0){
 			if(index + 1 >= argc){
-				//std::cout << " Error! Missing required argument to '--src-dir'!\n";
-				//help(argv[0]);
-				return 2;
-			}
-			src_dir = std::string(argv[++index]);
-		}
-		else if(strcmp(argv[index], "--inc-dir") == 0){
-			if(index + 1 >= argc){
-				//std::cout << " Error! Missing required argument to '--inc-dir'!\n";
-				//help(argv[0]);
-				return 3;
-			}
-			inc_dir = std::string(argv[++index]);
-		}
-		else if(strcmp(argv[index], "--dict-dir") == 0){
-			if(index + 1 >= argc){
-				//std::cout << " Error! Missing required argument to '--dict-dir'!\n";
+				//std::cout << " Error! Missing required argument to '--dir'!\n";
 				//help(argv[0]);
 				return 4;
 			}
@@ -502,7 +482,7 @@ int main(int argc, char *argv[]){
 	//std::cout << " " << argv[0] << ": Generating root data structure file... ";
 
 	StructureFile sfile;
-	if(!sfile.Open(inc_dir+"Structures.h", src_dir+"Structures.cpp", dict_dir+"LinkDef.h")){ 
+	if(!sfile.Open(dict_dir+"/Structures.h", dict_dir+"/Structures.cpp", dict_dir+"/LinkDef.h")){ 
 		//std::cout << "failed\n  Error: Failed to open one of the output files!\n";
 		return 6;
 	}
