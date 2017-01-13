@@ -17,6 +17,8 @@ class phasePhase : public simpleTool {
 	int startFile;
 	int stopFile;
 
+	float threshold;
+
 	int run;
 	float p1, p2;
 	float max1, max2;
@@ -29,7 +31,7 @@ class phasePhase : public simpleTool {
 	bool process();
 	
   public:
-	phasePhase() : simpleTool(), startID(0), stopID(1), padding(3), startFile(1), stopFile(1), input_prefix("") { }
+	phasePhase() : simpleTool(), startID(0), stopID(1), padding(3), startFile(1), stopFile(1), threshold(0.0), input_prefix("") { }
 	
 	void addOptions();
 	
@@ -78,13 +80,20 @@ bool phasePhase::process(){
 		p2 = -1;
 		for(unsigned int j = 0; j < ptr->mult; j++){
 			if(ptr->loc[j] == startID){
-				p1 = ptr->phase[j]*4;
 				max1 = ptr->maximum[j];
+
+				// Check the threshold.
+				if(max1 >= threshold)
+					p1 = ptr->phase[j]*4;
 			}
 			else if(ptr->loc[j] == stopID){
-				p2 = ptr->phase[j]*4;
 				max2 = ptr->maximum[j];
-				tdiff = ptr->tdiff[j];
+
+				// Check the threshold.
+				if(max2 >= threshold){
+					p2 = ptr->phase[j]*4;
+					tdiff = ptr->tdiff[j];
+				}
 			}
 		}
 		if(p1 > 0 && p2 > 0)
@@ -100,6 +109,7 @@ void phasePhase::addOptions(){
 	addOption(optionExt("files", required_argument, NULL, 'f', "<start:stop>", "Specify start and stop file as a pair e.g. \"1:32\" (default is 1:1)."), userOpts, optstr);
 	addOption(optionExt("prefix", required_argument, NULL, 'p', "<prefix>", "Specify input filename prefix."), userOpts, optstr);
 	addOption(optionExt("digits", required_argument, NULL, 'd', "<numZeros>", "Specify number of digits run number occupies e.g. 3 represents prefix_XXX.root (default is 3)."), userOpts, optstr);
+	addOption(optionExt("threshold", required_argument, NULL, 't', "<threshold>", "Specify minimum pulse amplitude above baseline in ADC channels (default is 0)."), userOpts, optstr);
 }
 
 bool phasePhase::processArgs(){
@@ -154,6 +164,13 @@ bool phasePhase::processArgs(){
 		padding = strtol(userOpts.at(4).argument.c_str(), NULL, 0);
 		if(padding < 1){
 			std::cout << " Error: Invalid zero padding specification (" << padding << ")!\n";
+			return false;
+		}
+	}
+	if(userOpts.at(5).active){ // --threshold
+		threshold = strtof(userOpts.at(5).argument.c_str(), NULL);
+		if(threshold < 0.0){
+			std::cout << " Error: Invalid ADC amplitude threshold (" << threshold << ")!\n";
 			return false;
 		}
 	}
