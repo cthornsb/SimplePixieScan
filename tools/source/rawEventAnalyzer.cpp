@@ -30,9 +30,9 @@ class rawEventAnalyzer : public simpleTool {
   	
   	bool absoluteTime;
 
-	TBox *box = NULL;
-	TLine *line = NULL;
-	TMarker *marker = NULL;
+	TBox *box;
+	TLine *line;
+	TMarker *marker;
 
 	bool setAddresses();
 
