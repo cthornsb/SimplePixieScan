@@ -16,7 +16,7 @@
 class tracer : public simpleTool {
   private:
   	long long startEntry;
-  	long long numEntries;
+  	unsigned int numEntries;
 	unsigned int tlength;
  
 	Trace *trace;
@@ -55,23 +55,28 @@ void tracer::getEntry(){
 	long long stopEntry = startEntry+numEntries;
 	if(stopEntry > intree->GetEntries()) stopEntry = intree->GetEntries();
 	
-	bool firstEntry = true;
-	for(long long entry = startEntry; entry < stopEntry; entry++){
-		intree->GetEntry(entry);
+	unsigned int bin = 0;
+	long long entry = startEntry;
+	while(bin <= numEntries && entry < intree->GetEntries()){
+		intree->GetEntry(entry++);
+
+		// Skip empty traces.
+		if(trace->wave.empty()) continue;
 
 		// Get the trace length.
-		if(firstEntry){
+		if(bin == 0){
 			tlength = trace->wave.size()/trace->mult;
 			std::cout << " Trace length is " << tlength << " ADC ticks (" << tlength*ADC_CLOCK << " ns).\n";
 			hist = new TH2I("hist", "Traces", tlength, 0, tlength*ADC_CLOCK, numEntries, 0, numEntries);
-			firstEntry = false;
+			hist->SetStats(0);
 		}
 	
-		int bin;
+		int globalBin;
 		for(unsigned int i = 0; i < tlength; i++){
-			bin = hist->GetBin(i, entry-startEntry);
-			hist->SetBinContent(bin, trace->wave.at(i));
+			globalBin = hist->GetBin(i, bin);
+			hist->SetBinContent(globalBin, trace->wave.at(i));
 		}
+		bin++;
 	}
 }
 
@@ -97,7 +102,7 @@ bool tracer::processArgs(){
 		}
 	}
 	if(userOpts.at(1).active){
-		numEntries = strtoll(userOpts.at(1).argument.c_str(), NULL, 0);
+		numEntries = strtoul(userOpts.at(1).argument.c_str(), NULL, 0);
 		if(numEntries < 0){
 			std::cout << " Error: User specified illegal number of entries (" << numEntries << ")!\n";
 			return false;
