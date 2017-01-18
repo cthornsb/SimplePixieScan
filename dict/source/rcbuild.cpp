@@ -293,22 +293,22 @@ bool StructureFile::Open(){
 	hppfile << "	virtual Structure &operator = (const Structure &other_){ return Set(other_); }\n\n";
 	hppfile << "	virtual Structure &Set(const Structure &other_){ return *this; }\n\n";
 	hppfile << "	virtual Structure &Set(Structure *other_){ return *this; }\n\n";
-	hppfile << "    ClassDef(Structure, 1); // Structure\n";
+	hppfile << "	ClassDef(Structure, 1); // Structure\n";
 	hppfile << "};\n\n";
 	hppfile << "class Trace : public TObject {\n";
 	hppfile << "  protected:\n";
-	hppfile << "	std::string name; //! Trace name\n";
-	hppfile << "	std::vector<unsigned short> wave;\n";
-	hppfile << "    unsigned int mult;\n\n";
+	hppfile << "	std::string name; //! Trace name\n\n";
 	hppfile << "  public:\n";
+	hppfile << "	std::vector<unsigned short> wave;\n";
+	hppfile << "	unsigned int mult;\n\n";
 	hppfile << "	Trace(const std::string &name_=\"\");\n\n";
 	hppfile << "	~Trace(){}\n\n";
 	hppfile << "	void Zero();\n\n";
 	hppfile << "	Trace &operator = (const Trace &other_){ return Set(other_); }\n\n";
 	hppfile << "	Trace &Set(const Trace &other_);\n\n";
 	hppfile << "	Trace &Set(Trace *other_);\n\n";
-	hppfile << "    void Append(unsigned short *arr_, const size_t &size_);\n\n";	
-	hppfile << "    ClassDef(Trace, 1); // Trace\n";
+	hppfile << "	void Append(unsigned short *arr_, const size_t &size_);\n\n";	
+	hppfile << "	ClassDef(Trace, 1); // Trace\n";
 	hppfile << "};\n";
 	
 	cppfile << "#include \"Structures.h\"\n\n";
