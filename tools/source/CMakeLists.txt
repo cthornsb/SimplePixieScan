@@ -27,4 +27,7 @@ target_link_libraries(cmbinner ToolStatic Scan ${DICTIONARY_PREFIX}Static ${ROOT
 add_executable(phasePhase phasePhase.cpp)
 target_link_libraries(phasePhase ToolStatic Scan ${DICTIONARY_PREFIX}Static ${ROOT_LIBRARIES})
 
-install(TARGETS calibrate cmbinner mapReader phasePhase rawEventAnalyzer specFitter timeAlign DESTINATION bin)
+add_executable(tracer tracer.cpp)
+target_link_libraries(tracer ToolStatic Scan ${DICTIONARY_PREFIX}Static ${ROOT_LIBRARIES})
+
+install(TARGETS calibrate cmbinner mapReader phasePhase rawEventAnalyzer specFitter timeAlign tracer DESTINATION bin)
