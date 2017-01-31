@@ -6,18 +6,17 @@
 # PAASS_DIR            PATH to the paass install directory
 # PAASS_INCLUDE_DIR    PATH to the include directory
 # PAASS_LIBRARY_DIR    PATH to the library directory 
+# PAASS_LIB_SCAN       PATH to the paass scan library
 #
-#Last updated by C. R. Thornsberry (cthornsb@vols.utk.edu) on Dec. 20, 2016
+#Last updated by C. R. Thornsberry (cthornsb@vols.utk.edu) on Jan. 31st, 2017
 
-if(EXISTS /opt/paass/)
-	set(PAASS_DIR_EXISTS TRUE)
-	set(PAASS_DIR "/opt/paass" CACHE Path "PATH to the paass install directory.")
-elseif(EXISTS $ENV{HOME}/opt/paass/install/)
-	set(PAASS_DIR_EXISTS TRUE)
-	set(PAASS_DIR "$ENV{HOME}/opt/paass/install" CACHE Path "PATH to the paass install directory.")
-endif()
+find_path(PAASS_DIR
+	NAMES libScan.so
+	HINTS $ENV{HOME}/opt/paass/install/
+	PATHS /opt/paass/
+	PATH_SUFFIXES lib)
 
-if(DEFINED PAASS_DIR_EXISTS)
+if(PAASS_DIR)
 	if(EXISTS ${PAASS_DIR}/include/)
 		set(PAASS_INCLUDE_DIR "${PAASS_DIR}/include" CACHE Path "PATH to paass the include directory.")
 	endif()
@@ -26,15 +25,11 @@ if(DEFINED PAASS_DIR_EXISTS)
 		if(EXISTS "${PAASS_LIBRARY_DIR}/libScan.so")
 			set(PAASS_LIB_SCAN "${PAASS_LIBRARY_DIR}/libScan.so" CACHE Path "Paass scan library shared object.")
 		endif()
-		if(EXISTS "${PAASS_LIBRARY_DIR}/libScanStatic.a")
-			set(PAASS_LIB_SCAN_STATIC "${PAASS_LIBRARY_DIR}/libScanStatic.a" CACHE Path "Paass scan static library.")
-		endif()
 	endif()
 endif()
 
 #---Report the status of finding paass-------------------
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(PAASS DEFAULT_MSG PAASS_DIR PAASS_INCLUDE_DIR PAASS_LIBRARY_DIR 
-                                  PAASS_LIB_SCAN PAASS_LIB_SCAN_STATIC)
+find_package_handle_standard_args(PAASS DEFAULT_MSG PAASS_DIR PAASS_INCLUDE_DIR PAASS_LIBRARY_DIR PAASS_LIB_SCAN)
                                   
-mark_as_advanced(PAASS_LIB_SCAN PAASS_LIB_SCAN_STATIC)
+mark_as_advanced(PAASS_LIB_SCAN)
