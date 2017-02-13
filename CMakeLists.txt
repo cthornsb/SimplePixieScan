@@ -93,3 +93,6 @@ endif()
 if(BUILD_TOOLS)
 	add_subdirectory(tools)
 endif()
+
+#Build/install the miscellaneous stuff
+add_subdirectory(share)
