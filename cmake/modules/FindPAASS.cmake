@@ -31,5 +31,3 @@ endif()
 #---Report the status of finding paass-------------------
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(PAASS DEFAULT_MSG PAASS_DIR PAASS_INCLUDE_DIR PAASS_LIBRARY_DIR PAASS_LIB_SCAN)
-                                  
-mark_as_advanced(PAASS_LIB_SCAN)
