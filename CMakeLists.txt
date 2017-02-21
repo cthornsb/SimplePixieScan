@@ -56,6 +56,14 @@ option(INSTALL_CONFIG "Copy default configuration files." OFF)
 #Find required packages.
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
 
+#Find rcbuild executable (https://github.com/cthornsb/devTools)
+find_program(RCBUILD_EXECUTABLE rcbuild /opt/devTools/install/bin)
+if("${RCBUILD_EXECUTABLE}" STREQUAL "RCBUILD_EXE-NOTFOUND")
+	message(FATAL_ERROR "Could NOT find rcbuild")
+else()
+	message(STATUS "Searching for rcbuild: ${RCBUILD_EXE}")
+endif()
+
 #Find paass install.
 find_package (PAASS REQUIRED)
 include_directories(${PAASS_INCLUDE_DIR})
