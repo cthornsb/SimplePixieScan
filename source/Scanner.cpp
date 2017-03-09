@@ -851,6 +851,7 @@ void simpleScanner::Notify(const std::string &code_/*=""*/){
 		else{ std::cout << msgHeader << "Failed to fetch input file info!\n"; }
 	}
 	else if(code_ == "REWIND_FILE"){  }
+	else if(code_ == "RESTART"){  }
 	else{ std::cout << msgHeader << "Unknown notification code '" << code_ << "'!\n"; }
 }
 
