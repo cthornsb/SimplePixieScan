@@ -639,7 +639,8 @@ bool simpleScanner::Initialize(std::string prefix_){
 	}
 
 	if(forceUseOfTrace){
-		for(int i = 0; i < mapfile->GetMaxModule(); i++){
+		// Overwrite all map file entries with 'trace' types.
+		for(int i = 0; i <= mapfile->GetMaxModule(); i++){
 			for(int j = 0; j < 16; j++){
 				MapEntry *mapptr = mapfile->GetMapEntry(i, j);
 				if(!mapptr || mapptr->type == "ignore") continue;
