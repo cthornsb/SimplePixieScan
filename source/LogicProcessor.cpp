@@ -5,7 +5,7 @@
 /// Process all individual events.
 bool LogicProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEvtR/*=NULL*/){
 	// Fill the values into the root tree.
-	structure.Append(chEvt->entry->location);
+	structure.Append(chEvt->channelEvent->time, chEvt->entry->location);
 	
 	return true;
 }

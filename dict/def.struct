@@ -251,6 +251,7 @@ LONG	Track the number of occurances of logic signals.
 # Data types and names
 # type	name	description
 BEGIN_TYPES
+vector:double	time	The time of arrival of the logic signal.
 vector:int	loc	Signal location (ID).
 u_int	mult	Multiplicity of the logic events.
 END_TYPES
