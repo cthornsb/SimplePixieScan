@@ -648,6 +648,8 @@ bool simpleScanner::Initialize(std::string prefix_){
 				mapptr->subtype = "";
 			}
 		}
+		mapfile->ClearTypeList();
+		mapfile->AddTypeToList("trace");
 	}
 	
 	currentFile = setupDirectory + "config.dat";

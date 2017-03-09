@@ -94,6 +94,10 @@ class MapFile{
 	
 	bool GetFirstStart(int &mod, int &chan);
 
+	void ClearTypeList(){ types.clear(); }
+
+	void AddTypeToList(const std::string &type_){ types.push_back(type_); }
+
 	bool Load(const char *filename_);
 
 	void PrintAllEntries();
