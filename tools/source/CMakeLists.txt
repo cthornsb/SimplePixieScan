@@ -30,4 +30,7 @@ target_link_libraries(phasePhase ToolStatic Scan ${DICTIONARY_PREFIX}Static ${RO
 add_executable(tracer tracer.cpp)
 target_link_libraries(tracer ToolStatic Scan ${DICTIONARY_PREFIX}Static ${ROOT_LIBRARIES})
 
-install(TARGETS calibrate cmbinner mapReader phasePhase rawEventAnalyzer specFitter timeAlign tracer DESTINATION bin)
+add_executable(instantTime instantTime.cpp)
+target_link_libraries(instantTime ToolStatic Scan ${DICTIONARY_PREFIX}Static ${ROOT_LIBRARIES})
+
+install(TARGETS calibrate cmbinner mapReader phasePhase rawEventAnalyzer specFitter timeAlign tracer instantTime DESTINATION bin)
