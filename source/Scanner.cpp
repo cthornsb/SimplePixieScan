@@ -181,6 +181,7 @@ simpleScanner::simpleScanner() : ScanInterface() {
 	presortData = false;
 	firstEvent = true;
 	writePresort = false;
+	forceUseOfTrace = false;
 	use_calibrations = true;
 	untriggered_mode = false;
 	force_overwrite = false;
@@ -520,6 +521,10 @@ void simpleScanner::ExtraArguments(){
 		std::cout << msgHeader << "Recording all start events to output file.\n";
 		recordAllStarts = true;
 	}
+	if(userOpts.at(10).active){ // Force trace processing.
+		std::cout << msgHeader << "Forcing using of trace processor.\n";
+		forceUseOfTrace = true;
+	}
 }
 
 /** CmdHelp is used to allow a derived class to print a help statement about
@@ -562,6 +567,7 @@ void simpleScanner::ArgHelp(){
 	AddOption(optionExt("stats", no_argument, NULL, 0, "", "Dump event builder information to the output root file"));
 	AddOption(optionExt("presort", no_argument, NULL, 'P', "", "Write an intermediate binary output file containing presorted data"));
 	AddOption(optionExt("record", no_argument, NULL, 0, "", "Write all start events to output file even when no other events are found"));
+	AddOption(optionExt("force-traces", no_argument, NULL, 0, "", "Change all entries in map file to type 'trace' to do trace analysis"));
 }
 
 /** SyntaxStr is used to print a linux style usage message to the screen.
@@ -631,6 +637,18 @@ bool simpleScanner::Initialize(std::string prefix_){
 		delete mapfile;
 		return false;
 	}
+
+	if(forceUseOfTrace){
+		for(int i = 0; i < mapfile->GetMaxModule(); i++){
+			for(int j = 0; j < 16; j++){
+				MapEntry *mapptr = mapfile->GetMapEntry(i, j);
+				if(!mapptr || mapptr->type == "ignore") continue;
+				mapptr->type = "trace";
+				mapptr->subtype = "";
+			}
+		}
+	}
+	
 	currentFile = setupDirectory + "config.dat";
 	std::cout << prefix_ << "Reading config file " << currentFile << "\n";
 	configfile = new ConfigFile(currentFile.c_str());
