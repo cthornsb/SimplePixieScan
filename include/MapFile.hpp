@@ -54,7 +54,7 @@ class MapFile{
 	static const int max_channels = 16;
   
 	MapEntry detectors[max_modules][max_channels];
-	std::vector<MapEntry> types;
+	std::vector<std::string> types;
 	int max_defined_module;
 	
 	void clear_entries();
@@ -74,7 +74,7 @@ class MapFile{
 	
 	MapEntry *GetMapEntry(XiaData *event_);
 	
-	std::vector<MapEntry> *GetTypes(){ return &types; }
+	std::vector<std::string> *GetTypes(){ return &types; }
 	
 	std::string GetType(int mod_, int chan_);
 	

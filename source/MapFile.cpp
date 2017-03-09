@@ -306,14 +306,14 @@ bool MapFile::Load(const char *filename_){
 				}
 				
 				bool in_list = false;
-				for(std::vector<MapEntry>::iterator iter2 = types.begin(); iter2 != types.end(); iter2++){
-					if(*iter2 == detectors[mod][*iter]){
+				for(std::vector<std::string>::iterator iter2 = types.begin(); iter2 != types.end(); iter2++){
+					if(*iter2 == detectors[mod][*iter].type){
 						in_list = true;
 						break;
 					}
 				}
 				if(!in_list){ 
-					types.push_back(MapEntry(detectors[mod][*iter])); 
+					types.push_back(detectors[mod][*iter].type); 
 				}
 			}
 		}
@@ -329,14 +329,14 @@ bool MapFile::Load(const char *filename_){
 			}
 			
 			bool in_list = false;
-			for(std::vector<MapEntry>::iterator iter = types.begin(); iter != types.end(); iter++){
-				if(*iter == detectors[mod][chan]){
+			for(std::vector<std::string>::iterator iter = types.begin(); iter != types.end(); iter++){
+				if(*iter == detectors[mod][chan].type){
 					in_list = true;
 					break;
 				}
 			}
 			if(!in_list){ 
-				types.push_back(MapEntry(detectors[mod][chan])); 
+				types.push_back(detectors[mod][chan].type); 
 			}
 		}
 	}
@@ -371,9 +371,9 @@ void MapFile::PrintAllEntries(){
 }
 
 void MapFile::PrintAllTypes(){
-	for(std::vector<MapEntry>::iterator iter = types.begin(); iter != types.end(); iter++){
-		if(iter->type == "ignore"){ continue; }
-		std::cout << " " << iter->print() << std::endl;
+	for(std::vector<std::string>::iterator iter = types.begin(); iter != types.end(); iter++){
+		if(*iter == "ignore"){ continue; }
+		std::cout << " " << *iter << std::endl;
 	}
 }
 

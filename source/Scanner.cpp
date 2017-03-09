@@ -698,19 +698,19 @@ bool simpleScanner::Initialize(std::string prefix_){
 	}
 
 	// Load all needed processors.
-	std::vector<MapEntry> *types = mapfile->GetTypes();
-	for(std::vector<MapEntry>::iterator iter = types->begin(); iter != types->end(); iter++){
-		if(iter->type == "ignore" || !handler->CheckProcessor(iter->type)){ continue; }
+	std::vector<std::string> *types = mapfile->GetTypes();
+	for(std::vector<std::string>::iterator iter = types->begin(); iter != types->end(); iter++){
+		if(*iter == "ignore" || !handler->CheckProcessor(*iter)){ continue; }
 		else{
-			Processor *proc = handler->AddProcessor(iter->type, mapfile);
+			Processor *proc = handler->AddProcessor(*iter, mapfile);
 			if(proc){
-				std::cout << prefix_ << "Added " << iter->type << " processor to the processor list.\n"; 
+				std::cout << prefix_ << "Added " << *iter << " processor to the processor list.\n"; 
 				
 				// Initialize all online diagnostic plots.
 				online->AddHists(proc);
 			}
 			else{ 
-				std::cout << prefix_ << "Failed to add " << iter->type << " processor to the processor list!\n"; 
+				std::cout << prefix_ << "Failed to add " << *iter << " processor to the processor list!\n"; 
 				hadErrors = true;			
 			}
 		}
