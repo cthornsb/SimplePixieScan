@@ -21,12 +21,14 @@ class progressBar{
 	unsigned int chunkSize;
 	unsigned int chunkCount;
 	std::string progStr;
-
+	
 	progressBar(const unsigned int &len=20) : numEntries(0), length(len), chunkSize(0), chunkCount(0), progStr(len, ' '){ }
 
 	void start(const unsigned int &numEntries_);
 
 	void check(const unsigned int &entry_);
+
+	void finalize();
 };
 
 class simpleTool{

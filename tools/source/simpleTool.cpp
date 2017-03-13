@@ -22,7 +22,12 @@
 // class progressBar
 ///////////////////////////////////////////////////////////////////////////////
 
-void progressBar::start(const unsigned int &numEntries_){ 
+void progressBar::start(const unsigned int &numEntries_){
+	if(numEntries_ < length){
+		length = numEntries_;
+		progStr = std::string(numEntries_, ' ');
+	}
+ 
 	numEntries = numEntries_;
 	chunkSize = numEntries / length;
 	std::cout << "\n Processing " << numEntries << " events.\n";
@@ -35,6 +40,10 @@ void progressBar::check(const unsigned int &entry_){
 		std::cout << "  Working - 0% [" << progStr << "] 100%\r" << std::flush;
 		chunkCount++;
 	}
+}
+
+void progressBar::finalize(){
+	std::cout << "  Working - 0% [" << std::string(length, '=') << "] 100% Done!\n";
 }
 
 ///////////////////////////////////////////////////////////////////////////////

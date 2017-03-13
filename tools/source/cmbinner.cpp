@@ -294,6 +294,8 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 				}
 			}
 		}
+
+		pbar.finalize();
 	
 		outfile->cd();
 		if(treeMode || mcarlo)

@@ -95,6 +95,8 @@ int instantTime::execute(int argc, char *argv[]){
 		}
 	}
 
+	pbar.finalize();
+
 	outfile->cd();
 	outtree->Write();
 	
