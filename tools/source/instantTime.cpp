@@ -73,8 +73,11 @@ int instantTime::execute(int argc, char *argv[]){
 	outtree->Branch("tdiff", &tdiff);
 	outtree->Branch("time", &currTime);
 
-	std::cout << " Processing " << intree->GetEntries() << " entries.\n";
+	progressBar pbar;
+	pbar.start(intree->GetEntries());
+
 	for(int i = 0; i < intree->GetEntries(); i++){
+		pbar.check(i);
 		intree->GetEntry(i);
 		if(ptr->mult == 0)
 			continue;
