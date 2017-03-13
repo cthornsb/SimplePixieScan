@@ -71,6 +71,7 @@ int instantTime::execute(int argc, char *argv[]){
 	
 	outtree = new TTree("t", "tree");
 	outtree->Branch("tdiff", &tdiff);
+	outtree->Branch("time", &currTime);
 
 	std::cout << " Processing " << intree->GetEntries() << " entries.\n";
 	for(int i = 0; i < intree->GetEntries(); i++){
