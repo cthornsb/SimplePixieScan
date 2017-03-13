@@ -638,6 +638,17 @@ bool simpleScanner::Initialize(std::string prefix_){
 		return false;
 	}
 
+	for(int i = 0; i <= mapfile->GetMaxModule(); i++){
+		for(int j = 0; j < 16; j++){
+			MapEntry *mapptr = mapfile->GetMapEntry(i, j);
+			if(!mapptr || mapptr->type == "ignore") continue;
+			else if(mapptr->hasTag("untriggered")){ // Add this channel to the unpacker whitelist so that it is always added to the raw event.
+				GetCore()->AddToWhitelist(i, j);
+				std::cout << prefix_ << "Adding mod=" << i << ", chan=" << j << " to unpacker whitelist.\n";
+			}
+		}
+	}
+
 	if(forceUseOfTrace){
 		// Overwrite all map file entries with 'trace' types.
 		for(int i = 0; i <= mapfile->GetMaxModule(); i++){
