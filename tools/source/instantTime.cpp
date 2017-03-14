@@ -64,6 +64,7 @@ int instantTime::execute(int argc, char *argv[]){
 	}
 
 	unsigned int count = 0;
+	double firstTime;	
 	double prevTime;
 	double currTime;
 	
@@ -90,12 +91,15 @@ int instantTime::execute(int argc, char *argv[]){
 			}
 			else{
 				prevTime = ptr->time.at(j);
+				firstTime = ptr->time.at(j);
 			}
 			count++;
 		}
 	}
 
 	pbar.finalize();
+
+	std::cout << " Total elapsed time = " << (currTime-firstTime)*8E-9 << " s.\n";
 
 	outfile->cd();
 	outtree->Write();
