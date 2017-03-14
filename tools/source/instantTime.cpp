@@ -64,9 +64,9 @@ int instantTime::execute(int argc, char *argv[]){
 	}
 
 	unsigned int count = 0;
-	double firstTime;	
-	double prevTime;
-	double currTime;
+	double firstTime = 0;	
+	double prevTime = 0;
+	double currTime = 0;
 	
 	double tdiff;
 	
@@ -83,23 +83,20 @@ int instantTime::execute(int argc, char *argv[]){
 		if(ptr->mult == 0)
 			continue;
 		for(unsigned int j = 0; j < ptr->mult; j++){
-			if(count != 0){
-				currTime = ptr->time.at(j);
+			if(count++ != 0){
+				currTime = ptr->time.at(j)-firstTime;
 				tdiff = currTime-prevTime;
 				outtree->Fill();
 				prevTime = currTime;
 			}
-			else{
-				prevTime = ptr->time.at(j);
-				firstTime = ptr->time.at(j);
-			}
-			count++;
+			else{ firstTime = ptr->time.at(j); }
 		}
 	}
 
 	pbar.finalize();
 
-	std::cout << " Total elapsed time = " << (currTime-firstTime)*8E-9 << " s.\n";
+	std::cout << " First event time   = " << firstTime*8E-9 << " s.\n";
+	std::cout << " Total elapsed time = " << currTime*8E-9 << " s.\n";
 
 	outfile->cd();
 	outtree->Write();
