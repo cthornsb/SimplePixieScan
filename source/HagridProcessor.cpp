@@ -27,7 +27,7 @@ bool HagridProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 	loc_1d->Fill(location);
 
 	// Fill the values into the root tree.
-	structure.Append(current_event->qdc, tdiff, location);
+	structure.Append(current_event->qdc, tdiff, current_event->energy, current_event->max_ADC, location);
 	
 	return true;
 }
@@ -41,6 +41,9 @@ HagridProcessor::HagridProcessor(MapFile *map_) : Processor("Hagrid", "hagrid", 
 
 	int minloc = map_->GetFirstOccurance("hagrid");
 	int maxloc = map_->GetLastOccurance("hagrid");
+
+	fitting_low = 8;
+	fitting_high = 21;
 
 	if(maxloc-minloc > 1){ // More than one detector. Define 2d plots.
 		loc_tdiff_2d = new Plotter("hagrid_h1", "Hagrid Location vs. Tdiff", "COLZ", "Tdiff (ns)", 200, -100, 100, "Location", maxloc-minloc, minloc, maxloc+1);

@@ -229,8 +229,10 @@ LONG	Structure for hagrid (LaBr crystal) detectors.
 # Data types and names
 # type	name	description
 BEGIN_TYPES
-vector:double	energy	The energy output of the pixie energy filter.
+vector:double	tqdc	The trace QDC obtained by integrating the trace.
 vector:double	tof	The time of flight of the particle detected by the detector.
+vector:u_short	energy	The 15-bit trapezoidal filter energy from onboard.
+vector:u_short	adcMax	The 12 or 14-bit ADC trace maximum (not baseline corrected).
 vector:int	loc	Detector location (ID)
 u_int	mult	Multiplicity of the generic type events.
 END_TYPES
