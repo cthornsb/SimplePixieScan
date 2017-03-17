@@ -39,6 +39,9 @@ HagridProcessor::HagridProcessor(MapFile *map_) : Processor("Hagrid", "hagrid", 
 	int minloc = map_->GetFirstOccurance("hagrid");
 	int maxloc = map_->GetLastOccurance("hagrid");
 
+	// Set the processor to not use the trace QDC for calibrations.
+	use_integration = false;
+
 	fitting_low = 8;
 	fitting_high = 21;
 

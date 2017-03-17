@@ -377,11 +377,10 @@ void Processor::PreProcess(){
 				// Check for large SNR.
 				//if(current_event->stddev > 3.0){ continue; }
 
-				if(use_integration){ // Compute the integral of the pulse within the integration window.
-					current_event->IntegratePulse(current_event->max_index - fitting_low, current_event->max_index + fitting_high);
-					if(fitting_low2 != -9999 && fitting_high2 != -9999) 
-						current_event->IntegratePulse(current_event->max_index - fitting_low2, current_event->max_index + fitting_high2, true);		
-				}
+				// Compute the integral of the pulse within the integration window.
+				current_event->IntegratePulse(current_event->max_index - fitting_low, current_event->max_index + fitting_high);
+				if(fitting_low2 != -9999 && fitting_high2 != -9999) 
+					current_event->IntegratePulse(current_event->max_index - fitting_low2, current_event->max_index + fitting_high2, true);		
 		
 				// Set the channel event to valid.
 				current_event->valid_chan = true;
