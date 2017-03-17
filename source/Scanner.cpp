@@ -600,10 +600,10 @@ bool simpleScanner::Initialize(std::string prefix_){
 	chanCounts = new Plotter("chanCounts", "Recorded Counts for Module vs. Channel", "COLZ", "Channel", 16, 0, 16, "Module", 6, 0, 6);
 
 	// Setup a 2d histogram for tracking channel energies.
-	chanMaxADC = new Plotter("chanMaxADC", "Channel vs. Max ADC", "COLZ", "Max ADC Channel", 4096, 0, 4096, "Channel", 96, 0, 96);
+	chanMaxADC = new Plotter("chanMaxADC", "Channel vs. Max ADC", "COLZ", "Max ADC Channel", 16384, 0, 16384, "Channel", 96, 0, 96);
 
 	// Setup a 2d histogram for tracking channel energies.
-	chanEnergy = new Plotter("chanEnergy", "Channel vs. Filter Energy", "COLZ", "Filter Energy", 4096, 0, 32768, "Channel", 96, 0, 96);
+	chanEnergy = new Plotter("chanEnergy", "Channel vs. Filter Energy", "COLZ", "Filter Energy", 32768, 0, 32768, "Channel", 96, 0, 96);
 
 	// Initialize the online data processor.
 	online = new OnlineProcessor();
