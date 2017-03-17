@@ -257,6 +257,7 @@ Processor::Processor(std::string name_, std::string type_, MapFile *map_){
 	use_fitting = false;
 	use_integration = true;
 	isSingleEnded = true;
+	histsEnabled = false;
 	presortData = false;
 	
 	total_time = 0;

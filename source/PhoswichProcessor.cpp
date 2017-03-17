@@ -59,11 +59,13 @@ bool PhoswichProcessor::SetCfdParameters(ChanEvent *event_, MapEntry *entry_){
 bool PhoswichProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEvtR/*=NULL*/){
 	ChanEvent *current_event = chEvt->channelEvent;
 
-	// Fill all diagnostic histograms.
-	fast_energy_1d->Fill(fast_qdc);
-	slow_energy_1d->Fill(slow_qdc);
-	energy_2d->Fill(slow_qdc, fast_qdc);
-	phase_1d->Fill(current_event->phase); 
+	if(histsEnabled){
+		// Fill all diagnostic histograms.
+		fast_energy_1d->Fill(fast_qdc);
+		slow_energy_1d->Fill(slow_qdc);
+		energy_2d->Fill(slow_qdc, fast_qdc);
+		phase_1d->Fill(current_event->phase); 
+	}
 	
 	// Fill the values into the root tree.
 	if(use_fitting){ structure.Append(current_event->time, fast_MPV, fast_qdc, slow_qdc, fast_A);	}
@@ -82,23 +84,29 @@ PhoswichProcessor::PhoswichProcessor(MapFile *map_) : Processor("Phoswich", "pho
 	
 	root_structure = (Structure*)&structure;
 	root_waveform = &waveform;
-	
+}
+
+PhoswichProcessor::~PhoswichProcessor(){ 
+	if(histsEnabled){
+		delete fast_energy_1d;
+		delete slow_energy_1d;
+		delete energy_2d;
+		delete phase_1d;
+	}
+}
+
+void PhoswichProcessor::GetHists(std::vector<Plotter*> &plots_){
+	if(histsEnabled) return;
+
 	fast_energy_1d = new Plotter("phoswich_h1", "Phoswich Fast LR", "", "Light Response (a.u.)", 200, 0, 20000);
 	slow_energy_1d = new Plotter("phoswich_h2", "Phoswich Slow LR", "", "Light Response (a.u.)", 200, 0, 20000);
 	energy_2d = new Plotter("phoswich_h3", "Phoswich Fast LR vs. Slow", "COLZ", "Slow Light Response (a.u.)", 200, 0, 20000, "Fast Light Response (a.u.)", 200, 0, 20000);
 	phase_1d = new Plotter("phoswich_h4", "Phoswich Phase", "", "MPV (ns)", 100, 0, 100);
-}
 
-PhoswichProcessor::~PhoswichProcessor(){ 
-	delete fast_energy_1d;
-	delete slow_energy_1d;
-	delete energy_2d;
-	delete phase_1d;
-}
-
-void PhoswichProcessor::GetHists(std::vector<Plotter*> &plots_){
 	plots_.push_back(fast_energy_1d);
 	plots_.push_back(slow_energy_1d);
 	plots_.push_back(energy_2d);
 	plots_.push_back(phase_1d);
+
+	histsEnabled = true;
 }

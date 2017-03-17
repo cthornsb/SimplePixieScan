@@ -38,12 +38,14 @@ bool LiquidProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 	short_qdc = current_event->qdc;
 	long_qdc = current_event->qdc2;
 
-	// Fill all diagnostic histograms.
-	loc_tdiff_2d->Fill(tdiff, location);
-	loc_short_energy_2d->Fill(short_qdc, location);
-	loc_long_energy_2d->Fill(long_qdc, location);
-	loc_psd_2d->Fill(short_qdc/long_qdc, location);
-	loc_1d->Fill(location);		
+	if(histsEnabled){
+		// Fill all diagnostic histograms.
+		loc_tdiff_2d->Fill(tdiff, location);
+		loc_short_energy_2d->Fill(short_qdc, location);
+		loc_long_energy_2d->Fill(long_qdc, location);
+		loc_psd_2d->Fill(short_qdc/long_qdc, location);
+		loc_1d->Fill(location);		
+	}
 	
 	double energy = 0.5E4*M_NEUTRON*r0*r0/(C_IN_VAC*C_IN_VAC*tdiff*tdiff); // MeV
 	
@@ -61,9 +63,23 @@ LiquidProcessor::LiquidProcessor(MapFile *map_) : Processor("Liquid", "liquid", 
 
 	root_structure = (Structure*)&structure;
 	root_waveform = &waveform;
+}
+
+LiquidProcessor::~LiquidProcessor(){ 
+	if(histsEnabled){
+		delete loc_tdiff_2d;
+		delete loc_short_energy_2d;
+		delete loc_long_energy_2d;
+		delete loc_psd_2d;
+		delete loc_1d;
+	}
+}
+
+void LiquidProcessor::GetHists(std::vector<Plotter*> &plots_){
+	if(histsEnabled) return;
 	
-	int minloc = map_->GetFirstOccurance("liquid");
-	int maxloc = map_->GetLastOccurance("liquid");
+	int minloc = mapfile->GetFirstOccurance("liquid");
+	int maxloc = mapfile->GetLastOccurance("liquid");
 	
 	if(maxloc-minloc > 1){ // More than one detector. Define 2d plots.
 		loc_tdiff_2d = new Plotter("liquid_h1", "Liquid Location vs. Tdiff", "COLZ", "Tdiff (ns)", 200, -100, 100, "Location", maxloc-minloc, minloc, maxloc+1);
@@ -78,20 +94,12 @@ LiquidProcessor::LiquidProcessor(MapFile *map_) : Processor("Liquid", "liquid", 
 		loc_psd_2d = new Plotter("liquid_h4", "Liquid PSD", "COLZ", "PSD (S/L)", 200, 0, 1);
 	}
 	loc_1d = new Plotter("liquid_h5", "Liquid Location", "", "Location", maxloc-minloc, minloc, maxloc+1);
-}
 
-LiquidProcessor::~LiquidProcessor(){ 
-	delete loc_tdiff_2d;
-	delete loc_short_energy_2d;
-	delete loc_long_energy_2d;
-	delete loc_psd_2d;
-	delete loc_1d;
-}
-
-void LiquidProcessor::GetHists(std::vector<Plotter*> &plots_){
 	plots_.push_back(loc_tdiff_2d);
 	plots_.push_back(loc_short_energy_2d);
 	plots_.push_back(loc_long_energy_2d);
 	plots_.push_back(loc_psd_2d);
 	plots_.push_back(loc_1d);
+
+	histsEnabled = true;
 }

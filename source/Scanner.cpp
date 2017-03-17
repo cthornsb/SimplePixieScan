@@ -215,8 +215,8 @@ simpleScanner::~simpleScanner(){
 
 		// If the root file is open, write the tree and histogram.
 		if(!writePresort && root_file->IsOpen()){
-			// Write all online diagnostic histograms to the output root file.
-			std::cout << msgHeader << "Writing " << online->WriteHists(root_file) << " histograms to root file.\n";
+			if(online_mode) // Write all online diagnostic histograms to the output root file.
+				std::cout << msgHeader << "Writing " << online->WriteHists(root_file) << " histograms to root file.\n";
 
 			// Add total data time to the file.
 			root_file->cd(head_path.c_str());
@@ -605,10 +605,10 @@ bool simpleScanner::Initialize(std::string prefix_){
 	// Setup a 2d histogram for tracking channel energies.
 	chanEnergy = new Plotter("chanEnergy", "Channel vs. Filter Energy", "COLZ", "Filter Energy", 32768, 0, 32768, "Channel", 96, 0, 96);
 
-	// Initialize the online data processor.
-	online = new OnlineProcessor();
-
 	if(online_mode){
+		// Initialize the online data processor.
+		online = new OnlineProcessor();
+
 		online->SetDisplayMode();
 	
 		// Add the raw histograms to the online processor.
@@ -718,9 +718,9 @@ bool simpleScanner::Initialize(std::string prefix_){
 			Processor *proc = handler->AddProcessor(*iter, mapfile);
 			if(proc){
 				std::cout << prefix_ << "Added " << *iter << " processor to the processor list.\n"; 
-				
-				// Initialize all online diagnostic plots.
-				online->AddHists(proc);
+			
+				if(online_mode) // Initialize all online diagnostic plots.
+					online->AddHists(proc);
 			}
 			else{ 
 				std::cout << prefix_ << "Failed to add " << *iter << " processor to the processor list!\n"; 

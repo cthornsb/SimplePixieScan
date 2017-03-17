@@ -27,12 +27,14 @@ bool GenericProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *ch
 	
 	// Get the location of this detector.
 	int location = chEvt->entry->location;
-	
-	// Fill all diagnostic histograms.
-	loc_tdiff_2d->Fill(tdiff, location);
-	loc_energy_2d->Fill(current_event->qdc, location);
-	loc_phase_2d->Fill(current_event->phase, location);
-	loc_1d->Fill(location);
+
+	if(histsEnabled){	
+		// Fill all diagnostic histograms.
+		loc_tdiff_2d->Fill(tdiff, location);
+		loc_energy_2d->Fill(current_event->qdc, location);
+		loc_phase_2d->Fill(current_event->phase, location);
+		loc_1d->Fill(location);
+	}
 
 	// Fill the values into the root tree.
 	structure.Append(tdiff, current_event->qdc, location);
@@ -47,9 +49,22 @@ GenericProcessor::GenericProcessor(MapFile *map_) : Processor("Generic", "generi
 	// Do not force the use of a trace. By setting this flag to false,
 	// this processor WILL NOT reject events which do not have an ADC trace.
 	use_trace = false;
+}
 
-	int minloc = map_->GetFirstOccurance("generic");
-	int maxloc = map_->GetLastOccurance("generic");
+GenericProcessor::~GenericProcessor(){ 
+	if(histsEnabled){
+		delete loc_tdiff_2d;
+		delete loc_energy_2d;
+		delete loc_phase_2d;
+		delete loc_1d;
+	}
+}
+
+void GenericProcessor::GetHists(std::vector<Plotter*> &plots_){
+	if(histsEnabled) return;
+
+	int minloc = mapfile->GetFirstOccurance("generic");
+	int maxloc = mapfile->GetLastOccurance("generic");
 
 	if(maxloc-minloc > 1){ // More than one detector. Define 2d plots.
 		loc_tdiff_2d = new Plotter("generic_h1", "Generic Location vs. Tdiff", "COLZ", "Tdiff (ns)", 200, -100, 100, "Location", maxloc-minloc, minloc, maxloc+1);
@@ -62,18 +77,11 @@ GenericProcessor::GenericProcessor(MapFile *map_) : Processor("Generic", "generi
 		loc_phase_2d = new Plotter("generic_h3", "Generic Phase", "", "Phase (ns)", 100, 0, 100);
 	}
 	loc_1d = new Plotter("generic_h4", "Generic Location", "", "Location", maxloc-minloc, minloc, maxloc+1);
-}
 
-GenericProcessor::~GenericProcessor(){ 
-	delete loc_tdiff_2d;
-	delete loc_energy_2d;
-	delete loc_phase_2d;
-	delete loc_1d;
-}
-
-void GenericProcessor::GetHists(std::vector<Plotter*> &plots_){
 	plots_.push_back(loc_tdiff_2d);
 	plots_.push_back(loc_energy_2d);
 	plots_.push_back(loc_phase_2d);
 	plots_.push_back(loc_1d);
+
+	histsEnabled = true;
 }

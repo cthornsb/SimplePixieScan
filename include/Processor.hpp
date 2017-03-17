@@ -90,8 +90,6 @@ class Processor{
 	TBranch *local_branch;
 	TBranch *trace_branch;
 
-	MapFile *mapfile;
-
 	double clockInSeconds; /// One pixie clock is 8 ns
 	double adcClockInSeconds; /// One ADC clock is 4 ns
 	double filterClockInSeconds; /// One filter clock is 8 ns
@@ -106,11 +104,14 @@ class Processor{
 	bool use_integration;
 	bool write_waveform;
 	bool isSingleEnded;
+	bool histsEnabled;
 
 	int fitting_low, fitting_low2;
 	int fitting_high, fitting_high2;
 
 	ChannelEventPair *start;
+
+	MapFile *mapfile;
 
 	TF1 *fitting_func;
 	FittingFunction *actual_func;
@@ -160,7 +161,7 @@ class Processor{
 	virtual ~Processor();
 
 	virtual void GetHists(std::vector<Plotter*> &plots_){ }
-	
+
 	std::string GetType(){ return type; }
 	
 	std::string GetName(){ return name; }

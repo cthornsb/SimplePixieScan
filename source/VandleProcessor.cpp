@@ -60,13 +60,15 @@ bool VandleProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 	
 	// Get the location of this detector.
 	int location = chEvt->entry->location;
-	
-	// Fill all diagnostic histograms.
-	loc_tdiff_2d->Fill((tdiff_L + tdiff_R)/2.0, location);
-	loc_energy_2d->Fill(std::sqrt(channel_event_L->qdc*channel_event_R->qdc), location);
-	loc_L_phase_2d->Fill(channel_event_L->phase, location);
-	loc_R_phase_2d->Fill(channel_event_R->phase, location);
-	loc_1d->Fill(location);		
+
+	if(histsEnabled){	
+		// Fill all diagnostic histograms.
+		loc_tdiff_2d->Fill((tdiff_L + tdiff_R)/2.0, location);
+		loc_energy_2d->Fill(std::sqrt(channel_event_L->qdc*channel_event_R->qdc), location);
+		loc_L_phase_2d->Fill(channel_event_L->phase, location);
+		loc_R_phase_2d->Fill(channel_event_R->phase, location);
+		loc_1d->Fill(location);	
+	}
 	
 	// Fill the values into the root tree.
 	structure.Append(ctof, radius, theta*rad2deg, phi*rad2deg, energy, std::sqrt(channel_event_L->qdc*channel_event_R->qdc), location);
@@ -78,11 +80,25 @@ VandleProcessor::VandleProcessor(MapFile *map_) : Processor("Vandle", "vandle", 
 	root_structure = (Structure*)&structure;
 	root_waveform = &L_waveform;
 	
-	int minloc = map_->GetFirstOccurance("vandle");
-	int maxloc = map_->GetLastOccurance("vandle");
-	
 	// Set the detector type to a bar.
 	isSingleEnded = false;
+}
+
+VandleProcessor::~VandleProcessor(){ 
+	if(histsEnabled){
+		delete loc_tdiff_2d;
+		delete loc_energy_2d;
+		delete loc_L_phase_2d;
+		delete loc_R_phase_2d;
+		delete loc_1d;
+	}
+}
+
+void VandleProcessor::GetHists(std::vector<Plotter*> &plots_){
+	if(histsEnabled) return;
+
+	int minloc = mapfile->GetFirstOccurance("vandle");
+	int maxloc = mapfile->GetLastOccurance("vandle");
 	
 	if(maxloc-minloc > 1){ // More than one detector. Define 2d plots.
 		loc_tdiff_2d = new Plotter("vandle_h1", "Vandle Location vs. Tdiff", "COLZ", "Tdiff (ns)", 200, -100, 100, "Location", maxloc-minloc, minloc, maxloc+1);
@@ -97,20 +113,13 @@ VandleProcessor::VandleProcessor(MapFile *map_) : Processor("Vandle", "vandle", 
 		loc_R_phase_2d = new Plotter("vandle_h4", "Vandle R Phase", "", "Phase (ns)", 100, 0, 100);
 	}
 	loc_1d = new Plotter("vandle_h5", "Vandle Location", "", "Location", maxloc-minloc, minloc, maxloc+1);
-}
 
-VandleProcessor::~VandleProcessor(){ 
-	delete loc_tdiff_2d;
-	delete loc_energy_2d;
-	delete loc_L_phase_2d;
-	delete loc_R_phase_2d;
-	delete loc_1d;
-}
 
-void VandleProcessor::GetHists(std::vector<Plotter*> &plots_){
 	plots_.push_back(loc_tdiff_2d);
 	plots_.push_back(loc_energy_2d);
 	plots_.push_back(loc_L_phase_2d);
 	plots_.push_back(loc_R_phase_2d);
 	plots_.push_back(loc_1d);
+
+	histsEnabled = true;
 }

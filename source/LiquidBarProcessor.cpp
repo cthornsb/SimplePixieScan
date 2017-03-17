@@ -67,13 +67,15 @@ bool LiquidBarProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *
 
 	// Compute the trace qdc of the slow component of the left and right pmt pulses.
 	float ltqdc = std::sqrt(channel_event_L->qdc2*channel_event_R->qdc2);
-	
-	// Fill all diagnostic histograms.
-	loc_tdiff_2d->Fill((tdiff_L + tdiff_R)/2.0, location/2);
-	loc_short_energy_2d->Fill(stqdc, location/2);
-	loc_long_energy_2d->Fill(ltqdc, location/2);
-	loc_psd_2d->Fill(stqdc/ltqdc, location/2);
-	loc_1d->Fill(location/2);		
+
+	if(histsEnabled){	
+		// Fill all diagnostic histograms.
+		loc_tdiff_2d->Fill((tdiff_L + tdiff_R)/2.0, location/2);
+		loc_short_energy_2d->Fill(stqdc, location/2);
+		loc_long_energy_2d->Fill(ltqdc, location/2);
+		loc_psd_2d->Fill(stqdc/ltqdc, location/2);
+		loc_1d->Fill(location/2);
+	}
 
 	// Fill the values into the root tree.
 	structure.Append(ctof, radius, theta*rad2deg, phi*rad2deg, energy, stqdc, ltqdc, location);
@@ -90,12 +92,26 @@ LiquidBarProcessor::LiquidBarProcessor(MapFile *map_) : Processor("LiquidBar", "
 	root_structure = (Structure*)&structure;
 	root_waveform = &L_waveform;
 	
-	int minloc = map_->GetFirstOccurance("liquidbar");
-	int maxloc = map_->GetLastOccurance("liquidbar");
-
 	// Set the detector type to a bar.
 	isSingleEnded = false;
-	
+}
+
+LiquidBarProcessor::~LiquidBarProcessor(){ 
+	if(histsEnabled){
+		delete loc_tdiff_2d;
+		delete loc_short_energy_2d;
+		delete loc_long_energy_2d;
+		delete loc_psd_2d;
+		delete loc_1d;
+	}
+}
+
+void LiquidBarProcessor::GetHists(std::vector<Plotter*> &plots_){
+	if(histsEnabled) return;
+
+	int minloc = mapfile->GetFirstOccurance("liquidbar");
+	int maxloc = mapfile->GetLastOccurance("liquidbar");
+
 	if(maxloc-minloc > 1){ // More than one detector. Define 2d plots.
 		loc_tdiff_2d = new Plotter("liquidbar_h1", "Liquid Bar Location vs. Avg. Tdiff", "COLZ", "Tdiff (ns)", 200, -100, 100, "Location", maxloc-minloc, minloc/2, (maxloc+1)/2);
 		loc_short_energy_2d = new Plotter("liquidbar_h2", "Liquid Bar Location vs. S", "COLZ", "S (a.u.)", 200, 0, 20000, "Location", maxloc-minloc, minloc/2, (maxloc+1)/2);
@@ -109,20 +125,12 @@ LiquidBarProcessor::LiquidBarProcessor(MapFile *map_) : Processor("LiquidBar", "
 		loc_psd_2d = new Plotter("liquidbar_h4", "Liquid Bar PSD", "COLZ", "PSD (S/L)", 200, 0, 1);
 	}
 	loc_1d = new Plotter("liquidbar_h5", "Liquid Bar Location", "", "Location", maxloc-minloc, minloc, maxloc+1);
-}
 
-LiquidBarProcessor::~LiquidBarProcessor(){ 
-	delete loc_tdiff_2d;
-	delete loc_short_energy_2d;
-	delete loc_long_energy_2d;
-	delete loc_psd_2d;
-	delete loc_1d;
-}
-
-void LiquidBarProcessor::GetHists(std::vector<Plotter*> &plots_){
 	plots_.push_back(loc_tdiff_2d);
 	plots_.push_back(loc_short_energy_2d);
 	plots_.push_back(loc_long_energy_2d);
 	plots_.push_back(loc_psd_2d);
 	plots_.push_back(loc_1d);
+
+	histsEnabled = true;
 }
