@@ -13,10 +13,10 @@ class LiquidBarProcessor : public Processor{
 	Trace L_waveform;
 	Trace R_waveform;
 
-	double left_short_qdc; /// The integral of the short portion of the left pmt pulse.
-	double left_long_qdc; /// The integral of the long portion of the left pmt pulse.
-	double right_short_qdc; /// The integral of the short portion of the right pmt pulse.
-	double right_long_qdc; /// The integral of the long portion of the right pmt pulse.
+	float left_short_qdc; /// The integral of the short portion of the left pmt pulse.
+	float left_long_qdc; /// The integral of the long portion of the left pmt pulse.
+	float right_short_qdc; /// The integral of the short portion of the right pmt pulse.
+	float right_long_qdc; /// The integral of the long portion of the right pmt pulse.
 
 	Plotter *loc_tdiff_2d;
 	Plotter *loc_short_energy_2d;

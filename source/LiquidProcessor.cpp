@@ -48,7 +48,7 @@ bool LiquidProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 	double energy = 0.5E4*M_NEUTRON*r0*r0/(C_IN_VAC*C_IN_VAC*tdiff*tdiff); // MeV
 	
 	// Fill the values into the root tree.
-	structure.Append(short_qdc, long_qdc, tdiff, energy, location);
+	structure.Append(tdiff, energy, short_qdc, long_qdc, location);
 	     
 	return true;
 }

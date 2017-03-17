@@ -12,8 +12,8 @@ class LiquidProcessor : public Processor{
 	LiquidStructure structure;
 	Trace waveform;
 
-	double short_qdc; /// The integral of the short portion of the left pmt pulse.
-	double long_qdc; /// The integral of the long portion of the left pmt pulse.
+	float short_qdc; /// The integral of the short portion of the left pmt pulse.
+	float long_qdc; /// The integral of the long portion of the left pmt pulse.
 
 	Plotter *loc_tdiff_2d;
 	Plotter *loc_short_energy_2d;

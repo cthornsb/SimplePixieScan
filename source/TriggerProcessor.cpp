@@ -10,7 +10,7 @@ bool TriggerProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *ch
 	phase_1d->Fill(current_event->phase);
 
 	// Fill the values into the root tree.
-	structure.Append(current_event->qdc, current_event->time, current_event->phase);
+	structure.Append(current_event->time, current_event->phase, current_event->qdc);
 	
 	return true;
 }

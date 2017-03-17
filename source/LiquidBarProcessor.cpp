@@ -63,10 +63,10 @@ bool LiquidBarProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *
 	int location = chEvt->entry->location;
 
 	// Compute the trace qdc of the fast component of the left and right pmt pulses.
-	double stqdc = (double)std::sqrt(channel_event_L->qdc*channel_event_R->qdc);
+	float stqdc = std::sqrt(channel_event_L->qdc*channel_event_R->qdc);
 
 	// Compute the trace qdc of the slow component of the left and right pmt pulses.
-	double ltqdc = (double)std::sqrt(channel_event_L->qdc2*channel_event_R->qdc2);
+	float ltqdc = std::sqrt(channel_event_L->qdc2*channel_event_R->qdc2);
 	
 	// Fill all diagnostic histograms.
 	loc_tdiff_2d->Fill((tdiff_L + tdiff_R)/2.0, location/2);
@@ -76,7 +76,7 @@ bool LiquidBarProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *
 	loc_1d->Fill(location/2);		
 
 	// Fill the values into the root tree.
-	structure.Append(stqdc, ltqdc, radius, theta*rad2deg, phi*rad2deg, ctof, energy, location);
+	structure.Append(ctof, radius, theta*rad2deg, phi*rad2deg, energy, stqdc, ltqdc, location);
 	     
 	return true;
 }

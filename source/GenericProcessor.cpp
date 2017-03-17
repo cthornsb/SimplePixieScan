@@ -35,7 +35,7 @@ bool GenericProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *ch
 	loc_1d->Fill(location);
 
 	// Fill the values into the root tree.
-	structure.Append(current_event->qdc, tdiff, location);
+	structure.Append(tdiff, current_event->qdc, location);
 	
 	return true;
 }

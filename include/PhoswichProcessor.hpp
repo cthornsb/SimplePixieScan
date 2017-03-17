@@ -16,11 +16,11 @@ class PhoswichProcessor : public Processor{
 	double fast_MPV; /// The most probable value of the landau function for the fast pulse.
 	double fast_Sigma; /// The sigma (roughly the width) of the landau function for the fast pulse.
 	double fast_chi2; /// The chi^2/NDF for the fast pulse fit.
-	double fast_qdc; /// The integral of the fast portion of the pulse.
+	float fast_qdc; /// The integral of the fast portion of the pulse.
 	unsigned int fast_x1; /// The lower limit of the fitting range for the fast pulse.
 	unsigned int fast_x2; /// The upper limit of the fitting range for the fast pulse.
 
-	double slow_qdc; /// The integral of the slow portion of the pulse.
+	float slow_qdc; /// The integral of the slow portion of the pulse.
 	int fitting_low2;
 	int fitting_high2;
 

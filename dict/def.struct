@@ -41,10 +41,10 @@ LONG	Structure for detectors of type "trigger"
 # Data types and names
 # type	name	description
 BEGIN_TYPES
-vector:double	tqdc	The energy computed from the trace.
 vector:double	time	The raw pixie16 system clock time.
-vector:double	phase	The trace offset in ns.
-u_int	mult	Multiplicity of the trigger detector.
+vector:float	phase	The offset phase of the pulse.
+vector:float	tqdc	The integrated trace qdc of the pulse.
+u_short	mult	Multiplicity of the trigger detector.
 END_TYPES
 
 # End this class
@@ -73,9 +73,9 @@ vector:float	maximum	The baseline corrected maximum ADC value of the pulse.
 vector:float	tqdc	The integrated trace qdc of the pulse.
 vector:u_short	energy	The 15-bit trapezoidal filter energy from onboard.
 vector:u_short	adcMax	The 12 or 14-bit ADC trace maximum (not baseline corrected).
-vector:int	maxbin	The time bin where the ADC max occurs.
-vector:int	loc	Detector location (ID).
-u_int	mult	Multiplicity.
+vector:u_short	maxbin	The time bin where the ADC max occurs.
+vector:u_short	loc	Detector location (ID).
+u_short	mult	Multiplicity.
 END_TYPES
 
 # End this class
@@ -91,19 +91,19 @@ BEGIN_CLASS	Vandle
 SHORT	Vandle bar data structure
 
 # Longer class description
-LONG	Structure for detectors of type "vandlesmall" or "vandlebig"
+LONG	Structure for detectors of type "vandle"
 
 # Data types and names
 # type	name	description
 BEGIN_TYPES
-vector:double	tqdc	The total light response (sqrt(l*r)).
+vector:double	ctof	The corrected time of flight of the particle detected by vandle.
 vector:double	r	The flight path of the neutron corrected for bar position.
 vector:double	theta	The polar angle of the neutron with respect to the beam axis.
 vector:double	phi	The azimuthal angle of the neutron about the beam axis.
-vector:double	ctof	The corrected time of flight of the particle detected by vandle.
 vector:double	energy	Neutron energy calculated from the tof.
-vector:int	loc	Detector location (ID)
-u_int	mult	Multiplicity of the vandle events.
+vector:float	tqdc	The total light response (sqrt(l*r)).
+vector:u_short	loc	Detector location (ID)
+u_short	mult	Multiplicity of the vandle events.
 END_TYPES
 
 # End this class
@@ -124,12 +124,12 @@ LONG	Structure for detectors of type "phoswich"
 # Data types and names
 # type	name	description
 BEGIN_TYPES
-vector:double	ftqdc	The integral of the fast portion of the pulse.
-vector:double	stqdc	The integral of the slow portion of the pulse.
-vector:double	fAmp	The ADC amplitude of the fast pulse.
 vector:double	time	The raw pixie16 system clock time.
 vector:double	phase	The trace offset in ns.
-u_int	mult	Multiplicity of the phoswich events.
+vector:float	ftqdc	The integral of the fast portion of the pulse.
+vector:float	stqdc	The integral of the slow portion of the pulse.
+vector:float	fAmp	The ADC amplitude of the fast pulse.
+u_short	mult	Multiplicity of the phoswich events.
 END_TYPES
 
 # End this class
@@ -150,15 +150,15 @@ LONG	Structure for detectors of type "liquidbar"
 # Data types and names
 # type	name	description
 BEGIN_TYPES
-vector:double	stqdc	The short integral computed from both pmt traces.
-vector:double	ltqdc	The long integral computed from both pmt traces.
+vector:double	ctof	The corrected time of flight of the particle detected by the liquid bar.
 vector:double	r	The flight path of the neutron corrected for bar position.
 vector:double	theta	The polar angle of the neutron with respect to the beam axis.
 vector:double	phi	The azimuthal angle of the neutron about the beam axis.
-vector:double	ctof	The corrected time of flight of the particle detected by the liquid bar.
 vector:double	energy	Neutron energy calculated from the corrected tof.
-vector:int	loc	Detector location (ID)
-u_int	mult	Multiplicity of the liquidbar events.
+vector:float	stqdc	The short integral computed from both pmt traces.
+vector:float	ltqdc	The long integral computed from both pmt traces.
+vector:u_short	loc	Detector location (ID)
+u_short	mult	Multiplicity of the liquidbar events.
 END_TYPES
 
 # End this class
@@ -179,12 +179,12 @@ LONG	Structure for detectors of type "liquid"
 # Data types and names
 # type	name	description
 BEGIN_TYPES
-vector:double	stqdc	The pmt short integral computed from the trace.
-vector:double	ltqdc	The pmt long integral computed from the trace.
 vector:double	tof	The time of flight of the particle detected by the detector.
 vector:double	energy	Neutron energy calculated from the tof.
-vector:int	loc	Detector location (ID)
-u_int	mult	Multiplicity of the liquid events.
+vector:float	stqdc	The pmt short integral computed from the trace.
+vector:float	ltqdc	The pmt long integral computed from the trace.
+vector:u_short	loc	Detector location (ID)
+u_short	mult	Multiplicity of the liquid events.
 END_TYPES
 
 # End this class
@@ -205,10 +205,10 @@ LONG	Structure for detectors of type "generic"
 # Data types and names
 # type	name	description
 BEGIN_TYPES
-vector:double	tqdc	The energy computed from the trace.
 vector:double	tof	The time of flight of the particle detected by the detector.
-vector:int	loc	Detector location (ID)
-u_int	mult	Multiplicity of the generic type events.
+vector:float	tqdc	The energy computed from the trace.
+vector:u_short	loc	Detector location (ID)
+u_short	mult	Multiplicity of the generic type events.
 END_TYPES
 
 # End this class
@@ -229,12 +229,12 @@ LONG	Structure for hagrid (LaBr crystal) detectors.
 # Data types and names
 # type	name	description
 BEGIN_TYPES
-vector:double	tqdc	The trace QDC obtained by integrating the trace.
 vector:double	tof	The time of flight of the particle detected by the detector.
+vector:float	tqdc	The trace QDC obtained by integrating the trace.
 vector:u_short	energy	The 15-bit trapezoidal filter energy from onboard.
 vector:u_short	adcMax	The 12 or 14-bit ADC trace maximum (not baseline corrected).
-vector:int	loc	Detector location (ID)
-u_int	mult	Multiplicity of the generic type events.
+vector:u_short	loc	Detector location (ID)
+u_short	mult	Multiplicity of the generic type events.
 END_TYPES
 
 # End this class
@@ -256,8 +256,8 @@ LONG	Track the number of occurances of logic signals.
 # type	name	description
 BEGIN_TYPES
 vector:double	time	The time of arrival of the logic signal.
-vector:int	loc	Signal location (ID).
-u_int	mult	Multiplicity of the logic events.
+vector:u_short	loc	Signal location (ID).
+u_short	mult	Multiplicity of the logic events.
 END_TYPES
 
 # End this class

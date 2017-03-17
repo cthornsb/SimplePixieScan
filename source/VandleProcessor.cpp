@@ -69,7 +69,7 @@ bool VandleProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 	loc_1d->Fill(location);		
 	
 	// Fill the values into the root tree.
-	structure.Append(std::sqrt(channel_event_L->qdc*channel_event_R->qdc), radius, theta*rad2deg, phi*rad2deg, ctof, energy, location);
+	structure.Append(ctof, radius, theta*rad2deg, phi*rad2deg, energy, std::sqrt(channel_event_L->qdc*channel_event_R->qdc), location);
 	     
 	return true;
 }

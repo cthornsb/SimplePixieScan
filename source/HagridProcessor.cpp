@@ -27,7 +27,7 @@ bool HagridProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 	loc_1d->Fill(location);
 
 	// Fill the values into the root tree.
-	structure.Append(current_event->qdc, tdiff, current_event->energy, current_event->max_ADC, location);
+	structure.Append(tdiff, current_event->qdc, current_event->energy, current_event->max_ADC, location);
 	
 	return true;
 }
