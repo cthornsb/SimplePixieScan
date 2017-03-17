@@ -71,6 +71,8 @@ vector:float	baseline	The averaged baseline of the pulse.
 vector:float	stddev	The standard deviation of the baseline.
 vector:float	maximum	The baseline corrected maximum ADC value of the pulse.
 vector:float	tqdc	The integrated trace qdc of the pulse.
+vector:u_short	energy	The 15-bit trapezoidal filter energy from onboard.
+vector:u_short	adcMax	The 12 or 14-bit ADC trace maximum (not baseline corrected).
 vector:int	maxbin	The time bin where the ADC max occurs.
 vector:int	loc	Detector location (ID).
 u_int	mult	Multiplicity.

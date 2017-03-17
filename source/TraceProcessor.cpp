@@ -14,7 +14,7 @@ bool TraceProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEv
 
 	// Fill the values into the root tree.
 	structure.Append(tdiff, current_event->phase, current_event->baseline, current_event->stddev, 
-	                 current_event->maximum, current_event->qdc, (int)current_event->max_index, location);
+	                 current_event->maximum, current_event->qdc, current_event->energy, current_event->max_ADC, (int)current_event->max_index, location);
 	
 	return true;
 }
