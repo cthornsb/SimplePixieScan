@@ -36,9 +36,6 @@ HagridProcessor::HagridProcessor(MapFile *map_) : Processor("Hagrid", "hagrid", 
 	root_structure = (Structure*)&structure;
 	root_waveform = &waveform;
 
-	// Toggle off trace integration.
-	use_integration = false;
-
 	int minloc = map_->GetFirstOccurance("hagrid");
 	int maxloc = map_->GetLastOccurance("hagrid");
 
