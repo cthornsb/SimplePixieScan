@@ -264,6 +264,7 @@ simpleHistoFitter::simpleHistoFitter() : simpleTool() {
 	draw_string = "";
 	
 	debug = false;
+	useProjX = true;
 }
 
 bool simpleHistoFitter::getProjectionX(TH1 *h1_, TH2 *h2_, const int &binY_){
@@ -271,10 +272,10 @@ bool simpleHistoFitter::getProjectionX(TH1 *h1_, TH2 *h2_, const int &binY_){
 	if(!h1_ || !h2_) return false;
 
 	// Check for index out of range.
-	if(binY_ < 0 || binY_ > h2_->GetYaxis()->GetNbins()) return false;
+	if(binY_ < 0 || binY_ > h2_->GetNbinsY()) return false;
 	
 	// Check that both histograms have the same number of bins in the x-axis.
-	if(h1_->GetXaxis()->GetNbins() != h2_->GetXaxis()->GetNbins()) return false;
+	if(h1_->GetNbinsX() != h2_->GetNbinsX()) return false;
 	
 	// Empty the output histogram.
 	h1_->Reset();
@@ -282,7 +283,7 @@ bool simpleHistoFitter::getProjectionX(TH1 *h1_, TH2 *h2_, const int &binY_){
 	// Fill the output histogram.
 	double total = 0.0;
 	double binContent;
-	for(int i = 0; i <= h1_->GetXaxis()->GetNbins()+1; i++){
+	for(int i = 0; i <= h2_->GetNbinsX()+1; i++){
 		binContent = h2_->GetBinContent(h2_->GetBin(i, binY_));
 		h1_->SetBinContent(i, binContent);
 		total += binContent;
@@ -296,10 +297,10 @@ bool simpleHistoFitter::getProjectionY(TH1 *h1_, TH2 *h2_, const int &binX_){
 	if(!h1_ || !h2_) return false;
 
 	// Check for index out of range.
-	if(binX_ < 0 || binX_ > h2_->GetXaxis()->GetNbins()) return false;
-	
+	if(binX_ < 0 || binX_ > h2_->GetNbinsX()) return false;
+
 	// Check that both histograms have the same number of bins in the y-axis.
-	if(h1_->GetYaxis()->GetNbins() != h2_->GetYaxis()->GetNbins()) return false;
+	if(h1_->GetNbinsX() != h2_->GetNbinsY()) return false;
 	
 	// Empty the output histogram.
 	h1_->Reset();
@@ -307,13 +308,41 @@ bool simpleHistoFitter::getProjectionY(TH1 *h1_, TH2 *h2_, const int &binX_){
 	// Fill the output histogram.
 	double total = 0.0;
 	double binContent;
-	for(int i = 0; i <= h1_->GetYaxis()->GetNbins()+1; i++){
+	for(int i = 0; i <= h2_->GetNbinsY()+1; i++){
 		binContent = h2_->GetBinContent(h2_->GetBin(binX_, i));
-		h1_->SetBinContent(binContent, i);
+		h1_->SetBinContent(i, binContent);
 		total += binContent;
 	}
 	
 	return (total > 0.0);
+}
+
+bool simpleHistoFitter::getProjection(TH1 *h1_, TH2 *h2_, const int &bin_){
+	if(useProjX) return getProjectionX(h1_, h2_, bin_);
+	return getProjectionY(h1_, h2_, bin_);
+}
+
+TH1D *simpleHistoFitter::getProjectionHist(TH2 *h2_, const char *name_/*="h1"*/, const char *title_/*=""*/){
+	// Check that the histogram is defined.
+	if(!h2_) return NULL;	
+	TH1D *output = NULL;
+	if(useProjX) output = new TH1D(name_, title_, h2d->GetNbinsX(), h2d->GetXaxis()->GetXmin(), h2d->GetXaxis()->GetXmax());
+	else output = new TH1D(name_, title_, h2d->GetNbinsY(), h2d->GetYaxis()->GetXmin(), h2d->GetYaxis()->GetXmax());
+	return output;
+}
+
+int simpleHistoFitter::getNumProjections(TH2 *h2_){
+	// Check that the histogram is defined.
+	if(!h2_) return -1;
+	if(useProjX) return h2_->GetNbinsY();
+	return h2_->GetNbinsX();
+}
+
+double simpleHistoFitter::getBinLowEdge(TH2 *h2_, const int &bin_){
+	// Check that the histogram is defined.i
+	if(!h2_) return -1;
+	if(useProjX) return h2_->GetYaxis()->GetBinLowEdge(bin_);
+	return h2_->GetXaxis()->GetBinLowEdge(bin_);
 }
 
 double simpleHistoFitter::getMaximum(TH1 *h1_, const double &lowVal_, const double &highVal_, double &mean){
@@ -333,6 +362,7 @@ void simpleHistoFitter::addOptions(){
 	addOption(optionExt("draw", required_argument, NULL, 0, "<drawstr>", "Root draw string to fill the 2d histogram."), userOpts, optstr);
 	addOption(optionExt("save", optional_argument, NULL, 0, "[name]", "Write the 2d histogram to the output file."), userOpts, optstr);
 	addOption(optionExt("debug", no_argument, NULL, 'd', "", "Enable debug mode."), userOpts, optstr);
+	addOption(optionExt("y-axis", no_argument, NULL, 'y', "", "Project along the y-axis instead of the x-axis."), userOpts, optstr);
 }
 
 bool simpleHistoFitter::processArgs(){
@@ -342,6 +372,8 @@ bool simpleHistoFitter::processArgs(){
 		output_objname = userOpts.at(1).argument;
 	if(userOpts.at(2).active)
 		debug = true;
+	if(userOpts.at(3).active)
+		useProjX = false;
 
 	return true;
 }

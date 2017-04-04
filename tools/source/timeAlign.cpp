@@ -26,7 +26,7 @@ bool timeAlign::process(){
 	
 	can2->cd()->SetLogy();
 	
-	TH1D *h1 = new TH1D("h1", "", h2d->GetXaxis()->GetNbins(), h2d->GetXaxis()->GetXmin(), h2d->GetXaxis()->GetXmax());
+	TH1D *h1 = getProjectionHist(h2d);
 	TF1 *f1 = new TF1("f1", "gaus", 0, 1);
 	TFitResultPtr fitResult;
 	TMarker *m1;
@@ -43,12 +43,13 @@ bool timeAlign::process(){
 	ofile2 << "# the uncalibrated time, and t0 is given below (all in ns).\n";
 	ofile2 << "#id	t0(ns)\n";
 
-	for(int i = 1; i <= h2d->GetYaxis()->GetNbins(); i++){
+	int numProjections = getNumProjections(h2d);
+	for(int i = 1; i <= numProjections; i++){
 		std::cout << " Processing channel ID " << i << "... ";
-		if(getProjectionX(h1, h2d, i)){ 
+		if(getProjection(h1, h2d, i)){ 
 			std::cout << "DONE\n";
 
-			std::stringstream stream; stream << h2d->GetYaxis()->GetBinLowEdge(i);
+			std::stringstream stream; stream << getBinLowEdge(h2d, i);
 			h1->SetTitle(stream.str().c_str());
 			
 			can2->Clear();

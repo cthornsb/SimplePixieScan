@@ -140,21 +140,22 @@ bool specFitter::process(){
 	Xmax = h2d->GetXaxis()->GetXmax();
 	Xrange = Xmax-Xmin;
 
-	TH1D *h1 = new TH1D("h1", "", nBins, Xmin, Xmax);
+	TH1D *h1 = getProjectionHist(h2d);
 	h1->SetStats(0);
 
 	can2->cd();
 
-	for(int i = 1; i <= h2d->GetYaxis()->GetNbins(); i++){
+	int numProjections = getNumProjections(h2d);
+	for(int i = 1; i <= numProjections; i++){
 		std::cout << " Processing channel ID " << i << "... ";
 		if(getProjectionX(h1, h2d, i)){ 
 			std::cout << "DONE\n";
 
 			std::stringstream title;
-			title << "Bin " << i << " [" << h2d->GetYaxis()->GetBinLowEdge(i) << ", " << h2d->GetYaxis()->GetBinLowEdge(i)+h2d->GetYaxis()->GetBinWidth(i) << "]";
+			std::stringstream stream; stream << getBinLowEdge(h2d, i);
+			h1->SetTitle(stream.str().c_str());
 
 			h1->GetYaxis()->SetRangeUser(0, 1.1*h1->GetBinContent(h1->GetMaximumBin()));
-			h1->SetTitle(title.str().c_str());
 
 			ofile << i;
 			if(fitSpectrum(h1, ofile))

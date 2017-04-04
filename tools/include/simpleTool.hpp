@@ -13,6 +13,7 @@ class TFile;
 class TTree;
 class TH1;
 class TH2;
+class TH1D;
 
 class progressBar{
   public:
@@ -95,10 +96,19 @@ class simpleHistoFitter : public simpleTool {
 	std::string draw_string;
 
 	bool debug;
+	bool useProjX;
 
 	bool getProjectionX(TH1 *h1_, TH2 *h2_, const int &binY_);
 	
 	bool getProjectionY(TH1 *h1_, TH2 *h2_, const int &binX_);	
+
+	bool getProjection(TH1 *h1_, TH2 *h2_, const int &bin_);
+
+	TH1D *getProjectionHist(TH2 *h2_, const char *name_="h1", const char *title_="");
+
+	int getNumProjections(TH2 *h2_);
+
+	double getBinLowEdge(TH2 *h2_, const int &bin_);
 
 	double getMaximum(TH1 *h1_, const double &lowVal_, const double &highVal_, double &mean);
 
