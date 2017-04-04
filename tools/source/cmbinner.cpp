@@ -205,6 +205,7 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 		}
 
 		TH2D *h2d = NULL;
+		TH2D *h2dcom = NULL;
 		if(!mcarlo){
 			std::cout << std::endl;
 
@@ -253,6 +254,12 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			h2d->GetXaxis()->SetTitle("Lab Angle (deg)");
 			h2d->GetYaxis()->SetTitle("Neutron ToF (ns)");
 			h2d->GetZaxis()->SetTitle("Counts per 0.2 ns");
+
+			h2dcom = new TH2D("h2dcom", "Lab Angle vs. ctof", nBins, startAngle, stopAngle, nBinsY, yLow, yHigh);
+			h2dcom->GetXaxis()->SetTitle("CoM Angle (deg)");
+			h2dcom->GetYaxis()->SetTitle("Neutron ToF (ns)");
+			h2dcom->GetZaxis()->SetTitle("Counts per 0.2 ns");
+
 		}
 
 		progressBar pbar;
@@ -271,17 +278,18 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 						continue;
 					}
 		
+					rxn.SetLabAngle(ptr->theta.at(j));
 					if(treeMode){
 						ctof = ptr->ctof.at(j);
 						energy = ptr->energy.at(j);
 						theta = ptr->theta.at(j);
 		
-						rxn.SetLabAngle(theta);
 						angleCOM = rxn.GetEjectile()->comAngle[0];
 			
 						outtree->Fill();
 					}
 					h2d->Fill(ptr->theta.at(j), ptr->ctof.at(j));
+					h2dcom->Fill(rxn.GetEjectile()->comAngle[0], ptr->ctof.at(j));
 				}
 			}
 			else{
@@ -300,8 +308,10 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 		outfile->cd();
 		if(treeMode || mcarlo)
 			outtree->Write();
-		if(!mcarlo)
+		if(!mcarlo){
 			h2d->Write();
+			h2dcom->Write();
+		}
 
 		if(treeMode || mcarlo) std::cout << "\n\n Done! Wrote " << outtree->GetEntries() << " entries to '" << output_filename << "'.\n";
 		if(!mcarlo) std::cout << "\n\n Done! Wrote " << h2d->GetEntries() << " entries to histogram.\n";
