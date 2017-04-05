@@ -363,6 +363,8 @@ void simpleHistoFitter::addOptions(){
 	addOption(optionExt("save", optional_argument, NULL, 0, "[name]", "Write the 2d histogram to the output file."), userOpts, optstr);
 	addOption(optionExt("debug", no_argument, NULL, 'd', "", "Enable debug mode."), userOpts, optstr);
 	addOption(optionExt("y-axis", no_argument, NULL, 'y', "", "Project along the y-axis instead of the x-axis."), userOpts, optstr);
+
+	addChildOptions();
 }
 
 bool simpleHistoFitter::processArgs(){
@@ -375,7 +377,7 @@ bool simpleHistoFitter::processArgs(){
 	if(userOpts.at(3).active)
 		useProjX = false;
 
-	return true;
+	return processChildArgs();
 }
 
 TH2 *simpleHistoFitter::fillHistogram(){

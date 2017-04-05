@@ -115,6 +115,10 @@ class simpleHistoFitter : public simpleTool {
 	void addOptions();
 	
 	bool processArgs();
+
+	virtual void addChildOptions(){ }
+
+	virtual bool processChildArgs(){ return true; }
 	
   public:
 	simpleHistoFitter();
