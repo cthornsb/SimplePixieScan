@@ -265,6 +265,8 @@ simpleHistoFitter::simpleHistoFitter() : simpleTool() {
 	
 	debug = false;
 	useProjX = true;
+
+	firstChildOption = 0;
 }
 
 bool simpleHistoFitter::getProjectionX(TH1 *h1_, TH2 *h2_, const int &binY_){
@@ -364,6 +366,8 @@ void simpleHistoFitter::addOptions(){
 	addOption(optionExt("debug", no_argument, NULL, 'd', "", "Enable debug mode."), userOpts, optstr);
 	addOption(optionExt("y-axis", no_argument, NULL, 'y', "", "Project along the y-axis instead of the x-axis."), userOpts, optstr);
 
+	// Add derived classes to the vector of all command line options.
+	firstChildOption = userOpts.size();
 	addChildOptions();
 }
 

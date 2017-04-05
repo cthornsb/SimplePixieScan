@@ -93,6 +93,8 @@ class simpleHistoFitter : public simpleTool {
   	TH1 *h1d;
 	TH2 *h2d;
 
+	size_t firstChildOption; /// The index of the first command line option added by a derived class.
+
 	std::string draw_string;
 
 	bool debug;
