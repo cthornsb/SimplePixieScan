@@ -175,10 +175,12 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 		}
 
 		double ctof, energy, theta, angleCOM;
+		int location;
 	
 		TBranch *branch = NULL;
 		VandleStructure *ptr = NULL;
 		std::vector<double> hitTheta;
+		std::vector<int> detLocation;
 
 		if(!mcarlo){
 			intree->SetBranchAddress("vandle", &ptr, &branch);
@@ -186,6 +188,7 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 		else{
 			intree->SetMakeClass(1);
 			intree->SetBranchAddress("hitTheta", &hitTheta, &branch);
+			intree->SetBranchAddress("location", &detLocation);
 		}
 
 		if(!branch){
@@ -202,6 +205,7 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			}
 			outtree->Branch("lab", &theta);
 			outtree->Branch("com", &angleCOM);
+			outtree->Branch("loc", &location);
 		}
 
 		TH2D *h2d = NULL;
@@ -283,6 +287,7 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 						ctof = ptr->ctof.at(j);
 						energy = ptr->energy.at(j);
 						theta = ptr->theta.at(j);
+						location = ptr->loc.at(j);
 		
 						angleCOM = rxn.GetEjectile()->comAngle[0];
 			
@@ -297,6 +302,7 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 					theta = hitTheta.at(j);
 					rxn.SetLabAngle(theta);
 					angleCOM = rxn.GetEjectile()->comAngle[0];
+					location = detLocation.at(j);
 				
 					outtree->Fill();
 				}
