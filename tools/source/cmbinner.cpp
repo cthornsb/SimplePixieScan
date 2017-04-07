@@ -213,7 +213,9 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			outtree->Branch("loc", &location);
 		}
 
+		TH2D *hE = NULL;
 		TH2D *h2d = NULL;
+		TH2D *hEcom = NULL;
 		TH2D *h2dcom = NULL;
 		if(!mcarlo){
 			std::cout << std::endl;
@@ -259,6 +261,16 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			double yLow = -10;
 			double yHigh = 100;
 
+			hE = new TH2D("hE", "Lab Angle vs. ctof", nBins, xbins, 500, 0, 10);
+			hE->GetXaxis()->SetTitle("Lab Angle (deg)");
+			hE->GetYaxis()->SetTitle("Neutron Energy (MeV)");
+			hE->GetZaxis()->SetTitle("Counts per 20 keV");
+
+			hEcom = new TH2D("hEcom", "Lab Angle vs. ctof", nBins, startAngle, stopAngle, 500, 0, 10);
+			hEcom->GetXaxis()->SetTitle("CoM Angle (deg)");
+			hEcom->GetYaxis()->SetTitle("Neutron Energy (MeV)");
+			hEcom->GetZaxis()->SetTitle("Counts per 20 keV");
+
 			h2d = new TH2D("h2d", "Lab Angle vs. ctof", nBins, xbins, nBinsY, yLow, yHigh);
 			h2d->GetXaxis()->SetTitle("Lab Angle (deg)");
 			h2d->GetYaxis()->SetTitle("Neutron ToF (ns)");
@@ -268,6 +280,8 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			h2dcom->GetXaxis()->SetTitle("CoM Angle (deg)");
 			h2dcom->GetYaxis()->SetTitle("Neutron ToF (ns)");
 			h2dcom->GetZaxis()->SetTitle("Counts per 0.2 ns");
+
+			
 		}
 
 		progressBar pbar;
@@ -301,7 +315,9 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			
 						outtree->Fill();
 					}
+					hE->Fill(ptr->theta.at(j), ptr->energy.at(j));
 					h2d->Fill(ptr->theta.at(j), ptr->ctof.at(j));
+					hEcom->Fill(rxn.GetEjectile()->comAngle[0], ptr->energy.at(j));
 					h2dcom->Fill(rxn.GetEjectile()->comAngle[0], ptr->ctof.at(j));
 				}
 			}
@@ -323,7 +339,9 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 		if(treeMode || mcarlo)
 			outtree->Write();
 		if(!mcarlo){
+			hE->Write();
 			h2d->Write();
+			hEcom->Write();
 			h2dcom->Write();
 		}
 
