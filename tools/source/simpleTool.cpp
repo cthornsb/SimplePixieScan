@@ -3,6 +3,7 @@
 #include <fstream>
 #include <signal.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #include "TApplication.h"
 #include "TSystem.h"
@@ -72,7 +73,7 @@ simpleTool::simpleTool(){
 	baseOpts.push_back(optionExt("output", required_argument, NULL, 'o', "<filename>", "Specifies the name of the output file."));
 	baseOpts.push_back(optionExt("name", required_argument, NULL, 'n', "<name>", "Specify the name of the input TTree or TH1."));
 	
-	optstr = "hi:o:n:";
+	optstr = "hi:o:n:r:";
 }
 
 simpleTool::~simpleTool(){
@@ -267,6 +268,9 @@ simpleHistoFitter::simpleHistoFitter() : simpleTool() {
 	useProjX = true;
 
 	firstChildOption = 0;
+	
+	histStartID = 0;
+	histStopID = -1;
 }
 
 bool simpleHistoFitter::getProjectionX(TH1 *h1_, TH2 *h2_, const int &binY_){
@@ -320,6 +324,7 @@ bool simpleHistoFitter::getProjectionY(TH1 *h1_, TH2 *h2_, const int &binX_){
 }
 
 bool simpleHistoFitter::getProjection(TH1 *h1_, TH2 *h2_, const int &bin_){
+	if(bin_ < histStartID || (histStopID >= 0 && bin_ > histStopID)) return false;
 	if(useProjX) return getProjectionX(h1_, h2_, bin_);
 	return getProjectionY(h1_, h2_, bin_);
 }
@@ -365,6 +370,7 @@ void simpleHistoFitter::addOptions(){
 	addOption(optionExt("save", optional_argument, NULL, 0, "[name]", "Write the 2d histogram to the output file."), userOpts, optstr);
 	addOption(optionExt("debug", no_argument, NULL, 'd', "", "Enable debug mode."), userOpts, optstr);
 	addOption(optionExt("y-axis", no_argument, NULL, 'y', "", "Project along the y-axis instead of the x-axis."), userOpts, optstr);
+	addOption(optionExt("range", required_argument, NULL, 'r', "<range>", "Process a range of bins from the input histogram (specify range as start:stop e.g. 15:21)."), userOpts, optstr);
 
 	// Add derived classes to the vector of all command line options.
 	firstChildOption = userOpts.size();
@@ -380,6 +386,17 @@ bool simpleHistoFitter::processArgs(){
 		debug = true;
 	if(userOpts.at(3).active)
 		useProjX = false;
+	if(userOpts.at(4).active){
+		size_t index = userOpts.at(4).argument.find(':');
+		if(index != std::string::npos){ // Range entry.
+			histStartID = strtol(userOpts.at(4).argument.substr(0, index).c_str(), 0, 0);
+			histStopID = strtol(userOpts.at(4).argument.substr(index+1).c_str(), 0, 0);
+		}
+		else{ // Single entry.
+			histStartID = strtol(userOpts.at(4).argument.c_str(), 0, 0);
+			histStopID = histStartID;
+		}
+	}
 
 	return processChildArgs();
 }
