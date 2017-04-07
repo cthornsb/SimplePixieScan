@@ -16,6 +16,7 @@ class simpleComCalculator : public simpleTool {
 	double startAngle;
 	double stopAngle;
 	double binWidth;
+	double threshold;
 	int nBins;
 
 	double *xbins;
@@ -34,7 +35,7 @@ class simpleComCalculator : public simpleTool {
 	void setAngles();
 
   public:
-	simpleComCalculator() : simpleTool(), startAngle(0), stopAngle(180), binWidth(1), nBins(180), xbins(NULL), mcarlo(false), printMode(false), defaultMode(false), treeMode(false), configFilename("") { }
+	simpleComCalculator() : simpleTool(), startAngle(0), stopAngle(180), binWidth(1), threshold(-1), nBins(180), xbins(NULL), mcarlo(false), printMode(false), defaultMode(false), treeMode(false), configFilename("") { }
 
 	~simpleComCalculator();
 	
@@ -124,6 +125,7 @@ void simpleComCalculator::addOptions(){
 	addOption(optionExt("tree", no_argument, NULL, 't', "", "Fill a TTree with reaction data."), userOpts, optstr);
 	addOption(optionExt("print", no_argument, NULL, 'p', "", "Instead of scanning a file, print out kinematics information."), userOpts, optstr);
 	addOption(optionExt("default", no_argument, NULL, 'd', "", "When using \"--print\" or \"--tree\" mode, use default settings of theta=[0,180] w/ 1 degree steps."), userOpts, optstr);
+	addOption(optionExt("threshold", required_argument, NULL, 'T', "<threshold>", "Use a software threshold on the trqce QDC (not used by default)."), userOpts, optstr);
 }
 
 bool simpleComCalculator::processArgs(){
@@ -137,6 +139,8 @@ bool simpleComCalculator::processArgs(){
 		printMode = true;
 	if(userOpts.at(4).active)
 		defaultMode = true;
+	if(userOpts.at(5).active)
+		threshold = strtod(userOpts.at(5).argument.c_str(), 0);
 
 	return true;
 }
@@ -174,7 +178,7 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			return 7;
 		}
 
-		double ctof, energy, theta, angleCOM;
+		double ctof, energy, tqdc, theta, angleCOM;
 		int location;
 	
 		TBranch *branch = NULL;
@@ -202,6 +206,7 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			if(!mcarlo){
 				outtree->Branch("tof", &ctof);
 				outtree->Branch("E", &energy);
+				outtree->Branch("tqdc", &tqdc);
 			}
 			outtree->Branch("lab", &theta);
 			outtree->Branch("com", &angleCOM);
@@ -263,7 +268,6 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			h2dcom->GetXaxis()->SetTitle("CoM Angle (deg)");
 			h2dcom->GetYaxis()->SetTitle("Neutron ToF (ns)");
 			h2dcom->GetZaxis()->SetTitle("Counts per 0.2 ns");
-
 		}
 
 		progressBar pbar;
@@ -282,10 +286,14 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 						continue;
 					}
 		
+					// Check the tqdc threshold (if available).
+					if(threshold > 0 && ptr->tqdc.at(j) < threshold) continue;
+
 					rxn.SetLabAngle(ptr->theta.at(j));
 					if(treeMode){
 						ctof = ptr->ctof.at(j);
 						energy = ptr->energy.at(j);
+						tqdc = ptr->tqdc.at(j);
 						theta = ptr->theta.at(j);
 						location = ptr->loc.at(j);
 		
