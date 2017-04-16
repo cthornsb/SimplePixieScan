@@ -17,6 +17,7 @@ class simpleComCalculator : public simpleTool {
 	double stopAngle;
 	double binWidth;
 	double threshold;
+	double userEnergy;
 	int nBins;
 
 	double *xbins;
@@ -35,7 +36,7 @@ class simpleComCalculator : public simpleTool {
 	void setAngles();
 
   public:
-	simpleComCalculator() : simpleTool(), startAngle(0), stopAngle(180), binWidth(1), threshold(-1), nBins(180), xbins(NULL), mcarlo(false), printMode(false), defaultMode(false), treeMode(false), configFilename("") { }
+	simpleComCalculator() : simpleTool(), startAngle(0), stopAngle(180), binWidth(1), threshold(-1), userEnergy(-1), nBins(180), xbins(NULL), mcarlo(false), printMode(false), defaultMode(false), treeMode(false), configFilename("") { }
 
 	~simpleComCalculator();
 	
@@ -56,10 +57,14 @@ bool simpleComCalculator::setupReaction(){
 	else
 		setupComplete = rxn.Read();
 
+	// Check that the kinematics setup completed successfully.
 	if(!setupComplete){			
 		std::cout << " Error: Failed to setup reaction parameters!\n";
 		return false;
 	}
+
+	// Set the beam energy to the user defined value.
+	if(userEnergy > 0) rxn.SetEbeam(userEnergy);
 
 	// Make sure all settings are correct.
 	rxn.Print();
@@ -126,6 +131,7 @@ void simpleComCalculator::addOptions(){
 	addOption(optionExt("print", no_argument, NULL, 'p', "", "Instead of scanning a file, print out kinematics information."), userOpts, optstr);
 	addOption(optionExt("default", no_argument, NULL, 'd', "", "When using \"--print\" or \"--tree\" mode, use default settings of theta=[0,180] w/ 1 degree steps."), userOpts, optstr);
 	addOption(optionExt("threshold", required_argument, NULL, 'T', "<threshold>", "Use a software threshold on the trqce QDC (not used by default)."), userOpts, optstr);
+	addOption(optionExt("energy", required_argument, NULL, 'E', "<energy>", "Specify the beam energy in MeV."), userOpts, optstr);
 }
 
 bool simpleComCalculator::processArgs(){
@@ -141,6 +147,8 @@ bool simpleComCalculator::processArgs(){
 		defaultMode = true;
 	if(userOpts.at(5).active)
 		threshold = strtod(userOpts.at(5).argument.c_str(), 0);
+	if(userOpts.at(6).active)
+		userEnergy = strtod(userOpts.at(6).argument.c_str(), 0);
 
 	return true;
 }
