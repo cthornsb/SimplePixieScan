@@ -6,6 +6,7 @@
 #include "TBranch.h"
 #include "TCanvas.h"
 #include "TH2.h"
+#include "TCutG.h"
 
 #include "cmcalc.hpp"
 #include "simpleTool.hpp"
@@ -27,6 +28,9 @@ class simpleComCalculator : public simpleTool {
 	bool defaultMode;
 	bool treeMode;
 	
+	TCutG *cut;
+
+	std::string cutFilename;
 	std::string configFilename;
 
 	reaction rxn;
@@ -36,7 +40,7 @@ class simpleComCalculator : public simpleTool {
 	void setAngles();
 
   public:
-	simpleComCalculator() : simpleTool(), startAngle(0), stopAngle(180), binWidth(1), threshold(-1), userEnergy(-1), nBins(180), xbins(NULL), mcarlo(false), printMode(false), defaultMode(false), treeMode(false), configFilename("") { }
+	simpleComCalculator() : simpleTool(), startAngle(0), stopAngle(180), binWidth(1), threshold(-1), userEnergy(-1), nBins(180), xbins(NULL), mcarlo(false), printMode(false), defaultMode(false), treeMode(false), cut(NULL), cutFilename(""), configFilename("") { }
 
 	~simpleComCalculator();
 	
@@ -186,6 +190,16 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			return 7;
 		}
 
+		// Load a root TCutG to use as a gate.
+		bool useTCutG = false;
+		if(!cut_filename.empty()){
+			if(!loadTCutG()){
+				std::cout << " Error: Failed to load input TCutG \"" << cut_filename << "\".\n";
+				return 8;
+			}
+			useTCutG = true;
+		}
+
 		double ctof, energy, tqdc, theta, angleCOM;
 		int location;
 	
@@ -265,16 +279,16 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 				}
 			}
 
-			int nBinsY = 525;
+			int nBinsY = 550;
 			double yLow = -10;
 			double yHigh = 100;
 
-			hE = new TH2D("hE", "Lab Angle vs. ctof", nBins, xbins, 500, 0, 10);
+			hE = new TH2D("hE", "Lab Angle vs. Energy", nBins, xbins, 500, 0, 10);
 			hE->GetXaxis()->SetTitle("Lab Angle (deg)");
 			hE->GetYaxis()->SetTitle("Neutron Energy (MeV)");
 			hE->GetZaxis()->SetTitle("Counts per 20 keV");
 
-			hEcom = new TH2D("hEcom", "Lab Angle vs. ctof", nBins, startAngle, stopAngle, 500, 0, 10);
+			hEcom = new TH2D("hEcom", "Lab Angle vs. Energy", nBins, startAngle, stopAngle, 500, 0, 10);
 			hEcom->GetXaxis()->SetTitle("CoM Angle (deg)");
 			hEcom->GetYaxis()->SetTitle("Neutron Energy (MeV)");
 			hEcom->GetZaxis()->SetTitle("Counts per 20 keV");
@@ -288,8 +302,6 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			h2dcom->GetXaxis()->SetTitle("CoM Angle (deg)");
 			h2dcom->GetYaxis()->SetTitle("Neutron ToF (ns)");
 			h2dcom->GetZaxis()->SetTitle("Counts per 0.2 ns");
-
-			
 		}
 
 		progressBar pbar;
@@ -310,6 +322,9 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 		
 					// Check the tqdc threshold (if available).
 					if(threshold > 0 && ptr->tqdc.at(j) < threshold) continue;
+
+					// Check against the input tcutg (if available).
+					if(useTCutG && !tcutg->IsInside(ptr->ctof.at(j), ptr->tqdc.at(j))) continue;
 
 					rxn.SetLabAngle(ptr->theta.at(j));
 					if(treeMode){
@@ -352,6 +367,8 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			hEcom->Write();
 			h2dcom->Write();
 		}
+
+		if(cut) delete cut;
 
 		if(treeMode || mcarlo) std::cout << "\n\n Done! Wrote " << outtree->GetEntries() << " entries to '" << output_filename << "'.\n";
 		if(!mcarlo) std::cout << "\n\n Done! Wrote " << h2d->GetEntries() << " entries to histogram.\n";

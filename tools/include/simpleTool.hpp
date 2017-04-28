@@ -14,6 +14,7 @@ class TTree;
 class TH1;
 class TH2;
 class TH1D;
+class TCutG;
 
 class progressBar{
   public:
@@ -44,11 +45,15 @@ class simpleTool{
 	TTree *intree;
 	TTree *outtree;
 	
+	TCutG *tcutg;
+
 	std::string input_filename;
 	std::string input_objname;
 	std::string output_filename;
 	std::string output_objname;
-	
+	std::string cut_filename;
+	std::string cut_objname;	
+
 	std::vector<option> longOpts; /// Vector of all command line options.
 	std::vector<optionExt> baseOpts; /// Base level command line options for the scan.
 	std::vector<optionExt> userOpts; /// User added command line options.
@@ -76,6 +81,8 @@ class simpleTool{
 	TTree *loadInputTree();
 	
 	TFile *openOutputFile();
+
+	TCutG *loadTCutG();
 	
 	TCanvas *getCanvas1(){ return can1; }
 	

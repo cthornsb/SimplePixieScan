@@ -12,6 +12,7 @@
 #include "TTree.h"
 #include "TH1.h"
 #include "TH2.h"
+#include "TCutG.h"
 
 #include "CTerminal.h"
 
@@ -62,18 +63,22 @@ simpleTool::simpleTool(){
 	
 	intree = NULL;
 	outtree = NULL;
-	
+
+	tcutg = NULL;	
+
 	input_filename = "";
 	input_objname = "data";
 	output_filename = "";
 	output_objname = "";
+	cut_filename = "";
 	
 	baseOpts.push_back(optionExt("help", no_argument, NULL, 'h', "", "Display this dialogue."));
 	baseOpts.push_back(optionExt("input", required_argument, NULL, 'i', "<filename>", "Specifies the input file to analyze."));
 	baseOpts.push_back(optionExt("output", required_argument, NULL, 'o', "<filename>", "Specifies the name of the output file."));
 	baseOpts.push_back(optionExt("name", required_argument, NULL, 'n', "<name>", "Specify the name of the input TTree or TH1."));
-	
-	optstr = "hi:o:n:r:";
+	baseOpts.push_back(optionExt("tcutg", required_argument, NULL, 'C', "<filename:cutname>", "Specify the name of the TCutG input file and the name of the cut."));
+
+	optstr = "hi:o:n:C:";
 }
 
 simpleTool::~simpleTool(){
@@ -161,6 +166,9 @@ bool simpleTool::setup(int argc, char *argv[]){
 				case 'n' :
 					input_objname = optarg;
 					break;
+				case 'C' :
+					cut_filename = optarg;
+					break;
 				default:
 					for(std::vector<optionExt>::iterator iter = userOpts.begin(); iter != userOpts.end(); iter++){
 						if(retval == iter->val){
@@ -236,6 +244,29 @@ TFile *simpleTool::openOutputFile(){
 	}
 	return outfile;
 }
+
+TCutG *simpleTool::loadTCutG(){
+	if(cut_filename.empty()) return NULL;
+	size_t colonIndex = cut_filename.find(':');
+	if(colonIndex == std::string::npos){
+		std::cout << " Error: Name of TCutG not specified. Expected <filename:cutname> e.g. myfile.root:cut1.\n";
+		return NULL;
+	}
+	TFile *cutFile = new TFile(cut_filename.substr(0, colonIndex).c_str(), "READ");
+	if(!cutFile->IsOpen()){
+		std::cout << " Error: Failed to load cut file \"" << cut_filename.substr(0, colonIndex) << "\".\n";
+		return NULL;
+	}
+	tcutg = (TCutG*)cutFile->Get(cut_filename.substr(colonIndex+1).c_str());
+	if(!tcutg){
+		std::cout << " Error: Failed to load input TCutG \"" << cut_filename.substr(colonIndex+1) << "\".\n";
+		cutFile->Close();
+		return NULL;
+	}
+	tcutg = (TCutG*)tcutg->Clone("simple_tcutg");
+	cutFile->Close();
+	return tcutg;
+}	
 
 void simpleTool::wait(){
 	setup_signal_handlers();
