@@ -64,17 +64,23 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_){
 	h_->Draw();
 	can2->Update();
 
+	TMarker *marker;
+
 	double xlo = h_->GetXaxis()->GetXmin();
-	double xhi = h_->GetXaxis()->GetXmax();
-	double yhi, ylo;
-	std::cout << " Enter y-axis range (hi, lo): ";
-	std::cin >> yhi >> ylo;
-	h_->GetYaxis()->SetRangeUser(yhi, ylo);
+	double ylo = h_->GetYaxis()->GetXmin();
+	double xhi, yhi;
+
+	std::cout << " Mark top-right bounding point (xmax,ymax)\n";
+	marker = (TMarker*)can2->WaitPrimitive("TMarker");
+	xhi = marker->GetX();
+	yhi = marker->GetY();
+	h_->GetXaxis()->SetRangeUser(xlo, xhi);
+	h_->GetYaxis()->SetRangeUser(ylo, yhi);
 	h_->Draw();
 	can2->Update();
 
-	int numPeaks;
-	std::cout << " How many peaks? "; std::cin >> numPeaks;
+	int numPeaks = 1;
+	//std::cout << " How many peaks? "; std::cin >> numPeaks;
 	
 	if(numPeaks <= 0) 
 		return false;
@@ -98,7 +104,7 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_){
 
 		// Set initial function parameters.
 		std::cout << "Mark exponential background (x0,y0)\n";
-		TMarker *marker = (TMarker*)can2->WaitPrimitive("TMarker");
+		marker = (TMarker*)can2->WaitPrimitive("TMarker");
 		bgx1 = marker->GetX();
 		bgy1 = marker->GetY();
 		delete marker;
@@ -120,7 +126,7 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_){
 
 		// Set initial function parameters.
 		std::cout << "Mark linear background (x0,y0)\n";
-		TMarker *marker = (TMarker*)can2->WaitPrimitive("TMarker");
+		marker = (TMarker*)can2->WaitPrimitive("TMarker");
 		bgx[0] = marker->GetX();
 		bgy[0] = marker->GetY();
 		delete marker;
@@ -162,7 +168,7 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_){
 	double bkgA, fwhmLeft, fwhmRight;
 	for(int i = 0; i < numPeaks; i++){
 		std::cout << "Mark peak " << i+1 << " maximum\n";
-		TMarker *marker = (TMarker*)can2->WaitPrimitive("TMarker");
+		marker = (TMarker*)can2->WaitPrimitive("TMarker");
 		amplitude = marker->GetY();
 		meanValue = marker->GetX();
 		if(!polyBG)
@@ -328,6 +334,7 @@ bool specFitter::process(){
 			stream << binLow;
 			h1->SetTitle(stream.str().c_str());
 
+			h1->GetXaxis()->SetRangeUser(Xmin, Xmax);
 			h1->GetYaxis()->SetRangeUser(0, 1.1*h1->GetBinContent(h1->GetMaximumBin()));
 
 			ofile << i << "\t" << binLow << "\t";
