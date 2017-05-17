@@ -264,7 +264,8 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_){
 		integral = lilfuncs[i]->Integral(bgx1, bgx2);
 		totalIntegral += integral;
 	
-		f_ << binID_ << "\t" << i << "\t" << func->GetParameter(3*i+3) << "\t" << func->GetParError(3*i+3) << "\t"; 
+		f_ << binID_ << "\t" << i << "\t" << !gausFit << "\t";
+		f_ << func->GetParameter(3*i+3) << "\t" << func->GetParError(3*i+3) << "\t"; 
 		f_ << func->GetParameter(3*i+4) << "\t" << func->GetParError(3*i+4) << "\t"; 
 		f_ << func->GetParameter(3*i+5) << "\t" << func->GetParError(3*i+5) << "\t"; 
 
@@ -302,7 +303,7 @@ bool specFitter::process(){
 	else
 		ofile.open("specFitter.out");
 	ofile << "binID\tbinLow\tchi2\tp0\tp0err\tp1\tp1err\tp2\tp2err\tIbkg\thistCounts\n";
-	ofile << "binID\tpeakID\tA\tAerr\tmu\tmuerr\tsigma\tsigmaerr\tIpeak\n";
+	ofile << "binID\tpeakID\tfunction\tA\tAerr\tmu\tmuerr\tsigma\tsigmaerr\tIpeak\n";
 
 	TH1D *h1 = getProjectionHist(h2d);
 	h1->SetStats(0);
