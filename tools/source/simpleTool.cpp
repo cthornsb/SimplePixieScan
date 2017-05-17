@@ -66,14 +66,13 @@ simpleTool::simpleTool(){
 
 	tcutg = NULL;	
 
-	input_filename = "";
 	input_objname = "data";
 	output_filename = "";
 	output_objname = "";
 	cut_filename = "";
 	
 	baseOpts.push_back(optionExt("help", no_argument, NULL, 'h', "", "Display this dialogue."));
-	baseOpts.push_back(optionExt("input", required_argument, NULL, 'i', "<filename>", "Specifies the input file to analyze."));
+	baseOpts.push_back(optionExt("input", required_argument, NULL, 'i', "<filename>", "Specifies an input file to analyze."));
 	baseOpts.push_back(optionExt("output", required_argument, NULL, 'o', "<filename>", "Specifies the name of the output file."));
 	baseOpts.push_back(optionExt("name", required_argument, NULL, 'n', "<name>", "Specify the name of the input TTree or TH1."));
 	baseOpts.push_back(optionExt("tcutg", required_argument, NULL, 'C', "<filename:cutname>", "Specify the name of the TCutG input file and the name of the cut."));
@@ -159,6 +158,7 @@ bool simpleTool::setup(int argc, char *argv[]){
 					return false;
 				case 'i' :
 					input_filename = optarg;
+					filename_list.push_back(optarg);
 					break;
 				case 'o' :
 					output_filename = optarg;
@@ -209,11 +209,14 @@ TCanvas *simpleTool::openCanvas2(const std::string &title_/*="Canvas"*/){
 }
 
 TFile *simpleTool::openInputFile(){
+	if(filename_list.empty()) return NULL;
 	if(infile != NULL && infile->IsOpen()){
 		infile->Close();
 		delete infile;
 		intree = NULL;	
 	}
+	input_filename = filename_list.front();
+	filename_list.pop_front();
 	infile = new TFile(input_filename.c_str(), "READ");
 	if(!infile->IsOpen()){
 		std::cout << " Error! Failed to open input file '" << input_filename << "'.\n";

@@ -2,6 +2,7 @@
 #define SIMPLETOOL_HPP
 
 #include <vector>
+#include <deque>
 #include <string>
 #include <getopt.h>
 
@@ -53,6 +54,8 @@ class simpleTool{
 	std::string output_objname;
 	std::string cut_filename;
 	std::string cut_objname;	
+
+	std::deque<std::string> filename_list;
 
 	std::vector<option> longOpts; /// Vector of all command line options.
 	std::vector<optionExt> baseOpts; /// Base level command line options for the scan.

@@ -175,19 +175,9 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 		if(!setupReaction())
 			return 3;
 
-		if(!openInputFile()){
-			std::cout << " Error: Failed to load input file \"" << input_filename << "\".\n";
-			return 5;
-		}
-		
-		if(!loadInputTree()){
-			std::cout << " Error: Failed to load TTree \"" << input_objname << "\".\n";
-			return 6;
-		}
-	
 		if(!openOutputFile()){
 			std::cout << " Error: Failed to load output file \"" << output_filename << "\".\n";
-			return 7;
+			return 4;
 		}
 
 		// Load a root TCutG to use as a gate.
@@ -202,29 +192,10 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 
 		double ctof, energy, tqdc, theta, angleCOM;
 		int location;
-	
-		TBranch *branch = NULL;
-		VandleStructure *ptr = NULL;
-		std::vector<double> hitTheta;
-		std::vector<int> detLocation;
-
-		if(!mcarlo){
-			intree->SetBranchAddress("vandle", &ptr, &branch);
-		}
-		else{
-			intree->SetMakeClass(1);
-			intree->SetBranchAddress("hitTheta", &hitTheta, &branch);
-			intree->SetBranchAddress("location", &detLocation);
-		}
-
-		if(!branch){
-			std::cout << " Error: Failed to load branch \"vandle\" from input TTree.\n";
-			return 8;
-		}
 
 		if(treeMode || mcarlo){
 			outtree = new TTree("data", "CM Angles");
-	
+
 			if(!mcarlo){
 				outtree->Branch("tof", &ctof);
 				outtree->Branch("E", &energy);
@@ -304,60 +275,91 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			h2dcom->GetZaxis()->SetTitle("Counts per 0.2 ns");
 		}
 
-		progressBar pbar;
-		pbar.start(intree->GetEntries());
+		int file_counter = 1;
+		while(openInputFile()){
+			std::cout << "\n " << file_counter++ << ") Processing file " << input_filename << std::endl;
 
-		unsigned int badCount = 0;
-		for(unsigned int i = 0; i < intree->GetEntries(); i++){
-			pbar.check(i);
+			if(!loadInputTree()){
+				std::cout << " Error: Failed to load TTree \"" << input_objname << "\".\n";
+				continue;
+			}
 
-			intree->GetEntry(i);
-		
+			TBranch *branch = NULL;
+			VandleStructure *ptr = NULL;
+			std::vector<double> hitTheta;
+			std::vector<int> detLocation;
+	
 			if(!mcarlo){
-				for(unsigned int j = 0; j < ptr->mult; j++){
-					if(ptr->r.at(j) >= 0.65){
-						badCount++;
-						continue;
-					}
-		
-					// Check the tqdc threshold (if available).
-					if(threshold > 0 && ptr->tqdc.at(j) < threshold) continue;
-
-					// Check against the input tcutg (if available).
-					if(useTCutG && !tcutg->IsInside(ptr->ctof.at(j), ptr->tqdc.at(j))) continue;
-
-					rxn.SetLabAngle(ptr->theta.at(j));
-					if(treeMode){
-						ctof = ptr->ctof.at(j);
-						energy = ptr->energy.at(j);
-						tqdc = ptr->tqdc.at(j);
-						theta = ptr->theta.at(j);
-						location = ptr->loc.at(j);
-		
-						angleCOM = rxn.GetEjectile()->comAngle[0];
-			
-						outtree->Fill();
-					}
-					hE->Fill(ptr->theta.at(j), ptr->energy.at(j));
-					h2d->Fill(ptr->theta.at(j), ptr->ctof.at(j));
-					hEcom->Fill(rxn.GetEjectile()->comAngle[0], ptr->energy.at(j));
-					h2dcom->Fill(rxn.GetEjectile()->comAngle[0], ptr->ctof.at(j));
-				}
+				intree->SetBranchAddress("vandle", &ptr, &branch);
 			}
 			else{
-				for(unsigned int j = 0; j < hitTheta.size(); j++){
-					theta = hitTheta.at(j);
-					rxn.SetLabAngle(theta);
-					angleCOM = rxn.GetEjectile()->comAngle[0];
-					location = detLocation.at(j);
+				intree->SetMakeClass(1);
+				intree->SetBranchAddress("hitTheta", &hitTheta, &branch);
+				intree->SetBranchAddress("location", &detLocation);
+			}
+	
+			if(!branch){
+				std::cout << " Error: Failed to load branch \"vandle\" from input TTree.\n";
+				return 8;
+			}
+	
+			progressBar pbar;
+			pbar.start(intree->GetEntries());
+	
+			unsigned int badCount = 0;
+			for(unsigned int i = 0; i < intree->GetEntries(); i++){
+				pbar.check(i);
+	
+				intree->GetEntry(i);
+		
+				if(!mcarlo){
+					for(unsigned int j = 0; j < ptr->mult; j++){
+						if(ptr->r.at(j) >= 0.65){
+							badCount++;
+							continue;
+						}
+			
+						// Check the tqdc threshold (if available).
+						if(threshold > 0 && ptr->tqdc.at(j) < threshold) continue;
+	
+						// Check against the input tcutg (if available).
+						if(useTCutG && !tcutg->IsInside(ptr->ctof.at(j), ptr->tqdc.at(j))) continue;
+	
+						rxn.SetLabAngle(ptr->theta.at(j));
+						if(treeMode){
+							ctof = ptr->ctof.at(j);
+							energy = ptr->energy.at(j);
+							tqdc = ptr->tqdc.at(j);
+							theta = ptr->theta.at(j);
+							location = ptr->loc.at(j);
+			
+							angleCOM = rxn.GetEjectile()->comAngle[0];
 				
-					outtree->Fill();
+							outtree->Fill();
+						}
+						hE->Fill(ptr->theta.at(j), ptr->energy.at(j));
+						h2d->Fill(ptr->theta.at(j), ptr->ctof.at(j));
+						hEcom->Fill(rxn.GetEjectile()->comAngle[0], ptr->energy.at(j));
+						h2dcom->Fill(rxn.GetEjectile()->comAngle[0], ptr->ctof.at(j));
+					}
+				}
+				else{
+					for(unsigned int j = 0; j < hitTheta.size(); j++){
+						theta = hitTheta.at(j);
+						rxn.SetLabAngle(theta);
+						angleCOM = rxn.GetEjectile()->comAngle[0];
+						location = detLocation.at(j);
+					
+						outtree->Fill();
+					}
 				}
 			}
-		}
-
-		pbar.finalize();
 	
+			pbar.finalize();
+		
+			std::cout << "  Rejected " << badCount << " events.\n";
+		}
+		
 		outfile->cd();
 		if(treeMode || mcarlo)
 			outtree->Write();
@@ -372,7 +374,6 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 
 		if(treeMode || mcarlo) std::cout << "\n\n Done! Wrote " << outtree->GetEntries() << " entries to '" << output_filename << "'.\n";
 		if(!mcarlo) std::cout << "\n\n Done! Wrote " << h2d->GetEntries() << " entries to histogram.\n";
-		std::cout << "  Rejected " << badCount << " events.\n";
 	}
 	else{ // Print kinematics to the screen instead of scanning an input file.
 		if(!setupReaction())
