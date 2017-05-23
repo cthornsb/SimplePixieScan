@@ -367,8 +367,22 @@ TH1D *simpleHistoFitter::getProjectionHist(TH2 *h2_, const char *name_/*="h1"*/,
 	// Check that the histogram is defined.
 	if(!h2_) return NULL;	
 	TH1D *output = NULL;
-	if(useProjX) output = new TH1D(name_, title_, h2d->GetNbinsX(), h2d->GetXaxis()->GetXmin(), h2d->GetXaxis()->GetXmax());
-	else output = new TH1D(name_, title_, h2d->GetNbinsY(), h2d->GetYaxis()->GetXmin(), h2d->GetYaxis()->GetXmax());
+	if(useProjX){
+		int nBins = h2d->GetNbinsX();
+		double *bins = new double[nBins+1];
+		for(int i = 1; i <= nBins+1; i++){
+			bins[i-1] = h2d->GetXaxis()->GetBinLowEdge(i);
+		}
+		output = new TH1D(name_, title_, nBins, bins);
+	}
+	else{
+		int nBins = h2d->GetNbinsY();
+		double *bins = new double[nBins+1];
+		for(int i = 1; i <= nBins+1; i++){
+			bins[i-1] = h2d->GetYaxis()->GetBinLowEdge(i);
+		}
+		output = new TH1D(name_, title_, nBins, bins);
+	}
 	return output;
 }
 
