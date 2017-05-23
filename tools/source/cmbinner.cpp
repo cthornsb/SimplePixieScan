@@ -250,26 +250,33 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 				}
 			}
 
-			int nBinsY = 550;
-			double yLow = -10;
-			double yHigh = 100;
+			const double Mn = 10454.0750977429; // Mass of neutron (MeV).
+			const double dist = 0.5; // m.
 
-			hE = new TH2D("hE", "Lab Angle vs. Energy", nBins, xbins, 500, 0, 10);
+			// Generate energy bins based on fixed width time bins.
+			double binEdgeTime = 100;
+			double energyBins[451];
+			for(int i = 0; i <= 450; i++){
+				energyBins[i] = 0.5 * Mn * dist * dist / (binEdgeTime*binEdgeTime);
+				binEdgeTime = binEdgeTime - 0.2;
+			}
+
+			hE = new TH2D("hE", "Lab Angle vs. Energy", nBins, xbins, 450, energyBins);
 			hE->GetXaxis()->SetTitle("Lab Angle (deg)");
 			hE->GetYaxis()->SetTitle("Neutron Energy (MeV)");
 			hE->GetZaxis()->SetTitle("Counts per 20 keV");
 
-			hEcom = new TH2D("hEcom", "Lab Angle vs. Energy", nBins, startAngle, stopAngle, 500, 0, 10);
+			hEcom = new TH2D("hEcom", "Lab Angle vs. Energy", nBins, startAngle, stopAngle, 450, energyBins);
 			hEcom->GetXaxis()->SetTitle("CoM Angle (deg)");
 			hEcom->GetYaxis()->SetTitle("Neutron Energy (MeV)");
 			hEcom->GetZaxis()->SetTitle("Counts per 20 keV");
 
-			h2d = new TH2D("h2d", "Lab Angle vs. ctof", nBins, xbins, nBinsY, yLow, yHigh);
+			h2d = new TH2D("h2d", "Lab Angle vs. ctof", nBins, xbins, 550, -10, 100);
 			h2d->GetXaxis()->SetTitle("Lab Angle (deg)");
 			h2d->GetYaxis()->SetTitle("Neutron ToF (ns)");
 			h2d->GetZaxis()->SetTitle("Counts per 0.2 ns");
 
-			h2dcom = new TH2D("h2dcom", "Lab Angle vs. ctof", nBins, startAngle, stopAngle, nBinsY, yLow, yHigh);
+			h2dcom = new TH2D("h2dcom", "Lab Angle vs. ctof", nBins, startAngle, stopAngle, 550, -10, 100);
 			h2dcom->GetXaxis()->SetTitle("CoM Angle (deg)");
 			h2dcom->GetYaxis()->SetTitle("Neutron ToF (ns)");
 			h2dcom->GetZaxis()->SetTitle("Counts per 0.2 ns");
