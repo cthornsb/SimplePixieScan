@@ -46,8 +46,11 @@ class specFitter : public simpleHistoFitter {
 	bool polyBG;
 	bool gausFit;
 
+	bool logXaxis;
+	bool logYaxis;
+
   public:
-	specFitter() : simpleHistoFitter(), polyBG(false), gausFit(true) { }
+	specFitter() : simpleHistoFitter(), polyBG(false), gausFit(true), logXaxis(false), logYaxis(false) { }
 
 	bool fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_);
 
@@ -289,6 +292,8 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_){
 void specFitter::addChildOptions(){
 	addOption(optionExt("poly", no_argument, NULL, 'p', "", "Fit background spectrum with 2nd order polynomial."), userOpts, optstr);
 	addOption(optionExt("landau", no_argument, NULL, 'l', "", "Fit peaks with landau distributions."), userOpts, optstr);
+	addOption(optionExt("logx", no_argument, NULL, 0x0, "", "Log the x-axis of the projection histogram."), userOpts, optstr);
+	addOption(optionExt("logy", no_argument, NULL, 0x0, "", "Log the y-axis of the projection histogram."), userOpts, optstr);
 }
 
 bool specFitter::processChildArgs(){
@@ -296,6 +301,10 @@ bool specFitter::processChildArgs(){
 		polyBG = true;
 	if(userOpts.at(firstChildOption+1).active)
 		gausFit = false;
+	if(userOpts.at(firstChildOption+2).active)
+		logXaxis = true;
+	if(userOpts.at(firstChildOption+3).active)
+		logYaxis = true;
 
 	return true;
 }
@@ -320,6 +329,21 @@ bool specFitter::process(){
 	Xrange = Xmax-Xmin;
 
 	can2->cd();
+	
+	if(logXaxis){
+		if(h1->GetXaxis()->GetXmin() <= 0){
+			std::cout << " Warning! Failed to set x-axis to log scale (xmin=" << h1->GetXaxis()->GetXmin() << ").\n";
+			logXaxis = false;
+		}
+		else{ can2->SetLogx(); }
+	}
+	if(logYaxis){
+		if(h1->GetYaxis()->GetXmin() <= 0){
+			std::cout << " Warning! Failed to set y-axis to log scale (ymin=" << h1->GetYaxis()->GetXmin() << ").\n";
+			logYaxis = false;
+		}
+		else{ can2->SetLogy(); }
+	}
 
 	double binLow;
 	int numProjections = getNumProjections(h2d);
