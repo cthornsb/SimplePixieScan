@@ -52,7 +52,7 @@ class specFitter : public simpleHistoFitter {
   public:
 	specFitter() : simpleHistoFitter(), polyBG(false), gausFit(true), logXaxis(false), logYaxis(false) { }
 
-	bool fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_);
+	bool fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_, const bool &log_=false);
 
 	void addChildOptions();
 	
@@ -61,7 +61,7 @@ class specFitter : public simpleHistoFitter {
 	bool process();
 };
 
-bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_){
+bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_, const bool &log_/*=false*/){
 	if(!h_) return false; 
 
 	h_->Draw();
@@ -91,9 +91,6 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_){
 	double amplitude;
 	double meanValue;
 	
-	double bgx1, bgy1;
-	double bgx2, bgy2;
-
 	double bgx[3];
 	double bgy[3];
 	double p[3];
@@ -108,18 +105,23 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_){
 		// Set initial function parameters.
 		std::cout << "Mark exponential background (x0,y0)\n";
 		marker = (TMarker*)can2->WaitPrimitive("TMarker");
-		bgx1 = marker->GetX();
-		bgy1 = marker->GetY();
+		bgx[0] = marker->GetX();
+		bgy[0] = marker->GetY();
 		delete marker;
 		std::cout << "Mark exponential background (x1,y1)\n";
 		marker = (TMarker*)can2->WaitPrimitive("TMarker");	
-		bgx2 = marker->GetX();
-		bgy2 = marker->GetY();
+		bgx[1] = marker->GetX();
+		bgy[1] = marker->GetY();
+		delete marker;
+		std::cout << "Mark constant (xinf,yinf)\n";
+		marker = (TMarker*)can2->WaitPrimitive("TMarker");
+		bgx[2] = marker->GetX();
+		bgy[2] = marker->GetY();
 		delete marker;
 
-		p[0] = bgy2*0.9;
-		p[2] = std::log((bgy1-p[0])/(bgy2-p[0]))/(bgx1-bgx2);
-		p[1] = std::log(bgy1)-p[2]*bgx1;
+		p[0] = bgy[2];
+		p[2] = std::log((bgy[0]-p[0])/(bgy[1]-p[0]))/(bgx[0]-bgx[1]);
+		p[1] = std::log(bgy[0])-p[2]*bgx[0];
 
 		// Build up the formula string.
 		stream << "[0]+expo(1)";
@@ -146,9 +148,6 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_){
 
 		calculateP2(bgx, bgy, p);
 
-		bgx1 = bgx[0];
-		bgx2 = bgx[2];
-
 		// Build up the formula string.
 		stream << "[0]+x*[1]+x^2*[2]";
 	}
@@ -162,7 +161,7 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_){
 
 	// Define the total fit function.
 	if(debug) std::cout << " Declaring function \"" << stream.str() << "\".\n";
-	TF1 *func = new TF1("func", stream.str().c_str(), bgx1, bgx2);
+	TF1 *func = new TF1("func", stream.str().c_str(), bgx[0], bgx[2]);
 
 	func->SetParameter(0, p[0]);
 	func->SetParameter(1, p[1]);
@@ -226,9 +225,9 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_){
 
 	TF1 *bkgfunc = NULL;
 	if(!polyBG)
-		bkgfunc = new TF1("bkgfunc", "[0]+expo(1)", bgx1, bgx2);
+		bkgfunc = new TF1("bkgfunc", "[0]+expo(1)", bgx[0], bgx[1]);
 	else
-		bkgfunc = new TF1("bkgfunc", "[0]+x*[1]+x^2*[2]", bgx1, bgx2);
+		bkgfunc = new TF1("bkgfunc", "[0]+x*[1]+x^2*[2]", bgx[0], bgx[1]);
 	bkgfunc->SetLineColor(kMagenta+1);
 	bkgfunc->SetParameter(0, func->GetParameter(0));
 	bkgfunc->SetParameter(1, func->GetParameter(1));
@@ -241,7 +240,7 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_){
 
 	// Draw the composite gaussians.
 	double totalIntegral = 0;
-	double integral = bkgfunc->Integral(bgx1, bgx2);
+	double integral = bkgfunc->Integral(bgx[0], bgx[1]);
 	double binWidth = h_->GetBinWidth(1);
 	totalIntegral += integral;
 	if(debug){
@@ -251,8 +250,8 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_){
 	f_ << "\t" << integral/binWidth; // Write the background fit integral in fit range.
 	TF1 **lilfuncs = new TF1*[numPeaks+1];
 	for(int i = 0; i < numPeaks; i++){
-		if(gausFit) lilfuncs[i] = new TF1("name", "gaus", bgx1, bgx2);
-		else lilfuncs[i] = new TF1("name", "landau", bgx1, bgx2);
+		if(gausFit) lilfuncs[i] = new TF1("name", "gaus", bgx[0], bgx[1]);
+		else lilfuncs[i] = new TF1("name", "landau", bgx[0], bgx[1]);
 		lilfuncs[i]->SetLineColor(kGreen+3);
 		lilfuncs[i]->SetParameter(0, func->GetParameter(3*i+3));
 		lilfuncs[i]->SetParameter(1, func->GetParameter(3*i+4));
@@ -262,15 +261,15 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_){
 	can2->Update();
 	can2->WaitPrimitive();
 
-	double histIntegral = integrateHist(h_, bgx1, bgx2);
+	double histIntegral = integrateHist(h_, bgx[0], bgx[1]);
 	if(debug){
 		std::cout << "  total: " << totalIntegral << " (" << totalIntegral/binWidth << " counts)\n";
-		std::cout << "  hist: " << integrateHist(h_, bgx1, bgx2) << " counts\n";
+		std::cout << "  hist: " << integrateHist(h_, bgx[0], bgx[1]) << " counts\n";
 	}
 	f_ << "\t" << histIntegral << "\n"; // Write the histogram counts in fit range.
 
 	for(int i = 0; i < numPeaks; i++){ // Write the individual peak fit results to file.
-		integral = lilfuncs[i]->Integral(bgx1, bgx2);
+		integral = lilfuncs[i]->Integral(bgx[0], bgx[1]);
 		totalIntegral += integral;
 	
 		f_ << binID_ << "\t" << i << "\t" << !gausFit << "\t";
