@@ -68,14 +68,21 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_, cons
 
 	TMarker *marker;
 
-	double xlo = h_->GetXaxis()->GetXmin();
-	double ylo = h_->GetYaxis()->GetXmin();
+	double xlo, ylo;
 	double xhi, yhi;
-
+	
+	std::cout << " Mark bottom-left bounding point (xmin,ymin)\n";
+	marker = (TMarker*)can2->WaitPrimitive("TMarker");
+	xlo = marker->GetX();
+	ylo = marker->GetY();
+	delete marker;	
+	
 	std::cout << " Mark top-right bounding point (xmax,ymax)\n";
 	marker = (TMarker*)can2->WaitPrimitive("TMarker");
 	xhi = marker->GetX();
 	yhi = marker->GetY();
+	delete marker;
+
 	h_->GetXaxis()->SetRangeUser(xlo, xhi);
 	h_->GetYaxis()->SetRangeUser(ylo, yhi);
 	h_->Draw();
@@ -169,7 +176,7 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_, cons
 
 	// Define the total fit function.
 	if(debug) std::cout << " Declaring function \"" << totalString << "\".\n";
-	TF1 *func = new TF1("func", totalString.c_str(), bgx[0], bgx[2]);
+	TF1 *func = new TF1("func", totalString.c_str(), xlo, xhi);
 
 	func->SetParameter(0, p[0]);
 	func->SetParameter(1, p[1]);
@@ -244,7 +251,7 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_, cons
 	func->Draw("SAME");
 
 	TF1 *bkgfunc = NULL;
-	bkgfunc = new TF1("bkgfunc", stream1.str().c_str(), bgx[0], bgx[2]);
+	bkgfunc = new TF1("bkgfunc", stream1.str().c_str(), xlo, xhi);
 	
 	bkgfunc->SetLineColor(kMagenta+1);
 	bkgfunc->SetParameter(0, func->GetParameter(0));
@@ -258,7 +265,7 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_, cons
 
 	// Draw the composite gaussians.
 	double totalIntegral = 0;
-	double integral = bkgfunc->Integral(bgx[0], bgx[1]);
+	double integral = bkgfunc->Integral(xlo, xhi);
 	double binWidth = h_->GetBinWidth(1);
 	totalIntegral += integral;
 	if(debug){
@@ -268,7 +275,7 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_, cons
 	f_ << "\t" << integral/binWidth; // Write the background fit integral in fit range.
 	TF1 **lilfuncs = new TF1*[numPeaks+1];
 	for(int i = 0; i < numPeaks; i++){
-		lilfuncs[i] = new TF1("name", stream2.str().c_str(), bgx[0], bgx[1]);
+		lilfuncs[i] = new TF1("name", stream2.str().c_str(), xlo, xhi);
 		lilfuncs[i]->SetLineColor(kGreen+3);
 		lilfuncs[i]->SetParameter(0, func->GetParameter(3*i+3));
 		lilfuncs[i]->SetParameter(1, func->GetParameter(3*i+4));
@@ -278,15 +285,15 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_, cons
 	can2->Update();
 	can2->WaitPrimitive();
 
-	double histIntegral = integrateHist(h_, bgx[0], bgx[1]);
+	double histIntegral = integrateHist(h_, xlo, xhi);
 	if(debug){
 		std::cout << "  total: " << totalIntegral << " (" << totalIntegral/binWidth << " counts)\n";
-		std::cout << "  hist: " << integrateHist(h_, bgx[0], bgx[1]) << " counts\n";
+		std::cout << "  hist: " << integrateHist(h_, xlo, xhi) << " counts\n";
 	}
 	f_ << "\t" << histIntegral << "\n"; // Write the histogram counts in fit range.
 
 	for(int i = 0; i < numPeaks; i++){ // Write the individual peak fit results to file.
-		integral = lilfuncs[i]->Integral(bgx[0], bgx[1]);
+		integral = lilfuncs[i]->Integral(xlo, xhi);
 		totalIntegral += integral;
 	
 		f_ << binID_ << "\t" << i << "\t" << !gausFit << "\t";
