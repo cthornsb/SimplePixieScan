@@ -26,21 +26,14 @@ double integrateHist(TH1 *h, const double &low, const double &high){
 void calculateP2(double *x, double *y, double *p, bool log=false){
 	double x1[3], x2[3];
 	for(size_t i = 0; i < 3; i++){
-		if(!log){
-			x1[i] = x[i];
-			x2[i] = std::pow(x[i], 2);
-		}
-		else{
-			x1[i] = std::log(x[i]);
-			x2[i] = std::pow(std::log(x[i]), 2);
-		}
+		if(!log) x1[i] = x[i];
+		else     x1[i] = std::log(x[i]);
+		x2[i] = std::pow(x1[i], 2);
 	}
 
-	double denom = (x1[1]*x2[2]-x2[1]*x1[2]) - x1[0]*(x2[2]-x2[1]*1) + x2[0]*(x1[2]-x1[1]*1);
-
-	p[0] = (float)((y[0]*(x1[1]*x2[2]-x2[1]*x1[2]) - x1[0]*(y[1]*x2[2]-x2[1]*y[2]) + x2[0]*(y[1]*x1[2]-x1[1]*y[2]))/denom);
-	p[1] = (float)(((y[1]*x2[2]-x2[1]*y[2]) - y[0]*(x2[2]-x2[1]*1) + x2[0]*(y[2]-y[1]*1))/denom);
-	p[2] = (float)(((x1[1]*y[2]-y[1]*x1[2]) - x1[0]*(y[2]-y[1]*1) + y[0]*(x1[2]-x1[1]*1))/denom);
+	p[2] = (y[2]-y[0]+(y[0]-y[1])*(x1[2]-x1[0])/(x1[1]-x1[0]))/(x2[2]-x2[0]-(x2[1]-x2[0])*(x1[2]-x1[0])/(x1[1]-x1[0]));
+	p[1] = (y[1]-y[0]-(x2[1]-x2[0])*p[2])/(x1[1]-x1[0]);
+	p[0] = y[0] - p[1]*x1[0] - p[2]*x2[0];
 }
 
 class specFitter : public simpleHistoFitter {
@@ -201,7 +194,7 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_, cons
 		TLine line(xlo, amplitude*0.5+bkgA, xhi, amplitude*0.5+bkgA);
 		line.Draw("SAME");
 		can2->Update();
-		std::cout << "Mark peak " << i+1 << " left and right\n";
+		std::cout << "Mark left and right of peak " << i+1 << "\n";
 		marker = (TMarker*)can2->WaitPrimitive("TMarker");
 		fwhmLeft = marker->GetX();
 		delete marker;
@@ -216,7 +209,9 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_, cons
 		}
 		else{
 			func->SetParameter(3*i+4, std::log(meanValue));
-			func->SetParameter(3*i+5, (fwhmRight-std::log(meanValue))/std::sqrt(4));
+			double sig1 = std::log(fwhmRight/meanValue)/std::sqrt(std::log(4)); // Right side of the maximum.
+			double sig2 = std::log(meanValue/fwhmLeft)/std::sqrt(std::log(4)); // Left side of the maximum.
+			func->SetParameter(3*i+5, (sig1+sig2)/2);
 		}
 	}
 
