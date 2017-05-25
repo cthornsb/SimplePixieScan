@@ -23,11 +23,17 @@ double integrateHist(TH1 *h, const double &low, const double &high){
 	return retval;
 }
 
-void calculateP2(double *x, double *y, double *p){
+void calculateP2(double *x, double *y, double *p, bool log=false){
 	double x1[3], x2[3];
 	for(size_t i = 0; i < 3; i++){
-		x1[i] = x[i];
-		x2[i] = std::pow(x[i], 2);
+		if(!log){
+			x1[i] = x[i];
+			x2[i] = std::pow(x[i], 2);
+		}
+		else{
+			x1[i] = std::log(x[i]);
+			x2[i] = std::pow(std::log(x[i]), 2);
+		}
 	}
 
 	double denom = (x1[1]*x2[2]-x2[1]*x1[2]) - x1[0]*(x2[2]-x2[1]*1) + x2[0]*(x1[2]-x1[1]*1);
@@ -82,6 +88,9 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_, cons
 	h_->Draw();
 	can2->Update();
 
+	std::string xstr = "x";
+	if(log_) xstr = "log(x)";
+
 	int numPeaks = 1;
 	//std::cout << " How many peaks? "; std::cin >> numPeaks;
 	
@@ -97,11 +106,10 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_, cons
 
 	int nPars = 3*numPeaks;
 
-	std::stringstream stream;
+	std::stringstream stream1, stream2;
 
 	if(!polyBG){
 		nPars += 3;
-
 		// Set initial function parameters.
 		std::cout << "Mark exponential background (x0,y0)\n";
 		marker = (TMarker*)can2->WaitPrimitive("TMarker");
@@ -120,11 +128,16 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_, cons
 		delete marker;
 
 		p[0] = bgy[2];
-		p[2] = std::log((bgy[0]-p[0])/(bgy[1]-p[0]))/(bgx[0]-bgx[1]);
-		p[1] = std::log(bgy[0])-p[2]*bgx[0];
-
-		// Build up the formula string.
-		stream << "[0]+expo(1)";
+		if(log_){
+			p[2] = std::log((bgy[0]-p[0])/(bgy[1]-p[0]))/(bgx[0]-bgx[1]);
+			p[1] = std::log(bgy[0])-p[2]*bgx[0];
+		}
+		else{
+			p[2] = std::log((bgy[0]-p[0])/(bgy[1]-p[0]))/std::log(bgx[0]/bgx[1]);
+			p[1] = std::log(bgy[1]-p[0])-p[2]*std::log(bgx[0]);
+		}
+		
+		stream1 << "[0]+exp([1]+[2]*" << xstr << ")";
 	}
 	else{
 		nPars += 3;
@@ -146,22 +159,24 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_, cons
 		bgy[2] = marker->GetY();
 		delete marker;
 
-		calculateP2(bgx, bgy, p);
-
-		// Build up the formula string.
-		stream << "[0]+x*[1]+x^2*[2]";
+		if(!log_) calculateP2(bgx, bgy, p);
+		else      calculateP2(bgx, bgy, p, true);
+		
+		stream1 << "[0]+" << xstr << "*[1]+" << xstr << "^2*[2]";
 	}
 
 	if(debug) std::cout << " p0 = " << p[0] << ", p1 = " << p[1] << ", p2 = " << p[2] << std::endl;
 
 	for(int i = 0; i < numPeaks; i++){
-		if(gausFit) stream << "+gaus(" << 3*i+3 << ")";
-		else stream << "+landau(" << 3*i+3 << ")";
+		if(gausFit) stream2 << "+[" << 3*i+3 << "]*TMath::Gaus(" << xstr << ", [" << 3*i+4 << "], [" << 3*i+5 << "])";
+		else        stream2 << "+[" << 3*i+3 << "]*TMath::Landau(" << xstr << ", [" << 3*i+4 << "], [" << 3*i+5 << "])";
 	}
 
+	std::string totalString = stream1.str() + stream2.str();
+
 	// Define the total fit function.
-	if(debug) std::cout << " Declaring function \"" << stream.str() << "\".\n";
-	TF1 *func = new TF1("func", stream.str().c_str(), bgx[0], bgx[2]);
+	if(debug) std::cout << " Declaring function \"" << totalString << "\".\n";
+	TF1 *func = new TF1("func", totalString.c_str(), bgx[0], bgx[2]);
 
 	func->SetParameter(0, p[0]);
 	func->SetParameter(1, p[1]);
@@ -173,10 +188,14 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_, cons
 		marker = (TMarker*)can2->WaitPrimitive("TMarker");
 		amplitude = marker->GetY();
 		meanValue = marker->GetX();
-		if(!polyBG)
-			bkgA = p[0]+std::exp(p[1]+p[2]*meanValue);
-		else
-			bkgA = p[0]+p[1]*meanValue+p[2]*meanValue*meanValue;
+		if(!polyBG){
+			if(!log_) bkgA = p[0]+std::exp(p[1]+p[2]*meanValue);
+			else      bkgA = p[0]+std::exp(p[1])*std::pow(meanValue, p[2]);
+		}
+		else{
+			if(!log_) bkgA = p[0]+p[1]*meanValue+p[2]*meanValue*meanValue;
+			else      bkgA = p[0]+p[1]*std::log(meanValue)+p[2]*std::pow(std::log(meanValue), 2);
+		}
 		amplitude = amplitude-bkgA;
 		delete marker;
 		TLine line(xlo, amplitude*0.5+bkgA, xhi, amplitude*0.5+bkgA);
@@ -190,9 +209,15 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_, cons
 		fwhmRight = marker->GetX();
 		delete marker;
 		if(gausFit) func->SetParameter(3*i+3, amplitude);
-		else func->SetParameter(3*i+3, amplitude*5.9);
-		func->SetParameter(3*i+4, meanValue);
-		func->SetParameter(3*i+5, (fwhmRight-fwhmLeft)/2.35);
+		else        func->SetParameter(3*i+3, amplitude*5.9);
+		if(!log_){
+			func->SetParameter(3*i+4, meanValue);
+			func->SetParameter(3*i+5, (fwhmRight-fwhmLeft)/2.35);
+		}
+		else{
+			func->SetParameter(3*i+4, std::log(meanValue));
+			func->SetParameter(3*i+5, (fwhmRight-std::log(meanValue))/std::sqrt(4));
+		}
 	}
 
 	if(debug){ // Print the initial conditions.
@@ -224,10 +249,8 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_, cons
 	func->Draw("SAME");
 
 	TF1 *bkgfunc = NULL;
-	if(!polyBG)
-		bkgfunc = new TF1("bkgfunc", "[0]+expo(1)", bgx[0], bgx[1]);
-	else
-		bkgfunc = new TF1("bkgfunc", "[0]+x*[1]+x^2*[2]", bgx[0], bgx[1]);
+	bkgfunc = new TF1("bkgfunc", stream1.str().c_str(), bgx[0], bgx[2]);
+	
 	bkgfunc->SetLineColor(kMagenta+1);
 	bkgfunc->SetParameter(0, func->GetParameter(0));
 	bkgfunc->SetParameter(1, func->GetParameter(1));
@@ -250,8 +273,7 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_, cons
 	f_ << "\t" << integral/binWidth; // Write the background fit integral in fit range.
 	TF1 **lilfuncs = new TF1*[numPeaks+1];
 	for(int i = 0; i < numPeaks; i++){
-		if(gausFit) lilfuncs[i] = new TF1("name", "gaus", bgx[0], bgx[1]);
-		else lilfuncs[i] = new TF1("name", "landau", bgx[0], bgx[1]);
+		lilfuncs[i] = new TF1("name", stream2.str().c_str(), bgx[0], bgx[1]);
 		lilfuncs[i]->SetLineColor(kGreen+3);
 		lilfuncs[i]->SetParameter(0, func->GetParameter(3*i+3));
 		lilfuncs[i]->SetParameter(1, func->GetParameter(3*i+4));
@@ -361,7 +383,7 @@ bool specFitter::process(){
 			h1->GetYaxis()->SetRangeUser(0, 1.1*h1->GetBinContent(h1->GetMaximumBin()));
 
 			ofile << i << "\t" << binLow << "\t";
-			fitSpectrum(h1, ofile, i);
+			fitSpectrum(h1, ofile, i, logXaxis);
 		}
 		else std::cout << "FAILED\n";
 	}
