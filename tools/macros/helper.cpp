@@ -103,89 +103,38 @@ double correctEfficiency(const double &E_, const double &funcVal_){
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Valid only for 60 keVee intrinsic efficiency!!!
+// Neutron peak fit functions.
 ///////////////////////////////////////////////////////////////////////////////
 
-/*// Piecewise defined VANDLE intrinsic efficiency as a function of neutron ToF.
-double efficiency(double *x, double *p){
-        const double p0 = 0.354632, p1 = 0.712302, p2 = 0.175741;
-        const double pp0 = 0.379911, pp1 = -0.0382243;
-	double En = 0.5*Mn*d*d/(x[0]*x[0]);
-	if(En < 0.1 || En > 8) return 0.0;
-        if(En > p1) return (pp0 + En*pp1);
-        return (p0*std::exp(-0.5*std::pow((En-p1)/p2, 2.0)));
-}
+class TOFfitFunctions{
+  public:
+	// Standard gaussian (x in ns) scaled by linearly interpolated intrinsic efficiency. 
+	static double gaussian(double *x, double *p){
+		if(x[0] > 105) return 0.0;
+		return correctEfficiency(calcEnergy(x[0]), p[0]*TMath::Gaus(x[0], p[1], p[2]));
+	}
 
-// Piecewise defined VANDLE intrinsic efficiency as a function of neutron Energy.
-double effVsEnergy(double *x, double *p){
-        const double p0 = 0.354632, p1 = 0.712302, p2 = 0.175741;
-        const double pp0 = 0.379911, pp1 = -0.0382243;
-	if(x[0] < 0.1 || x[0] > 8) return 0.0;
-        if(x[0] > p1) return (pp0 + x[0]*pp1);
-        return (p0*std::exp(-0.5*std::pow((x[0]-p1)/p2, 2.0)));
-}
+	// Standard landau (x in ns) scaled by linearly interpolated intrinsic efficiency. 
+	static double landau(double *x, double *p){
+		if(x[0] > 105) return 0.0;
+		return correctEfficiency(calcEnergy(x[0]), p[0]*TMath::Landau(x[0], p[1], p[2]));
+	}
+};
 
-// Standard gaussian scaled by piecewise defined VANDLE intrinsic efficiency function.
-double integrand1(double *x, double *p){
-        const double p0 = 0.354632, p1 = 0.712302, p2 = 0.175741;
-        const double pp0 = 0.379911, pp1 = -0.0382243;
-	//double ntof = std::sqrt(Mn/(2*x[0]))*d;
-	double En = 0.5*Mn*d*d/(x[0]*x[0]);
-	if(En < 0.1 || En > 8) return 0.0;
-	double retval = p[0]*std::exp(-0.5*std::pow((x[0]-p[1])/p[2], 2.0));
-        if(En > p1) return retval/(pp0 + En*pp1);
-        return retval/(p0*std::exp(-0.5*std::pow((En-p1)/p2, 2.0)));
-}*/
+class ENfitFunctions{
+  public:
+	// Standard gaussian (x in MeV) scaled by linearly interpolated intrinsic efficiency.
+	static double gaussian(double *x, double *p){
+		if(x[0] < 0.125) return 0.0;
+		return correctEfficiency(x[0], p[0]*TMath::Gaus(x[0], p[1], p[2]));
+	}
 
-///////////////////////////////////////////////////////////////////////////////
-// Valid only for threshold-less intrinsic efficiency!!!
-///////////////////////////////////////////////////////////////////////////////
-
-/*// Piecewise defined VANDLE intrinsic efficiency as a function of neutron ToF.
-double efficiency(double *x, double *p){
-	const double p0 = 0.151528, p1 = 7.59268E-3;
-	if(x[0] > 105) return 0.0;
-	return (p0 + p1*x[0]);
-}
-
-// Piecewise defined VANDLE intrinsic efficiency as a function of neutron Energy.
-double effVsEnergy(double *x, double *p){
-	const double p0 = 0.151528, p1 = 7.59268E-3;
-	if(x[0] < 0.125) return 0.0;
-	return (p0 + p1*x[0]);
-}
-
-// Standard gaussian scaled by piecewise defined VANDLE intrinsic efficiency function.
-double integrand(double *x, double *p){
-	const double p0 = 0.151528, p1 = 7.59268E-3;
-	if(x[0] > 105) return 0.0;
-	double retval = p[0]*std::exp(-0.5*std::pow((x[0]-p[1])/p[2], 2.0));
-	return retval/(p0 + p1*x[0]);
-}*/
-
-// Standard gaussian (x in ns) scaled by linearly interpolated intrinsic efficiency. 
-double integrand1(double *x, double *p){
-	if(x[0] > 105) return 0.0;
-	return correctEfficiency(calcEnergy(x[0]), p[0]*TMath::Gaus(x[0], p[1], p[2]));
-}
-
-// Standard landau (x in ns) scaled by linearly interpolated intrinsic efficiency. 
-double integrand2(double *x, double *p){
-	if(x[0] > 105) return 0.0;
-	return correctEfficiency(calcEnergy(x[0]), p[0]*TMath::Landau(x[0], p[1], p[2]));
-}
-
-// Standard gaussian (x in MeV) scaled by linearly interpolated intrinsic efficiency.
-double integrand3(double *x, double *p){
-	if(x[0] < 0.125) return 0.0;
-	return correctEfficiency(x[0], p[0]*TMath::Gaus(x[0], p[1], p[2]));
-}
-
-// Standard landau (x in MeV) scaled by linearly interpolated intrinsic efficiency.
-double integrand4(double *x, double *p){
-	if(x[0] < 0.125) return 0.0;
-	return correctEfficiency(x[0], p[0]*TMath::Landau(x[0], p[1], p[2]));
-}
+	// Standard landau (x in MeV) scaled by linearly interpolated intrinsic efficiency.
+	static double landau(double *x, double *p){
+		if(x[0] < 0.125) return 0.0;
+		return correctEfficiency(x[0], p[0]*TMath::Landau(x[0], p[1], p[2]));
+	}
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 // Helper functions
@@ -368,7 +317,7 @@ TGaxis *extraYaxis(){
 
 // Integrate gaussian fits from ToF plot.
 void processGausPars(const double *p, int N, double binwidth=0.2){
-	TF1 *func = new TF1("ff", integrand1, -10, 100, 3);
+	TF1 *func = new TF1("ff", TOFfitFunctions::gaussian, -10, 100, 3);
 	for(int i = 0; i < N; i++){
 		func->SetParameters(&p[i*3]);
 		std::cout << i << "\t" << func->Integral(-10, 100)/binwidth << std::endl;
@@ -479,16 +428,16 @@ bool processSpecOutput(const char *fname, const char *ofname, double binwidth=0.
 
 			TF1 *func = NULL;
 			if(!energy_){
-				if(peakID[2] == 0) func = new TF1("ff", integrand1, -10, 110, 3); // gaussian (function==0)
-				else if(peakID[2] == 1) func = new TF1("ff", integrand2, -10, 110, 3); // landau (function==1)
+				if(peakID[2] == 0) func = new TF1("ff", TOFfitFunctions::gaussian, -10, 110, 3); // gaussian (function==0)
+				else if(peakID[2] == 1) func = new TF1("ff", TOFfitFunctions::landau, -10, 110, 3); // landau (function==1)
 				else{
 					std::cout << " Invalid fit function (" << peakID[2] << ")!\n";
 					continue;
 				}
 			}
 			else{
-				if(peakID[2] == 0) func = new TF1("ff", integrand3, 0, 10, 3); // gaussian (function==0)
-				else if(peakID[2] == 1) func = new TF1("ff", integrand4, 0, 10, 3); // landau (function==1)
+				if(peakID[2] == 0) func = new TF1("ff", ENfitFunctions::gaussian, 0, 10, 3); // gaussian (function==0)
+				else if(peakID[2] == 1) func = new TF1("ff", ENfitFunctions::landau, 0, 10, 3); // landau (function==1)
 				else{
 					std::cout << " Invalid fit function (" << peakID[2] << ")!\n";
 					continue;
@@ -565,10 +514,10 @@ void help(const std::string &search_=""){
 	                                           "double", "effVsEnergy", "double *x, double *p", "Piecewise defined VANDLE intrinsic efficiency as a function of neutron Energy.",
 	                                           "TGaxis", "extraXaxis", "", "Add a second x-axis to a TCanvas.",
 	                                           "TGaxis", "*extraYaxis", "", "Add a second y-axis to a TCanvas.",
-	                                           "double", "integrand1", "double *x, double *p", "Standard gaussian (x in ns) scaled by linearly interpolated intrinsic efficiency.",
-	                                           "double", "integrand2", "double *x, double *p", "Standard landau (x in ns) scaled by linearly interpolated intrinsic efficiency.",
-	                                           "double", "integrand3", "double *x, double *p", "Standard gaussian (x in MeV) scaled by linearly interpolated intrinsic efficiency.",
-	                                           "double", "integrand4", "double *x, double *p", "Standard landau (x in MeV) scaled by linearly interpolated intrinsic efficiency.",
+	                                           "double", "TOFfitFunctions::gaussian", "double *x, double *p", "Standard gaussian (x in ns) scaled by linearly interpolated intrinsic efficiency.",
+	                                           "double", "TOFfitFunctions::landau", "double *x, double *p", "Standard landau (x in ns) scaled by linearly interpolated intrinsic efficiency.",
+	                                           "double", "ENfitFunctions::gaussian", "double *x, double *p", "Standard gaussian (x in MeV) scaled by linearly interpolated intrinsic efficiency.",
+	                                           "double", "ENfitFunctions::landau", "double *x, double *p", "Standard landau (x in MeV) scaled by linearly interpolated intrinsic efficiency.",
 	                                           "double", "integrate", "TGraph *g", "Return the total integral of a logic signal TGraph.",
 	                                           "double", "integrate", "TH1 *h", "Return the total integral of a 1-d histogram.",
 	                                           "double", "integrate", "TH1 *h, const double &low, const double &high", "Return the integral of a 1-d histogram in the range [low, high].",
