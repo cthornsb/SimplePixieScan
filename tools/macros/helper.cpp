@@ -218,6 +218,7 @@ double integrate(TGraph *g){
 }
 
 // Return the total integral of a 1-d histogram.
+//  NOTE: TH1::Integral returns the SUM of the histogram, not the integral.
 double integrate(TH1 *h){
 	double sum = 0;
 	for(int i = 1; i < h->GetNbinsX(); i++){
@@ -227,14 +228,15 @@ double integrate(TH1 *h){
 }
 
 // Return the integral of a 1-d histogram in the range [low, high].
+//  NOTE: TH1::Integral returns the SUM of the histogram, not the integral.
 double integrate(TH1 *h, const double &low, const double &high){
 	int lowBin = h->FindBin(low);
 	int highBin = h->FindBin(high);
 	if(highBin > h->GetNbinsX())
 		highBin = h->GetNbinsX();
 	double retval = 0;
-	for(int i = lowBin; i <= highBin; i++)
-		retval += h->GetBinContent(i);
+	for(int i = lowBin; i < highBin; i++)
+		retval += 0.5 * (h->GetBinContent(i) + h->GetBinContent(i+1)) * h->GetBinWidth(i);
 	return retval;
 }
 
