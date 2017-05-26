@@ -18,8 +18,8 @@ double integrateHist(TH1 *h, const double &low, const double &high){
 	if(highBin > h->GetNbinsX())
 		highBin = h->GetNbinsX();
 	double retval = 0;
-	for(int i = lowBin; i <= highBin; i++)
-		retval += h->GetBinContent(i);
+	for(int i = lowBin; i < highBin; i++)
+		retval += 0.5 * (h->GetBinContent(i) + h->GetBinContent(i+1)) * h->GetBinWidth(i);
 	return retval;
 }
 
