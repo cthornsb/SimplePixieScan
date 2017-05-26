@@ -578,10 +578,6 @@ void help(const std::string &search_=""){
 	                                        "double", "dd", "Thickness of detector, in m.",
 	                                        "double", "dt", "Timing resolution of detector, in ns."};
 
-
-
-
-
 	// Defined functions.
 	const std::string definedFunctions[136] = {"void", "binRatio", "TH1 *h1_, TH1 *h2_", "List the ratio of each bin in two 1-d histograms.",
 	                                           "double", "calcEnergy", "const double &tof_", "Calculate neutron energy (MeV) given the time-of-flight (in ns).",

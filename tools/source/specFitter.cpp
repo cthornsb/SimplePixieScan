@@ -12,14 +12,37 @@
 
 #include "simpleTool.hpp"
 
-double integrateHist(TH1 *h, const double &low, const double &high){
-	int lowBin = h->FindBin(low);
-	int highBin = h->FindBin(high);
-	if(highBin > h->GetNbinsX())
-		highBin = h->GetNbinsX();
+// Return the range of bins containing an upper and lower point, rounded to the nearest bins.
+void findBins(TH1 *h, const double &xstart_, const double &xstop_, int &lowBin, int &highBin){
+	if(xstart_ <= h->GetXaxis()->GetXmin()) lowBin = 1;
+	else                                    lowBin = h->FindBin(xstart_);
+	if(xstop_ >= h->GetXaxis()->GetXmax())  highBin = h->GetNbinsX();
+	else                                    highBin = h->FindBin(xstop_);
+}
+
+// Return the number of counts in a 1-d histogram in the range [low, high], rounded to the nearest bins.
+//  NOTE: This function returns the number of counts in a histogram, not the integral.
+double summation(TH1 *h, const double &xstart_, const double &xstop_){
+	int lowBin, highBin;
+	findBins(h, xstart_, xstop_, lowBin, highBin);
 	double retval = 0;
-	for(int i = lowBin; i < highBin; i++)
-		retval += 0.5 * (h->GetBinContent(i) + h->GetBinContent(i+1)) * h->GetBinWidth(i);
+	for(int i = lowBin; i <= highBin; i++)
+		retval += h->GetBinContent(i);
+	return retval;
+}
+
+// Return the number of counts under a TF1 in the range [low, high], rounded to the nearest bins.
+//  NOTE: This function returns the number of counts under a curve, not the function integral.
+double summation(TH1 *h, TF1 *f, const double &xstart_, const double &xstop_){
+	int lowBin, highBin;
+	findBins(h, xstart_, xstop_, lowBin, highBin);
+	double retval = 0;
+	double xlo, xhi;
+	for(int i = lowBin; i <= highBin; i++){
+		xlo = h->GetBinLowEdge(i);
+		xhi = xlo + h->GetBinWidth(i);
+		retval += f->Integral(xlo, xhi)/(xhi-xlo);
+	}
 	return retval;
 }
 
@@ -265,14 +288,13 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_, cons
 
 	// Draw the composite gaussians.
 	double totalIntegral = 0;
-	double integral = bkgfunc->Integral(xlo, xhi);
-	double binWidth = h_->GetBinWidth(1);
+	double integral = summation(h_, bkgfunc, xlo, xhi);
 	totalIntegral += integral;
 	if(debug){
 		std::cout << " Integrals:\n";
-		std::cout << "  background: " << integral << " (" << integral/binWidth << " counts)\n";
+		std::cout << "  background: " << integral << " (" << integral << " counts)\n";
 	}
-	f_ << "\t" << integral/binWidth; // Write the background fit integral in fit range.
+	f_ << "\t" << integral; // Write the background fit integral in fit range.
 	TF1 **lilfuncs = new TF1*[numPeaks+1];
 	for(int i = 0; i < numPeaks; i++){
 		lilfuncs[i] = new TF1("name", stream2.str().c_str(), xlo, xhi);
@@ -285,15 +307,15 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_, cons
 	can2->Update();
 	can2->WaitPrimitive();
 
-	double histIntegral = integrateHist(h_, xlo, xhi);
+	double histIntegral = summation(h_, xlo, xhi);
 	if(debug){
-		std::cout << "  total: " << totalIntegral << " (" << totalIntegral/binWidth << " counts)\n";
-		std::cout << "  hist: " << integrateHist(h_, xlo, xhi) << " counts\n";
+		std::cout << "  total: " << totalIntegral << " (" << totalIntegral << " counts)\n";
+		std::cout << "  hist: " << summation(h_, xlo, xhi) << " counts\n";
 	}
 	f_ << "\t" << histIntegral << "\n"; // Write the histogram counts in fit range.
 
 	for(int i = 0; i < numPeaks; i++){ // Write the individual peak fit results to file.
-		integral = lilfuncs[i]->Integral(xlo, xhi);
+		integral = summation(h_, lilfuncs[i], xlo, xhi);
 		totalIntegral += integral;
 	
 		f_ << binID_ << "\t" << i << "\t";
@@ -303,8 +325,8 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_, cons
 		f_ << func->GetParameter(3*i+4) << "\t" << func->GetParError(3*i+4) << "\t"; 
 		f_ << func->GetParameter(3*i+5) << "\t" << func->GetParError(3*i+5) << "\t"; 
 
-		if(debug) std::cout << "  peak " << i << ": " << integral << " (" << integral/binWidth << " counts)\n";
-		f_ << integral/binWidth << "\n";
+		if(debug) std::cout << "  peak " << i << ": " << integral << " (" << integral << " counts)\n";
+		f_ << integral << "\n";
 		delete lilfuncs[i];
 	}
 	delete[] lilfuncs;
