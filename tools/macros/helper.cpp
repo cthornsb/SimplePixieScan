@@ -114,11 +114,23 @@ class TOFfitFunctions{
 		return correctEfficiency(calcEnergy(x[0]), p[0]*TMath::Gaus(x[0], p[1], p[2]));
 	}
 
+	// Logarithmic gaussian (x in ns) scaled by linearly interpolated intrinsic efficiency. 
+	static double logGaussian(double *x, double *p){
+		if(x[0] > 105) return 0.0;
+		return correctEfficiency(calcEnergy(x[0]), p[0]*TMath::Gaus(TMath::Log(x[0]), p[1], p[2]));
+	}
+
 	// Standard landau (x in ns) scaled by linearly interpolated intrinsic efficiency. 
 	static double landau(double *x, double *p){
 		if(x[0] > 105) return 0.0;
 		return correctEfficiency(calcEnergy(x[0]), p[0]*TMath::Landau(x[0], p[1], p[2]));
 	}
+	
+	// Logarithmic landau (x in ns) scaled by linearly interpolated intrinsic efficiency. 
+	static double logLandau(double *x, double *p){
+		if(x[0] > 105) return 0.0;
+		return correctEfficiency(calcEnergy(x[0]), p[0]*TMath::Landau(TMath::Log(x[0]), p[1], p[2]));
+	}	
 };
 
 class ENfitFunctions{
@@ -129,10 +141,22 @@ class ENfitFunctions{
 		return correctEfficiency(x[0], p[0]*TMath::Gaus(x[0], p[1], p[2]));
 	}
 
+	// Logarithmic gaussian (x in MeV) scaled by linearly interpolated intrinsic efficiency.
+	static double logGaussian(double *x, double *p){
+		if(x[0] < 0.125) return 0.0;
+		return correctEfficiency(x[0], p[0]*TMath::Gaus(TMath::Log(x[0]), p[1], p[2]));
+	}
+
 	// Standard landau (x in MeV) scaled by linearly interpolated intrinsic efficiency.
 	static double landau(double *x, double *p){
 		if(x[0] < 0.125) return 0.0;
 		return correctEfficiency(x[0], p[0]*TMath::Landau(x[0], p[1], p[2]));
+	}
+	
+	// Logarithmic landau (x in MeV) scaled by linearly interpolated intrinsic efficiency.
+	static double logLandau(double *x, double *p){
+		if(x[0] < 0.125) return 0.0;
+		return correctEfficiency(x[0], p[0]*TMath::Landau(TMath::Log(x[0]), p[1], p[2]));
 	}
 };
 
@@ -414,12 +438,15 @@ bool processSpecOutput(const char *fname, const char *ofname, double binwidth=0.
 
 			// Calculate the neutron energy.
 			if(!energy_){
-				En = 0.5*Mn*d*d/(peakPars[2]*peakPars[2]);
+				if(peakID[2] <= 1) En = 0.5*Mn*d*d/(peakPars[2]*peakPars[2]);
+				else               En = 0.5*Mn*d*d/(TMath::Exp(2*(peakPars[2]-peakPars[4]*peakPars[4])));
 				outFile << En << "\t" << En*std::sqrt(std::pow(dt/peakPars[2], 2.0) + std::pow(dd/d, 2.0)) << "\t";
 			}
 			else{ 
 				// Energy resolution in %.
-				outFile << peakPars[2] << "\t" << 235.482*peakPars[4]/peakPars[2] << "\t";
+				if(peakID[2] <= 1) En = peakPars[2];
+				else               En = TMath::Exp(peakPars[2]-peakPars[4]*peakPars[4]);
+				outFile << En << "\t" << 235.482*peakPars[4]/peakPars[2] << "\t";
 			}
 			
 			for(int i = 4; i < 7; i++)
@@ -430,6 +457,8 @@ bool processSpecOutput(const char *fname, const char *ofname, double binwidth=0.
 			if(!energy_){
 				if(peakID[2] == 0) func = new TF1("ff", TOFfitFunctions::gaussian, -10, 110, 3); // gaussian (function==0)
 				else if(peakID[2] == 1) func = new TF1("ff", TOFfitFunctions::landau, -10, 110, 3); // landau (function==1)
+				else if(peakID[2] == 2) func = new TF1("ff", TOFfitFunctions::logGaussian, 10, 110, 3); // logGaussian (function==2)
+				else if(peakID[2] == 3) func = new TF1("ff", TOFfitFunctions::logLandau, 10, 110, 3); // logLandau (function==3)
 				else{
 					std::cout << " Invalid fit function (" << peakID[2] << ")!\n";
 					continue;
@@ -438,6 +467,8 @@ bool processSpecOutput(const char *fname, const char *ofname, double binwidth=0.
 			else{
 				if(peakID[2] == 0) func = new TF1("ff", ENfitFunctions::gaussian, 0, 10, 3); // gaussian (function==0)
 				else if(peakID[2] == 1) func = new TF1("ff", ENfitFunctions::landau, 0, 10, 3); // landau (function==1)
+				else if(peakID[2] == 2) func = new TF1("ff", ENfitFunctions::logGaussian, 0.1, 10, 3); // logGaussian (function==2)
+				else if(peakID[2] == 3) func = new TF1("ff", ENfitFunctions::logLandau, 0.1, 10, 3); // logLandau (function==3)
 				else{
 					std::cout << " Invalid fit function (" << peakID[2] << ")!\n";
 					continue;
