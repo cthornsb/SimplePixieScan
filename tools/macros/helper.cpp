@@ -49,7 +49,21 @@ const double effAm327[44] = {0.24, -7.590, -1.508, -0.653, -0.358, -0.223, -0.08
                              0.259, 0.261, 0.256, 0.248, 0.256, 0.253, 0.242, 0.243, 0.232, 0.224, 
                              0.213, 0.204, 0.198, 0.158};
 
+const double olaCorrEff[49] = {0.1274000396, 0.012436848, 0.0315360447, 0.0570962032, 0.0855405784, 0.1136005537, 0.1412761292, 0.1689517046, 0.19662728, 0.2246872553, 0.2531316305, 
+                               0.2801659307, 0.3019473743, 0.3188597525, 0.3373097303, 0.3542221085, 0.3726720863, 0.3892000646, 0.4050873764, 0.4241743684, 0.4443846726, 
+                               0.4493693319, 0.44191695, 0.4225882243, 0.4085663866, 0.3989486739, 0.3897096847, 0.3810205339, 0.372331383, 0.3634083683, 0.3539771791, 
+                               0.3451647755, 0.3360836238, 0.3278917806, 0.3177546408, 0.3110764915, 0.3063215591, 0.3014384934, 0.2964266856, 0.2889258657, 0.2814070889, 
+                               0.2742910167, 0.2684525383, 0.2654708195, 0.2623778807, 0.2577508207, 0.2531256449, 0.2468635229, 0.2431058846};
+
+const double olaCorrEnergy[49] = {-9999, 0.1274000396, 0.1824030087, 0.2068487728, 0.2190716548, 0.2312945368, 0.2435174188, 0.2557403009, 0.2679631829, 0.2801860649, 0.292408947, 
+                                  0.31074327, 0.322966152, 0.335189034, 0.3474119161, 0.3596347981, 0.3718576801, 0.3840805622, 0.3963034442, 0.4451949723, 0.5368665875,
+                                  0.6627622724, 0.8057699921, 0.9325823931, 1.0590552696, 1.1977752799, 1.3322269822, 1.4596941805, 1.5871613788, 1.7194304236, 1.8538821259, 
+                                  1.9782936037, 2.131952692, 2.2786272763, 2.4253018606, 2.578087886, 2.7186510293, 2.8592141726, 3.0058887569, 3.1481980262, 3.2870150435, 
+                                  3.4258320609, 3.6021907872, 3.7663266316, 3.944431484, 4.0876138163, 4.2118797836, 4.3687401029, 4.4665231591};
+
 const double *effPtr = effZero;
+const double *enPtr = effEnergy;
+int nPts = 44;
 
 // Calculate neutron energy (MeV) given the time-of-flight (in ns).
 double calcEnergy(const double &tof_){
@@ -62,12 +76,12 @@ double calcTOF(const double &E_){
 }
 
 // Use linear interpolation to calculate a value from a distribution.
-bool interpolate(const double *py, const double &E, double &eff, const int & N_=44){
+bool interpolate(const double *py, const double &E, double &eff){
 	if(E < py[0]) return false;
-	if(E < effEnergy[N_-1]){ // Interpolate.
-		for(int i = 2; i < N_; i++){
-			if(E >= effEnergy[i-1] && E < effEnergy[i]){
-				eff = py[i-1] + (E-effEnergy[i-1])*(py[i]-py[i-1])/(effEnergy[i]-effEnergy[i-1]);
+	if(E < enPtr[nPts-1]){ // Interpolate.
+		for(int i = 2; i < nPts; i++){
+			if(E >= enPtr[i-1] && E < enPtr[i]){
+				eff = py[i-1] + (E-enPtr[i-1])*(py[i]-py[i-1])/(enPtr[i]-enPtr[i-1]);
 				return true;
 			}
 		}
@@ -363,10 +377,19 @@ void processGausPars(const double *p, int N, double binwidth=0.2){
 }
 
 // Process a VANDMC monte carlo detector test output file.
-void processMCarlo(TTree *t){
+bool processMCarlo(const char *fname, const char *tname="data"){
 	const int comBins = 18;
 	const double comLow = 0;
 	const double comHigh = 90;
+
+	TFile *f = new TFile(fname, "READ");
+	if(!f->IsOpen()) return false;
+	
+	TTree *t = (TTree*)f->Get(tname);
+	if(!t){
+		f->Close();
+		return false;
+	}
 
 	std::stringstream stream;
 	stream << "comAngle>>(" << comBins << "," << comLow << "," << comHigh << ")";
@@ -381,6 +404,11 @@ void processMCarlo(TTree *t){
 
 	delete h1;
 	delete h2;
+	
+	f->Close();
+	delete f;
+	
+	return true;
 }
 
 // Process an output file from specFitter (simpleScan tool).
@@ -399,6 +427,7 @@ bool processSpecOutput(const char *fname, const char *ofname, double binwidth=0.
 	}
 	
 	std::string line;
+	effPtr = ptr_;
 
 	double channelPars[11];
 	double peakPars[7];
@@ -466,7 +495,6 @@ bool processSpecOutput(const char *fname, const char *ofname, double binwidth=0.
 				}
 			}
 			
-			effPtr = ptr_;
 			func->SetParameter(0, peakPars[0]);
 			func->SetParameter(1, peakPars[2]);
 			func->SetParameter(2, peakPars[4]);
@@ -545,12 +573,12 @@ void help(const std::string &search_=""){
 	                                           "double", "integrate", "TH1 *h", "Return the total integral of a 1-d histogram.",
 	                                           "double", "integrate", "TH1 *h, const double &low, const double &high", "Return the integral of a 1-d histogram in the range [low, high].",
 	                                           "double", "integrate", "const char *funcstr, double *p, double low, double high", "Integrate a root function in the range [low, high] given parameter array p.",
-	                                           "double", "interpolate", "const double *py, const double &E, double &eff, const int & N_=44", "Use linear interpolation to calculate a value from a distribution.",
+	                                           "double", "interpolate", "const double *py, const double &E, double &eff", "Use linear interpolation to calculate a value from a distribution.",
 	                                           "void", "listBins", "TH1 *h_, const double &c_=1", "List all bins of a 1-d histogram.",
 	                                           "double", "mean", "TGraph *g", "Determine the mean beam current from a logic signal TGraph.",
 	                                           "void", "multiply", "TH1 *h_, const double &c_", "Multiply a 1-d histogram by a constant.",
 	                                           "void", "processGausPars", "const double *p, int N, double binwidth=0.2", "Integrate gaussian fits from ToF plot.",
-	                                           "void", "processMCarlo", "TTree *t", "Process a VANDMC monte carlo detector test output file.",
+	                                           "void", "processMCarlo", "const char *fname, const char *tname=\"data\"", "Process a VANDMC monte carlo detector test output file.",
 	                                           "bool", "processSpecOutput", "const char *fname, const char *ofname, double binwidth=0.2, const double *ptr_=effZero, bool energy_=false", "Process an output file from specFitter (simpleScan tool).",
 	                                           "void", "scale", "TH2F *h, const double &scaling", "Multiply a 2-d histogram by a constant.",
 	                                           "void", "setLine", "TAttLine *ptr_, const short &color_=602, const short &style_=1, const short &width_=1", "Set an object which inherits from TAttLine to have user specified style.",
