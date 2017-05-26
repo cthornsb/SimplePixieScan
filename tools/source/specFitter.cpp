@@ -296,7 +296,9 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_, cons
 		integral = lilfuncs[i]->Integral(xlo, xhi);
 		totalIntegral += integral;
 	
-		f_ << binID_ << "\t" << i << "\t" << !gausFit << "\t";
+		f_ << binID_ << "\t" << i << "\t";
+		if(!log_) f_ << !gausFit << "\t";
+		else f_ << (2 + ((int)!gausFit)) << "\t";
 		f_ << func->GetParameter(3*i+3) << "\t" << func->GetParError(3*i+3) << "\t"; 
 		f_ << func->GetParameter(3*i+4) << "\t" << func->GetParError(3*i+4) << "\t"; 
 		f_ << func->GetParameter(3*i+5) << "\t" << func->GetParError(3*i+5) << "\t"; 
