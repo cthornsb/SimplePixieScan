@@ -196,6 +196,14 @@ TGraph *convert(TGraph *g, const char *name){
 	return output;
 }
 
+// Return the range of bins containing an upper and lower point, rounded to the nearest bins.
+void findBins(TH1 *h, const double &xstart_, const double &xstop_, int &lowBin, int &highBin){
+	if(xstart_ <= h->GetXaxis()->GetXmin()) lowBin = 1;
+	else                                    lowBin = h->FindBin(xstart_);
+	if(xstop_ >= h->GetXaxis()->GetXmax())  highBin = h->GetNbinsX();
+	else                                    highBin = h->FindBin(xstop_);
+}
+
 // Return the total integral of a logic signal TGraph.
 double integrate(TGraph *g){
 	double sum = 0.0;
@@ -218,7 +226,7 @@ double integrate(TGraph *g){
 }
 
 // Return the total integral of a 1-d histogram.
-//  NOTE: TH1::Integral returns the SUM of the histogram, not the integral.
+//  NOTE: This function returns the integral of the histogram, not the number of counts.
 double integrate(TH1 *h){
 	double sum = 0;
 	for(int i = 1; i < h->GetNbinsX(); i++){
@@ -227,13 +235,11 @@ double integrate(TH1 *h){
 	return sum;
 }
 
-// Return the integral of a 1-d histogram in the range [low, high].
-//  NOTE: TH1::Integral returns the SUM of the histogram, not the integral.
-double integrate(TH1 *h, const double &low, const double &high){
-	int lowBin = h->FindBin(low);
-	int highBin = h->FindBin(high);
-	if(highBin > h->GetNbinsX())
-		highBin = h->GetNbinsX();
+// Return the integral of a 1-d histogram in the range [low, high], rounded to the nearest bins.
+//  NOTE: This function returns the integral of the histogram, not the number of counts.
+double integrate(TH1 *h, const double &xstart_, const double &xstop_){
+	int lowBin, highBin;
+	findBins(h, xstart_, xstop_, lowBin, highBin);
 	double retval = 0;
 	for(int i = lowBin; i < highBin; i++)
 		retval += 0.5 * (h->GetBinContent(i) + h->GetBinContent(i+1)) * h->GetBinWidth(i);
@@ -280,20 +286,56 @@ double summation(TTree *t){
 	return sum*8*1E-9;
 }
 
+// Return the total number of counts in a 1-d histogram.
+//  NOTE: This function returns the number of counts in a histogram, not the integral.
+double summation(TH1 *h){
+	return h->Integral();
+}
+
+// Return the number of counts in a 1-d histogram in the range [low, high], rounded to the nearest bins.
+//  NOTE: This function returns the number of counts in a histogram, not the integral.
+double summation(TH1 *h, const double &xstart_, const double &xstop_){
+	int lowBin, highBin;
+	findBins(h, xstart_, xstop_, lowBin, highBin);
+	double retval = 0;
+	for(int i = lowBin; i <= highBin; i++)
+		retval += h->GetBinContent(i);
+	return retval;
+}
+
+// Return the total number of counts under a TF1.
+//  NOTE: This function returns the number of counts under a curve, not the function integral.
+double summation(TH1 *h, TF1 *f){
+	double retval = 0;
+	double xlo, xhi;
+	for(int i = 1; i <= h->GetNbinsX(); i++){
+		xlo = h->GetBinLowEdge(i);
+		xhi = xlo + h->GetBinWidth(i);
+		retval += f->Integral(xlo, xhi)/(xhi-xlo);
+	}
+	return retval;
+}
+
+// Return the number of counts under a TF1 in the range [low, high], rounded to the nearest bins.
+//  NOTE: This function returns the number of counts under a curve, not the function integral.
+double summation(TH1 *h, TF1 *f, const double &xstart_, const double &xstop_){
+	int lowBin, highBin;
+	findBins(h, xstart_, xstop_, lowBin, highBin);
+	double retval = 0;
+	double xlo, xhi;
+	for(int i = lowBin; i <= highBin; i++){
+		xlo = h->GetBinLowEdge(i);
+		xhi = xlo + h->GetBinWidth(i);
+		retval += f->Integral(xlo, xhi)/(xhi-xlo);
+	}
+	return retval;
+}
+
 // Multiply a 1-d histogram by a constant.
 void multiply(TH1 *h_, const double &c_){
 	for(int i = 1; i <= h_->GetNbinsX(); i++){
 		h_->SetBinContent(i, h_->GetBinContent(i)*c_);
 	}
-}
-
-// Sum all bins in a 1-d histogram.
-double summation(TH1 *h_, const double &c_=1){
-	double sum = 0;
-	for(int i = 1; i <= h_->GetNbinsX(); i++){
-		sum += h_->GetBinContent(i)*c_;
-	}
-	return sum;
 }
 
 // Multiply a 2-d histogram by a constant.
@@ -536,8 +578,12 @@ void help(const std::string &search_=""){
 	                                        "double", "dd", "Thickness of detector, in m.",
 	                                        "double", "dt", "Timing resolution of detector, in ns."};
 
+
+
+
+
 	// Defined functions.
-	const std::string definedFunctions[120] = {"void", "binRatio", "TH1 *h1_, TH1 *h2_", "List the ratio of each bin in two 1-d histograms.",
+	const std::string definedFunctions[136] = {"void", "binRatio", "TH1 *h1_, TH1 *h2_", "List the ratio of each bin in two 1-d histograms.",
 	                                           "double", "calcEnergy", "const double &tof_", "Calculate neutron energy (MeV) given the time-of-flight (in ns).",
 	                                           "double", "calcTOF", "const double &E_", "Calculate neutron time-of-flight (ns) given the energy (in MeV).",
 	                                           "void", "calculateP2", "double *x, double *y, double *p", "Calculate a 2nd order polynomial that passes through three (x,y) pairs.",
@@ -547,13 +593,14 @@ void help(const std::string &search_=""){
 	                                           "double", "effVsEnergy", "double *x, double *p", "Piecewise defined VANDLE intrinsic efficiency as a function of neutron Energy.",
 	                                           "TGaxis", "extraXaxis", "", "Add a second x-axis to a TCanvas.",
 	                                           "TGaxis", "*extraYaxis", "", "Add a second y-axis to a TCanvas.",
+	                                           "void", "findBins", "TH1 *h, const double &xstart_, const double &xstop_, int &lowBin, int &highBin", "Return the range of bins containing an upper and lower point, rounded to the nearest bins.",
 	                                           "double", "TOFfitFunctions::gaussian", "double *x, double *p", "Standard gaussian (x in ns) scaled by linearly interpolated intrinsic efficiency.",
 	                                           "double", "TOFfitFunctions::landau", "double *x, double *p", "Standard landau (x in ns) scaled by linearly interpolated intrinsic efficiency.",
 	                                           "double", "ENfitFunctions::gaussian", "double *x, double *p", "Standard gaussian (x in MeV) scaled by linearly interpolated intrinsic efficiency.",
 	                                           "double", "ENfitFunctions::landau", "double *x, double *p", "Standard landau (x in MeV) scaled by linearly interpolated intrinsic efficiency.",
 	                                           "double", "integrate", "TGraph *g", "Return the total integral of a logic signal TGraph.",
 	                                           "double", "integrate", "TH1 *h", "Return the total integral of a 1-d histogram.",
-	                                           "double", "integrate", "TH1 *h, const double &low, const double &high", "Return the integral of a 1-d histogram in the range [low, high].",
+	                                           "double", "integrate", "TH1 *h, const double &xstart_, const double &xstop_", "Return the integral of a 1-d histogram in the range [low, high], rounded to the nearest bins.",
 	                                           "double", "integrate", "const char *funcstr, double *p, double low, double high", "Integrate a root function in the range [low, high] given parameter array p.",
 	                                           "double", "interpolate", "const double *py, const double &E, double &eff", "Use linear interpolation to calculate a value from a distribution.",
 	                                           "void", "listBins", "TH1 *h_, const double &c_=1", "List all bins of a 1-d histogram.",
@@ -566,7 +613,10 @@ void help(const std::string &search_=""){
 	                                           "void", "setLine", "TAttLine *ptr_, const short &color_=602, const short &style_=1, const short &width_=1", "Set an object which inherits from TAttLine to have user specified style.",
 	                                           "void", "setMarker", "TAttMarker *ptr_, const short &color_=602, const short &style_=21, const float &size_=1.0", "Set an object which inherits from TAttMarker to have user specified style.",
 	                                           "double", "summation", "TTree *t", "Return the total run time in seconds.",
-	                                           "double", "summation", "TH1 *h_, const double &c_=1", "Sum all bins in a 1-d histogram."};
+	                                           "double", "summation", "TH1 *h", "Return the total number of counts in a 1-d histogram.",
+	                                           "double", "summation", "TH1 *h, const double &xstart_, const double &xstop_", "Return the number of counts in a 1-d histogram in the range [low, high], rounded to the nearest bins.",
+	                                           "double", "summation", "TH1 *h, TF1 *f", "Return the total number of counts under a TF1.",
+	                                           "double", "summation", "TH1 *h, TF1 *f, const double &xstart_, const double &xstop_", "Return the number of counts under a TF1 in the range [low, high], rounded to the nearest bins."};
 
 	if(search_.empty()){
 		std::cout << "*****************************\n";
@@ -582,7 +632,7 @@ void help(const std::string &search_=""){
 			std::cout << "  " << globalVariables[3*i+1] << std::endl;
 	
 		std::cout << "\n Defined helper functions:\n";
-		for(int i = 0; i < 30; i++)
+		for(int i = 0; i < 34; i++)
 			std::cout << "  " << definedFunctions[4*i+1] << std::endl;
 			
 		std::cout << std::endl;
@@ -615,7 +665,7 @@ void help(const std::string &search_=""){
 			}
 		}
 	
-		for(int i = 0; i < 30; i++){
+		for(int i = 0; i < 34; i++){
 			fIndex = definedFunctions[4*i+1].find(search_);
 			if(fIndex != std::string::npos){
 				strings[0] = definedFunctions[4*i+1].substr(0, fIndex);
