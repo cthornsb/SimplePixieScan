@@ -61,10 +61,21 @@ class simpleTool{
 	std::vector<optionExt> baseOpts; /// Base level command line options for the scan.
 	std::vector<optionExt> userOpts; /// User added command line options.
 	std::string optstr;
+
+	std::string full_input_filename;
+
+	std::string work_dir;
+	std::string home_dir;
 	
 	virtual void addOptions(){ }
 	
 	virtual bool processArgs(){ return true; }
+
+	/** Get the full pathname from an input string.
+	  * \param[in]  path_ The user specified filename. May be relative or absolute.
+	  * \return String containing the full path to the input file.
+	  */
+	std::string getRealPath(const std::string &path_);
 
   public:
 	simpleTool();

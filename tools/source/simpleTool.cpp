@@ -3,6 +3,7 @@
 #include <fstream>
 #include <signal.h>
 #include <unistd.h>
+#include <limits.h>
 #include <stdlib.h>
 
 #include "TApplication.h"
@@ -78,6 +79,15 @@ simpleTool::simpleTool(){
 	baseOpts.push_back(optionExt("tcutg", required_argument, NULL, 'C', "<filename:cutname>", "Specify the name of the TCutG input file and the name of the cut."));
 
 	optstr = "hi:o:n:C:";
+
+	// Get the current working directory.
+	char workingDirectory[1024];
+	work_dir = std::string(getcwd(workingDirectory, 1024));
+	work_dir += '/';
+
+	// Get the home directory.
+	home_dir = std::string(getenv("HOME"));
+	home_dir += '/';
 }
 
 simpleTool::~simpleTool(){
@@ -97,6 +107,25 @@ simpleTool::~simpleTool(){
 		can2->Close();
 		delete can2;
 	}
+}
+
+/** Get the full pathname from an input string.
+  * \param[in]  path_ The user specified filename. May be relative or absolute.
+  * \return String containing the full path to the input file.
+  */
+std::string simpleTool::getRealPath(const std::string &path_){
+	full_input_filename = path_;
+
+	if(path_.find('~') != std::string::npos)
+		full_input_filename.replace(path_.find('~'), 1, home_dir);
+
+	char *realPathOutput = realpath(full_input_filename.c_str(), NULL);
+	if(realPathOutput){
+		full_input_filename = std::string(realPathOutput);
+		free(realPathOutput);
+	}
+
+	return full_input_filename;
 }
 
 /** Print a command line argument help dialogue.
@@ -216,6 +245,7 @@ TFile *simpleTool::openInputFile(){
 		intree = NULL;	
 	}
 	input_filename = filename_list.front();
+	full_input_filename = getRealPath(input_filename);
 	filename_list.pop_front();
 	infile = new TFile(input_filename.c_str(), "READ");
 	if(!infile->IsOpen()){

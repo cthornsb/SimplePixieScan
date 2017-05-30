@@ -364,8 +364,11 @@ bool specFitter::process(){
 		ofile.open(output_filename.c_str());
 	else
 		ofile.open("specFitter.out");
-	ofile << "binID\tbinLow\tchi2\tp0\tp0err\tp1\tp1err\tp2\tp2err\tIbkg\thistCounts\n";
-	ofile << "binID\tpeakID\tfunction\tA\tAerr\tmu\tmuerr\tsigma\tsigmaerr\tIpeak\n";
+
+	ofile << "# Input root file\n";
+	ofile << full_input_filename << ":" << input_objname << std::endl;
+	ofile << "# binID\tbinLow\tchi2\tp0\tp0err\tp1\tp1err\tp2\tp2err\tIbkg\thistCounts\n";
+	ofile << "# binID\tpeakID\tfunction\tA\tAerr\tmu\tmuerr\tsigma\tsigmaerr\tIpeak\n";
 
 	TH1D *h1 = getProjectionHist(h2d);
 	h1->SetStats(0);
