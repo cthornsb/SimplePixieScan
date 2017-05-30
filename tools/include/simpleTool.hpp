@@ -135,6 +135,8 @@ class simpleHistoFitter : public simpleTool {
 	int getNumProjections(TH2 *h2_);
 
 	double getBinLowEdge(TH2 *h2_, const int &bin_);
+	
+	double getBinWidth(TH2 *h2_, const int &bin_);
 
 	double getMaximum(TH1 *h1_, const double &lowVal_, const double &highVal_, double &mean);
 

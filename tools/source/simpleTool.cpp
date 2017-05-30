@@ -424,10 +424,17 @@ int simpleHistoFitter::getNumProjections(TH2 *h2_){
 }
 
 double simpleHistoFitter::getBinLowEdge(TH2 *h2_, const int &bin_){
-	// Check that the histogram is defined.i
+	// Check that the histogram is defined.
 	if(!h2_) return -1;
 	if(useProjX) return h2_->GetYaxis()->GetBinLowEdge(bin_);
 	return h2_->GetXaxis()->GetBinLowEdge(bin_);
+}
+
+double simpleHistoFitter::getBinWidth(TH2 *h2_, const int &bin_){
+	// Check that the histogram is defined.
+	if(!h2_) return -1;
+	if(useProjX) return h2_->GetYaxis()->GetBinWidth(bin_);
+	return h2_->GetXaxis()->GetBinWidth(bin_);
 }
 
 double simpleHistoFitter::getMaximum(TH1 *h1_, const double &lowVal_, const double &highVal_, double &mean){
