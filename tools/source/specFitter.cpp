@@ -168,13 +168,13 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_, const bool &log_/*=fals
 		delete marker;
 
 		p[0] = bgy[2];
-		if(log_){
+		if(!log_){
 			p[2] = std::log((bgy[0]-p[0])/(bgy[1]-p[0]))/(bgx[0]-bgx[1]);
-			p[1] = std::log(bgy[0])-p[2]*bgx[0];
+			p[1] = std::log(bgy[1]-p[0])-p[2]*bgx[1];
 		}
 		else{
 			p[2] = std::log((bgy[0]-p[0])/(bgy[1]-p[0]))/std::log(bgx[0]/bgx[1]);
-			p[1] = std::log(bgy[1]-p[0])-p[2]*std::log(bgx[0]);
+			p[1] = std::log(bgy[1]-p[0])-p[2]*std::log(bgx[1]);
 		}
 		
 		stream1 << "[0]+exp([1]+[2]*" << xstr << ")";
