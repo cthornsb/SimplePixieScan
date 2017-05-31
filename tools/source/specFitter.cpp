@@ -10,7 +10,19 @@
 #include "TH1.h"
 #include "TH2.h"
 
+#include "TFile.h"
+#include "TNamed.h"
+#include "TDirectory.h"
+
 #include "simpleTool.hpp"
+
+// Write a TNamed to a root TFile.
+template <typename T>
+void writeTNamed(const std::string &name_, const T &val_){
+	std::stringstream stream; stream << val_;
+	TNamed named(name_.c_str(), stream.str().c_str());
+	named.Write();
+}
 
 // Return the range of bins containing an upper and lower point, rounded to the nearest bins.
 void findBins(TH1 *h, const double &xstart_, const double &xstop_, int &lowBin, int &highBin){
@@ -71,10 +83,12 @@ class specFitter : public simpleHistoFitter {
 	bool logXaxis;
 	bool logYaxis;
 
+	TDirectory *cdir;
+
   public:
 	specFitter() : simpleHistoFitter(), polyBG(false), gausFit(true), logXaxis(false), logYaxis(false) { }
 
-	bool fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_, const bool &log_=false);
+	bool fitSpectrum(TH1 *h_, const int &binID_, const bool &log_=false);
 
 	void addChildOptions();
 	
@@ -83,7 +97,7 @@ class specFitter : public simpleHistoFitter {
 	bool process();
 };
 
-bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_, const bool &log_/*=false*/){
+bool specFitter::fitSpectrum(TH1 *h_, const int &binID_, const bool &log_/*=false*/){
 	if(!h_) return false; 
 
 	h_->Draw();
@@ -105,6 +119,9 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_, cons
 	xhi = marker->GetX();
 	yhi = marker->GetY();
 	delete marker;
+
+	writeTNamed("fitLow", xlo);
+	writeTNamed("fitHigh", xhi);
 
 	h_->GetXaxis()->SetRangeUser(xlo, xhi);
 	h_->GetYaxis()->SetRangeUser(ylo, yhi);
@@ -268,7 +285,8 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_, cons
 
 	// Report the chi^2 of the fit.
 	std::cout << " Reduced chi^2 = " << func->GetChisquare()/func->GetNDF() << std::endl;
-	f_ << func->GetChisquare()/func->GetNDF();
+	writeTNamed("chi2", func->GetChisquare());
+	writeTNamed("NDF", func->GetNDF());
 
 	// Draw the total fit.
 	func->Draw("SAME");
@@ -282,54 +300,52 @@ bool specFitter::fitSpectrum(TH1 *h_, std::ofstream &f_, const int &binID_, cons
 	bkgfunc->SetParameter(2, func->GetParameter(2));
 	bkgfunc->Draw("SAME");
 
-	// Write the background fit results to file.
-	for(int i = 0; i < 3; i++)
-		f_ << "\t" << func->GetParameter(i) << "\t" << func->GetParError(i); 
-
 	// Draw the composite gaussians.
 	double totalIntegral = 0;
+	double histSum = summation(h_, xlo, xhi);
 	double integral = summation(h_, bkgfunc, xlo, xhi);
 	totalIntegral += integral;
 	if(debug){
-		std::cout << " Integrals:\n";
-		std::cout << "  background: " << integral << " (" << integral << " counts)\n";
+		std::cout << " Integrated Counts:\n";
+		std::cout << "  background: " << integral << "\n";
 	}
-	f_ << "\t" << integral; // Write the background fit integral in fit range.
-	TF1 **lilfuncs = new TF1*[numPeaks+1];
-	for(int i = 0; i < numPeaks; i++){
-		lilfuncs[i] = new TF1("name", stream2.str().c_str(), xlo, xhi);
-		lilfuncs[i]->SetLineColor(kGreen+3);
-		lilfuncs[i]->SetParameter(0, func->GetParameter(3*i+3));
-		lilfuncs[i]->SetParameter(1, func->GetParameter(3*i+4));
-		lilfuncs[i]->SetParameter(2, func->GetParameter(3*i+5));
-		lilfuncs[i]->Draw("SAME");
-	}
+	writeTNamed("counts", histSum);
+	writeTNamed("Ibkg", integral);
+	//TF1 **lilfuncs = new TF1*[numPeaks+1];
+	//for(int i = 0; i < numPeaks; i++){
+		TF1 *lilfunc = new TF1("peakfunc", stream2.str().c_str(), xlo, xhi);
+		lilfunc->SetLineColor(kGreen+3);
+		lilfunc->SetParameter(0, func->GetParameter(3));
+		lilfunc->SetParameter(1, func->GetParameter(4));
+		lilfunc->SetParameter(2, func->GetParameter(5));
+		lilfunc->Draw("SAME");
+	//}
 	can2->Update();
 	can2->WaitPrimitive();
 
-	double histIntegral = summation(h_, xlo, xhi);
+	integral = summation(h_, lilfunc, xlo, xhi);
+	totalIntegral += integral;
+
 	if(debug){
-		std::cout << "  total: " << totalIntegral << " (" << totalIntegral << " counts)\n";
-		std::cout << "  hist: " << summation(h_, xlo, xhi) << " counts\n";
+		std::cout << "  peak: " << integral << "\n";
+		std::cout << "  total: " << totalIntegral << "\n";
+		std::cout << "  hist: " << histSum << "\n";
 	}
-	f_ << "\t" << histIntegral << "\n"; // Write the histogram counts in fit range.
 
-	for(int i = 0; i < numPeaks; i++){ // Write the individual peak fit results to file.
-		integral = summation(h_, lilfuncs[i], xlo, xhi);
-		totalIntegral += integral;
+	writeTNamed("Ipeak", integral);
+	writeTNamed("Itotal", totalIntegral);
+
+	h_->Write();	
+	func->Write();
+	bkgfunc->Write();
+	lilfunc->Write();
 	
-		f_ << binID_ << "\t" << i << "\t";
-		if(!log_) f_ << !gausFit << "\t";
-		else f_ << (2 + ((int)!gausFit)) << "\t";
-		f_ << func->GetParameter(3*i+3) << "\t" << func->GetParError(3*i+3) << "\t"; 
-		f_ << func->GetParameter(3*i+4) << "\t" << func->GetParError(3*i+4) << "\t"; 
-		f_ << func->GetParameter(3*i+5) << "\t" << func->GetParError(3*i+5) << "\t"; 
+	cdir->mkdir("pars")->cd();
+	const std::string parnames[6] = {"p0", "p1", "p2", "p3", "p4", "p5"};
+	for(int i = 0; i < nPars; i++) writeTNamed(parnames[i], func->GetParameter(i));
+	for(int i = 0; i < nPars; i++) writeTNamed(parnames[i]+"err", func->GetParError(i));
 
-		if(debug) std::cout << "  peak " << i << ": " << integral << " (" << integral << " counts)\n";
-		f_ << integral << "\n";
-		delete lilfuncs[i];
-	}
-	delete[] lilfuncs;
+	delete lilfunc;
 	delete bkgfunc;
 	delete func;
 
@@ -359,16 +375,25 @@ bool specFitter::processChildArgs(){
 bool specFitter::process(){
 	if(!h2d || !can2) return false;
 
-	std::ofstream ofile;
-	if(!output_filename.empty())	
-		ofile.open(output_filename.c_str());
+	TFile *ofile;
+	if(!output_filename.empty())
+		ofile = new TFile(output_filename.c_str(), "RECREATE");
 	else
-		ofile.open("specFitter.out");
+		ofile = new TFile("specFitter.root", "RECREATE");
 
-	ofile << "# Input root file\n";
-	ofile << full_input_filename << ":" << input_objname << std::endl;
-	ofile << "# binID\tbinLow\tchi2\tp0\tp0err\tp1\tp1err\tp2\tp2err\tIbkg\thistCounts\n";
-	ofile << "# binID\tpeakID\tfunction\tA\tAerr\tmu\tmuerr\tsigma\tsigmaerr\tIpeak\n";
+	ofile->cd();
+	writeTNamed("input", full_input_filename);
+	if(!polyBG) writeTNamed("bkg", "expo");
+	else        writeTNamed("bkg", "poly2");
+	if(gausFit) writeTNamed("func", "gauss");
+	else        writeTNamed("func", "landau");
+	if(!logXaxis) writeTNamed("logx", "false");
+	else          writeTNamed("logx", "true");
+	if(!logYaxis) writeTNamed("logy", "false");
+	else          writeTNamed("logy", "true");
+
+	// Write the input histogram to file.
+	h2d->Write("h2d");
 
 	TH1D *h1 = getProjectionHist(h2d);
 	h1->SetStats(0);
@@ -395,31 +420,43 @@ bool specFitter::process(){
 		else{ can2->SetLogy(); }
 	}
 
-	double binLow;
+	double binLow, binWidth;
 	int numProjections = getNumProjections(h2d);
 	for(int i = 1; i <= numProjections; i++){
 		std::cout << " Processing channel ID " << i << "... ";
 		if(getProjection(h1, h2d, i)){ 
 			std::cout << "DONE\n";
 
-			std::stringstream title;
-			std::stringstream stream; 
+			std::stringstream stream1;
+			std::stringstream stream2; 
+			stream1 << "bin";
+			if(i < 10)       stream1 << "00" << i;
+			else if(i < 100) stream1 << "0" << i;
+			else             stream1 << i;
+			
 			binLow = getBinLowEdge(h2d, i);
-			stream << binLow;
-			h1->SetTitle(stream.str().c_str());
+			binWidth = getBinWidth(h2d, i);
+
+			stream2 << stream1.str() << " [" << binLow << ", " << binLow+binWidth << "]";
+			h1->SetTitle(stream2.str().c_str());
 
 			h1->GetXaxis()->SetRangeUser(Xmin, Xmax);
 			h1->GetYaxis()->SetRangeUser(0, 1.1*h1->GetBinContent(h1->GetMaximumBin()));
 
-			ofile << i << "\t" << binLow << "\t";
-			fitSpectrum(h1, ofile, i, logXaxis);
+			cdir = ofile->mkdir(stream1.str().c_str());
+			cdir->cd();
+
+			writeTNamed("binLow", binLow);
+			writeTNamed("binWidth", binWidth);
+
+			fitSpectrum(h1, i, logXaxis);
 		}
 		else std::cout << "FAILED\n";
 	}
 	
 	delete h1;
 
-	ofile.close();
+	ofile->Close();
 	
 	return true;
 }

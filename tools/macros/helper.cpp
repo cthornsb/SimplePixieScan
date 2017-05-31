@@ -2,6 +2,8 @@
 // Author: Cory R. Thornsberry
 // Updated: May 18th, 2017
 
+#include <stdlib.h>
+
 ///////////////////////////////////////////////////////////////////////////////
 // Globals
 ///////////////////////////////////////////////////////////////////////////////
@@ -383,16 +385,6 @@ TGaxis *extraYaxis(){
 	return axis;
 }
 
-// Integrate gaussian fits from ToF plot.
-void processGausPars(const double *p, int N, double binwidth=0.2){
-	TF1 *func = new TF1("ff", TOFfitFunctions::gaussian, -10, 100, 3);
-	for(int i = 0; i < N; i++){
-		func->SetParameters(&p[i*3]);
-		std::cout << i << "\t" << func->Integral(-10, 100)/binwidth << std::endl;
-	}
-	delete func;
-}
-
 // Process a VANDMC monte carlo detector test output file.
 bool processMCarlo(const char *fname, const char *tname="data"){
 	const int comBins = 18;
@@ -428,10 +420,23 @@ bool processMCarlo(const char *fname, const char *tname="data"){
 	return true;
 }
 
+TObject *getObject(TFile *f, const std::string &name_, const std::string &dir_=""){
+	TObject *ptr = f->Get((dir_+name_).c_str());
+	if(!ptr) std::cout << " Error! Failed to find \"" << dir_ << "/" << name_ << "\" in input file.\n";
+	return ptr;
+}
+
+bool getTNamed(TFile *f, const std::string &name_, double &val, const std::string &dir_=""){
+	TNamed *ptr = (TNamed*)getObject(f, name_, dir_);
+	if(!ptr) return false;
+	val = strtod(ptr->GetTitle(), NULL);
+	return true;
+}
+
 // Process an output file from specFitter (simpleScan tool).
-bool processSpecOutput(const char *fname, const char *ofname, double binwidth=0.2, const double *ptr_=effZero, bool energy_=false){
-	std::ifstream specFile(fname);
-	if(!specFile.good()){
+bool processSpecOutput(const char *fname, const char *ofname, const double *ptr_=effZero, bool energy_=false){
+	TFile specFile(fname, "READ");
+	if(!specFile.IsOpen()){
 		std::cout << " Error! Failed to open input file \"" << fname << "\".\n";
 		return false;
 	}
@@ -439,103 +444,148 @@ bool processSpecOutput(const char *fname, const char *ofname, double binwidth=0.
 	std::ofstream outFile(ofname);
 	if(!outFile.good()){
 		std::cout << " Error! Failed to open output file \"" << ofname << "\".\n";
-		specFile.close();
+		specFile.Close();
 		return false;
 	}
+
+	// Get a list of the directories.
+	TList *keyList = specFile.GetListOfKeys();
+	int numKeys = specFile.GetNkeys();
+
+	if(numKeys <= 6){
+		std::cout << " Error! Failed to find peak data. Invalid data structure.\n";
+		std::cout << "  Found the following keys...\n";
+		for(int i = 0; i < numKeys; i++) std::cout << "  " << i << " - " << keyList->At(i)->GetName() << std::endl;
+		specFile.Close();
+		outFile.close();
+	}
+
+	bool gaussianFit = true;
+	bool logXaxis = false;
+
+	// Set the function type to use for integration.
+	TNamed *named = (TNamed*)specFile.Get("func");
+	if(strcmp(named->GetTitle(), "gauss") == 0) gaussianFit = true;
+	else if(strcmp(named->GetTitle(), "landau") == 0) gaussianFit = false;
+	else std::cout << " Error! Invalid fit function specification (" << named->GetTitle() << ").\n";
 	
-	std::string line;
+	named = (TNamed*)specFile.Get("logx");
+	if(strcmp(named->GetTitle(), "true") == 0) logXaxis = true;
+	else if(strcmp(named->GetTitle(), "false") == 0) logXaxis = false;
+	else std::cout << " Error! Invalid bool value for log x-axis (" << named->GetTitle() << ").\n";
+
+	int functionType;
+	if(gaussianFit){
+		if(!logXaxis) functionType = 0;
+		else          functionType = 2;
+	}
+	else{
+		if(!logXaxis) functionType = 1;
+		else          functionType = 3;
+	}
+
 	effPtr = ptr_;
 
-	double channelPars[11];
-	double peakPars[7];
-	int peakID[3];
-
-	// Skip the first two header lines.
-	std::getline(specFile, line);
-	std::getline(specFile, line);
-
-	outFile << "binID\tbinLow\tbinCenter\tbinErr\tchi2\tp0\tp0err\tp1\tp1err\tp2\tp2err\tIbkg\thistCounts\tA\tAerr\tmu\tmuerr\tE\tEerr\tsigma\tsigmaerr\tIpeak\tIpeakerr\tIintrinscor\tintrinseff\tbinSA\n";
-
-	const float XbinHalfWidth = 2.5;
+	outFile << "binID\tbinLow\tbinCenter\tbinErr\tchi2\tIbkg\thistCounts\tp0\tp0err\tp1\tp1err\tp2\tp2err\tA\tAerr\tmu\tmuerr\tE\tEerr\tsigma\tsigmaerr\tIpeak\tIpeakerr\tIintrinscor\tintrinseff\tbinSA\n";
 
 	double En;
 	double geomeff;
 	double integral;
 
-	int count = 0;
-	while(true){
-		if(specFile.eof()) break;
-		if(count++ % 2 == 0){
-			//binID, binLow, chi2, p0, p0err, p1, p1err, p2, p2err, Ibkg, histCounts
-			for(int i = 0; i < 11; i++) specFile >> channelPars[i];
+	int binID;
+
+	double binLow;
+	double binWidth;
+	double chisquare;
+	double funcNDF;
+
+	double histCounts;
+	double bkgCounts;
+	double peakCounts;
+
+	double peakPars[12];
+
+	TF1 *func;
+
+	std::string currentDirectory;
+	for(int i = 6; i < numKeys; i++){
+		currentDirectory = std::string(keyList->At(i)->GetName());
+
+		// Get the bin ID.
+		binID = strtol(currentDirectory.substr(currentDirectory.find("bin")+3).c_str(), NULL, 0);
+
+		currentDirectory += "/";
+
+		// Load the fit function from the file.
+		func = (TF1*)getObject(&specFile, "func", currentDirectory);
+
+		// Get the 6 fit parameters.
+		for(int j = 0; j < 6; j++){
+			peakPars[2*j] = func->GetParameter(j);
+			peakPars[2*j+1] = func->GetParError(j);
+		}
+
+		getTNamed(&specFile, "binLow", binLow, currentDirectory);
+		getTNamed(&specFile, "binWidth", binWidth, currentDirectory);
+		getTNamed(&specFile, "chi2", chisquare, currentDirectory);
+		getTNamed(&specFile, "NDF", funcNDF, currentDirectory);
+		getTNamed(&specFile, "counts", histCounts, currentDirectory);
+		getTNamed(&specFile, "Ibkg", bkgCounts, currentDirectory);
+		getTNamed(&specFile, "Ipeak", peakCounts, currentDirectory);
+
+		outFile << binID << "\t" << binLow << "\t" << binLow+binWidth/2 << "\t" << binWidth/2 << "\t";
+		outFile << chisquare/funcNDF << "\t" << bkgCounts << "\t" << histCounts << "\t";
+		for(int j = 0; j <= 4; j++){
+			outFile << peakPars[2*j] << "\t" << peakPars[2*j+1] << "\t";
+		}
+
+		// Calculate the neutron energy.
+		if(!energy_){
+			if(functionType <= 1) En = 0.5*Mn*d*d/(peakPars[8]*peakPars[8]);
+			else                  En = 0.5*Mn*d*d/(TMath::Exp(2*(peakPars[8]-peakPars[10]*peakPars[10])));
+			outFile << En << "\t" << En*std::sqrt(std::pow(dt/peakPars[8], 2.0) + std::pow(dd/d, 2.0)) << "\t";
+		}
+		else{ 
+			// Energy resolution in %.
+			if(functionType <= 1) En = peakPars[8];
+			else                  En = TMath::Exp(peakPars[8]-peakPars[10]*peakPars[10]);
+			std::cout << En << "\t" << peakPars[8] << "\t" << peakPars[10] << std::endl;
+			outFile << En << "\t" << 235.482*peakPars[10]/peakPars[8] << "\t";
+		}
+	
+		outFile << peakPars[10] << "\t" << peakPars[11] << "\t" << peakCounts << "\t" << std::sqrt(peakCounts) << "\t";
+	
+		TF1 *peakfunc = (TF1*)getObject(&specFile, "peakfunc", currentDirectory);
+		TH1 *projhist = (TH1*)getObject(&specFile, "h1", currentDirectory);
+
+		if(!energy_){
+			if(functionType == 0) peakfunc = new TF1("ff", TOFfitFunctions::gaussian, -10, 110, 3); // gaussian (function==0)
+			else if(functionType == 1) peakfunc = new TF1("ff", TOFfitFunctions::landau, -10, 110, 3); // landau (function==1)
+			else if(functionType == 2) peakfunc = new TF1("ff", TOFfitFunctions::logGaussian, 10, 110, 3); // logGaussian (function==2)
+			else if(functionType == 3) peakfunc = new TF1("ff", TOFfitFunctions::logLandau, 10, 110, 3); // logLandau (function==3)
 		}
 		else{
-			//binID, peakID, function
-			for(int i = 0; i < 3; i++) specFile >> peakID[i];
-
-			//A, Aerr, mu, muerr, sigma, sigmaerr, Ipeak
-			for(int i = 0; i < 7; i++) specFile >> peakPars[i];
-
-			outFile << channelPars[0] << "\t" << channelPars[1] << "\t" << channelPars[1]+XbinHalfWidth << "\t" << XbinHalfWidth << "\t";
-			for(int i = 2; i < 11; i++) outFile << channelPars[i] << "\t";
-			for(int i = 0; i <= 3; i++) outFile << peakPars[i] << "\t";
-
-			// Calculate the neutron energy.
-			if(!energy_){
-				if(peakID[2] <= 1) En = 0.5*Mn*d*d/(peakPars[2]*peakPars[2]);
-				else               En = 0.5*Mn*d*d/(TMath::Exp(2*(peakPars[2]-peakPars[4]*peakPars[4])));
-				outFile << En << "\t" << En*std::sqrt(std::pow(dt/peakPars[2], 2.0) + std::pow(dd/d, 2.0)) << "\t";
-			}
-			else{ 
-				// Energy resolution in %.
-				if(peakID[2] <= 1) En = peakPars[2];
-				else               En = TMath::Exp(peakPars[2]-peakPars[4]*peakPars[4]);
-				outFile << En << "\t" << 235.482*peakPars[4]/peakPars[2] << "\t";
-			}
-			
-			for(int i = 4; i < 7; i++)
-				outFile << peakPars[i] << "\t";
-			outFile << std::sqrt(peakPars[6]) << "\t";
-
-			TF1 *func = NULL;
-			if(!energy_){
-				if(peakID[2] == 0) func = new TF1("ff", TOFfitFunctions::gaussian, -10, 110, 3); // gaussian (function==0)
-				else if(peakID[2] == 1) func = new TF1("ff", TOFfitFunctions::landau, -10, 110, 3); // landau (function==1)
-				else if(peakID[2] == 2) func = new TF1("ff", TOFfitFunctions::logGaussian, 10, 110, 3); // logGaussian (function==2)
-				else if(peakID[2] == 3) func = new TF1("ff", TOFfitFunctions::logLandau, 10, 110, 3); // logLandau (function==3)
-				else{
-					std::cout << " Invalid fit function (" << peakID[2] << ")!\n";
-					continue;
-				}
-			}
-			else{
-				if(peakID[2] == 0) func = new TF1("ff", ENfitFunctions::gaussian, 0, 10, 3); // gaussian (function==0)
-				else if(peakID[2] == 1) func = new TF1("ff", ENfitFunctions::landau, 0, 10, 3); // landau (function==1)
-				else if(peakID[2] == 2) func = new TF1("ff", ENfitFunctions::logGaussian, 0.1, 10, 3); // logGaussian (function==2)
-				else if(peakID[2] == 3) func = new TF1("ff", ENfitFunctions::logLandau, 0.1, 10, 3); // logLandau (function==3)
-				else{
-					std::cout << " Invalid fit function (" << peakID[2] << ")!\n";
-					continue;
-				}
-			}
-			
-			func->SetParameter(0, peakPars[0]);
-			func->SetParameter(1, peakPars[2]);
-			func->SetParameter(2, peakPars[4]);
-
-			// Calculate the number of neutrons.
-			if(!energy_)
-				integral = func->Integral(-10, 150)/binwidth;
-			else
-				integral = func->Integral(0, 10)/binwidth;
-			
-			outFile << integral << "\t" << peakPars[6]/integral << "\t";
-			outFile << twopi*(-std::cos((channelPars[1]+XbinHalfWidth*2)*pi/180) + std::cos(channelPars[1]*pi/180)) << std::endl;
-			delete func;
+			if(functionType == 0) peakfunc = new TF1("ff", ENfitFunctions::gaussian, 0, 10, 3); // gaussian (function==0)
+			else if(functionType == 1) peakfunc = new TF1("ff", ENfitFunctions::landau, 0, 10, 3); // landau (function==1)
+			else if(functionType == 2) peakfunc = new TF1("ff", ENfitFunctions::logGaussian, 0.1, 10, 3); // logGaussian (function==2)
+			else if(functionType == 3) peakfunc = new TF1("ff", ENfitFunctions::logLandau, 0.1, 10, 3); // logLandau (function==3)
 		}
+		
+		peakfunc->SetParameter(0, peakPars[6]);
+		peakfunc->SetParameter(1, peakPars[8]);
+		peakfunc->SetParameter(2, peakPars[10]);
+
+		// Calculate the number of neutrons.
+		integral = summation(projhist, peakfunc);
+		
+		outFile << integral << "\t" << peakCounts/integral << "\t";
+		outFile << (twopi*(-std::cos((binLow+binWidth)*pi/180) + std::cos(binLow*pi/180))) << std::endl;
+
+		delete peakfunc;
+		
 	}
 
-	specFile.close();
+	specFile.Close();
 	outFile.close();
 	
 	return true;
@@ -579,16 +629,16 @@ void help(const std::string &search_=""){
 	                                        "double", "dt", "Timing resolution of detector, in ns."};
 
 	// Defined functions.
-	const std::string definedFunctions[136] = {"void", "binRatio", "TH1 *h1_, TH1 *h2_", "List the ratio of each bin in two 1-d histograms.",
+	const std::string definedFunctions[132] = {"void", "binRatio", "TH1 *h1_, TH1 *h2_", "List the ratio of each bin in two 1-d histograms.",
 	                                           "double", "calcEnergy", "const double &tof_", "Calculate neutron energy (MeV) given the time-of-flight (in ns).",
 	                                           "double", "calcTOF", "const double &E_", "Calculate neutron time-of-flight (ns) given the energy (in MeV).",
 	                                           "void", "calculateP2", "double *x, double *y, double *p", "Calculate a 2nd order polynomial that passes through three (x,y) pairs.",
 	                                           "void", "conv", "double &x, double &y", "Convert logic signal period to beam current (enA).",
-	                                           "TGraph", "*convert", "TGraph *g, const char *name", "Convert a logic signal TGraph to a beam current vs. time graph.",
+	                                           "TGraph", "convert", "TGraph *g, const char *name", "Convert a logic signal TGraph to a beam current vs. time graph.",
 	                                           "double", "efficiency", "double *x, double *p", "Piecewise defined VANDLE intrinsic efficiency as a function of neutron ToF.",
 	                                           "double", "effVsEnergy", "double *x, double *p", "Piecewise defined VANDLE intrinsic efficiency as a function of neutron Energy.",
 	                                           "TGaxis", "extraXaxis", "", "Add a second x-axis to a TCanvas.",
-	                                           "TGaxis", "*extraYaxis", "", "Add a second y-axis to a TCanvas.",
+	                                           "TGaxis", "extraYaxis", "", "Add a second y-axis to a TCanvas.",
 	                                           "void", "findBins", "TH1 *h, const double &xstart_, const double &xstop_, int &lowBin, int &highBin", "Return the range of bins containing an upper and lower point, rounded to the nearest bins.",
 	                                           "double", "TOFfitFunctions::gaussian", "double *x, double *p", "Standard gaussian (x in ns) scaled by linearly interpolated intrinsic efficiency.",
 	                                           "double", "TOFfitFunctions::landau", "double *x, double *p", "Standard landau (x in ns) scaled by linearly interpolated intrinsic efficiency.",
@@ -602,9 +652,8 @@ void help(const std::string &search_=""){
 	                                           "void", "listBins", "TH1 *h_, const double &c_=1", "List all bins of a 1-d histogram.",
 	                                           "double", "mean", "TGraph *g", "Determine the mean beam current from a logic signal TGraph.",
 	                                           "void", "multiply", "TH1 *h_, const double &c_", "Multiply a 1-d histogram by a constant.",
-	                                           "void", "processGausPars", "const double *p, int N, double binwidth=0.2", "Integrate gaussian fits from ToF plot.",
 	                                           "void", "processMCarlo", "const char *fname, const char *tname=\"data\"", "Process a VANDMC monte carlo detector test output file.",
-	                                           "bool", "processSpecOutput", "const char *fname, const char *ofname, double binwidth=0.2, const double *ptr_=effZero, bool energy_=false", "Process an output file from specFitter (simpleScan tool).",
+	                                           "bool", "processSpecOutput", "const char *fname, const char *ofname, const double *ptr_=effZero, bool energy_=false", "Process an output file from specFitter (simpleScan tool).",
 	                                           "void", "scale", "TH2F *h, const double &scaling", "Multiply a 2-d histogram by a constant.",
 	                                           "void", "setLine", "TAttLine *ptr_, const short &color_=602, const short &style_=1, const short &width_=1", "Set an object which inherits from TAttLine to have user specified style.",
 	                                           "void", "setMarker", "TAttMarker *ptr_, const short &color_=602, const short &style_=21, const float &size_=1.0", "Set an object which inherits from TAttMarker to have user specified style.",
@@ -628,7 +677,7 @@ void help(const std::string &search_=""){
 			std::cout << "  " << globalVariables[3*i+1] << std::endl;
 	
 		std::cout << "\n Defined helper functions:\n";
-		for(int i = 0; i < 34; i++)
+		for(int i = 0; i < 33; i++)
 			std::cout << "  " << definedFunctions[4*i+1] << std::endl;
 			
 		std::cout << std::endl;
@@ -661,7 +710,7 @@ void help(const std::string &search_=""){
 			}
 		}
 	
-		for(int i = 0; i < 34; i++){
+		for(int i = 0; i < 33; i++){
 			fIndex = definedFunctions[4*i+1].find(search_);
 			if(fIndex != std::string::npos){
 				strings[0] = definedFunctions[4*i+1].substr(0, fIndex);
