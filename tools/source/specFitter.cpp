@@ -83,10 +83,12 @@ class specFitter : public simpleHistoFitter {
 	bool logXaxis;
 	bool logYaxis;
 
+	bool strictMode;
+
 	TDirectory *cdir;
 
   public:
-	specFitter() : simpleHistoFitter(), polyBG(false), gausFit(true), logXaxis(false), logYaxis(false) { }
+	specFitter() : simpleHistoFitter(), polyBG(false), gausFit(true), logXaxis(false), logYaxis(false), strictMode(true) { }
 
 	bool fitSpectrum(TH1 *h_, const int &binID_, const bool &log_=false);
 
@@ -107,21 +109,27 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_, const bool &log_/*=fals
 
 	double xlo, ylo;
 	double xhi, yhi;
-	
-	std::cout << " Mark bottom-left bounding point (xmin,ymin)\n";
-	marker = (TMarker*)can2->WaitPrimitive("TMarker");
-	xlo = marker->GetX();
-	ylo = marker->GetY();
-	delete marker;	
-	
+
+	if(strictMode){	
+		std::cout << " Mark bottom-left bounding point (xmin,ymin)\n";
+		marker = (TMarker*)can2->WaitPrimitive("TMarker");
+		xlo = marker->GetX();
+		ylo = marker->GetY();
+		delete marker;
+	}	
+	else{
+		xlo = h_->GetXaxis()->GetXmin();
+		ylo = 0;
+	}
+
 	std::cout << " Mark top-right bounding point (xmax,ymax)\n";
 	marker = (TMarker*)can2->WaitPrimitive("TMarker");
 	xhi = marker->GetX();
 	yhi = marker->GetY();
 	delete marker;
 
-	writeTNamed("fitLow", xlo);
-	writeTNamed("fitHigh", xhi);
+	writeTNamed("winLow", xlo);
+	writeTNamed("winHigh", xhi);
 
 	h_->GetXaxis()->SetRangeUser(xlo, xhi);
 	h_->GetYaxis()->SetRangeUser(ylo, yhi);
@@ -167,7 +175,11 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_, const bool &log_/*=fals
 		bgy[2] = marker->GetY();
 		delete marker;
 
-		p[0] = bgy[2];
+		if(bgy[2] < bgy[1]) p[0] = bgy[2];
+		else{
+			if(debug) std::cout << " Warning! Y3 is less than Y2 (" << bgy[2] << " < " << bgy[1] << ")! Setting Y3=" << bgy[1]*0.9 << ".\n";
+			p[0] = bgy[1]*0.9;
+		}
 		if(!log_){
 			p[2] = std::log((bgy[0]-p[0])/(bgy[1]-p[0]))/(bgx[0]-bgx[1]);
 			p[1] = std::log(bgy[1]-p[0])-p[2]*bgx[1];
@@ -199,8 +211,7 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_, const bool &log_/*=fals
 		bgy[2] = marker->GetY();
 		delete marker;
 
-		if(!log_) calculateP2(bgx, bgy, p);
-		else      calculateP2(bgx, bgy, p, true);
+		calculateP2(bgx, bgy, p, log_);
 		
 		stream1 << "[0]+" << xstr << "*[1]+" << xstr << "^2*[2]";
 	}
@@ -262,11 +273,30 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_, const bool &log_/*=fals
 		}
 	}
 
-	if(debug){ // Print the initial conditions.
+	// Define the fitting limits
+	double fitlow, fithigh;
+	if(strictMode){
 		func->Draw("SAME");
 		can2->Update();
-		can2->WaitPrimitive();
+		std::cout << "Mark upper and lower limits of fitting region\n";
+		marker = (TMarker*)can2->WaitPrimitive("TMarker");
+		fitlow = marker->GetX();
+		delete marker;
+		marker = (TMarker*)can2->WaitPrimitive("TMarker");
+		fithigh = marker->GetX();
+		delete marker;
+	}
+	else{
+		fitlow = bgx[0];
+		fithigh = bgx[2];
+	}
 
+	writeTNamed("fitLow", fitlow);
+	writeTNamed("fitHigh", fithigh);
+
+	func->SetRange(fitlow, fithigh);
+
+	if(debug){ // Print the initial conditions.
 		std::cout << " Initial:\n";
 		for(int i = 0; i < nPars; i++){
 			std::cout << "  p[" << i << "] = " << func->GetParameter(i) << std::endl;
@@ -357,6 +387,7 @@ void specFitter::addChildOptions(){
 	addOption(optionExt("landau", no_argument, NULL, 'l', "", "Fit peaks with landau distributions."), userOpts, optstr);
 	addOption(optionExt("logx", no_argument, NULL, 0x0, "", "Log the x-axis of the projection histogram."), userOpts, optstr);
 	addOption(optionExt("logy", no_argument, NULL, 0x0, "", "Log the y-axis of the projection histogram."), userOpts, optstr);
+	addOption(optionExt("quick", no_argument, NULL, 0x0, "", "Prompts the user for less input."), userOpts, optstr); 
 }
 
 bool specFitter::processChildArgs(){
@@ -368,6 +399,8 @@ bool specFitter::processChildArgs(){
 		logXaxis = true;
 	if(userOpts.at(firstChildOption+3).active)
 		logYaxis = true;
+	if(userOpts.at(firstChildOption+4).active)
+		strictMode = false;
 
 	return true;
 }
