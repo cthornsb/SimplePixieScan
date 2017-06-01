@@ -1,6 +1,9 @@
 add_library(Scan SHARED IMPORTED)
 set_property(TARGET Scan PROPERTY IMPORTED_LOCATION ${PAASS_LIB_SCAN})
 
+add_library(GuiObj OBJECT simpleGui.cpp)
+add_library(GuiStatic STATIC $<TARGET_OBJECTS:GuiObj>)
+
 add_library(ToolObj OBJECT cmcalc.cpp simpleTool.cpp)
 add_library(ToolStatic STATIC $<TARGET_OBJECTS:ToolObj>)
 
