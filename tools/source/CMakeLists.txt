@@ -18,7 +18,7 @@ add_executable(rawEventAnalyzer rawEventAnalyzer.cpp)
 target_link_libraries(rawEventAnalyzer ToolStatic Scan ${ROOT_LIBRARIES})
 
 add_executable(specFitter specFitter.cpp)
-target_link_libraries(specFitter ToolStatic Scan ${ROOT_LIBRARIES})
+target_link_libraries(specFitter GuiStatic ToolStatic Scan ${ROOT_GUI_LIBRARIES})
 
 add_executable(timeAlign timeAlign.cpp)
 target_link_libraries(timeAlign ToolStatic Scan ${ROOT_LIBRARIES})

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 
+#include "TApplication.h"
 #include "TSpectrum.h"
 #include "TMarker.h"
 #include "TLine.h"
@@ -15,6 +16,7 @@
 #include "TDirectory.h"
 
 #include "simpleTool.hpp"
+#include "simpleGui.hpp"
 
 // Write a TNamed to a root TFile.
 template <typename T>
@@ -85,12 +87,42 @@ class specFitter : public simpleHistoFitter {
 
 	bool strictMode;
 
+	bool waitRun;
+	bool forceExit;
+
 	TDirectory *cdir;
 
-  public:
-	specFitter() : simpleHistoFitter(), polyBG(false), gausFit(true), logXaxis(false), logYaxis(false), strictMode(true) { }
+	GuiWindow *win;
 
-	bool fitSpectrum(TH1 *h_, const int &binID_, const bool &log_=false);
+  public:
+	specFitter() : simpleHistoFitter(), polyBG(false), gausFit(true), logXaxis(false), logYaxis(false), strictMode(true), waitRun(true), forceExit(false) { 
+		// Initialize root graphics classes.
+		initRootGraphics();
+
+		// Declare a new options menu.
+		win = new GuiWindow(gClient->GetRoot(), "Background", 200, 400);
+	
+		// Add buttons to the menu.
+		win->AddRadio("expo");
+		win->AddRadio("poly2", &polyBG);
+
+		win->NewGroup("Peak");
+		win->AddRadio("gauss", &gausFit);
+		win->AddRadio("landau");
+
+		win->NewGroup("Options");
+		win->AddCheckbox("strict", &strictMode, true);
+		win->AddCheckbox("log");
+
+		win->NewGroup("Control");
+		win->AddButton("run", &waitRun);
+		win->AddButton("exit", &forceExit);
+
+		// Draw the menu.
+		win->Update();
+	}
+
+	bool fitSpectrum(TH1 *h_, const int &binID_);
 
 	void addChildOptions();
 	
@@ -99,11 +131,14 @@ class specFitter : public simpleHistoFitter {
 	bool process();
 };
 
-bool specFitter::fitSpectrum(TH1 *h_, const int &binID_, const bool &log_/*=false*/){
+bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	if(!h_) return false; 
 
 	h_->Draw();
 	can2->Update();
+
+	// Wait for the user to change fit options.
+	win->Run(&waitRun);
 
 	TMarker *marker;
 
@@ -137,7 +172,7 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_, const bool &log_/*=fals
 	can2->Update();
 
 	std::string xstr = "x";
-	if(log_) xstr = "log(x)";
+	if(logXaxis) xstr = "log(x)";
 
 	int numPeaks = 1;
 	//std::cout << " How many peaks? "; std::cin >> numPeaks;
@@ -180,7 +215,7 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_, const bool &log_/*=fals
 			if(debug) std::cout << " Warning! Y3 is less than Y2 (" << bgy[2] << " < " << bgy[1] << ")! Setting Y3=" << bgy[1]*0.9 << ".\n";
 			p[0] = bgy[1]*0.9;
 		}
-		if(!log_){
+		if(!logXaxis){
 			p[2] = std::log((bgy[0]-p[0])/(bgy[1]-p[0]))/(bgx[0]-bgx[1]);
 			p[1] = std::log(bgy[1]-p[0])-p[2]*bgx[1];
 		}
@@ -211,7 +246,7 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_, const bool &log_/*=fals
 		bgy[2] = marker->GetY();
 		delete marker;
 
-		calculateP2(bgx, bgy, p, log_);
+		calculateP2(bgx, bgy, p, logXaxis);
 		
 		stream1 << "[0]+" << xstr << "*[1]+" << xstr << "^2*[2]";
 	}
@@ -240,11 +275,11 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_, const bool &log_/*=fals
 		amplitude = marker->GetY();
 		meanValue = marker->GetX();
 		if(!polyBG){
-			if(!log_) bkgA = p[0]+std::exp(p[1]+p[2]*meanValue);
+			if(!logXaxis) bkgA = p[0]+std::exp(p[1]+p[2]*meanValue);
 			else      bkgA = p[0]+std::exp(p[1])*std::pow(meanValue, p[2]);
 		}
 		else{
-			if(!log_) bkgA = p[0]+p[1]*meanValue+p[2]*meanValue*meanValue;
+			if(!logXaxis) bkgA = p[0]+p[1]*meanValue+p[2]*meanValue*meanValue;
 			else      bkgA = p[0]+p[1]*std::log(meanValue)+p[2]*std::pow(std::log(meanValue), 2);
 		}
 		amplitude = amplitude-bkgA;
@@ -261,7 +296,7 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_, const bool &log_/*=fals
 		delete marker;
 		if(gausFit) func->SetParameter(3*i+3, amplitude);
 		else        func->SetParameter(3*i+3, amplitude*5.9);
-		if(!log_){
+		if(!logXaxis){
 			func->SetParameter(3*i+4, meanValue);
 			func->SetParameter(3*i+5, (fwhmRight-fwhmLeft)/2.35);
 		}
@@ -482,7 +517,7 @@ bool specFitter::process(){
 			writeTNamed("binLow", binLow);
 			writeTNamed("binWidth", binWidth);
 
-			fitSpectrum(h1, i, logXaxis);
+			fitSpectrum(h1, i);
 		}
 		else std::cout << "FAILED\n";
 	}
