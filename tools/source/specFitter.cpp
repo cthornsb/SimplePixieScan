@@ -94,33 +94,10 @@ class specFitter : public simpleHistoFitter {
 
 	GuiWindow *win;
 
+	void setupControlPanel();
+
   public:
-	specFitter() : simpleHistoFitter(), polyBG(false), gausFit(true), logXaxis(false), logYaxis(false), strictMode(true), waitRun(true), forceExit(false) { 
-		// Initialize root graphics classes.
-		initRootGraphics();
-
-		// Declare a new options menu.
-		win = new GuiWindow(gClient->GetRoot(), "Background", 200, 400);
-	
-		// Add buttons to the menu.
-		win->AddRadio("expo");
-		win->AddRadio("poly2", &polyBG);
-
-		win->NewGroup("Peak");
-		win->AddRadio("gauss", &gausFit);
-		win->AddRadio("landau");
-
-		win->NewGroup("Options");
-		win->AddCheckbox("strict", &strictMode, true);
-		win->AddCheckbox("log");
-
-		win->NewGroup("Control");
-		win->AddButton("okay", &waitRun);
-		win->AddButton("exit", &forceExit);
-
-		// Draw the menu.
-		win->Update();
-	}
+	specFitter() : simpleHistoFitter(), polyBG(false), gausFit(true), logXaxis(false), logYaxis(false), strictMode(true), waitRun(true), forceExit(false) { }
 
 	bool fitSpectrum(TH1 *h_, const int &binID_);
 
@@ -130,6 +107,45 @@ class specFitter : public simpleHistoFitter {
 
 	bool process();
 };
+
+void specFitter::setupControlPanel(){
+	// Initialize root graphics classes.
+	initRootGraphics();
+
+	// Declare a new options menu.
+	win = new GuiWindow(gClient->GetRoot(), "Background", 200, 400);
+
+	// Add buttons to the menu..
+	if(!polyBG){ // Order matters for radio buttons.
+		win->AddRadio("expo");
+		win->AddRadio("poly2", &polyBG);
+	}
+	else{
+		win->AddRadio("poly2", &polyBG);
+		win->AddRadio("expo");
+	}
+
+	win->NewGroup("Peak");
+	if(gausFit){ // Order matters for radio buttons.
+		win->AddRadio("gauss", &gausFit);
+		win->AddRadio("landau");
+	}
+	else{
+		win->AddRadio("landau");
+		win->AddRadio("gauss", &gausFit);
+	}
+
+	win->NewGroup("Options");
+	win->AddCheckbox("strict", &strictMode, strictMode);
+	win->AddCheckbox("log", &logXaxis, logXaxis);
+
+	win->NewGroup("Control");
+	win->AddButton("okay", &waitRun);
+	win->AddButton("exit", &forceExit);
+
+	// Draw the menu.
+	win->Update();
+}
 
 bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	if(!h_) return false; 
@@ -390,6 +406,7 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	// Wait for the user to press "okay" on the control panel.
 	std::cout << " Press \"okay\" to continue...\n";
 	win->Wait(&waitRun);
+	std::cout << std::endl;
 
 	integral = summation(h_, lilfunc, xlo, xhi);
 	totalIntegral += integral;
@@ -445,6 +462,9 @@ bool specFitter::processChildArgs(){
 
 bool specFitter::process(){
 	if(!h2d || !can2) return false;
+
+	// Initialize the gui panel.
+	setupControlPanel();
 
 	TFile *ofile;
 	if(!output_filename.empty())
