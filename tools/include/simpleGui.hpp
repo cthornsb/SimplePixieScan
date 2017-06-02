@@ -104,7 +104,9 @@ class GuiWindow : public TGMainFrame {
 
 	TGLabel *AddLabel(const char *name_, const int &x_, const int &y_, const int &w_=57, const int &h_=19);
 
-	void Run();
+	void Update();
+
+	void Run(bool *ptr_=NULL);
 
 	TGButtonGroup *GetCurrentGroup();
 

@@ -149,23 +149,24 @@ TGLabel *GuiWindow::AddLabel(const char *name_, const int &x_, const int &y_, co
 	return ptr;
 }
 
-void GuiWindow::Run(){
+void GuiWindow::Update(){
 	Clear();
 	for(std::vector<SimpleButtonGroup*>::iterator iter = groups.begin(); iter != groups.end(); iter++){
 		AddFrame(*iter, new TGLayoutHints(kLHintsCenterX, 1, 1, 1, 1));
 	}
 	MapSubwindows();
 	MapWindow();
+}
 
-	PrintValues();
-
-	isRunning = true;
-	while(isRunning){
+void GuiWindow::Run(bool *ptr_/*=NULL*/){
+	if(ptr_ == NULL) ptr_ = &isRunning;
+	(*ptr_) = true;
+	while((*ptr_)){
 		gSystem->ProcessEvents();
 		usleep(SLEEP_WAIT);
 
 		for(std::vector<SimpleButtonGroup*>::iterator iter = groups.begin(); iter != groups.end(); iter++){
-			if((*iter)->CheckState()) PrintValues();
+			(*iter)->CheckState();
 		}
 	}
 }
