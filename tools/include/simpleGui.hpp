@@ -106,7 +106,7 @@ class GuiWindow : public TGMainFrame {
 
 	void Update();
 
-	void Run(bool *ptr_=NULL);
+	void Wait(bool *ptr_=NULL);
 
 	TGButtonGroup *GetCurrentGroup();
 
@@ -122,7 +122,7 @@ class GuiWindow : public TGMainFrame {
 	
 	SimpleButtonGroup* currentGroup;
 
-	bool isRunning;
+	bool isWaiting;
 	bool vals[100];
 
 	size_t valsIndex;

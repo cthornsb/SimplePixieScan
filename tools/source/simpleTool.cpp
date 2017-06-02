@@ -552,7 +552,6 @@ int simpleHistoFitter::execute(int argc, char *argv[]){
 		
 	h2d->Draw("COLZ");
 	can1->Update();
-	can1->WaitPrimitive();
 	openCanvas2();
 
 	if(!process())

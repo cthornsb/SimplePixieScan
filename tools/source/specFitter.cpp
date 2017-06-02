@@ -115,7 +115,7 @@ class specFitter : public simpleHistoFitter {
 		win->AddCheckbox("log");
 
 		win->NewGroup("Control");
-		win->AddButton("run", &waitRun);
+		win->AddButton("okay", &waitRun);
 		win->AddButton("exit", &forceExit);
 
 		// Draw the menu.
@@ -138,7 +138,7 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	can2->Update();
 
 	// Wait for the user to change fit options.
-	win->Run(&waitRun);
+	win->Wait(&waitRun);
 
 	TMarker *marker;
 
@@ -386,7 +386,10 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 		lilfunc->Draw("SAME");
 	//}
 	can2->Update();
-	can2->WaitPrimitive();
+
+	// Wait for the user to press "okay" on the control panel.
+	std::cout << " Press \"okay\" to continue...\n";
+	win->Wait(&waitRun);
 
 	integral = summation(h_, lilfunc, xlo, xhi);
 	totalIntegral += integral;
