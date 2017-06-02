@@ -94,6 +94,8 @@ class specFitter : public simpleHistoFitter {
 
 	void setupControlPanel();
 
+	void updateAxes(TH1 *h1_);
+
   public:
 	specFitter() : simpleHistoFitter(), polyBG(false), gausFit(true), logXaxis(false), logYaxis(false), strictMode(true), waitRun(true) { }
 
@@ -135,7 +137,8 @@ void specFitter::setupControlPanel(){
 
 	win->NewGroup("Options");
 	win->AddCheckbox("strict", &strictMode, strictMode);
-	win->AddCheckbox("log", &logXaxis, logXaxis);
+	win->AddCheckbox("logx", &logXaxis, logXaxis);
+	win->AddCheckbox("logy", &logYaxis, logYaxis);
 
 	win->NewGroup("Control");
 	win->AddButton("okay", &waitRun);
@@ -143,6 +146,37 @@ void specFitter::setupControlPanel(){
 
 	// Draw the menu.
 	win->Update();
+}
+
+void specFitter::updateAxes(TH1 *h1_){
+	if(logXaxis){ // Check the x-axis.
+		if(can2->GetLogx() == 0){
+			if(h1_->GetXaxis()->GetXmin() <= 0){
+				std::cout << " Warning! Failed to set x-axis to log scale (xmin=" << h1_->GetXaxis()->GetXmin() << ").\n";
+				logXaxis = false;
+			}
+			else{ 
+				can2->SetLogx(); 
+				can2->Update();
+			}
+		}
+	}
+	else if(can2->GetLogx() == 1){
+		can2->SetLogx(0); 
+		can2->Update();
+	}
+
+	if(logYaxis){ // Check the y-axis.
+		if(can2->GetLogy() == 0){
+			if(h1_->GetYaxis()->GetXmin() <= 0) h1_->SetMinimum(0.5);
+			can2->SetLogy(); 
+			can2->Update();
+		}
+	}
+	else if(can2->GetLogy() == 1){ 
+		can2->SetLogy(0); 
+		can2->Update();
+	}
 }
 
 bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
@@ -153,6 +187,9 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 
 	// Wait for the user to change fit options.
 	win->Wait(&waitRun);
+
+	// Update log scales based on user input.
+	updateAxes(h_);
 
 	// Check if "quit" was selected.
 	if(win->IsQuitting()) return false;
@@ -496,22 +533,10 @@ bool specFitter::process(){
 	Xrange = Xmax-Xmin;
 
 	can2->cd();
-	
-	if(logXaxis){
-		if(h1->GetXaxis()->GetXmin() <= 0){
-			std::cout << " Warning! Failed to set x-axis to log scale (xmin=" << h1->GetXaxis()->GetXmin() << ").\n";
-			logXaxis = false;
-		}
-		else{ can2->SetLogx(); }
-	}
-	if(logYaxis){
-		if(h1->GetYaxis()->GetXmin() <= 0){
-			std::cout << " Warning! Failed to set y-axis to log scale (ymin=" << h1->GetYaxis()->GetXmin() << ").\n";
-			logYaxis = false;
-		}
-		else{ can2->SetLogy(); }
-	}
 
+	// Update for log scales.
+	updateAxes(h1);
+	
 	double binLow, binWidth;
 	int numProjections = getNumProjections(h2d);
 	for(int i = 1; i <= numProjections; i++){
@@ -541,6 +566,10 @@ bool specFitter::process(){
 			writeTNamed("binLow", binLow);
 			writeTNamed("binWidth", binWidth);
 
+			// Handle log scale limit errors.
+			if(logYaxis) h1->SetMinimum(0.5);
+
+			// Fit the spectrum.
 			fitSpectrum(h1, i);
 
 			// Check if "quit" was selected.
