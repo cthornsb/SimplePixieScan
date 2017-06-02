@@ -116,7 +116,7 @@ GuiWindow::GuiWindow() : TGMainFrame(gClient->GetRoot(), 100, 100, kMainFrame), 
 	NewGroup("group1");	
 }
 
-GuiWindow::GuiWindow(const TGWindow *p, const std::string &firstName_/*="group1"*/, const int &w/*=100*/, const int &h/*=100*/) : TGMainFrame(p, w, h, kMainFrame), isWaiting(false), valsIndex(0) {
+GuiWindow::GuiWindow(const TGWindow *p, const std::string &firstName_/*="group1"*/, const int &w/*=100*/, const int &h/*=100*/) : TGMainFrame(p, w, h, kMainFrame), isWaiting(false), isQuitting(false), valsIndex(0) {
 	NewGroup(firstName_);
 }
 
@@ -136,7 +136,7 @@ TGTextButton *GuiWindow::AddButton(const std::string &name_, bool *ptr_/*=NULL*/
 }
 
 TGTextButton *GuiWindow::AddQuitButton(const std::string &name_/*="Quit"*/, const int &x_/*=0*/, const int &y_/*=0*/, const int &w_/*=92*/, const int &h_/*=25*/){
-	return currentGroup->AddButton(name_, &this->isWaiting, x_, y_, w_, h_);
+	return currentGroup->AddButton(name_, &this->isQuitting, x_, y_, w_, h_);
 }
 
 TGLabel *GuiWindow::AddLabel(const char *name_, const int &x_, const int &y_, const int &w_/*=57*/, const int &h_/*=19*/){
@@ -161,7 +161,7 @@ void GuiWindow::Update(){
 void GuiWindow::Wait(bool *ptr_/*=NULL*/){
 	if(ptr_ == NULL) ptr_ = &isWaiting;
 	(*ptr_) = true;
-	while((*ptr_)){
+	while((*ptr_) && !isQuitting){
 		gSystem->ProcessEvents();
 		usleep(SLEEP_WAIT);
 

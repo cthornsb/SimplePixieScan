@@ -86,9 +86,7 @@ class specFitter : public simpleHistoFitter {
 	bool logYaxis;
 
 	bool strictMode;
-
 	bool waitRun;
-	bool forceExit;
 
 	TDirectory *cdir;
 
@@ -97,7 +95,7 @@ class specFitter : public simpleHistoFitter {
 	void setupControlPanel();
 
   public:
-	specFitter() : simpleHistoFitter(), polyBG(false), gausFit(true), logXaxis(false), logYaxis(false), strictMode(true), waitRun(true), forceExit(false) { }
+	specFitter() : simpleHistoFitter(), polyBG(false), gausFit(true), logXaxis(false), logYaxis(false), strictMode(true), waitRun(true) { }
 
 	bool fitSpectrum(TH1 *h_, const int &binID_);
 
@@ -141,7 +139,7 @@ void specFitter::setupControlPanel(){
 
 	win->NewGroup("Control");
 	win->AddButton("okay", &waitRun);
-	win->AddButton("exit", &forceExit);
+	win->AddQuitButton("exit");
 
 	// Draw the menu.
 	win->Update();
@@ -155,6 +153,9 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 
 	// Wait for the user to change fit options.
 	win->Wait(&waitRun);
+
+	// Check if "quit" was selected.
+	if(win->IsQuitting()) return false;
 
 	TMarker *marker;
 
@@ -541,6 +542,12 @@ bool specFitter::process(){
 			writeTNamed("binWidth", binWidth);
 
 			fitSpectrum(h1, i);
+
+			// Check if "quit" was selected.
+			if(win->IsQuitting()){
+				std::cout << "  EXITING!\n";	
+				break;
+			}
 		}
 		else std::cout << "FAILED\n";
 	}

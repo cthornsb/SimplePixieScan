@@ -114,6 +114,8 @@ class GuiWindow : public TGMainFrame {
 
 	bool GetValue(const size_t &index_);
 
+	bool IsQuitting(){ return isQuitting; }
+
 	void PrintValues();
 
   private:
@@ -123,6 +125,7 @@ class GuiWindow : public TGMainFrame {
 	SimpleButtonGroup* currentGroup;
 
 	bool isWaiting;
+	bool isQuitting;
 	bool vals[100];
 
 	size_t valsIndex;
