@@ -66,6 +66,8 @@ class simpleTool{
 
 	std::string work_dir;
 	std::string home_dir;
+
+	bool filledFromTree;
 	
 	virtual void addOptions(){ }
 	
@@ -159,7 +161,7 @@ class simpleHistoFitter : public simpleTool {
 	
 	TH2 *getHist2D(){ return h2d; }
 	
-	int execute(int argc, char *argv[]);
+	int execute(int argc, char *argv[], bool drawh2_=false);
 	
 	virtual bool process(){ return false; }
 };

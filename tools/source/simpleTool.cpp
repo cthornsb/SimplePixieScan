@@ -338,6 +338,8 @@ simpleHistoFitter::simpleHistoFitter() : simpleTool() {
 	
 	histStartID = 0;
 	histStopID = -1;
+	
+	filledFromTree = false;
 }
 
 bool simpleHistoFitter::getProjectionX(TH1 *h1_, TH2 *h2_, const int &binY_){
@@ -512,6 +514,8 @@ TH2 *simpleHistoFitter::fillHistogram(){
 		}
 	
 		h2d = (TH2*)(intree->GetHistogram()->Clone("h2d"));
+
+		filledFromTree = true;
 	}
 
 	if(!output_filename.empty()){
@@ -531,7 +535,7 @@ TH2 *simpleHistoFitter::fillHistogram(){
 	return h2d;
 }
 
-int simpleHistoFitter::execute(int argc, char *argv[]){
+int simpleHistoFitter::execute(int argc, char *argv[], bool drawh2_/*=false*/){
 	if(!setup(argc, argv))
 		return 0;
 
@@ -543,15 +547,19 @@ int simpleHistoFitter::execute(int argc, char *argv[]){
 	if(!openInputFile())
 		return 2;
 
-	openCanvas1();
-	can1->SetLogz();
-	can1->cd();
-		
 	if(!fillHistogram())
 		return 3;
+	
+	if(drawh2_ || filledFromTree){
+		openCanvas1();
+		can1->SetLogz();
+		can1->cd();
 		
-	h2d->Draw("COLZ");
-	can1->Update();
+		h2d->Draw("COLZ");
+		can1->Update();
+		can1->WaitPrimitive();
+	}
+
 	openCanvas2();
 
 	if(!process())
