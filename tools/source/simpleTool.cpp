@@ -217,10 +217,14 @@ bool simpleTool::setup(int argc, char *argv[]){
 	return true;
 }
 
+TApplication *simpleTool::initRootGraphics(){
+	if(!rootapp) rootapp = new TApplication("rootapp", 0, NULL);
+	return rootapp;
+}
+
 TCanvas *simpleTool::openCanvas1(const std::string &title_/*="Canvas"*/){
-	if(!rootapp)
-		rootapp = new TApplication("rootapp", 0, NULL);
-	
+	initRootGraphics();
+
 	can1 = new TCanvas("can1", title_.c_str());
 	can1->cd();
 	
@@ -228,9 +232,8 @@ TCanvas *simpleTool::openCanvas1(const std::string &title_/*="Canvas"*/){
 }
 
 TCanvas *simpleTool::openCanvas2(const std::string &title_/*="Canvas"*/){
-	if(!rootapp)
-		rootapp = new TApplication("rootapp", 0, NULL);
-	
+	initRootGraphics();
+
 	can2 = new TCanvas("can2", title_.c_str());
 	can2->cd();
 	

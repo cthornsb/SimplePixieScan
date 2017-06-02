@@ -86,6 +86,8 @@ class simpleTool{
 
 	bool setup(int argc, char *argv[]);
 
+	TApplication *initRootGraphics();
+
 	TCanvas *openCanvas1(const std::string &title_="Canvas");
 
 	TCanvas *openCanvas2(const std::string &title_="Canvas");
