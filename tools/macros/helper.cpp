@@ -460,33 +460,9 @@ bool processSpecOutput(const char *fname, const char *ofname, const double *ptr_
 		outFile.close();
 	}
 
-	bool gaussianFit = true;
-	bool logXaxis = false;
-
-	// Set the function type to use for integration.
-	TNamed *named = (TNamed*)specFile.Get("func");
-	if(strcmp(named->GetTitle(), "gauss") == 0) gaussianFit = true;
-	else if(strcmp(named->GetTitle(), "landau") == 0) gaussianFit = false;
-	else std::cout << " Error! Invalid fit function specification (" << named->GetTitle() << ").\n";
-	
-	named = (TNamed*)specFile.Get("logx");
-	if(strcmp(named->GetTitle(), "true") == 0) logXaxis = true;
-	else if(strcmp(named->GetTitle(), "false") == 0) logXaxis = false;
-	else std::cout << " Error! Invalid bool value for log x-axis (" << named->GetTitle() << ").\n";
-
-	int functionType;
-	if(gaussianFit){
-		if(!logXaxis) functionType = 0;
-		else          functionType = 2;
-	}
-	else{
-		if(!logXaxis) functionType = 1;
-		else          functionType = 3;
-	}
-
 	effPtr = ptr_;
 
-	outFile << "binID\tbinLow\tbinCenter\tbinErr\tchi2\tIbkg\thistCounts\tp0\tp0err\tp1\tp1err\tp2\tp2err\tA\tAerr\tmu\tmuerr\tE\tEerr\tsigma\tsigmaerr\tIpeak\tIpeakerr\tIintrinscor\tintrinseff\tbinSA\n";
+	outFile << "binID\tbinLow\tbinCenter\tbinErr\tchi2\tIbkg\thistCounts\tp0\tp0err\tp1\tp1err\tp2\tp2err\tA\tAerr\tmu\tmuerr\tE\tEerr\tsigma\tsigmaerr\tIpeak\tIcor\tIcorErr\tintrinseff\tbinSA\n";
 
 	double En;
 	double geomeff;
@@ -505,8 +481,13 @@ bool processSpecOutput(const char *fname, const char *ofname, const double *ptr_
 
 	double peakPars[12];
 
+	int functionType;
+	bool gaussianFit = true;
+	bool logXaxis = false;
+
 	TF1 *func;
 
+	std::string functionString;
 	std::string currentDirectory;
 	for(int i = 6; i < numKeys; i++){
 		currentDirectory = std::string(keyList->At(i)->GetName());
@@ -518,6 +499,16 @@ bool processSpecOutput(const char *fname, const char *ofname, const double *ptr_
 
 		// Load the fit function from the file.
 		func = (TF1*)getObject(&specFile, "func", currentDirectory);
+
+		// Get the function string.
+		functionString = (std::string)func->GetExpFormula();
+
+		gaussianFit = (functionString.find("Gaus") != std::string::npos);
+		logXaxis = (functionString.find("log(x)") != std::string::npos);
+
+		// Select the proper function type.
+		if(gaussianFit) functionType = (!logXaxis ? 0 : 2);
+		else            functionType = (!logXaxis ? 1 : 3);
 
 		// Get the 6 fit parameters.
 		for(int j = 0; j < 6; j++){
@@ -549,11 +540,10 @@ bool processSpecOutput(const char *fname, const char *ofname, const double *ptr_
 			// Energy resolution in %.
 			if(functionType <= 1) En = peakPars[8];
 			else                  En = TMath::Exp(peakPars[8]-peakPars[10]*peakPars[10]);
-			std::cout << En << "\t" << peakPars[8] << "\t" << peakPars[10] << std::endl;
 			outFile << En << "\t" << 235.482*peakPars[10]/peakPars[8] << "\t";
 		}
 	
-		outFile << peakPars[10] << "\t" << peakPars[11] << "\t" << peakCounts << "\t" << std::sqrt(peakCounts) << "\t";
+		outFile << peakPars[10] << "\t" << peakPars[11] << "\t" << peakCounts << "\t";
 	
 		TF1 *peakfunc = (TF1*)getObject(&specFile, "peakfunc", currentDirectory);
 		TH1 *projhist = (TH1*)getObject(&specFile, "h1", currentDirectory);
@@ -571,14 +561,37 @@ bool processSpecOutput(const char *fname, const char *ofname, const double *ptr_
 			else if(functionType == 3) peakfunc = new TF1("ff", ENfitFunctions::logLandau, 0.1, 10, 3); // logLandau (function==3)
 		}
 		
+		double pars[3];
+
+		double intMax = -1E30;
+		double intMin = 1E30;
+
+		const int val1[8] = {-1, -1, -1, 1, -1, 1, 1, 1};
+		const int val2[8] = {-1, -1, 1, -1, 1, 1, -1, 1};
+		const int val3[8] = {-1, 1, -1, -1, 1, -1, 1, 1};
+
+		for(unsigned int i = 0; i < 8; i++){
+			peakfunc->SetParameter(0, peakPars[6]+val1[i]*peakPars[7]);
+			peakfunc->SetParameter(1, peakPars[8]+val1[i]*peakPars[9]);
+			peakfunc->SetParameter(2, peakPars[10]+val1[i]*peakPars[11]);
+
+			integral = summation(projhist, peakfunc);
+
+			if(integral < intMin) intMin = integral;
+			if(integral > intMax) intMax = integral;
+		}
+
+		// Calculate the number of neutrons.
 		peakfunc->SetParameter(0, peakPars[6]);
 		peakfunc->SetParameter(1, peakPars[8]);
 		peakfunc->SetParameter(2, peakPars[10]);
-
-		// Calculate the number of neutrons.
 		integral = summation(projhist, peakfunc);
+
+		if((intMax - integral) >= (integral - intMin))
+			outFile << integral << "\t" << intMax-integral << "\t" << peakCounts/integral << "\t";
+		else
+			outFile << integral << "\t" << integral-intMin << "\t" << peakCounts/integral << "\t";
 		
-		outFile << integral << "\t" << peakCounts/integral << "\t";
 		outFile << (twopi*(-std::cos((binLow+binWidth)*pi/180) + std::cos(binLow*pi/180))) << std::endl;
 
 		delete peakfunc;
