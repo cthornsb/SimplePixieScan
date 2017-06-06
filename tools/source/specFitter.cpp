@@ -87,6 +87,7 @@ class specFitter : public simpleHistoFitter {
 
 	bool strictMode;
 	bool waitRun;
+	bool skipNext;
 
 	TDirectory *cdir;
 
@@ -97,7 +98,7 @@ class specFitter : public simpleHistoFitter {
 	void updateAxes(TH1 *h1_);
 
   public:
-	specFitter() : simpleHistoFitter(), polyBG(false), gausFit(true), logXaxis(false), logYaxis(false), strictMode(true), waitRun(true) { }
+	specFitter() : simpleHistoFitter(), polyBG(false), gausFit(true), logXaxis(false), logYaxis(false), strictMode(true), waitRun(true), skipNext(false) { }
 
 	bool fitSpectrum(TH1 *h_, const int &binID_);
 
@@ -142,6 +143,7 @@ void specFitter::setupControlPanel(){
 
 	win->NewGroup("Control");
 	win->AddButton("okay", &waitRun);
+	win->AddButton("skip", &skipNext);
 	win->AddQuitButton("exit");
 
 	// Draw the menu.
@@ -188,11 +190,17 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	// Wait for the user to change fit options.
 	win->Wait(&waitRun);
 
-	// Update log scales based on user input.
-	updateAxes(h_);
-
 	// Check if "quit" was selected.
 	if(win->IsQuitting()) return false;
+
+	// Check if the user wants to skip this spectrum.
+	if(skipNext){
+		skipNext = false;
+		return false;
+	}
+
+	// Update log scales based on user input.
+	updateAxes(h_);
 
 	TMarker *marker;
 
