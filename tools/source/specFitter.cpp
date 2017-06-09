@@ -364,8 +364,8 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 		}
 		else{
 			func->SetParameter(3*i+4, std::log(meanValue));
-			double sig1 = std::log(fwhmRight/meanValue)/std::sqrt(std::log(4)); // Right side of the maximum.
-			double sig2 = std::log(meanValue/fwhmLeft)/std::sqrt(std::log(4)); // Left side of the maximum.
+			double sig1 = std::log(fwhmRight)-meanValue; // Right side of the maximum.
+			double sig2 = meanValue-std::log(fwhmLeft); // Left side of the maximum.
 			func->SetParameter(3*i+5, (sig1+sig2)/2);
 		}
 	}
