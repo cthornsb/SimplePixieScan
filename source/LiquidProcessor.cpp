@@ -11,6 +11,8 @@
 #define M_NEUTRON 939.5654133 // MeV/c^2
 #endif
 
+const double max_tof = (1/C_IN_VAC)*std::sqrt(1E5*M_NEUTRON); // Set the minimum neutron energy to 50 keV.
+
 /// Process all individual events.
 bool LiquidProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEvtR/*=NULL*/){
 	ChanEvent *current_event = chEvt->channelEvent;
@@ -27,9 +29,8 @@ bool LiquidProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 	if(chEvt->calib->Time()){
 		chEvt->calib->timeCal->GetCalTime(tdiff);
 
-		// Check that the adjusted time difference is reasonable.
-		if(tdiff < -20 || tdiff > 200)
-			return false;
+		// Check that the corrected neutron ToF is reasonable.
+		if(tdiff < -20 || tdiff > r0*max_tof) return false;
 	}
 	
 	// Get the location of this detector.

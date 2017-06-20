@@ -17,6 +17,7 @@
 #define VANDLE_BAR_LENGTH 60 // cm
 
 const double max_tdiff = ((VANDLE_BAR_LENGTH / C_IN_VANDLE_BAR) / 8E-9); // Maximum time difference between valid vandle pairwise events (pixie clock ticks)
+const double max_ctof = (1/C_IN_VAC)*std::sqrt(1E5*M_NEUTRON); // Set the minimum neutron energy to 50 keV.
 
 bool VandleProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEvtR/*=NULL*/){
 	ChanEvent *channel_event_L = chEvt->channelEvent;
@@ -41,15 +42,15 @@ bool VandleProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 		chEvt->calib->timeCal->GetCalTime(tdiff_L);
 		chEvtR->calib->timeCal->GetCalTime(tdiff_R);
 
-		// Check that the adjusted time differences are reasonable.
-		if((tdiff_L < -20 || tdiff_L > 200) || (tdiff_R < -20 || tdiff_R > 200))
-			return false;
+		radius = std::sqrt(r0*r0 + ypos*ypos);
+		ctof = (r0/radius)*(tdiff_L + tdiff_R)/2.0; // ns
+
+		// Check that the corrected neutron ToF is reasonable.
+		if(ctof < -20 || ctof > r0*max_ctof) return false;
 
 		ypos = (tdiff_R - tdiff_L)*C_IN_VANDLE_BAR/200.0; // m
-		radius = std::sqrt(r0*r0 + ypos*ypos);
 		theta = std::acos(std::cos(theta0)/std::sqrt(1.0+ypos*ypos/(r0*r0)));
 		phi = std::atan2(ypos, r0*std::sin(theta0));
-		ctof = (r0/radius)*(tdiff_L + tdiff_R)/2.0; // ns
 	}
 	else{ // No time alignment available.
 		ypos = 0.0;
