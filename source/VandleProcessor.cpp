@@ -42,18 +42,17 @@ bool VandleProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 		chEvt->calib->timeCal->GetCalTime(tdiff_L);
 		chEvtR->calib->timeCal->GetCalTime(tdiff_R);
 
+		ypos = (tdiff_R - tdiff_L)*C_IN_VANDLE_BAR/200.0; // m
 		radius = std::sqrt(r0*r0 + ypos*ypos);
 		ctof = (r0/radius)*(tdiff_L + tdiff_R)/2.0; // ns
 
 		// Check that the corrected neutron ToF is reasonable.
 		if(ctof < -20 || ctof > r0*max_ctof) return false;
 
-		ypos = (tdiff_R - tdiff_L)*C_IN_VANDLE_BAR/200.0; // m
 		theta = std::acos(std::cos(theta0)/std::sqrt(1.0+ypos*ypos/(r0*r0)));
 		phi = std::atan2(ypos, r0*std::sin(theta0));
 	}
 	else{ // No time alignment available.
-		ypos = 0.0;
 		ctof = (tdiff_L + tdiff_R)/2.0; // ns
 	}
 
