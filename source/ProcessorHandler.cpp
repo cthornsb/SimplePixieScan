@@ -8,6 +8,7 @@
 #include "LiquidProcessor.hpp"
 #include "HagridProcessor.hpp"
 #include "GenericProcessor.hpp"
+#include "GenericBarProcessor.hpp"
 #include "LogicProcessor.hpp"
 #include "TraceProcessor.hpp"
 
@@ -92,6 +93,7 @@ Processor *ProcessorHandler::AddProcessor(std::string type_, MapFile *map_){
 	else if(type_ == "liquid"){ proc = (Processor*)(new LiquidProcessor(map_)); }
 	else if(type_ == "hagrid"){ proc = (Processor*)(new HagridProcessor(map_)); }
 	else if(type_ == "generic"){ proc = (Processor*)(new GenericProcessor(map_)); }
+	else if(type_ == "genericbar"){ proc = (Processor*)(new GenericBarProcessor(map_)); }
 	else if(type_ == "logic"){ proc = (Processor*)(new LogicProcessor(map_)); }
 	else if(type_ == "trace"){ proc = (Processor*)(new TraceProcessor(map_)); }
 	else{ return NULL; }

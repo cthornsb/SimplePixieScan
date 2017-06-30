@@ -197,7 +197,7 @@ END_CLASS
 BEGIN_CLASS	Generic
 
 # Short class description
-SHORT	Generic data structure
+SHORT	Generic data structure for single-ended detectors
 
 # Longer class description
 LONG	Structure for detectors of type "generic"
@@ -209,6 +209,32 @@ vector:double	tof	The time of flight of the particle detected by the detector.
 vector:float	tqdc	The energy computed from the trace.
 vector:u_short	loc	Detector location (ID)
 u_short	mult	Multiplicity of the generic type events.
+END_TYPES
+
+# End this class
+END_CLASS
+
+#####################################################################
+# GenericBar
+#####################################################################
+# Class name
+BEGIN_CLASS	GenericBar
+
+# Short class description
+SHORT	Generic data structure for bar-type detectors
+
+# Longer class description
+LONG	Structure for detectors of type "genericbar"
+
+# Data types and names
+# type	name	description
+BEGIN_TYPES
+vector:double	ltdiff	The time difference between the left end signal and the start signal.
+vector:double	rtdiff	The time difference between the right end signal and the start signal.
+vector:float	ltqdc	The integrated trace QDC for the left end trace.
+vector:float	rtqdc	The integrated trace QDC for the right end trace.
+vector:u_short	loc	Detector location (ID)
+u_short	mult	Multiplicity of the genericbar type events.
 END_TYPES
 
 # End this class

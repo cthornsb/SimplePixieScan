@@ -2,7 +2,7 @@
 set(CoreSources Plotter.cpp ProcessorHandler.cpp OnlineProcessor.cpp Processor.cpp ConfigFile.cpp MapFile.cpp CalibFile.cpp)
 
 set(ProcessorSources TriggerProcessor.cpp VandleProcessor.cpp PhoswichProcessor.cpp LiquidBarProcessor.cpp LiquidProcessor.cpp
-                     HagridProcessor.cpp GenericProcessor.cpp LogicProcessor.cpp TraceProcessor.cpp)
+                     HagridProcessor.cpp GenericProcessor.cpp GenericBarProcessor.cpp LogicProcessor.cpp TraceProcessor.cpp)
 
 add_library(Scan SHARED IMPORTED)
 set_property(TARGET Scan PROPERTY IMPORTED_LOCATION ${PAASS_LIB_SCAN})
