@@ -248,6 +248,7 @@ class simpleScanner : public ScanInterface {
 	unsigned short xia_data_location; /// ID = (16*mod + chan); taken from the channel event.
 	unsigned short xia_data_energy; /// Raw pixie energy taken directly from the module (a.u.).
 	double xia_data_time; /// Raw pixie time taken directly from the module and converted to seconds.
+	float defaultCFDparameter; /// The default CFD parameter to use for high-resolution timing.
 	
 	bool recordAllStarts; /// True if the user wishes to record all start events to the output file.
 	bool nonStartEvents; /// True if the current event list has at least one non-start.

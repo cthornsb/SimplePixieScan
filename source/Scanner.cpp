@@ -202,6 +202,7 @@ simpleScanner::simpleScanner() : ScanInterface() {
 	events_since_last_update = 0;
 	events_between_updates = 5000;
 	loaded_files = 0;
+	defaultCFDparameter = -1;
 }
 
 /// Destructor.
@@ -521,7 +522,11 @@ void simpleScanner::ExtraArguments(){
 		std::cout << msgHeader << "Recording all start events to output file.\n";
 		recordAllStarts = true;
 	}
-	if(userOpts.at(10).active){ // Force trace processing.
+	if(userOpts.at(10).active){ // Set default fitting/CFD parameters
+		defaultCFDparameter = strtof(userOpts.at(10).argument.c_str(), NULL);
+		std::cout << msgHeader << "Set default CFD parameter to " << defaultCFDparameter << ".\n";
+	}
+	if(userOpts.at(11).active){ // Force trace processing.
 		std::cout << msgHeader << "Forcing using of trace processor.\n";
 		forceUseOfTrace = true;
 	}
@@ -567,6 +572,7 @@ void simpleScanner::ArgHelp(){
 	AddOption(optionExt("stats", no_argument, NULL, 0, "", "Dump event builder information to the output root file"));
 	AddOption(optionExt("presort", no_argument, NULL, 'P', "", "Write an intermediate binary output file containing presorted data"));
 	AddOption(optionExt("record", no_argument, NULL, 0, "", "Write all start events to output file even when no other events are found"));
+	AddOption(optionExt("parameters", required_argument, NULL, 0, "<list>", "Set default fitting/CFD parameters by supplying comma-delimited string"));
 	AddOption(optionExt("force-traces", no_argument, NULL, 0, "", "Change all entries in map file to type 'trace' to do trace analysis"));
 }
 
@@ -721,6 +727,9 @@ bool simpleScanner::Initialize(std::string prefix_){
 			
 				if(online_mode) // Initialize all online diagnostic plots.
 					online->AddHists(proc);
+
+				if(defaultCFDparameter > 0)
+					proc->SetDefaultCfdParameters(defaultCFDparameter);
 			}
 			else{ 
 				std::cout << prefix_ << "Failed to add " << *iter << " processor to the processor list!\n"; 

@@ -99,6 +99,8 @@ class Processor{
 	Trace *root_waveform; /// Root data structure for storing traces.
 	Trace *root_waveformR; /// Root data structure for storing right detector traces.
 
+	float defaultCFD[3]; /// Default CFD parameters (F, D, L)
+
 	bool use_trace; /// Force the use of the ADC trace. Any events without a trace will be rejected.
 	bool use_fitting;
 	bool use_integration;
@@ -175,6 +177,8 @@ class Processor{
 	bool ToggleTraces(){ return (write_waveform = !write_waveform); }
 	
 	bool SetPresortMode(bool state_=true){ return (presortData = state_); }
+
+	void SetDefaultCfdParameters(const float &F_, const float &D_=1, const float &L_=1){ defaultCFD[0] = F_; defaultCFD[1] = D_; defaultCFD[2] = L_; }
 	
 	bool Initialize(TTree *tree_);
 	

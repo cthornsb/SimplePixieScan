@@ -234,9 +234,9 @@ bool Processor::CfdPulse(ChanEvent *event_, MapEntry *entry_){
 		return false;
 
 	// Set the CFD threshold point of the trace.
-	float cfdF = 0.5;
-	float cfdD = 1;
-	float cfdL = 1;
+	float cfdF = defaultCFD[0];
+	float cfdD = defaultCFD[1];
+	float cfdL = defaultCFD[2];
 	entry_->getArg(0, cfdF);
 	entry_->getArg(1, cfdD);
 	entry_->getArg(2, cfdL);
@@ -286,6 +286,10 @@ Processor::Processor(std::string name_, std::string type_, MapFile *map_){
 	clockInSeconds = 8e-9;
 	adcClockInSeconds = 4e-9;
 	filterClockInSeconds = 8e-9;
+
+	defaultCFD[0] = 0.5;
+	defaultCFD[1] = 1;
+	defaultCFD[2] = 1;
 	
 	for(int i = 0; i < 1250; i++)
 		traceX[i] = i * ADC_TIME_STEP;
