@@ -310,8 +310,8 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			hE->GetYaxis()->SetTitle("Neutron Energy (MeV)");
 			hE->GetZaxis()->SetTitle("Counts per bin");
 
-			hEcom = new TH2D("hEcom", "Lab Angle vs. Energy", nBins, startAngle, stopAngle, energyBins.size()-1, energyBins.data());
-			hEcom->GetXaxis()->SetTitle("CoM Angle (deg)");
+			hEcom = new TH2D("hEcom", "COM Angle vs. Energy", nBins, startAngle, stopAngle, energyBins.size()-1, energyBins.data());
+			hEcom->GetXaxis()->SetTitle("COM Angle (deg)");
 			hEcom->GetYaxis()->SetTitle("Neutron Energy (MeV)");
 			hEcom->GetZaxis()->SetTitle("Counts per bin");
 
@@ -320,8 +320,8 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			h2d->GetYaxis()->SetTitle("Neutron TOF (ns)");
 			h2d->GetZaxis()->SetTitle("Counts per bin");
 
-			h2dcom = new TH2D("h2dcom", "Lab Angle vs. ctof", nBins, startAngle, stopAngle, tofBins.size()-1, tofBins.data());
-			h2dcom->GetXaxis()->SetTitle("CoM Angle (deg)");
+			h2dcom = new TH2D("h2dcom", "COM Angle vs. ctof", nBins, startAngle, stopAngle, tofBins.size()-1, tofBins.data());
+			h2dcom->GetXaxis()->SetTitle("COM Angle (deg)");
 			h2dcom->GetYaxis()->SetTitle("Neutron TOF (ns)");
 			h2dcom->GetZaxis()->SetTitle("Counts per bin");
 		}
