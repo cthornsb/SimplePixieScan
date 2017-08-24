@@ -10,6 +10,7 @@
 #include "TF1.h"
 #include "TH1.h"
 #include "TH2.h"
+#include "TGraphErrors.h"
 
 #include "TFile.h"
 #include "TNamed.h"
@@ -85,6 +86,7 @@ class specFitter : public simpleHistoFitter {
 	bool logXaxis;
 	bool logYaxis;
 
+	bool noPeakMode;
 	bool strictMode;
 	bool waitRun;
 	bool skipNext;
@@ -97,8 +99,10 @@ class specFitter : public simpleHistoFitter {
 
 	void updateAxes(TH1 *h1_);
 
+	TGraphErrors *convertHisToGraph(TH1 *h_, const double &xLow, const double &xHigh);
+
   public:
-	specFitter() : simpleHistoFitter(), polyBG(false), gausFit(true), logXaxis(false), logYaxis(false), strictMode(true), waitRun(true), skipNext(false) { }
+	specFitter() : simpleHistoFitter(), polyBG(false), gausFit(true), logXaxis(false), logYaxis(false), noPeakMode(false), strictMode(true), waitRun(true), skipNext(false) { }
 
 	bool fitSpectrum(TH1 *h_, const int &binID_);
 
@@ -137,6 +141,7 @@ void specFitter::setupControlPanel(){
 	}
 
 	win->NewGroup("Options");
+	win->AddCheckbox("no-peak", &noPeakMode, noPeakMode);
 	win->AddCheckbox("strict", &strictMode, strictMode);
 	win->AddCheckbox("logx", &logXaxis, logXaxis);
 	win->AddCheckbox("logy", &logYaxis, logYaxis);
@@ -180,6 +185,48 @@ void specFitter::updateAxes(TH1 *h1_){
 		can2->Update();
 	}
 }
+
+void removeGraphPoints(TGraphErrors *g_, const double &xLow, const double &xHigh){
+	double x, y;
+	int point = 0;
+	while(point < g_->GetN()){
+		g_->GetPoint(point, x, y);
+		if(x < xLow){
+			point++;
+			continue;
+		}
+		else if(x > xHigh) break;
+		g_->RemovePoint(point);
+	}
+}
+
+TGraphErrors *specFitter::convertHisToGraph(TH1 *h_, const double &xLow, const double &xHigh){
+	std::vector<double> binCenters;
+	std::vector<double> binWidths;
+	std::vector<double> binContents;
+
+	std::cout << "xLow=" << xLow << ", xHigh=" << xHigh << std::endl;
+
+	double center;
+	for(int i = 1; i <= h_->GetNbinsX(); i++){
+		center = h_->GetBinCenter(i);
+		if(center < xLow) continue;
+		else if(center > xHigh) break;
+		binCenters.push_back(center);
+		binWidths.push_back(h_->GetBinWidth(i));
+		binContents.push_back(h_->GetBinContent(i));
+	}
+
+	TGraphErrors *output = new TGraphErrors(binCenters.size());
+
+	for(size_t i = 0; i < binCenters.size(); i++){
+		output->SetPoint(i, binCenters.at(i), binContents.at(i));
+		output->SetPointError(i, binWidths.at(i)/2, std::sqrt(binContents.at(i)));
+	}
+
+	return output;
+}
+
 
 bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	if(!h_) return false; 
@@ -225,12 +272,15 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	yhi = marker->GetY();
 	delete marker;
 
+	// Convert the histogram to a TGraphErrors.
+	TGraphErrors *graph = convertHisToGraph(h_, xlo, xhi);
+
 	writeTNamed("winLow", xlo);
 	writeTNamed("winHigh", xhi);
 
-	h_->GetXaxis()->SetRangeUser(xlo, xhi);
-	h_->GetYaxis()->SetRangeUser(ylo, yhi);
-	h_->Draw();
+	graph->GetXaxis()->SetRangeUser(xlo, xhi);
+	graph->GetYaxis()->SetRangeUser(ylo, yhi);
+	graph->Draw("APL");
 	can2->Update();
 
 	std::string xstr = "x";
@@ -249,13 +299,12 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	double bgy[3];
 	double p[3];
 
-	int nPars = 3*numPeaks;
+	int nPars = 3;
+	if(!noPeakMode) nPars += 3*numPeaks;
 
 	std::stringstream stream1, stream2;
 
-	if(!polyBG){
-		nPars += 3;
-		// Set initial function parameters.
+	if(!polyBG){ // Set initial function parameters.
 		std::cout << "Mark exponential background (x0,y0)\n";
 		marker = (TMarker*)can2->WaitPrimitive("TMarker");
 		bgx[0] = marker->GetX();
@@ -288,10 +337,7 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 		
 		stream1 << "[0]+exp([1]+[2]*" << xstr << ")";
 	}
-	else{
-		nPars += 3;
-
-		// Set initial function parameters.
+	else{ // Set initial function parameters.
 		std::cout << "Mark linear background (x0,y0)\n";
 		marker = (TMarker*)can2->WaitPrimitive("TMarker");
 		bgx[0] = marker->GetX();
@@ -315,9 +361,11 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 
 	if(debug) std::cout << " p0 = " << p[0] << ", p1 = " << p[1] << ", p2 = " << p[2] << std::endl;
 
-	for(int i = 0; i < numPeaks; i++){
-		if(gausFit) stream2 << "+[" << 3*i+3 << "]*TMath::Gaus(" << xstr << ", [" << 3*i+4 << "], [" << 3*i+5 << "])";
-		else        stream2 << "+[" << 3*i+3 << "]*TMath::Landau(" << xstr << ", [" << 3*i+4 << "], [" << 3*i+5 << "])";
+	if(!noPeakMode){ // Add the peak function to the function string.
+		for(int i = 0; i < numPeaks; i++){
+			if(gausFit) stream2 << "+[" << 3*i+3 << "]*TMath::Gaus(" << xstr << ", [" << 3*i+4 << "], [" << 3*i+5 << "])";
+			else        stream2 << "+[" << 3*i+3 << "]*TMath::Landau(" << xstr << ", [" << 3*i+4 << "], [" << 3*i+5 << "])";
+		}
 	}
 
 	std::string totalString = stream1.str() + stream2.str();
@@ -330,62 +378,89 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	func->SetParameter(1, p[1]);
 	func->SetParameter(2, p[2]);
 
-	double bkgA, fwhmLeft, fwhmRight;
-	for(int i = 0; i < numPeaks; i++){
-		std::cout << "Mark peak " << i+1 << " maximum\n";
-		marker = (TMarker*)can2->WaitPrimitive("TMarker");
-		amplitude = marker->GetY();
-		meanValue = marker->GetX();
-		if(!polyBG){
-			if(!logXaxis) bkgA = p[0]+std::exp(p[1]+p[2]*meanValue);
-			else      bkgA = p[0]+std::exp(p[1])*std::pow(meanValue, p[2]);
-		}
-		else{
-			if(!logXaxis) bkgA = p[0]+p[1]*meanValue+p[2]*meanValue*meanValue;
-			else      bkgA = p[0]+p[1]*std::log(meanValue)+p[2]*std::pow(std::log(meanValue), 2);
-		}
-		amplitude = amplitude-bkgA;
-		delete marker;
-		TLine line(xlo, amplitude*0.5+bkgA, xhi, amplitude*0.5+bkgA);
-		line.Draw("SAME");
-		can2->Update();
-		std::cout << "Mark left and right of peak " << i+1 << "\n";
-		marker = (TMarker*)can2->WaitPrimitive("TMarker");
-		fwhmLeft = marker->GetX();
-		delete marker;
-		marker = (TMarker*)can2->WaitPrimitive("TMarker");
-		fwhmRight = marker->GetX();
-		delete marker;
-		if(gausFit) func->SetParameter(3*i+3, amplitude);
-		else        func->SetParameter(3*i+3, amplitude*5.9);
-		if(!logXaxis){
-			func->SetParameter(3*i+4, meanValue);
-			func->SetParameter(3*i+5, (fwhmRight-fwhmLeft)/2.35);
-		}
-		else{
-			func->SetParameter(3*i+4, std::log(meanValue));
-			double sig1 = std::log(fwhmRight)-meanValue; // Right side of the maximum.
-			double sig2 = meanValue-std::log(fwhmLeft); // Left side of the maximum.
-			func->SetParameter(3*i+5, (sig1+sig2)/2);
+	if(!noPeakMode){ // Get the initial conditions of the peak.
+		double bkgA, fwhmLeft, fwhmRight;
+		for(int i = 0; i < numPeaks; i++){
+			std::cout << "Mark peak " << i+1 << " maximum\n";
+			marker = (TMarker*)can2->WaitPrimitive("TMarker");
+			amplitude = marker->GetY();
+			meanValue = marker->GetX();
+			if(!polyBG){
+				if(!logXaxis) bkgA = p[0]+std::exp(p[1]+p[2]*meanValue);
+				else      bkgA = p[0]+std::exp(p[1])*std::pow(meanValue, p[2]);
+			}
+			else{
+				if(!logXaxis) bkgA = p[0]+p[1]*meanValue+p[2]*meanValue*meanValue;
+				else      bkgA = p[0]+p[1]*std::log(meanValue)+p[2]*std::pow(std::log(meanValue), 2);
+			}
+			amplitude = amplitude-bkgA;
+			delete marker;
+			TLine line(xlo, amplitude*0.5+bkgA, xhi, amplitude*0.5+bkgA);
+			line.Draw("SAME");
+			can2->Update();
+			std::cout << "Mark left and right of peak " << i+1 << "\n";
+			marker = (TMarker*)can2->WaitPrimitive("TMarker");
+			fwhmLeft = marker->GetX();
+			delete marker;
+			marker = (TMarker*)can2->WaitPrimitive("TMarker");
+			fwhmRight = marker->GetX();
+			delete marker;
+			if(gausFit) func->SetParameter(3*i+3, amplitude);
+			else        func->SetParameter(3*i+3, amplitude*5.9);
+			if(!logXaxis){
+				func->SetParameter(3*i+4, meanValue);
+				func->SetParameter(3*i+5, (fwhmRight-fwhmLeft)/2.35);
+			}
+			else{
+				func->SetParameter(3*i+4, std::log(meanValue));
+				double sig1 = std::log(fwhmRight)-meanValue; // Right side of the maximum.
+				double sig2 = meanValue-std::log(fwhmLeft); // Left side of the maximum.
+				func->SetParameter(3*i+5, (sig1+sig2)/2);
+			}
 		}
 	}
 
 	// Define the fitting limits
 	double fitlow, fithigh;
-	if(strictMode){
+	if(!noPeakMode){
+		if(strictMode){
+			func->Draw("SAME");
+			can2->Update();
+			std::cout << "Mark upper and lower limits of fitting region\n";
+			marker = (TMarker*)can2->WaitPrimitive("TMarker");
+			fitlow = marker->GetX();
+			delete marker;
+			marker = (TMarker*)can2->WaitPrimitive("TMarker");
+			fithigh = marker->GetX();
+			delete marker;
+		}
+		else{
+			fitlow = bgx[0];
+			fithigh = bgx[2];
+		}
+	}
+	else{
+		double removeLow, removeHigh;
 		func->Draw("SAME");
 		can2->Update();
-		std::cout << "Mark upper and lower limits of fitting region\n";
+
+		std::cout << "Mark upper and lower limits of fitting region to left of peak\n";
 		marker = (TMarker*)can2->WaitPrimitive("TMarker");
 		fitlow = marker->GetX();
 		delete marker;
 		marker = (TMarker*)can2->WaitPrimitive("TMarker");
+		removeLow = marker->GetX();
+		delete marker;
+
+		std::cout << "Mark upper and lower limits of fitting region to right of peak\n";
+		marker = (TMarker*)can2->WaitPrimitive("TMarker");
+		removeHigh = marker->GetX();
+		delete marker;
+		marker = (TMarker*)can2->WaitPrimitive("TMarker");
 		fithigh = marker->GetX();
 		delete marker;
-	}
-	else{
-		fitlow = bgx[0];
-		fithigh = bgx[2];
+
+		removeGraphPoints(graph, removeLow, removeHigh);
 	}
 
 	writeTNamed("fitLow", fitlow);
@@ -401,7 +476,7 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	}
 	
 	// Fit the spectrum.
-	h_->Fit(func, "QN0R");
+	graph->Fit(func, "QN0R");
 
 	if(debug){ // Print the fit results.
 		std::cout << " Final:\n";
@@ -438,24 +513,28 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	}
 	writeTNamed("counts", histSum);
 	writeTNamed("Ibkg", integral);
-	//TF1 **lilfuncs = new TF1*[numPeaks+1];
-	//for(int i = 0; i < numPeaks; i++){
-		TF1 *lilfunc = new TF1("peakfunc", stream2.str().c_str(), xlo, xhi);
-		lilfunc->SetLineColor(kGreen+3);
-		lilfunc->SetParameter(0, func->GetParameter(3));
-		lilfunc->SetParameter(1, func->GetParameter(4));
-		lilfunc->SetParameter(2, func->GetParameter(5));
-		lilfunc->Draw("SAME");
-	//}
+	TF1 *lilfunc = NULL;
+	if(!noPeakMode){
+		//TF1 **lilfuncs = new TF1*[numPeaks+1];
+		//for(int i = 0; i < numPeaks; i++){
+			lilfunc = new TF1("peakfunc", stream2.str().c_str(), xlo, xhi);
+			lilfunc->SetLineColor(kGreen+3);
+			lilfunc->SetParameter(0, func->GetParameter(3));
+			lilfunc->SetParameter(1, func->GetParameter(4));
+			lilfunc->SetParameter(2, func->GetParameter(5));
+			lilfunc->Draw("SAME");
+
+			integral = summation(h_, lilfunc, xlo, xhi);
+			totalIntegral += integral;
+		//}
+	}
+	else{ integral = 0; }
 	can2->Update();
 
 	// Wait for the user to press "okay" on the control panel.
 	std::cout << " Press \"okay\" to continue...\n";
 	win->Wait(&waitRun);
 	std::cout << std::endl;
-
-	integral = summation(h_, lilfunc, xlo, xhi);
-	totalIntegral += integral;
 
 	if(debug){
 		std::cout << "  peak: " << integral << "\n";
@@ -466,19 +545,26 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	writeTNamed("Ipeak", integral);
 	writeTNamed("Itotal", totalIntegral);
 
-	h_->Write();	
-	func->Write();
-	bkgfunc->Write();
-	lilfunc->Write();
+	graph->Write("graph");
+	h_->Write();
 	
 	cdir->mkdir("pars")->cd();
 	const std::string parnames[6] = {"p0", "p1", "p2", "p3", "p4", "p5"};
 	for(int i = 0; i < nPars; i++) writeTNamed(parnames[i], func->GetParameter(i));
 	for(int i = 0; i < nPars; i++) writeTNamed(parnames[i]+"err", func->GetParError(i));
-
-	delete lilfunc;
-	delete bkgfunc;
+	
+	func->Write();
 	delete func;
+	
+	bkgfunc->Write();
+	delete bkgfunc;
+
+	if(!noPeakMode){
+		lilfunc->Write();
+		delete lilfunc;
+	}
+
+	delete graph;
 
 	return true;
 }
