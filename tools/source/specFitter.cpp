@@ -547,23 +547,18 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 
 	graph->Write("graph");
 	h_->Write();
+	func->Write();
+	bkgfunc->Write();
+	if(!noPeakMode) lilfunc->Write();
 	
 	cdir->mkdir("pars")->cd();
 	const std::string parnames[6] = {"p0", "p1", "p2", "p3", "p4", "p5"};
 	for(int i = 0; i < nPars; i++) writeTNamed(parnames[i], func->GetParameter(i));
 	for(int i = 0; i < nPars; i++) writeTNamed(parnames[i]+"err", func->GetParError(i));
 	
-	func->Write();
 	delete func;
-	
-	bkgfunc->Write();
 	delete bkgfunc;
-
-	if(!noPeakMode){
-		lilfunc->Write();
-		delete lilfunc;
-	}
-
+	if(!noPeakMode) delete lilfunc;
 	delete graph;
 
 	return true;
