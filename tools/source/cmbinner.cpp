@@ -67,6 +67,7 @@ class simpleComCalculator : public simpleTool {
 	double binWidth;
 	double threshold;
 	double userEnergy;
+	double timeOffset;
 	int nBins;
 
 	double *xbins;
@@ -88,7 +89,7 @@ class simpleComCalculator : public simpleTool {
 	void setAngles();
 
   public:
-	simpleComCalculator() : simpleTool(), startAngle(0), stopAngle(180), binWidth(1), threshold(-1), userEnergy(-1), nBins(180), xbins(NULL), mcarlo(false), printMode(false), defaultMode(false), treeMode(false), cut(NULL), cutFilename(""), configFilename("") { }
+	simpleComCalculator() : simpleTool(), startAngle(0), stopAngle(180), binWidth(1), threshold(-1), userEnergy(-1), timeOffset(0), nBins(180), xbins(NULL), mcarlo(false), printMode(false), defaultMode(false), treeMode(false), cut(NULL), cutFilename(""), configFilename("") { }
 
 	~simpleComCalculator();
 	
@@ -184,6 +185,7 @@ void simpleComCalculator::addOptions(){
 	addOption(optionExt("default", no_argument, NULL, 'd', "", "When using \"--print\" or \"--tree\" mode, use default settings of theta=[0,180] w/ 1 degree steps."), userOpts, optstr);
 	addOption(optionExt("threshold", required_argument, NULL, 'T', "<threshold>", "Use a software threshold on the trqce QDC (not used by default)."), userOpts, optstr);
 	addOption(optionExt("energy", required_argument, NULL, 'E', "<energy>", "Specify the beam energy in MeV."), userOpts, optstr);
+	addOption(optionExt("time-offset", required_argument, NULL, 0x0, "<offset>", "Specify the TOF offset in ns."), userOpts, optstr);
 }
 
 bool simpleComCalculator::processArgs(){
@@ -201,6 +203,8 @@ bool simpleComCalculator::processArgs(){
 		threshold = strtod(userOpts.at(5).argument.c_str(), 0);
 	if(userOpts.at(6).active)
 		userEnergy = strtod(userOpts.at(6).argument.c_str(), 0);
+	if(userOpts.at(7).active)
+		timeOffset = strtod(userOpts.at(7).argument.c_str(), 0);
 
 	return true;
 }
@@ -368,6 +372,9 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			
 						// Check the tqdc threshold (if available).
 						if(threshold > 0 && ptr->tqdc.at(j) < threshold) continue;
+
+						// Apply TOF offset correction.
+						if(timeOffset != 0) ptr->ctof.at(j) = ptr->ctof.at(j)+timeOffset;
 	
 						// Check against the input tcutg (if available).
 						if(useTCutG && !tcutg->IsInside(ptr->ctof.at(j), ptr->tqdc.at(j))) continue;
