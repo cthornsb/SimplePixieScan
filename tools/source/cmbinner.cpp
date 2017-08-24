@@ -26,8 +26,8 @@ double getBinWidth(const double &E_){
 }
 
 size_t binTOF(std::vector<double> &tofBinsLow, std::vector<double> &energyBinsLow, const double &r=0.5, const double &lowLimit=0.1, const double &highLimit=8.0){
-	double low = highLimit; // MeV
-	double width;
+	/*double low = highLimit; // MeV
+	double width;*/
 
 	const double eBins[45] = {0.0000, 0.0150, 0.0350, 0.0550, 0.0750, 
 	                          0.0950, 0.1150, 0.1350, 0.1650, 0.1950, 
