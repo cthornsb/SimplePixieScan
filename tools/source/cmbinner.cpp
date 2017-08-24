@@ -12,6 +12,54 @@
 #include "simpleTool.hpp"
 #include "Structures.h"
 
+// Energy in MeV
+double energy2tof(const double &E_, const double &d){
+	const double coeff = 72.2982541205; // 
+	return coeff*d/std::sqrt(E_);
+}
+
+double getBinWidth(const double &E_){
+	const double p0 = 0.0186821;
+	const double p1 = 0.0516979;
+	const double p2 = 0.00815183;
+	return (p0+p1*E_+p2*E_*E_);
+}
+
+size_t binTOF(std::vector<double> &tofBinsLow, std::vector<double> &energyBinsLow, const double &r=0.5, const double &lowLimit=0.1, const double &highLimit=8.0){
+	double low = highLimit; // MeV
+	double width;
+
+	const double eBins[45] = {0.0000, 0.0150, 0.0350, 0.0550, 0.0750, 
+	                          0.0950, 0.1150, 0.1350, 0.1650, 0.1950, 
+        	                  0.2250, 0.2550, 0.3050, 0.3550, 0.4050, 
+                	          0.4550, 0.5050, 0.5550, 0.6050, 0.6550, 
+                        	  0.7050, 0.7550, 0.8050, 0.8550, 0.9050, 
+	                          0.9550, 1.0500, 1.1500, 1.2500, 1.3500, 
+        	                  1.4500, 1.5500, 1.6500, 1.7500, 1.8500, 
+                	          1.9500, 2.1500, 2.3500, 2.5500, 2.7500, 
+                        	  2.9500, 3.2500, 3.5500, 3.8500, 4.1500};
+
+	tofBinsLow.clear();
+	energyBinsLow.clear();
+	
+	/*while(low > lowLimit){
+		width = getBinWidth(low);
+		tofBinsLow.push_back(energy2tof(low, r));
+		energyBinsLow.push_back(low);
+		low = low - width;
+	}*/
+
+	for(size_t i = 45; i > 1; i--){
+		tofBinsLow.push_back(energy2tof(eBins[i-1], r));
+		energyBinsLow.push_back(eBins[i-1]);
+	}
+
+	// Reverse the energy bin vector so that the bins are in increasing order.
+	std::reverse(energyBinsLow.begin(), energyBinsLow.end());	
+
+	return tofBinsLow.size();
+}
+
 class simpleComCalculator : public simpleTool {
   private:
 	double startAngle;
@@ -250,36 +298,28 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 				}
 			}
 
-			const double Mn = 10454.0750977429; // Mass of neutron (MeV).
-			const double dist = 0.5; // m.
+			std::vector<double> tofBins, energyBins;
+			binTOF(tofBins, energyBins, 0.5);
 
-			// Generate energy bins based on fixed width time bins.
-			double binEdgeTime = 100;
-			double energyBins[451];
-			for(int i = 0; i <= 450; i++){
-				energyBins[i] = 0.5 * Mn * dist * dist / (binEdgeTime*binEdgeTime);
-				binEdgeTime = binEdgeTime - 0.2;
-			}
-
-			hE = new TH2D("hE", "Lab Angle vs. Energy", nBins, xbins, 450, energyBins);
+			hE = new TH2D("hE", "Lab Angle vs. Energy", nBins, xbins, energyBins.size()-1, energyBins.data());
 			hE->GetXaxis()->SetTitle("Lab Angle (deg)");
 			hE->GetYaxis()->SetTitle("Neutron Energy (MeV)");
-			hE->GetZaxis()->SetTitle("Counts per 20 keV");
+			hE->GetZaxis()->SetTitle("Counts per bin");
 
-			hEcom = new TH2D("hEcom", "Lab Angle vs. Energy", nBins, startAngle, stopAngle, 450, energyBins);
+			hEcom = new TH2D("hEcom", "Lab Angle vs. Energy", nBins, startAngle, stopAngle, energyBins.size()-1, energyBins.data());
 			hEcom->GetXaxis()->SetTitle("CoM Angle (deg)");
 			hEcom->GetYaxis()->SetTitle("Neutron Energy (MeV)");
-			hEcom->GetZaxis()->SetTitle("Counts per 20 keV");
+			hEcom->GetZaxis()->SetTitle("Counts per bin");
 
-			h2d = new TH2D("h2d", "Lab Angle vs. ctof", nBins, xbins, 550, -10, 100);
+			h2d = new TH2D("h2d", "Lab Angle vs. ctof", nBins, xbins, tofBins.size()-1, tofBins.data());
 			h2d->GetXaxis()->SetTitle("Lab Angle (deg)");
-			h2d->GetYaxis()->SetTitle("Neutron ToF (ns)");
-			h2d->GetZaxis()->SetTitle("Counts per 0.2 ns");
+			h2d->GetYaxis()->SetTitle("Neutron TOF (ns)");
+			h2d->GetZaxis()->SetTitle("Counts per bin");
 
-			h2dcom = new TH2D("h2dcom", "Lab Angle vs. ctof", nBins, startAngle, stopAngle, 550, -10, 100);
+			h2dcom = new TH2D("h2dcom", "Lab Angle vs. ctof", nBins, startAngle, stopAngle, tofBins.size()-1, tofBins.data());
 			h2dcom->GetXaxis()->SetTitle("CoM Angle (deg)");
-			h2dcom->GetYaxis()->SetTitle("Neutron ToF (ns)");
-			h2dcom->GetZaxis()->SetTitle("Counts per 0.2 ns");
+			h2dcom->GetYaxis()->SetTitle("Neutron TOF (ns)");
+			h2dcom->GetZaxis()->SetTitle("Counts per bin");
 		}
 
 		int file_counter = 1;
