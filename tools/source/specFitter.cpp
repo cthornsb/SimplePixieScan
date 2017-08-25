@@ -10,7 +10,7 @@
 #include "TF1.h"
 #include "TH1.h"
 #include "TH2.h"
-#include "TGraphErrors.h"
+#include "TGraph.h"
 
 #include "TFile.h"
 #include "TNamed.h"
@@ -99,7 +99,7 @@ class specFitter : public simpleHistoFitter {
 
 	void updateAxes(TH1 *h1_);
 
-	TGraphErrors *convertHisToGraph(TH1 *h_, const double &xLow, const double &xHigh);
+	TGraph *convertHisToGraph(TH1 *h_, const double &xLow, const double &xHigh);
 
   public:
 	specFitter() : simpleHistoFitter(), polyBG(false), gausFit(true), logXaxis(false), logYaxis(false), noPeakMode(false), strictMode(true), waitRun(true), skipNext(false) { }
@@ -186,7 +186,7 @@ void specFitter::updateAxes(TH1 *h1_){
 	}
 }
 
-void removeGraphPoints(TGraphErrors *g_, const double &xLow, const double &xHigh){
+void removeGraphPoints(TGraph *g_, const double &xLow, const double &xHigh){
 	double x, y;
 	int point = 0;
 	while(point < g_->GetN()){
@@ -200,7 +200,7 @@ void removeGraphPoints(TGraphErrors *g_, const double &xLow, const double &xHigh
 	}
 }
 
-TGraphErrors *specFitter::convertHisToGraph(TH1 *h_, const double &xLow, const double &xHigh){
+TGraph *specFitter::convertHisToGraph(TH1 *h_, const double &xLow, const double &xHigh){
 	std::vector<double> binCenters;
 	std::vector<double> binWidths;
 	std::vector<double> binContents;
@@ -217,11 +217,11 @@ TGraphErrors *specFitter::convertHisToGraph(TH1 *h_, const double &xLow, const d
 		binContents.push_back(h_->GetBinContent(i));
 	}
 
-	TGraphErrors *output = new TGraphErrors(binCenters.size());
+	TGraph *output = new TGraph(binCenters.size());
 
 	for(size_t i = 0; i < binCenters.size(); i++){
 		output->SetPoint(i, binCenters.at(i), binContents.at(i));
-		output->SetPointError(i, binWidths.at(i)/2, std::sqrt(binContents.at(i)));
+		//output->SetPointError(i, binWidths.at(i)/2, std::sqrt(binContents.at(i)));
 	}
 
 	return output;
@@ -272,8 +272,8 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	yhi = marker->GetY();
 	delete marker;
 
-	// Convert the histogram to a TGraphErrors.
-	TGraphErrors *graph;
+	// Convert the histogram to a TGraph.
+	TGraph *graph;
 	if(noPeakMode) graph = convertHisToGraph(h_, xlo, xhi);
 
 	writeTNamed("winLow", xlo);
@@ -288,6 +288,7 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 		graph = convertHisToGraph(h_, xlo, xhi);
 		graph->GetXaxis()->SetRangeUser(xlo, xhi);
 		graph->GetYaxis()->SetRangeUser(ylo, yhi);
+		graph->SetMarkerStyle(2);
 		graph->Draw("APL");
 	}
 	can2->Update();
