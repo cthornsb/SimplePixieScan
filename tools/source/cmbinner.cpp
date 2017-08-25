@@ -374,7 +374,11 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 						if(threshold > 0 && ptr->tqdc.at(j) < threshold) continue;
 
 						// Apply TOF offset correction.
-						if(timeOffset != 0) ptr->ctof.at(j) = ptr->ctof.at(j)+timeOffset;
+						if(timeOffset != 0){
+							const double Mn = 10454.0750977429; // MeV
+							ptr->ctof.at(j) = ptr->ctof.at(j)+timeOffset;
+							ptr->energy.at(j) = 0.5*Mn*std::pow(ptr->r.at(j)/ptr->ctof.at(j), 2.0);
+						}
 	
 						// Check against the input tcutg (if available).
 						if(useTCutG && !tcutg->IsInside(ptr->ctof.at(j), ptr->tqdc.at(j))) continue;
