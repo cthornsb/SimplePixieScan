@@ -273,14 +273,23 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	delete marker;
 
 	// Convert the histogram to a TGraphErrors.
-	TGraphErrors *graph = convertHisToGraph(h_, xlo, xhi);
+	TGraphErrors *graph;
+	if(noPeakMode) graph = convertHisToGraph(h_, xlo, xhi);
 
 	writeTNamed("winLow", xlo);
 	writeTNamed("winHigh", xhi);
 
-	graph->GetXaxis()->SetRangeUser(xlo, xhi);
-	graph->GetYaxis()->SetRangeUser(ylo, yhi);
-	graph->Draw("APL");
+	if(!noPeakMode){
+		h_->GetXaxis()->SetRangeUser(xlo, xhi);
+		h_->GetYaxis()->SetRangeUser(ylo, yhi);
+		h_->Draw();
+	}
+	else{
+		graph = convertHisToGraph(h_, xlo, xhi);
+		graph->GetXaxis()->SetRangeUser(xlo, xhi);
+		graph->GetYaxis()->SetRangeUser(ylo, yhi);
+		graph->Draw("APL");
+	}
 	can2->Update();
 
 	std::string xstr = "x";
@@ -476,7 +485,10 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	}
 	
 	// Fit the spectrum.
-	graph->Fit(func, "QN0R");
+	if(!noPeakMode)
+		h_->Fit(func, "QN0R");
+	else
+		graph->Fit(func, "QN0R");
 
 	if(debug){ // Print the fit results.
 		std::cout << " Final:\n";
@@ -545,7 +557,7 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	writeTNamed("Ipeak", integral);
 	writeTNamed("Itotal", totalIntegral);
 
-	graph->Write("graph");
+	if(noPeakMode) graph->Write("graph");
 	h_->Write();
 	func->Write();
 	bkgfunc->Write();
@@ -558,8 +570,10 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	
 	delete func;
 	delete bkgfunc;
-	if(!noPeakMode) delete lilfunc;
-	delete graph;
+	if(!noPeakMode) 
+		delete lilfunc;
+	else 
+		delete graph;
 
 	return true;
 }
