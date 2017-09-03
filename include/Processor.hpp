@@ -31,6 +31,8 @@ extern const double twoPi;
 
 typedef ChannelEvent ChanEvent;
 
+enum TimingAnalyzer { POLY=0, CFD=1, FIT=2 };
+
 class ChannelEventPair{
   public:
   	ChanEvent *channelEvent;
@@ -94,6 +96,8 @@ class Processor{
 	double adcClockInSeconds; /// One ADC clock is 4 ns
 	double filterClockInSeconds; /// One filter clock is 8 ns
 
+	TimingAnalyzer analyzer; /// Specifies which type of high-resolution timing is to be used.
+
   protected:
 	Structure *root_structure; /// Root data structure for storing processor-specific information.
 	Trace *root_waveform; /// Root data structure for storing traces.
@@ -102,7 +106,6 @@ class Processor{
 	float defaultCFD[3]; /// Default CFD parameters (F, D, L)
 
 	bool use_trace; /// Force the use of the ADC trace. Any events without a trace will be rejected.
-	bool use_fitting;
 	bool use_integration;
 	bool write_waveform;
 	bool isSingleEnded;
@@ -117,6 +120,15 @@ class Processor{
 
 	TF1 *fitting_func;
 	FittingFunction *actual_func;
+
+	// Return a random number between low and high.
+	double drand(const double &low_, const double &high_);
+
+	// Return a randum number between 0 and 1.
+	double drand();
+
+	// Add angle1 and angle2 and wrap the result between 0 and 2*pi.
+	double addAngles(const double &angle1_, const double &angle2_);
   
 	/// Start the process timer
 	void StartProcess(){ start_time = clock(); }
@@ -172,10 +184,16 @@ class Processor{
 	
 	bool IsInit(){ return init; }
 	
-	bool ToggleFitting(){ return (use_fitting = !use_fitting); }
-	
 	bool ToggleTraces(){ return (write_waveform = !write_waveform); }
 	
+	void SetFitting(){ analyzer = FIT; }
+
+	void SetTraditionalCFD(){ analyzer = CFD; }
+
+	void SetPolynomialCFD(){ analyzer = POLY; }
+
+	void SetTraceAnalyzer(TimingAnalyzer mode_){ analyzer = mode_; }
+
 	bool SetPresortMode(bool state_=true){ return (presortData = state_); }
 
 	void SetDefaultCfdParameters(const float &F_, const float &D_=1, const float &L_=1){ defaultCFD[0] = F_; defaultCFD[1] = D_; defaultCFD[2] = L_; }
@@ -199,14 +217,5 @@ class Processor{
 
 	void RemoveByTag(const std::string &tag_, const bool &withTag_=true);
 };
-
-// Return a random number between low and high.
-double drand(const double &low_, const double &high_);
-
-// Return a randum number between 0 and 1.
-double drand();
-
-// Add angle1 and angle2 and wrap the result between 0 and 2*pi.
-double addAngles(const double &angle1_, const double &angle2_);
 
 #endif

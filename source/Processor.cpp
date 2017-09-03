@@ -65,6 +65,24 @@ FittingFunction::FittingFunction(double beta_/*=0.563362*/, double gamma_/*=0.30
 	gamma = gamma_;
 }
 
+// Return a random number between low and high.
+double Processor::drand(const double &low_, const double &high_){
+	return low_+(double(rand())/RAND_MAX)*(high_-low_);
+}
+
+// Return a randum number between 0 and 1.
+double Processor::drand(){
+	return double(rand())/RAND_MAX;
+}
+
+// Add angle1 and angle2 and wrap the result between 0 and 2*pi.
+double Processor::addAngles(const double &angle1_, const double &angle2_){
+	double output = angle1_ + angle2_;
+	if(output < 0.0) output += twoPi;
+	else if(output > twoPi) output = output - twoPi;
+	return output;
+}
+
 void Processor::PrintMsg(const std::string &msg_){
 	std::cout << name << "Processor: " << msg_ << std::endl; 
 }
@@ -88,7 +106,7 @@ TF1 *Processor::SetFitFunction(double (*func_)(double *, double *), int npar_){
 	if(fitting_func){ delete fitting_func; }
 	
 	fitting_func = new TF1((type + "_func").c_str(), func_, 0, 1, npar_);
-	use_fitting = true;
+	analyzer = FIT;
 	
 	return fitting_func;
 }
@@ -97,7 +115,7 @@ TF1 *Processor::SetFitFunction(const char* func_){
 	if(fitting_func){ delete fitting_func; }
 	
 	fitting_func = new TF1((type + "_func").c_str(), func_, 0, 1);
-	use_fitting = true;
+	analyzer = FIT;
 	
 	return fitting_func;
 }
@@ -107,7 +125,7 @@ TF1 *Processor::SetFitFunction(){
 	if(fitting_func){ delete fitting_func; }
 	
 	fitting_func = new TF1((type + "_func").c_str(), *actual_func, 0, 1, 5);
-	use_fitting = true;
+	analyzer = FIT;
 	
 	return fitting_func;
 }
@@ -238,11 +256,15 @@ bool Processor::CfdPulse(ChanEvent *event_, MapEntry *entry_){
 	float cfdD = defaultCFD[1];
 	float cfdL = defaultCFD[2];
 	entry_->getArg(0, cfdF);
-	entry_->getArg(1, cfdD);
-	entry_->getArg(2, cfdL);
 	
-	// Analyze the trace.
-	event_->AnalyzeCFD(cfdF, (int)cfdD, (int)cfdL);
+	if(analyzer == POLY){ // Polynomial CFD.
+		event_->AnalyzePolyCFD(cfdF);
+	}
+	else if(analyzer == CFD){ // Traditional CFD.
+		entry_->getArg(1, cfdD);
+		entry_->getArg(2, cfdL);
+		event_->AnalyzeCFD(cfdF, (int)cfdD, (int)cfdL);
+	}
 	
 	return (event_->phase > 0);
 }
@@ -254,7 +276,6 @@ Processor::Processor(std::string name_, std::string type_, MapFile *map_){
 	write_waveform = false;
 	use_color_terminal = true;
 	use_trace = true;
-	use_fitting = false;
 	use_integration = true;
 	isSingleEnded = true;
 	histsEnabled = false;
@@ -390,7 +411,7 @@ void Processor::PreProcess(){
 				// Set the channel event to valid.
 				current_event->valid_chan = true;
 		
-				if(use_fitting){ // Do root fitting for high resolution timing (very slow).
+				if(analyzer == FIT){ // Do root fitting for high resolution timing (very slow).
 					if(!FitPulse(current_event, (*iter)->entry)){
 						// Set the channel event to invalid.
 						current_event->valid_chan = false;
@@ -469,22 +490,4 @@ void Processor::RemoveByTag(const std::string &tag_, const bool &withTag_/*=true
 		events.push_back(*iter);
 	}
 	tempList.clear();
-}
-
-// Return a random number between low and high.
-double drand(const double &low_, const double &high_){
-	return low_+(double(rand())/RAND_MAX)*(high_-low_);
-}
-
-// Return a randum number between 0 and 1.
-double drand(){
-	return double(rand())/RAND_MAX;
-}
-
-// Add angle1 and angle2 and wrap the result between 0 and 2*pi.
-double addAngles(const double &angle1_, const double &angle2_){
-	double output = angle1_ + angle2_;
-	if(output < 0.0) output += twoPi;
-	else if(output > twoPi) output = output - twoPi;
-	return output;
 }

@@ -36,14 +36,6 @@ ProcessorHandler::~ProcessorHandler(){
 	}
 }
 
-bool ProcessorHandler::ToggleFitting(){
-	bool retval = true;
-	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
-		retval = retval && iter->proc->ToggleFitting();
-	}
-	return retval;
-}
-
 bool ProcessorHandler::ToggleTraces(){
 	bool retval = true;
 	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
@@ -57,6 +49,11 @@ bool ProcessorHandler::SetPresortMode(bool state_/*=true*/){
 		iter->proc->SetPresortMode(state_);
 	}
 	return state_;
+}
+
+void ProcessorHandler::SetTimingAnalyzer(TimingAnalyzer mode_){
+	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++)
+		iter->proc->SetTraceAnalyzer(mode_);
 }
 
 bool ProcessorHandler::InitRootOutput(TTree *tree_){

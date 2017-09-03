@@ -68,9 +68,10 @@ bool PhoswichProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *c
 	}
 	
 	// Fill the values into the root tree.
-	if(use_fitting){ structure.Append(current_event->time, fast_MPV, fast_qdc, slow_qdc, fast_A);	}
-	else{ structure.Append(current_event->time, current_event->phase, fast_qdc, slow_qdc, current_event->maximum); }
-
+	//if(analyzer == FIT){ structure.Append(current_event->time, fast_MPV, fast_qdc, slow_qdc, fast_A); }
+	//else{ structure.Append(current_event->time, current_event->phase, fast_qdc, slow_qdc, current_event->maximum); }
+	structure.Append(current_event->time, current_event->phase, fast_qdc, slow_qdc, current_event->maximum); 
+	
 	return true;
 }
 

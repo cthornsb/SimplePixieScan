@@ -43,6 +43,8 @@ class ProcessorHandler{
 	
 	bool SetPresortMode(bool state_=true);
 	
+	void SetTimingAnalyzer(TimingAnalyzer mode_);
+
 	bool InitRootOutput(TTree *tree_);
 	
 	bool InitTraceOutput(TTree *tree_);

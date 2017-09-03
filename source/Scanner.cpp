@@ -187,6 +187,7 @@ simpleScanner::simpleScanner() : ScanInterface() {
 	force_overwrite = false;
 	online_mode = false;
 	use_root_fitting = false;
+	use_traditional_cfd = false;
 	write_traces = false;
 	write_raw = false;
 	write_stats = false;
@@ -498,35 +499,39 @@ void simpleScanner::ExtraArguments(){
 		std::cout << msgHeader << "Toggling root fitting ON.\n";
 		use_root_fitting = true;	
 	}
-	if(userOpts.at(4).active){ // Uncalibrated mode.
+	if(userOpts.at(4).active){ // Traditional CFD.
+		std::cout << msgHeader << "Toggling traditional CFD ON.\n";
+		use_traditional_cfd = true;
+	}
+	if(userOpts.at(5).active){ // Uncalibrated mode.
 		std::cout << msgHeader << "Using uncalibrated mode.\n";
 		use_calibrations = false;	
 	}
-	if(userOpts.at(5).active){ // Traces.
+	if(userOpts.at(6).active){ // Traces.
 		std::cout << msgHeader << "Toggling ADC trace output ON.\n";
 		write_traces = true;	
 	}
-	if(userOpts.at(6).active){ // Raw.
+	if(userOpts.at(7).active){ // Raw.
 		std::cout << msgHeader << "Writing raw pixie data to output tree.\n";
 		write_raw = true;	
 	}
-	if(userOpts.at(7).active){ // Stats.
+	if(userOpts.at(8).active){ // Stats.
 		std::cout << msgHeader << "Writing event builder stats to output tree.\n";
 		write_stats = true;		
 	}
-	if(userOpts.at(8).active){ // Presort.
+	if(userOpts.at(9).active){ // Presort.
 		std::cout << msgHeader << "Using presort mode.\n";
 		writePresort = true;	
 	}
-	if(userOpts.at(9).active){ // Record all starts.
+	if(userOpts.at(10).active){ // Record all starts.
 		std::cout << msgHeader << "Recording all start events to output file.\n";
 		recordAllStarts = true;
 	}
-	if(userOpts.at(10).active){ // Set default fitting/CFD parameters
+	if(userOpts.at(11).active){ // Set default fitting/CFD parameters
 		defaultCFDparameter = strtof(userOpts.at(10).argument.c_str(), NULL);
 		std::cout << msgHeader << "Set default CFD parameter to " << defaultCFDparameter << ".\n";
 	}
-	if(userOpts.at(11).active){ // Force trace processing.
+	if(userOpts.at(12).active){ // Force trace processing.
 		std::cout << msgHeader << "Forcing using of trace processor.\n";
 		forceUseOfTrace = true;
 	}
@@ -566,6 +571,7 @@ void simpleScanner::ArgHelp(){
 	AddOption(optionExt("force", no_argument, NULL, 'f', "", "Force overwrite of the output root file"));
 	AddOption(optionExt("online", no_argument, NULL, 0, "", "Plot online root histograms for monitoring data"));
 	AddOption(optionExt("fitting", no_argument, NULL, 0, "", "Use root fitting for high resolution timing"));
+	AddOption(optionExt("cfd", no_argument, NULL, 0, "", "Use traditional CFD for high resolution timing"));
 	AddOption(optionExt("uncal", no_argument, NULL, 0, "", "Do not calibrate channel energies"));
 	AddOption(optionExt("traces", no_argument, NULL, 0, "", "Dump raw ADC traces to output root file"));
 	AddOption(optionExt("raw", no_argument, NULL, 0, "", "Dump raw pixie module data to output root file"));
@@ -796,8 +802,10 @@ bool simpleScanner::Initialize(std::string prefix_){
 		psort_file.open(GetOutputFilename().c_str());
 	}
 
-	// Set processor options.
-	if(use_root_fitting){ handler->ToggleFitting(); }
+	// Set trace analysis processor.
+	if(use_root_fitting) handler->SetTimingAnalyzer(FIT);
+	else if(use_traditional_cfd) handler->SetTimingAnalyzer(CFD);
+	else handler->SetTimingAnalyzer(POLY);
 
 	// Set untriggered mode.
 	if(untriggered_mode)
