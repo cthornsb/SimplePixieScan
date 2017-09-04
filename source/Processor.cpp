@@ -11,15 +11,11 @@
 #include "TTree.h"
 #include "TGraph.h"
 
-#define ADC_TIME_STEP 4
-
 Structure dummyStructure;
 Trace dummyTrace;
 
 const double pi = 3.1415926540;
 const double twoPi = 6.283185308;
-
-unsigned short traceX[1250]; // Array of values to use for the x-axis of the trace (up to 5 us long).
 
 ChannelEventPair::ChannelEventPair(){
 	channelEvent = NULL;
@@ -35,34 +31,6 @@ ChannelEventPair::ChannelEventPair(ChanEvent *chan_event_, MapEntry *entry_, Cal
 
 ChannelEventPair::~ChannelEventPair(){
 	if(channelEvent){ delete channelEvent; } // Deleting the ChanEvent will also delete the underlying XiaData.
-}
-
-/**The Paulauskas function is described in NIM A 737 (22), with a slight 
- * adaptation. We use a step function such that f(x < phase) = baseline.
- * In addition, we also we formulate gamma such that the gamma in the paper is
- * gamma_prime = 1 / pow(gamma, 0.25).
- *
- * The parameters are:
- * p[0] = baseline
- * p[1] = amplitude
- * p[2] = phase
- * p[3] = beta
- * p[4] = gamma
- *
- * \param[in] x X value.
- * \param[in] p Paramater values.
- *
- * \return the value of the function for the specified x value and parameters.
- */
-double FittingFunction::operator () (double *x, double *p) {
-	float diff = (x[0] - p[2])/ADC_TIME_STEP;
-	if (diff < 0 ) return p[0];
-	return p[0] + p[1] * std::exp(-diff * p[3]) * (1 - std::exp(-std::pow(diff * p[4],4)));
-}
-
-FittingFunction::FittingFunction(double beta_/*=0.563362*/, double gamma_/*=0.3049452*/){
-	beta = beta_;
-	gamma = gamma_;
 }
 
 // Return a random number between low and high.
@@ -100,34 +68,6 @@ void Processor::PrintWarning(const std::string &msg_){
 void Processor::PrintNote(const std::string &msg_){ 
 	if(use_color_terminal){ std::cout << name << "Processor: \033[1;34m" << msg_ << "\033[0m" << std::endl; }
 	else{ std::cout << name << "Processor: " << msg_ << std::endl; }
-}
-
-TF1 *Processor::SetFitFunction(double (*func_)(double *, double *), int npar_){
-	if(fitting_func){ delete fitting_func; }
-	
-	fitting_func = new TF1((type + "_func").c_str(), func_, 0, 1, npar_);
-	analyzer = FIT;
-	
-	return fitting_func;
-}
-
-TF1 *Processor::SetFitFunction(const char* func_){
-	if(fitting_func){ delete fitting_func; }
-	
-	fitting_func = new TF1((type + "_func").c_str(), func_, 0, 1);
-	analyzer = FIT;
-	
-	return fitting_func;
-}
-
-TF1 *Processor::SetFitFunction(){
-	if(!actual_func){ actual_func = new FittingFunction(); }
-	if(fitting_func){ delete fitting_func; }
-	
-	fitting_func = new TF1((type + "_func").c_str(), *actual_func, 0, 1, 5);
-	analyzer = FIT;
-	
-	return fitting_func;
 }
 
 bool Processor::HandleSingleEndedEvents(){
@@ -198,47 +138,29 @@ bool Processor::SetFitParameters(ChanEvent *event_, MapEntry *entry_){
 	if(!event_ || !entry_){ return false; }
 	
 	// Set the fixed fitting parameters for a given detector.
-	float beta, gamma;
-	if(entry_->getArg(0, beta)){ actual_func->SetBeta(beta); }
-	if(entry_->getArg(1, gamma)){ actual_func->SetGamma(gamma); }
-
-	// Set initial parameters to those obtained from fit optimizations.
-	fitting_func->FixParameter(0, event_->baseline); // Baseline of pulse
-	fitting_func->SetParameter(1, 0.5 * event_->qdc); // Normalization of pulse
-	fitting_func->SetParameter(2, (event_->max_index-fitting_low)*ADC_TIME_STEP); // Phase (leading edge of pulse) (ns)
-	fitting_func->FixParameter(3, beta);
-	fitting_func->FixParameter(4, gamma);
-
-	// Set the fitting range.
-	fitting_func->SetRange((event_->max_index-fitting_low)*ADC_TIME_STEP, (event_->max_index+fitting_high)*ADC_TIME_STEP);
+	double beta = defaultBeta;
+	double gamma = defaultGamma;
+	entry_->getArg(0, beta);
+	entry_->getArg(1, gamma);
 	
+	// Update the fitter with the beta and gamma.
+	fitter.SetBetaGamma(beta, gamma);
+	
+	// Set the fitting range.
+	fitter.SetFitRange(fitting_low, fitting_high);
+
 	return true;
 }
 
 bool Processor::FitPulse(ChanEvent *event_, MapEntry *entry_){
 	if(!event_ || !entry_){ return false; }
 	
-	// Set the default fitting function.
-	if(!fitting_func){ SetFitFunction(); } 
-
 	// Set the initial fitting parameters.
 	if(!SetFitParameters(event_, entry_))
 		return false;
 
-	// "Convert" the trace into a TGraph for fitting.
-	int startIndex = event_->max_index-fitting_low;
-	TGraph *graph = new TGraph(fitting_low + fitting_high);
-	for(int graphIndex = 0; graphIndex < (fitting_low + fitting_high); graphIndex++)
-		graph->SetPoint(graphIndex, traceX[startIndex+graphIndex], event_->adcTrace[startIndex+graphIndex]);
-
-	// And finally, do the fitting.
-	graph->Fit(fitting_func, "Q R");
-	
-	// Update the trace parameters.
-	event_->baseline = fitting_func->GetParameter(0);
-	event_->phase = fitting_func->GetParameter(2)/4.0;
-	
-	delete graph;
+	// Fit the trace.
+	fitter.FitPulse(event_);
 	
 	return true;
 }
@@ -252,9 +174,9 @@ bool Processor::CfdPulse(ChanEvent *event_, MapEntry *entry_){
 		return false;
 
 	// Set the CFD threshold point of the trace.
-	float cfdF = defaultCFD[0];
-	float cfdD = defaultCFD[1];
-	float cfdL = defaultCFD[2];
+	double cfdF = defaultCFD[0];
+	double cfdD = defaultCFD[1];
+	double cfdL = defaultCFD[2];
 	entry_->getArg(0, cfdF);
 	
 	if(analyzer == POLY){ // Polynomial CFD.
@@ -293,14 +215,15 @@ Processor::Processor(std::string name_, std::string type_, MapFile *map_){
 	
 	local_branch = NULL;
 	trace_branch = NULL;
-	fitting_func = NULL;
-	actual_func = NULL;
 
 	fitting_low = 5;
 	fitting_high = 10;
 
 	fitting_low2 = -9999;
 	fitting_high2 = -9999;
+
+	defaultBeta = 0.5;
+	defaultGamma = 0.1;
 
 	mapfile = map_;
 	
@@ -311,15 +234,9 @@ Processor::Processor(std::string name_, std::string type_, MapFile *map_){
 	defaultCFD[0] = 0.5;
 	defaultCFD[1] = 1;
 	defaultCFD[2] = 1;
-	
-	for(int i = 0; i < 1250; i++)
-		traceX[i] = i * ADC_TIME_STEP;
 }
 
 Processor::~Processor(){
-	// Ensure there are no events left in the queue
-	if(fitting_func){ delete fitting_func; }
-	if(actual_func){ delete actual_func; }
 }
 
 bool Processor::Initialize(TTree *tree_){

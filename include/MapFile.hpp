@@ -15,7 +15,7 @@ class MapEntry{
 	std::string type;
 	std::string subtype;
 	std::string tag;
-	std::vector<float> args;
+	std::vector<double> args;
 	
 	MapEntry(){ clear(); }
 
@@ -33,13 +33,13 @@ class MapEntry{
 	
 	void set(const std::string &type_, const std::string &subtype_, const std::string &tag_);
 	
-	void pushArg(const float &arg_){ args.push_back(arg_); }
+	void pushArg(const double &arg_){ args.push_back(arg_); }
 	
 	void clear();
 	
 	unsigned int increment();
 	
-	bool getArg(const size_t &index_, float &arg);
+	bool getArg(const size_t &index_, double &arg);
 	
 	bool hasTag(const std::string &tag_);
 

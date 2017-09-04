@@ -7,7 +7,7 @@
 #include "TFitResultPtr.h"
 
 /// Set the fit parameters for the current event.
-bool PhoswichProcessor::SetFitParameters(ChanEvent *event_, MapEntry *entry_){
+/*bool PhoswichProcessor::SetFitParameters(ChanEvent *event_, MapEntry *entry_){
 	if(!event_ || !entry_){ return false; }
 
 	// Set the initial parameters of the fast pulse.
@@ -23,10 +23,10 @@ bool PhoswichProcessor::SetFitParameters(ChanEvent *event_, MapEntry *entry_){
 	slow_qdc = event_->IntegratePulse(event_->max_index + fitting_low2, event_->max_index + fitting_high2);
 	
 	return true;
-}
+}*/
 	
 /// Fit a single trace.
-bool PhoswichProcessor::FitPulse(TGraph *trace_, float &phase){
+/*bool PhoswichProcessor::FitPulse(TGraph *trace_, float &phase){
 	if(!trace_){ return false; }
 	
 	// Fit the fast pulse.
@@ -42,7 +42,7 @@ bool PhoswichProcessor::FitPulse(TGraph *trace_, float &phase){
 	phase = fitting_func->GetParameter(1) - 1.17741*fitting_func->GetParameter(2);
 	
 	return true;
-}
+}*/
 
 /// Set the CFD parameters for the current event.
 bool PhoswichProcessor::SetCfdParameters(ChanEvent *event_, MapEntry *entry_){
@@ -76,7 +76,7 @@ bool PhoswichProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *c
 }
 
 PhoswichProcessor::PhoswichProcessor(MapFile *map_) : Processor("Phoswich", "phoswich", map_){
-	fitting_func = new TF1("f_fast", "landau", 0, 1);
+	//fitting_func = new TF1("f_fast", "landau", 0, 1);
 	
 	fitting_low = 5;
 	fitting_high = 5;

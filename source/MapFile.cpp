@@ -64,7 +64,7 @@ void MapEntry::clear(){
 	tag = "";
 }
 
-bool MapEntry::getArg(const size_t &index_, float &arg){
+bool MapEntry::getArg(const size_t &index_, double &arg){
 	if(index_ >= args.size()){ return false; }
 	arg = args.at(index_);
 	return true;
@@ -81,7 +81,7 @@ unsigned int MapEntry::increment(){
 std::string MapEntry::print(){
 	std::stringstream output; 
 	output << type << ":" << subtype << ":" << tag;
-	for(std::vector<float>::iterator iter = args.begin(); iter != args.end(); ++iter)
+	for(std::vector<double>::iterator iter = args.begin(); iter != args.end(); ++iter)
 		output << " " << *iter;
 	return output.str();
 }
@@ -302,7 +302,7 @@ bool MapFile::Load(const char *filename_){
 				}
 				detectors[mod][*iter].set(values.at(2));
 				for(size_t arg_index = 3; arg_index < values.size(); arg_index++){
-					detectors[mod][*iter].pushArg(atof(values.at(arg_index).c_str()));
+					detectors[mod][*iter].pushArg(strtod(values.at(arg_index).c_str(), NULL));
 				}
 				
 				bool in_list = false;
@@ -325,7 +325,7 @@ bool MapFile::Load(const char *filename_){
 			}
 			detectors[mod][chan].set(values.at(2));
 			for(size_t arg_index = 3; arg_index < values.size(); arg_index++){
-				detectors[mod][chan].pushArg(atof(values.at(arg_index).c_str()));
+				detectors[mod][chan].pushArg(strtod(values.at(arg_index).c_str(), NULL));
 			}
 			
 			bool in_list = false;

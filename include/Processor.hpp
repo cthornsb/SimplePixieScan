@@ -5,6 +5,7 @@
 #include <deque>
 
 #include "XiaData.hpp"
+#include "TraceFitter.hpp"
 
 #include "TF1.h"
 #include "TFitResultPtr.h"
@@ -16,8 +17,6 @@ class Plotter;
 
 class TTree;
 class TBranch;
-class TGraph;
-class TF1;
 class TH1;
 
 class Structure;
@@ -52,27 +51,6 @@ class ChannelEventPair{
 	static bool CompareChannel(ChannelEventPair *lhs, ChannelEventPair *rhs){ return ((lhs->channelEvent->modNum*lhs->channelEvent->chanNum) < (rhs->channelEvent->modNum*rhs->channelEvent->chanNum)); }
 };
 
-class FittingFunction{
-  protected:
-	double beta;
-	double gamma;
-
-  public:
-  	FittingFunction(double beta_=0.563362, double gamma_=0.3049452);
-
-	virtual ~FittingFunction(){}
-
-  	double GetBeta(){ return beta; }
-  	
-  	double GetGamma(){ return gamma; }
-  	
-  	double SetBeta(const double &beta_){ return (beta = beta_); }
-  	
-  	double SetGamma(const double &gamma_){ return (gamma = gamma_); }
-  	
-	virtual double operator () (double *x, double *par);
-};
-
 class Processor{
   private:
 	std::deque<ChannelEventPair*> events;	  
@@ -98,6 +76,8 @@ class Processor{
 
 	TimingAnalyzer analyzer; /// Specifies which type of high-resolution timing is to be used.
 
+	TraceFitter fitter; /// High-resolution fitter used for fitting traces.
+
   protected:
 	Structure *root_structure; /// Root data structure for storing processor-specific information.
 	Trace *root_waveform; /// Root data structure for storing traces.
@@ -114,12 +94,12 @@ class Processor{
 	int fitting_low, fitting_low2;
 	int fitting_high, fitting_high2;
 
+	double defaultBeta; /// Default beta value to use for fitting.
+	double defaultGamma; /// Default gamma value to use for fitting.
+
 	ChannelEventPair *start;
 
 	MapFile *mapfile;
-
-	TF1 *fitting_func;
-	FittingFunction *actual_func;
 
 	// Return a random number between low and high.
 	double drand(const double &low_, const double &high_);
@@ -179,8 +159,6 @@ class Processor{
 	std::string GetType(){ return type; }
 	
 	std::string GetName(){ return name; }
-	
-	TF1 *GetFunction(){ return fitting_func; }
 	
 	bool IsInit(){ return init; }
 	
