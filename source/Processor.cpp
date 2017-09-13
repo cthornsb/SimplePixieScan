@@ -73,9 +73,14 @@ void Processor::PrintNote(const std::string &msg_){
 bool Processor::HandleSingleEndedEvents(){
 	if(!init){ return false; }
 
+	total_handled += events.size();
+	
 	for(std::deque<ChannelEventPair*>::iterator iter = events.begin(); iter != events.end(); iter++){
 		// Check that the time and energy values are valid
-		if(!(*iter)->channelEvent->valid_chan){ continue; }
+		if(!(*iter)->channelEvent->valid_chan){ 
+			handle_notValid++;
+			continue; 
+		}
 		
 		// Process the individual event.
 		if(HandleEvent(*iter))
@@ -90,38 +95,83 @@ bool Processor::HandleSingleEndedEvents(){
 }
 
 bool Processor::HandleDoubleEndedEvents(){
-	if(!init || events.size() <= 1){ 
+	if(!init) return false;
+
+	if(events.size() <= 1){ 
+		handle_unpairedEvent++;
 		return false;
 	}
 	
-	// Sort the vandle event list by channel ID. This way, we will be able
-	// to determine which channels are neighbors and, thus, part of the
-	// same vandle bar.
-	sort(events.begin(), events.end(), &ChannelEventPair::CompareChannel);
-	
-	std::deque<ChannelEventPair*>::iterator iter_L = events.begin();
-	std::deque<ChannelEventPair*>::iterator iter_R = events.begin()+1;
+	total_handled += events.size();
+
+	unsigned short idL;
+	unsigned short idR;
+
+	ChannelEventPair *pair1, *pair2;
+	std::deque<ChannelEventPair*> unpairedEvents=events;
+	std::vector<ChannelEventPair*> lefts, rights;
+
+	// Search for pixie channel pairs.	
+	while(!unpairedEvents.empty()){
+		if(unpairedEvents.size() <= 1){
+			handle_unpairedEvent++;
+			unpairedEvents.pop_front();
+			break;
+		}
+
+		pair1 = unpairedEvents.front();
+		idL = pair1->channelEvent->getID();
+
+		// Find this event's neighbor.
+		bool foundPair = false;
+		for(std::deque<ChannelEventPair*>::iterator iter = unpairedEvents.begin()+1; iter != unpairedEvents.end(); ++iter){
+			pair2 = (*iter);
+			idR = pair2->channelEvent->getID();
+			if(idL % 2 == 0){ // Even
+				if(idR == idL+1){
+					lefts.push_back(pair1);
+					rights.push_back(pair2);
+					unpairedEvents.erase(iter);
+					foundPair = true;
+					break;
+				}
+			}
+			else{ // Odd
+				if(idL == idR+1){
+					lefts.push_back(pair2);
+					rights.push_back(pair1);
+					unpairedEvents.erase(iter);
+					foundPair = true;
+					break;
+				}
+			}
+		}
+
+		// Check for unpaired events.
+		if(!foundPair) handle_unpairedEvent++;
+
+		unpairedEvents.pop_front();
+	}
 
 	ChanEvent *current_event_L;
 	ChanEvent *current_event_R;
 
-	// Pick out pairs of channels representing vandle bars.
-	for(; iter_R != events.end(); iter_L++, iter_R++){
-		current_event_L = (*iter_L)->channelEvent;
-		current_event_R = (*iter_R)->channelEvent;
+	std::vector<ChannelEventPair*>::iterator iterL = lefts.begin();
+	std::vector<ChannelEventPair*>::iterator iterR = rights.begin();
+
+	// Pick out pairs of channels representing bars.
+	for(; iterL != lefts.end() && iterR != rights.end(); ++iterL, ++iterR){
+		current_event_L = (*iterL)->channelEvent;
+		current_event_R = (*iterR)->channelEvent;
 
 		// Check that the time and energy values are valid
-		if(!current_event_L->valid_chan || !current_event_R->valid_chan){ continue; }
+		if(!current_event_L->valid_chan || !current_event_R->valid_chan){ 
+			handle_notValid += 2;
+			continue; 
+		}
 	
-		// Check that these two channels have the correct detector tag.
-		if((*iter_L)->entry->subtype != "left" || 
-		   (*iter_R)->entry->subtype != "right"){ continue; }
-	
-		// Check that these two channels are indeed neighbors. If not, iterate up by one and check again.
-		if((current_event_L->modNum != current_event_R->modNum) || (current_event_L->chanNum+1 != current_event_R->chanNum)){ continue; }
-		
 		// Process the individual event.
-		if(HandleEvent(*iter_L, *iter_R))
+		if(HandleEvent((*iterL), (*iterR)))
 			good_events += 2;
 
 		// Copy the trace to the output file.
@@ -187,7 +237,7 @@ bool Processor::CfdPulse(ChanEvent *event_, MapEntry *entry_){
 		entry_->getArg(2, cfdL);
 		event_->AnalyzeCFD(cfdF, (int)cfdD, (int)cfdL);
 	}
-	
+
 	return (event_->phase > 0);
 }
 
@@ -202,12 +252,20 @@ Processor::Processor(std::string name_, std::string type_, MapFile *map_){
 	isSingleEnded = true;
 	histsEnabled = false;
 	presortData = false;
-	
+
 	total_time = 0;
 	start_time = clock();
 	
 	good_events = 0;
 	total_events = 0;
+	total_handled = 0;
+
+	handle_notValid = 0;
+	handle_unpairedEvent = 0;
+	preprocess_emptyTrace = 0;
+	preprocess_badBaseline = 0;
+	preprocess_badFit = 0;
+	preprocess_badCfd = 0;
 	
 	root_structure = &dummyStructure;
 	root_waveform = &dummyTrace;
@@ -282,22 +340,36 @@ float Processor::Status(unsigned long global_events_){
 	std::cout << " " << name << "Processor: Used " << time_taken << " seconds of CPU time\n";
 	if(total_events > 0){
 		std::cout << " " << name << "Processor: " << total_events << " Total Events (" << 100.0*total_events/global_events_ << "%)\n";
+		std::cout << " " << name << "Processor: " << total_handled << " Handled Events (" << 100.0*total_handled/global_events_ << "%)\n";
 		if(init) std::cout << " " << name << "Processor: " << good_events << " Valid Events (" << 100.0*good_events/global_events_ << "%)\n";
 	}
-	
+
+	// Error codes.
+	if(handle_notValid > 0){	
+		std::cout << "  [1] Not Valid:      " << handle_notValid << std::endl;
+		if(preprocess_emptyTrace > 0)  std::cout << "   [a] Empty Trace:   " << preprocess_emptyTrace << std::endl;
+		if(preprocess_badBaseline > 0) std::cout << "   [b] Bad Baseline:  " << preprocess_badBaseline << std::endl;
+		if(preprocess_badFit > 0)      std::cout << "   [c] Fit Failure:   " << preprocess_badFit << std::endl;
+		if(preprocess_badCfd > 0)      std::cout << "   [d] CFD Failure:   " << preprocess_badCfd << std::endl;
+	}
+	if(handle_unpairedEvent > 0)                 std::cout << "  [2] Unpaired Event: " << handle_unpairedEvent << std::endl;
+	if(handle_notValid+handle_unpairedEvent > 0) std::cout << "  [3] Total Invalid:  " << handle_notValid+handle_unpairedEvent << std::endl;
+
 	return time_taken;
 }
 
 void Processor::PreProcess(){
+	if(events.empty()) return;
+
 	// Start the timer.
 	StartProcess(); 
 	
 	ChanEvent *current_event;
 
+	total_events += events.size();
+
 	// Iterate over the list of channel events.
 	for(std::deque<ChannelEventPair*>::iterator iter = events.begin(); iter != events.end(); iter++){
-		total_events++;
-		
 		current_event = (*iter)->channelEvent;
 		
 		if(!presortData){
@@ -308,6 +380,7 @@ void Processor::PreProcess(){
 			if(current_event->traceLength == 0){
 				if(use_trace && !presortData){
 					// The trace is required by this processor, but does not exist.
+					preprocess_emptyTrace++;
 					continue; 
 				}				
 				// The trace is not required by the processor. Set the channel event to valid.
@@ -315,7 +388,10 @@ void Processor::PreProcess(){
 			}
 			else{ // The trace exists.
 				// Calculate the baseline.
-				if(current_event->ComputeBaseline() < 0){ continue; }
+				if(current_event->ComputeBaseline() < 0){
+					preprocess_badBaseline++;
+					continue; 
+				}
 		
 				// Check for large SNR.
 				//if(current_event->stddev > 3.0){ continue; }
@@ -332,6 +408,7 @@ void Processor::PreProcess(){
 					if(!FitPulse(current_event, (*iter)->entry)){
 						// Set the channel event to invalid.
 						current_event->valid_chan = false;
+						preprocess_badFit++;
 						continue;
 					}
 				}
@@ -339,6 +416,7 @@ void Processor::PreProcess(){
 					if(!CfdPulse(current_event, (*iter)->entry)){
 						// Set the channel event to invalid.
 						current_event->valid_chan = false;
+						preprocess_badCfd++;
 						continue;
 					}
 				}
@@ -362,12 +440,14 @@ void Processor::PreProcess(){
 }
 
 bool Processor::Process(ChannelEventPair *start_){
+	if(events.empty()) return false;
+
 	// Start the timer.
 	StartProcess(); 
 
 	// Set the start event.
 	start = start_;
-	
+
 	// Process the individual events.
 	bool retval = false;
 	if(isSingleEnded)

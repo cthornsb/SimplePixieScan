@@ -48,7 +48,7 @@ class ChannelEventPair{
 	static bool CompareTime(ChannelEventPair *lhs, ChannelEventPair *rhs){ return (lhs->channelEvent->time < rhs->channelEvent->time); }
 	
 	/// Return true if lhs has a lower event id (mod * chan) than rhs.
-	static bool CompareChannel(ChannelEventPair *lhs, ChannelEventPair *rhs){ return ((lhs->channelEvent->modNum*lhs->channelEvent->chanNum) < (rhs->channelEvent->modNum*rhs->channelEvent->chanNum)); }
+	static bool CompareChannel(ChannelEventPair *lhs, ChannelEventPair *rhs){ return ((lhs->channelEvent->modNum*16+lhs->channelEvent->chanNum) < (rhs->channelEvent->modNum*16+rhs->channelEvent->chanNum)); }
 };
 
 class Processor{
@@ -66,7 +66,15 @@ class Processor{
 	
 	unsigned long good_events;
 	unsigned long total_events;
-	
+	unsigned long total_handled;
+
+	unsigned long handle_notValid;
+	unsigned long handle_unpairedEvent;
+	unsigned long preprocess_emptyTrace;
+	unsigned long preprocess_badBaseline;
+	unsigned long preprocess_badFit;
+	unsigned long preprocess_badCfd;
+
 	TBranch *local_branch;
 	TBranch *trace_branch;
 
