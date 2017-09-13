@@ -167,6 +167,12 @@ class Processor{
 	std::string GetType(){ return type; }
 	
 	std::string GetName(){ return name; }
+
+	unsigned long GetNumTotalEvents(){ return total_events; }
+
+	unsigned long GetNumHandledEvents(){ return total_handled; }
+
+	unsigned long GetNumUnprocessed(){ return (handle_notValid+handle_unpairedEvent); }
 	
 	bool IsInit(){ return init; }
 	

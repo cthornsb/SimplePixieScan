@@ -32,6 +32,12 @@ const unsigned int fileHeaderWord = 0x44414548; // "HEAD"
 const unsigned int dataHeaderWord = 0x41544144; // "DATA"
 const unsigned int endBufferWord = 0xFFFFFFFF;
 
+void writeTNamed(const char *label_, const unsigned long &val_){
+	std::stringstream stream; stream << val_;
+	TNamed named(label_, stream.str().c_str());
+	named.Write();
+}
+
 void writeFileInfo(std::ofstream &file_, const std::string &str_){
 	unsigned short dummy1 = ((unsigned short)str_.size() + 2) + (str_.size() + 2) % 4;
 	unsigned short dummy2 = (str_.size() + 2) % 4;
@@ -224,7 +230,7 @@ simpleScanner::~simpleScanner(){
 			root_file->cd(head_path.c_str());
 			TNamed named("Data time", stream.str().c_str());
 			named.Write();
-			
+		
 			root_file->cd();
 
 			// Write root trees to output file.
@@ -250,7 +256,25 @@ simpleScanner::~simpleScanner(){
 			chanCounts->GetHist()->Write();
 			chanMaxADC->GetHist()->Write();
 			chanEnergy->GetHist()->Write();
-			
+	
+			// Write processor count statistics.
+			root_file->mkdir("counts");
+			root_file->cd("counts");
+
+			writeTNamed("Global", chanCounts->GetHist()->GetEntries());
+			writeTNamed("Handled", handler->GetTotalEvents());
+			writeTNamed("Starts", handler->GetStartEvents());
+	
+			for(size_t i = 0; i < handler->GetNumProcessors(); i++){
+				ProcessorEntry *ptr = handler->GetProcessor(i);
+				std::stringstream stream; stream << "counts/" << ptr->type;
+				root_file->mkdir(stream.str().c_str());
+				root_file->cd(stream.str().c_str());
+				writeTNamed("Total", ptr->proc->GetNumTotalEvents());
+				writeTNamed("Handled", ptr->proc->GetNumHandledEvents());
+				writeTNamed("Unhandled", ptr->proc->GetNumUnprocessed());
+			}
+	
 			// Close the root file.
 			root_file->Close();
 			delete root_file;
@@ -274,7 +298,7 @@ simpleScanner::~simpleScanner(){
 			// Close the presort file.
 			psort_file.close();
 		}
-
+		
 		std::cout << msgHeader << "Processed " << loaded_files << " files.\n";
 		std::cout << msgHeader << "Found " << handler->GetTotalEvents() << " events.\n";
 		if(!untriggered_mode) std::cout << msgHeader << "Found " << handler->GetStartEvents() << " start events.\n";

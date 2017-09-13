@@ -339,9 +339,9 @@ float Processor::Status(unsigned long global_events_){
 	time_taken = ((float)total_time)/CLOCKS_PER_SEC;
 	std::cout << " " << name << "Processor: Used " << time_taken << " seconds of CPU time\n";
 	if(total_events > 0){
-		std::cout << " " << name << "Processor: " << total_events << " Total Events (" << 100.0*total_events/global_events_ << "%)\n";
-		std::cout << " " << name << "Processor: " << total_handled << " Handled Events (" << 100.0*total_handled/global_events_ << "%)\n";
-		if(init) std::cout << " " << name << "Processor: " << good_events << " Valid Events (" << 100.0*good_events/global_events_ << "%)\n";
+		std::cout << " " << name << "Processor: " << total_events << " Total Events\n";
+		std::cout << " " << name << "Processor: " << total_handled << " Handled Events (" << 100.0*total_handled/total_events << "%)\n";
+		if(init) std::cout << " " << name << "Processor: " << good_events << " Valid Events (" << 100.0*good_events/total_events << "%)\n";
 	}
 
 	// Error codes.

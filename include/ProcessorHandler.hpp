@@ -10,7 +10,8 @@ class MapEntry;
 class MapFile;
 class Processor;
 
-struct ProcessorEntry{
+class ProcessorEntry{
+  public:
 	Processor *proc; /// Pointer to a data processor
 	std::string type; /// Type of the data processor
 	
@@ -35,6 +36,10 @@ class ProcessorHandler{
 	
 	~ProcessorHandler();
 	
+	size_t GetNumProcessors(){ return procs.size(); }
+
+	ProcessorEntry *GetProcessor(const size_t &index_){ return (index_ < procs.size() ? &procs.at(index_) : NULL); }
+
 	bool ToggleUntriggered(){ return (untriggered = !untriggered); }
 	
 	bool ToggleFitting();
