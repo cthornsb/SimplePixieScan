@@ -10,14 +10,13 @@
 
 #include "XiaData.hpp"
 #include "ScanInterface.hpp"
-#include "CTerminal.h"
 
 const double deg2rad = 0.0174532925;
 const double rad2deg = 57.295779579;
 
 CalibEntry dummyCalib(NULL, NULL, NULL);
 
-PositionCal::PositionCal(const std::vector<std::string> &pars_) : CalType(0), r0(0.0), theta(0.0), phi(0.0) { 
+void PositionCal::ReadPars(const std::vector<std::string> &pars_){ 
 	defaultVals = false;
 	int index = 0;
 	for(std::vector<std::string>::const_iterator iter = pars_.begin(); iter != pars_.end(); iter++){
@@ -36,7 +35,7 @@ std::string PositionCal::Print(bool fancy/*=true*/){
 	return output.str();
 }
 
-TimeCal::TimeCal(const std::vector<std::string> &pars_) : CalType(0), t0(0.0) { 
+void TimeCal::ReadPars(const std::vector<std::string> &pars_){ 
 	defaultVals = false;
 	int index = 0;
 	for(std::vector<std::string>::const_iterator iter = pars_.begin(); iter != pars_.end(); iter++){
@@ -62,7 +61,7 @@ std::string TimeCal::Print(bool fancy/*=true*/){
 	return output.str();
 }
 
-EnergyCal::EnergyCal(const std::vector<std::string> &pars_) : CalType(0) { 
+void EnergyCal::ReadPars(const std::vector<std::string> &pars_){ 
 	defaultVals = false;
 	int index = 0;
 	for(std::vector<std::string>::const_iterator iter = pars_.begin(); iter != pars_.end(); iter++){
@@ -103,82 +102,20 @@ std::string EnergyCal::Print(bool fancy/*=true*/){
 	return output.str();
 }
 
-bool CalibFile::_load(const char *filename_, const int &type_){
-	std::ifstream calibfile(filename_);
-	if(!calibfile.good()){
-		if(type_==0)
-			std::cout << "calibfile: \033[1;31mERROR! Failed to open time calibration file '" << filename_ << "'!\033[0m\n";
-		else if(type_==1)
-			std::cout << "calibfile: \033[1;31mERROR! Failed to open energy calibration file '" << filename_ << "'!\033[0m\n";
-		else if(type_==2)
-			std::cout << "calibfile: \033[1;31mERROR! Failed to open position calibration file '" << filename_ << "'!\033[0m\n";
-		return false;
-	}
-
-	int line_num = 1;
-	int prevID = -1;
-	int readID;
-	std::vector<std::string> values;
-	std::string line;
-	while(true){
-		getline(calibfile, line);
-		
-		if(calibfile.eof() || !calibfile.good())
-			break;
-		else if(line.empty() || line[0] == '#')
-			continue;
-		
-		split_str(line, values, '\t');
-		
-		if(values.empty())
-			continue;
-		
-		readID = (int)strtol(values[0].c_str(), NULL, 0);
-		
-		if(readID < 0 || readID <= prevID){
-			if(type_==0)
-				std::cout << "CalibFile: \033[1;33mWARNING! On line " << line_num++ << " of time calibration file, invalid id number (" << readID << "). Ignoring.\033[0m\n";
-			else
-				std::cout << "CalibFile: \033[1;33mWARNING! On line " << line_num++ << " of energy calibration file, invalid id number (" << readID << "). Ignoring.\033[0m\n";
-			continue;
-		}
-		else if(readID > prevID+1){
-			for(int i = prevID+1; i < readID; i++)
-				if(type_==0)
-					time_calib.push_back(TimeCal(i, 0.0));
-				else if(type_==1)
-					energy_calib.push_back(EnergyCal(i));
-				else if(type_==2)
-					position_calib.push_back(PositionCal(i, 0.5, 0.0, 0.0));
-		}
-		
-		prevID = readID;
-		line_num++;
-		if(type_==0)
-			time_calib.push_back(TimeCal(values));
-		else if(type_==1)
-			energy_calib.push_back(EnergyCal(values));	
-		else if(type_==2)
-			position_calib.push_back(PositionCal(values));
-	}
-	
-	return true;
-}
-
 CalibFile::CalibFile(const char *timeFilename_, const char *energyFilename_, const char *positionFilename_){ 
 	Load(timeFilename_, energyFilename_, positionFilename_);
 }
 
 bool CalibFile::LoadTimeCal(const char *filename_){
-	return _load(filename_, 0);
+	return LoadCalibFile(filename_, time_calib);
 }
 
 bool CalibFile::LoadEnergyCal(const char *filename_){
-	return _load(filename_, 1);
+	return LoadCalibFile(filename_, energy_calib);
 }
 
 bool CalibFile::LoadPositionCal(const char *filename_){
-	return _load(filename_, 2);
+	return LoadCalibFile(filename_, position_calib);
 }
 
 bool CalibFile::Load(const char *timeFilename_, const char *energyFilename_, const char *positionFilename_){

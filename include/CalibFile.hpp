@@ -4,6 +4,8 @@
 #include <vector>
 #include <string>
 
+#include "CTerminal.h"
+
 extern const double deg2rad;
 extern const double rad2deg;
 
@@ -21,6 +23,8 @@ class CalType{
 	CalType(const int &id_) : id(id_), defaultVals(true) { }
 	
 	virtual std::string Print(bool fancy=true){ return ""; }
+
+	virtual void ReadPars(const std::vector<std::string> &pars_) { }
 };
 
 class PositionCal : public CalType {
@@ -39,6 +43,8 @@ class PositionCal : public CalType {
 	PositionCal(const std::vector<std::string> &pars_);
 	
 	virtual std::string Print(bool fancy=true);
+
+	virtual void ReadPars(const std::vector<std::string> &pars_);
 };
 
 class TimeCal : public CalType {
@@ -59,6 +65,8 @@ class TimeCal : public CalType {
 	double GetCalTime(const double &time_);
 	
 	virtual std::string Print(bool fancy=true);
+
+	virtual void ReadPars(const std::vector<std::string> &pars_);
 };
 
 class EnergyCal : public CalType {
@@ -76,6 +84,8 @@ class EnergyCal : public CalType {
 	double GetCalEnergy(const double &adc_);
 
 	virtual std::string Print(bool fancy=true);
+
+	virtual void ReadPars(const std::vector<std::string> &pars_);
 
   private:
 	std::vector<double> vals;
@@ -104,8 +114,6 @@ class CalibFile{
   	std::vector<EnergyCal> energy_calib;
   	std::vector<PositionCal> position_calib;
 
-	bool _load(const char *filename_, const int &type_);
-	
   public:
 	CalibFile(){ }
 	
@@ -141,5 +149,55 @@ class CalibFile{
 };
 
 extern CalibEntry dummyCalib;
+
+template<class T>
+bool LoadCalibFile(const char *filename_, std::vector<T> &vec){
+	std::ifstream calibfile(filename_);
+	if(!calibfile.good()){
+		std::cout << "LoadCalibFile: \033[1;31mERROR! Failed to open calibration file '" << filename_ << "'!\033[0m\n";
+		return false;
+	}
+
+	int line_num = 1;
+	int prevID = -1;
+	int readID;
+	std::vector<std::string> values;
+	std::string line;
+	while(true){
+		getline(calibfile, line);
+		
+		if(calibfile.eof() || !calibfile.good())
+			break;
+		else if(line.empty() || line[0] == '#')
+			continue;
+		
+		split_str(line, values, '\t');
+		
+		if(values.empty())
+			continue;
+		
+		readID = (int)strtol(values[0].c_str(), NULL, 0);
+		
+		if(readID < 0 || readID <= prevID){
+			std::cout << "LoadCalibFile: \033[1;33mWARNING! On line " << line_num++ << " of calibration file, invalid id number (" << readID << "). Ignoring.\033[0m\n";
+			continue;
+		}
+		else if(readID > prevID+1){
+			for(int i = prevID+1; i < readID; i++){
+				T tempCalEntry;
+				tempCalEntry.id = i;
+				vec.push_back(tempCalEntry);
+			}
+		}
+		
+		prevID = readID;
+		line_num++;
+		T tempCalEntry;
+		tempCalEntry.ReadPars(values);
+		vec.push_back(tempCalEntry);
+	}
+	
+	return true;
+}
 
 #endif
