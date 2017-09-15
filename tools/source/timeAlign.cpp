@@ -15,7 +15,6 @@
 
 #include "simpleTool.hpp"
 
-
 /** 1d double Woods-Saxon potential.
   * \param[in] x: x[0] = dT = tR-tL in ns
   * \param[in] p:
@@ -115,7 +114,6 @@ bool timeAlign::process(){
 
 	// Initial fitting parameters.
 	double v0, beta, t0, a, b;
-	double crossLeft, crossRight;
 	double cbar;
 
 	int numProjections = getNumProjections(h2d);
@@ -127,17 +125,15 @@ bool timeAlign::process(){
 			std::stringstream stream; stream << getBinLowEdge(h2d, i);
 			h1->SetTitle(stream.str().c_str());
 			
-			can2->Clear();
-			h1->Draw();
-			can2->Update();
-		
 			if(!classicMode){
+				/*double crossLeft, crossRight;
+
 				// Get the amplitude of the distribution from the user.
 				std::cout << "  Mark the center of the distribution (t0,v0)\n";
 				m1 = (TMarker*)can2->WaitPrimitive("TMarker");
 				t0 = m1->GetX();
 				v0 = m1->GetY();
-				delete m1;	
+				delete m1;
 				
 				// Draw the FWHM line.
 				TLine line(h1->GetXaxis()->GetXmin(), v0/2, h1->GetXaxis()->GetXmax(), v0/2);
@@ -157,7 +153,12 @@ bool timeAlign::process(){
 				delete m1;
 
 				// Calculate the FWHM.
-				beta = crossRight-crossLeft;	
+				beta = crossRight-crossLeft;*/
+
+				// Approximate the initial parameters of the fit.
+				t0 = h1->GetMean();
+				v0 = h1->GetBinContent(h1->FindBin(t0));
+				beta = 2.35*h1->GetStdDev();	
 
 				a = 0.5; // ?
 				b = 0.5; // ?
@@ -170,6 +171,10 @@ bool timeAlign::process(){
 				f1->SetParameters(v0, beta, t0, a, b);	
 			}
 			else{
+				can2->Clear();
+				h1->Draw();
+				can2->Update();
+			
 				m1 = (TMarker*)can2->WaitPrimitive("TMarker");
 				xmin = m1->GetX();
 				m1->Delete();
@@ -182,7 +187,6 @@ bool timeAlign::process(){
 	
 			f1->SetRange(xmin, xmax);
 			h1->Fit(f1, "QR");
-			f1->Draw("SAME");
 			
 			// Output the fit results.
 			if(!classicMode){
@@ -196,12 +200,15 @@ bool timeAlign::process(){
 				ofile2 << stream.str() << "\t" << f1->GetParameter(2) << "\t" << f1->GetParameter(1) << "\t" << cbar << std::endl;
 			}
 			else{
+				f1->Draw("SAME");
+				can2->Update();
+		
 				std::cout << "  Fit: chi^2 = " << f1->GetChisquare()/f1->GetNDF() << ", t0 = " << f1->GetParameter(1) << " ns\n";
 				ofile1 << stream.str() << "\t" << f1->GetParameter(0) << "\t" << f1->GetParameter(1) << "\t" << f1->GetParameter(2) << "\t" << f1->GetChisquare()/f1->GetNDF() << std::endl;
 				ofile2 << stream.str() << "\t" << f1->GetParameter(1) << std::endl;
-			}
 			
-			can2->WaitPrimitive();
+				can2->WaitPrimitive();
+			}
 		}
 		else std::cout << "FAILED\n";
 	}
