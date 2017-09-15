@@ -329,7 +329,10 @@ simpleHistoFitter::simpleHistoFitter() : simpleTool() {
 	h1d = NULL;
 	h2d = NULL;
 
+	nEntries = 1E6;
+
 	draw_string = "";
+	expr_string = "";
 	
 	debug = false;
 	useProjX = true;
@@ -457,10 +460,12 @@ double simpleHistoFitter::getMaximum(TH1 *h1_, const double &lowVal_, const doub
 
 void simpleHistoFitter::addOptions(){
 	addOption(optionExt("draw", required_argument, NULL, 0, "<drawstr>", "Root draw string to fill the 2d histogram."), userOpts, optstr);
+	addOption(optionExt("expr", required_argument, NULL, 0, "<exprstr>", "Root expression logic string to use for filling 2d histogram."), userOpts, optstr);
 	addOption(optionExt("save", optional_argument, NULL, 0, "[name]", "Write the 2d histogram to the output file."), userOpts, optstr);
 	addOption(optionExt("debug", no_argument, NULL, 'd', "", "Enable debug mode."), userOpts, optstr);
 	addOption(optionExt("y-axis", no_argument, NULL, 'y', "", "Project along the y-axis instead of the x-axis."), userOpts, optstr);
 	addOption(optionExt("range", required_argument, NULL, 'r', "<range>", "Process a range of bins from the input histogram (specify range as start:stop e.g. 15:21)."), userOpts, optstr);
+	addOption(optionExt("entries", required_argument, NULL, 'N', "<entries>", "Fille histogram only from the first N entries from the input file (default = 1E6)."), userOpts, optstr);
 
 	// Add derived classes to the vector of all command line options.
 	firstChildOption = userOpts.size();
@@ -471,22 +476,26 @@ bool simpleHistoFitter::processArgs(){
 	if(userOpts.at(0).active)
 		draw_string = userOpts.at(0).argument;
 	if(userOpts.at(1).active)
-		output_objname = userOpts.at(1).argument;
+		expr_string = userOpts.at(1).argument;
 	if(userOpts.at(2).active)
-		debug = true;
+		output_objname = userOpts.at(2).argument;
 	if(userOpts.at(3).active)
+		debug = true;
+	if(userOpts.at(4).active)
 		useProjX = false;
-	if(userOpts.at(4).active){
-		size_t index = userOpts.at(4).argument.find(':');
+	if(userOpts.at(5).active){
+		size_t index = userOpts.at(5).argument.find(':');
 		if(index != std::string::npos){ // Range entry.
-			histStartID = strtol(userOpts.at(4).argument.substr(0, index).c_str(), 0, 0);
-			histStopID = strtol(userOpts.at(4).argument.substr(index+1).c_str(), 0, 0);
+			histStartID = strtol(userOpts.at(5).argument.substr(0, index).c_str(), 0, 0);
+			histStopID = strtol(userOpts.at(5).argument.substr(index+1).c_str(), 0, 0);
 		}
 		else{ // Single entry.
-			histStartID = strtol(userOpts.at(4).argument.c_str(), 0, 0);
+			histStartID = strtol(userOpts.at(5).argument.c_str(), 0, 0);
 			histStopID = histStartID;
 		}
 	}
+	if(userOpts.at(6).active)
+		nEntries = strtoul(userOpts.at(6).argument.c_str(), NULL, 0);
 
 	return processChildArgs();
 }
@@ -502,10 +511,10 @@ TH2 *simpleHistoFitter::fillHistogram(){
 	else{
 		if(!intree && !loadInputTree())
 			return NULL;
-	
-		std::cout << " " << input_objname << "->Draw(\"" << draw_string << "\", \"\", \"COLZ\");\n";
+
+		std::cout << " " << input_objname << "->Draw(\"" << draw_string << "\", \"" << expr_string << "\", \"COLZ\", " << nEntries << ");\n";
 		std::cout << " Filling TH2... " << std::flush;
-		if(intree->Draw(draw_string.c_str(), "", "COLZ") > 0){
+		if(intree->Draw(draw_string.c_str(), expr_string.c_str(), "COLZ", nEntries) > 0){
 			std::cout << "DONE\n";
 		}
 		else{

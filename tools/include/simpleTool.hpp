@@ -123,7 +123,10 @@ class simpleHistoFitter : public simpleTool {
 	int histStartID;
 	int histStopID;
 
+	unsigned int nEntries;
+
 	std::string draw_string;
+	std::string expr_string;
 
 	bool debug;
 	bool useProjX;
