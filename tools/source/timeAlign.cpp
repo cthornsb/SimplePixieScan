@@ -184,11 +184,11 @@ bool timeAlign::process(){
 				m1->Delete();*/
 
 				// Search for peaks.
-				TSpectrum spec(5);
+				TSpectrum spec(2);
 				spec.Search(h1);
 
 				double xmean = 9999;
-				double ymean;
+				double ymean = 9999;
 
 				// Find the earliest peak.
 				for(int j = 0; j < spec.GetNPeaks(); j++){
@@ -202,19 +202,22 @@ bool timeAlign::process(){
 				f1->SetParameters(xmean, ymean, 1);
 
 				// Calculate the fitting range.
-				xmin = xmean - 2;
-				xmax = xmean + 2;
+				xmin = xmean - 1;
+				xmax = xmean + 1;
 			}
 			
 			std::cout << "  Range: " << xmin << ", " << xmax << std::endl;
 	
 			f1->SetRange(xmin, xmax);
 			h1->Fit(f1, "QR");
-			
+		
+			//f1->Draw("SAME");
+			//can2->Update();
+
 			// Output the fit results.
 			if(!classicMode){
 				// Calculate bar speed-of-light.
-				cbar = 2*detectorLength/beta;
+				cbar = 2*detectorLength/f1->GetParameter(1);
 
 				std::cout << "  Fit: chi^2 = " << f1->GetChisquare()/f1->GetNDF() << ", t0 = " << f1->GetParameter(2) << " ns, cbar  = " << cbar << " cm/ns\n";
 				ofile1 << stream.str();
@@ -223,15 +226,12 @@ bool timeAlign::process(){
 				ofile2 << stream.str() << "\t" << f1->GetParameter(2) << "\t" << f1->GetParameter(1) << "\t" << cbar << std::endl;
 			}
 			else{
-				//f1->Draw("SAME");
-				//can2->Update();
-		
 				std::cout << "  Fit: chi^2 = " << f1->GetChisquare()/f1->GetNDF() << ", t0 = " << f1->GetParameter(1) << " ns\n";
 				ofile1 << stream.str() << "\t" << f1->GetParameter(0) << "\t" << f1->GetParameter(1) << "\t" << f1->GetParameter(2) << "\t" << f1->GetChisquare()/f1->GetNDF() << std::endl;
 				ofile2 << stream.str() << "\t" << f1->GetParameter(1) << std::endl;
-			
-				//can2->WaitPrimitive();
 			}
+			//can2->WaitPrimitive();
+			//sleep(2);
 		}
 		else std::cout << "FAILED\n";
 	}
