@@ -96,7 +96,7 @@ bool timeAlign::process(){
 		ofile2 << "# that dT = tR - tL - t0 = 0 ns. Also calculate the speed-of-light in the bar\n";
 		ofile2 << "# using cbar = 2d/beta where d is the total length of the bar and beta is the\n";
 		ofile2 << "# FWHM of the time difference distribution.\n";
-		ofile2 << "#id\tt0(ns)\tbeta(ns)\tcbar(cm/ns)\n";
+		ofile2 << "#id\tt0(ns)\tbeta(ns)\tcbar(cm/ns)\tlength(cm)\twidth(cm)\n";
 	}
 	else{
 		can2->cd()->SetLogy();
@@ -217,13 +217,14 @@ bool timeAlign::process(){
 			// Output the fit results.
 			if(!classicMode){
 				// Calculate bar speed-of-light.
+				const double detectorWidth = 3; // cm
 				cbar = 2*detectorLength/f1->GetParameter(1);
 
 				std::cout << "  Fit: chi^2 = " << f1->GetChisquare()/f1->GetNDF() << ", t0 = " << f1->GetParameter(2) << " ns, cbar  = " << cbar << " cm/ns\n";
 				ofile1 << stream.str();
 				for(int j = 0; j < 5; j++) ofile1 << "\t" << f1->GetParameter(j);
 				ofile1 << "\t" << f1->GetChisquare()/f1->GetNDF() << std::endl;
-				ofile2 << stream.str() << "\t" << f1->GetParameter(2) << "\t" << f1->GetParameter(1) << "\t" << cbar << std::endl;
+				ofile2 << stream.str() << "\t" << f1->GetParameter(2) << "\t" << f1->GetParameter(1) << "\t" << cbar << "\t" << detectorLength << "\t" << detectorWidth << std::endl;
 			}
 			else{
 				std::cout << "  Fit: chi^2 = " << f1->GetChisquare()/f1->GetNDF() << ", t0 = " << f1->GetParameter(1) << " ns\n";

@@ -43,8 +43,10 @@ class barCal : public CalType {
 	double t0;
 	double beta;
 	double cbar;
+	double length;
+	double width;
 
-	barCal() : CalType(0), t0(0), beta(0), cbar(0) { }
+	barCal() : CalType(0), t0(0), beta(0), cbar(0), length(0), width(0) { }
 
 	virtual std::string Print(bool fancy=true);
 
@@ -53,8 +55,8 @@ class barCal : public CalType {
 
 std::string barCal::Print(bool fancy/*=true*/){
 	std::stringstream output;
-	if(fancy) output << " id=" << id << ", t0=" << t0 << ", beta=" << beta << ", cbar=" << cbar;
-	else output << id << "\t" << t0 << "\t" << beta << "\t" << cbar;
+	if(fancy) output << " id=" << id << ", t0=" << t0 << ", beta=" << beta << ", cbar=" << cbar << ", length=" << length << ", width=" << width;
+	else output << id << "\t" << t0 << "\t" << beta << "\t" << cbar << "\t" << length << "\t" << width;
 	return output.str();
 }
 
@@ -66,6 +68,8 @@ void barCal::ReadPars(const std::vector<std::string> &pars_){
 		else if(index == 1) t0 = strtod(iter->c_str(), NULL);
 		else if(index == 2) beta = strtod(iter->c_str(), NULL);
 		else if(index == 3) cbar = strtod(iter->c_str(), NULL);
+		else if(index == 4) length = strtod(iter->c_str(), NULL);
+		else if(index == 5) width = strtod(iter->c_str(), NULL);
 		index++;
 	}
 }
@@ -74,9 +78,6 @@ class barHandler : public simpleTool {
   private:
 	std::string setupDir;
 
-	double detectorLength;
-	double detectorWidth;
-	
 	unsigned short index;
 
 	CalibFile calib;
@@ -101,7 +102,7 @@ class barHandler : public simpleTool {
 	void handleEvents();
 
   public:
-	barHandler() : simpleTool(), setupDir("./setup/"), detectorLength(60), detectorWidth(3), index(0), calib(), dummy(), ptr(NULL) { }
+	barHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), dummy(), ptr(NULL) { }
 
 	~barHandler();
 	
@@ -133,7 +134,7 @@ bool barHandler::getNextEvent(){
 
 void barHandler::handleEvents(){
 	index = 0;
-	double ctdiff, cylTheta, alpha;
+	double ctdiff, cylTheta, dW, alpha, rprime;
 	while(getNextEvent()){
 		barCal *bar = getBarCal(location);
 		TimeCal *time = calib.GetTimeCal(location);
@@ -145,15 +146,17 @@ void barHandler::handleEvents(){
 		cylTheta = pos->theta;
 
 		// Take the width of the bar into consideration.
-		alpha = std::atan2(frand(-detectorWidth/2, detectorWidth/2), pos->r0*100);
+		dW = frand(-bar->width/200, bar->width/200);
+		rprime = std::sqrt(pos->r0*pos->r0 + dW*dW);
+		alpha = std::atan2(dW, pos->r0);
 		addAngles(cylTheta, alpha);
 
 		// Compute the corrected time difference
 		ctdiff = tdiff_R - tdiff_L - bar->t0;
 
 		// Calculate the position of the event.
-		x = pos->r0*std::sin(cylTheta); // m
-		z = pos->r0*std::cos(cylTheta); // m
+		x = rprime*std::sin(cylTheta); // m
+		z = rprime*std::cos(cylTheta); // m
 		y = bar->cbar*ctdiff/200; // m
 		//theta = std::acos(std::cos(pos->theta)/std::sqrt(1.0+ypos*ypos/(r0*r0)));
 		//phi = std::atan2(ypos, r0*std::sin(theta0));
@@ -165,7 +168,7 @@ void barHandler::handleEvents(){
 
 		// Calculate the corrected TOF.
 		//ctof = (pos->r0/std::sqrt(ctdiff*ctdiff + pos->r0*pos->r0))*(0.5*(tdiff_R + tdiff_L)-detectorLength/(2*bar->cbar));
-		ctof = (pos->r0/r)*((tdiff_R + tdiff_L)/2 - time->t0);
+		ctof = (pos->r0/r)*((tdiff_R + tdiff_L)/2 - time->t0) + 100*pos->r0/bar->cbar;
 
 		// Calculate the TQDC and neutron energy.
 		tqdc = std::sqrt(tqdc_R*tqdc_L);
