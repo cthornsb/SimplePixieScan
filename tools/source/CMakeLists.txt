@@ -21,11 +21,14 @@ add_executable(specFitter specFitter.cpp)
 target_link_libraries(specFitter GuiStatic ToolStatic Scan ${ROOT_GUI_LIBRARIES})
 
 add_executable(timeAlign timeAlign.cpp)
-target_link_libraries(timeAlign ToolStatic Scan ${ROOT_LIBRARIES})
+target_link_libraries(timeAlign ToolStatic Scan ${ROOT_LIBRARIES} -lSpectrum)
 
 #Tools requiring linking against simpleScan root dictionary.
 add_executable(cmbinner cmbinner.cpp)
 target_link_libraries(cmbinner ToolStatic Scan ${DICTIONARY_PREFIX}Static ${ROOT_LIBRARIES})
+
+add_executable(barifier barifier.cpp)
+target_link_libraries(barifier ToolStatic Scan SimpleScanStatic ${DICTIONARY_PREFIX}Static ${ROOT_LIBRARIES})
 
 add_executable(phasePhase phasePhase.cpp)
 target_link_libraries(phasePhase ToolStatic Scan ${DICTIONARY_PREFIX}Static ${ROOT_LIBRARIES})
@@ -36,4 +39,4 @@ target_link_libraries(tracer ToolStatic Scan ${DICTIONARY_PREFIX}Static ${ROOT_L
 add_executable(instantTime instantTime.cpp)
 target_link_libraries(instantTime ToolStatic Scan ${DICTIONARY_PREFIX}Static ${ROOT_LIBRARIES})
 
-install(TARGETS calibrate cmbinner mapReader phasePhase rawEventAnalyzer specFitter timeAlign tracer instantTime DESTINATION bin)
+install(TARGETS calibrate cmbinner barifier mapReader phasePhase rawEventAnalyzer specFitter timeAlign tracer instantTime DESTINATION bin)
