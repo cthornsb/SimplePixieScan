@@ -162,7 +162,7 @@ void barHandler::handleEvents(){
 		//phi = std::atan2(ypos, r0*std::sin(theta0));
 
 		r = std::sqrt(x*x + y*y + z*z);
-		theta = std::acos(z/r);
+		theta = std::acos(z/r)*180/pi;
 		//phi = std::acos(y/std::sqrt(x*x + y*y); }
 		//if(x < 0) phi = 2*pi - phi; 
 
