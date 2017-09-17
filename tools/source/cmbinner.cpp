@@ -26,10 +26,20 @@ double getBinWidth(const double &E_){
 }
 
 size_t binTOF(std::vector<double> &tofBinsLow, std::vector<double> &energyBinsLow, const double &r=0.5, const double &lowLimit=0.1, const double &highLimit=8.0){
-	/*double low = highLimit; // MeV
-	double width;*/
+	tofBinsLow.clear();
+	energyBinsLow.clear();
 
-	const double eBins[45] = {0.0000, 0.0150, 0.0350, 0.0550, 0.0750, 
+	double low = highLimit; // MeV
+	double width;
+
+	while(low > lowLimit){
+		width = getBinWidth(low);
+		tofBinsLow.push_back(energy2tof(low, r));
+		energyBinsLow.push_back(low);
+		low = low - width;
+	}
+
+	/*const double eBins[45] = {0.0000, 0.0150, 0.0350, 0.0550, 0.0750, 
 	                          0.0950, 0.1150, 0.1350, 0.1650, 0.1950, 
         	                  0.2250, 0.2550, 0.3050, 0.3550, 0.4050, 
                 	          0.4550, 0.5050, 0.5550, 0.6050, 0.6550, 
@@ -39,20 +49,10 @@ size_t binTOF(std::vector<double> &tofBinsLow, std::vector<double> &energyBinsLo
                 	          1.9500, 2.1500, 2.3500, 2.5500, 2.7500, 
                         	  2.9500, 3.2500, 3.5500, 3.8500, 4.1500};
 
-	tofBinsLow.clear();
-	energyBinsLow.clear();
-	
-	/*while(low > lowLimit){
-		width = getBinWidth(low);
-		tofBinsLow.push_back(energy2tof(low, r));
-		energyBinsLow.push_back(low);
-		low = low - width;
-	}*/
-
 	for(size_t i = 45; i > 1; i--){
 		tofBinsLow.push_back(energy2tof(eBins[i-1], r));
 		energyBinsLow.push_back(eBins[i-1]);
-	}
+	}*/
 
 	// Reverse the energy bin vector so that the bins are in increasing order.
 	std::reverse(energyBinsLow.begin(), energyBinsLow.end());	
@@ -76,6 +76,7 @@ class simpleComCalculator : public simpleTool {
 	bool printMode;
 	bool defaultMode;
 	bool treeMode;
+	bool reactionMode;
 	
 	TCutG *cut;
 
@@ -89,7 +90,7 @@ class simpleComCalculator : public simpleTool {
 	void setAngles();
 
   public:
-	simpleComCalculator() : simpleTool(), startAngle(0), stopAngle(180), binWidth(1), threshold(-1), userEnergy(-1), timeOffset(0), nBins(180), xbins(NULL), mcarlo(false), printMode(false), defaultMode(false), treeMode(false), cut(NULL), cutFilename(""), configFilename("") { }
+	simpleComCalculator() : simpleTool(), startAngle(0), stopAngle(180), binWidth(1), threshold(-1), userEnergy(-1), timeOffset(0), nBins(180), xbins(NULL), mcarlo(false), printMode(false), defaultMode(false), treeMode(false), reactionMode(true), cut(NULL), cutFilename(""), configFilename("") { }
 
 	~simpleComCalculator();
 	
@@ -136,7 +137,9 @@ bool simpleComCalculator::setupReaction(){
 void simpleComCalculator::setAngles(){
 	// Set starting angle.
 	while(true){
-		std::cout << " Enter starting CoM angle: "; std::cin >> startAngle;
+		if(reactionMode) std::cout << " Enter starting CoM angle: ";
+		else             std::cout << " Enter starting lab angle: ";
+		std::cin >> startAngle;
 		if(startAngle < 0){
 			std::cout << "  Error: Illegal starting angle (" << startAngle << "). Value may not be negative.\n";
 			continue;
@@ -146,7 +149,9 @@ void simpleComCalculator::setAngles(){
 
 	// Set stopping angle.
 	while(true){
-		std::cout << " Enter stopping CoM angle: "; std::cin >> stopAngle;
+		if(reactionMode) std::cout << " Enter stopping CoM angle: ";
+		else             std::cout << " Enter stopping lab angle: ";
+		std::cin >> stopAngle;
 		if(stopAngle < 0){
 			std::cout << "  Error: Illegal stopping angle (" << stopAngle << "). Value may not be negative.\n";
 			continue;
@@ -186,6 +191,7 @@ void simpleComCalculator::addOptions(){
 	addOption(optionExt("threshold", required_argument, NULL, 'T', "<threshold>", "Use a software threshold on the trqce QDC (not used by default)."), userOpts, optstr);
 	addOption(optionExt("energy", required_argument, NULL, 'E', "<energy>", "Specify the beam energy in MeV."), userOpts, optstr);
 	addOption(optionExt("time-offset", required_argument, NULL, 0x0, "<offset>", "Specify the TOF offset in ns."), userOpts, optstr);
+	addOption(optionExt("no-reaction", no_argument, NULL, 0x0, "", "Do not use reaction kinematics (no CM calculations)."), userOpts, optstr);
 }
 
 bool simpleComCalculator::processArgs(){
@@ -205,6 +211,8 @@ bool simpleComCalculator::processArgs(){
 		userEnergy = strtod(userOpts.at(6).argument.c_str(), 0);
 	if(userOpts.at(7).active)
 		timeOffset = strtod(userOpts.at(7).argument.c_str(), 0);
+	if(userOpts.at(8).active)
+		reactionMode = false;
 
 	return true;
 }
@@ -224,7 +232,7 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			return 2;
 		}
 
-		if(!setupReaction())
+		if(reactionMode && !setupReaction())
 			return 3;
 
 		if(!openOutputFile()){
@@ -243,7 +251,7 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 		}
 
 		double ctof, energy, tqdc, theta, angleCOM;
-		int location;
+		unsigned short location;
 
 		if(treeMode || mcarlo){
 			outtree = new TTree("data", "CM Angles");
@@ -262,6 +270,8 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 		TH2D *h2d = NULL;
 		TH2D *hEcom = NULL;
 		TH2D *h2dcom = NULL;
+		TH2D *hEloc = NULL;
+		TH2D *h2dloc = NULL;
 		if(!mcarlo){
 			std::cout << std::endl;
 
@@ -269,61 +279,75 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 
 			xbins = new double[nBins+1];
 
-			particle *ejectile = rxn.GetEjectile();
+			if(reactionMode){ // Fixed width CM angle bins.
+				particle *ejectile = rxn.GetEjectile();
 
-			double comAngle = startAngle;
-			for(int i = 0; i <= nBins; i++){
+				double comAngle = startAngle;
+				for(int i = 0; i <= nBins; i++){
+					if(!ejectile->inverseKin){
+						rxn.SetComAngle(comAngle);
+						xbins[i] = ejectile->labAngle[0];				
+					}
+					else{
+						rxn.SetComAngle(180-comAngle);
+						xbins[nBins-i] = ejectile->labAngle[0];
+					}
+
+					comAngle += binWidth;
+				}
+
 				if(!ejectile->inverseKin){
-					rxn.SetComAngle(comAngle);
-					xbins[i] = ejectile->labAngle[0];				
+					comAngle = startAngle;
+					std::cout << "bin\tlowCom\thighCom\tlowLab\thighLab\n";
+					for(int i = 0; i < nBins; i++){
+						std::cout << i << "\t" << comAngle << "\t" << (comAngle + binWidth) << "\t" << xbins[i] << "\t" << xbins[i+1] << "\n";
+						comAngle += binWidth;			
+					}
 				}
 				else{
-					rxn.SetComAngle(180-comAngle);
-					xbins[nBins-i] = ejectile->labAngle[0];
-				}
-
-				comAngle += binWidth;
-			}
-
-			if(!ejectile->inverseKin){
-				comAngle = startAngle;
-				std::cout << "bin\tlowCom\thighCom\tlowLab\thighLab\n";
-				for(int i = 0; i < nBins; i++){
-					std::cout << i << "\t" << comAngle << "\t" << (comAngle + binWidth) << "\t" << xbins[i] << "\t" << xbins[i+1] << "\n";
-					comAngle += binWidth;			
+					comAngle = stopAngle;
+					std::cout << "bin\thighCom\tlowCom\tlowLab\thighLab\n";
+					for(int i = 0; i < nBins; i++){
+						std::cout << i << "\t" << comAngle << "\t" << (comAngle - binWidth) << "\t" << xbins[i] << "\t" << xbins[i+1] << "\n";
+						comAngle -= binWidth;			
+					}
 				}
 			}
-			else{
-				comAngle = stopAngle;
-				std::cout << "bin\thighCom\tlowCom\tlowLab\thighLab\n";
-				for(int i = 0; i < nBins; i++){
-					std::cout << i << "\t" << comAngle << "\t" << (comAngle - binWidth) << "\t" << xbins[i] << "\t" << xbins[i+1] << "\n";
-					comAngle -= binWidth;			
-				}
+			else{ // Fixed width lab angle bins.
+				for(int i = 0; i <= nBins; i++)
+					xbins[i] = startAngle + i*(stopAngle-startAngle)/nBins;				
 			}
 
 			std::vector<double> tofBins, energyBins;
-			binTOF(tofBins, energyBins, 0.5);
+			binTOF(tofBins, energyBins, 2.088, 0.05, 10);
 
+			// Create lab histograms.
 			hE = new TH2D("hE", "Lab Angle vs. Energy", nBins, xbins, energyBins.size()-1, energyBins.data());
 			hE->GetXaxis()->SetTitle("Lab Angle (deg)");
 			hE->GetYaxis()->SetTitle("Neutron Energy (MeV)");
-			hE->GetZaxis()->SetTitle("Counts per bin");
-
-			hEcom = new TH2D("hEcom", "COM Angle vs. Energy", nBins, startAngle, stopAngle, energyBins.size()-1, energyBins.data());
-			hEcom->GetXaxis()->SetTitle("COM Angle (deg)");
-			hEcom->GetYaxis()->SetTitle("Neutron Energy (MeV)");
-			hEcom->GetZaxis()->SetTitle("Counts per bin");
 
 			h2d = new TH2D("h2d", "Lab Angle vs. ctof", nBins, xbins, tofBins.size()-1, tofBins.data());
 			h2d->GetXaxis()->SetTitle("Lab Angle (deg)");
 			h2d->GetYaxis()->SetTitle("Neutron TOF (ns)");
-			h2d->GetZaxis()->SetTitle("Counts per bin");
 
-			h2dcom = new TH2D("h2dcom", "COM Angle vs. ctof", nBins, startAngle, stopAngle, tofBins.size()-1, tofBins.data());
-			h2dcom->GetXaxis()->SetTitle("COM Angle (deg)");
-			h2dcom->GetYaxis()->SetTitle("Neutron TOF (ns)");
-			h2dcom->GetZaxis()->SetTitle("Counts per bin");
+			// Create location histograms.
+			hEloc = new TH2D("hEloc", "Location vs. Energy", 100, 0, 100, energyBins.size()-1, energyBins.data());
+			hEloc->GetXaxis()->SetTitle("Detector Location");
+			hEloc->GetYaxis()->SetTitle("Neutron Energy (MeV)");
+
+			h2dloc = new TH2D("h2dloc", "Lab Angle vs. ctof", 100, 0, 100, tofBins.size()-1, tofBins.data());
+			h2dloc->GetXaxis()->SetTitle("Detector Location");
+			h2dloc->GetYaxis()->SetTitle("Neutron TOF (ns)");
+
+			if(reactionMode){ // Create CM histograms.
+				h2dcom = new TH2D("h2dcom", "COM Angle vs. ctof", nBins, startAngle, stopAngle, tofBins.size()-1, tofBins.data());
+				h2dcom->GetXaxis()->SetTitle("COM Angle (deg)");
+				h2dcom->GetYaxis()->SetTitle("Neutron TOF (ns)");
+
+				hEcom = new TH2D("hEcom", "COM Angle vs. Energy", nBins, startAngle, stopAngle, energyBins.size()-1, energyBins.data());
+				hEcom->GetXaxis()->SetTitle("COM Angle (deg)");
+				hEcom->GetYaxis()->SetTitle("Neutron Energy (MeV)");
+			}
 		}
 
 		int file_counter = 1;
@@ -336,12 +360,20 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			}
 
 			TBranch *branch = NULL;
-			VandleStructure *ptr = NULL;
+			//VandleStructure *ptr = NULL;
 			std::vector<double> hitTheta;
 			std::vector<int> detLocation;
+
+			//double theta, ctof, tqdc, energy;
+			//unsigned short location;
 	
 			if(!mcarlo){
-				intree->SetBranchAddress("vandle", &ptr, &branch);
+				//intree->SetBranchAddress("vandle", &ptr, &branch);
+				intree->SetBranchAddress("ctof", &ctof, &branch);
+				intree->SetBranchAddress("energy", &energy);
+				intree->SetBranchAddress("tqdc", &tqdc);
+				intree->SetBranchAddress("theta", &theta);
+				intree->SetBranchAddress("loc", &location);
 			}
 			else{
 				intree->SetMakeClass(1);
@@ -350,7 +382,7 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			}
 	
 			if(!branch){
-				std::cout << " Error: Failed to load branch \"vandle\" from input TTree.\n";
+				std::cout << " Error: Failed to load branch \"ctof\" from input TTree.\n";
 				return 8;
 			}
 	
@@ -364,7 +396,7 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 				intree->GetEntry(i);
 		
 				if(!mcarlo){
-					for(unsigned int j = 0; j < ptr->mult; j++){
+					/*for(unsigned int j = 0; j < ptr->mult; j++){
 						if(ptr->r.at(j) >= 0.65){
 							badCount++;
 							continue;
@@ -399,6 +431,31 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 						h2d->Fill(ptr->theta.at(j), ptr->ctof.at(j));
 						hEcom->Fill(rxn.GetEjectile()->comAngle[0], ptr->energy.at(j));
 						h2dcom->Fill(rxn.GetEjectile()->comAngle[0], ptr->ctof.at(j));
+					}*/
+					// Check the tqdc threshold (if available).
+					if(threshold > 0 && tqdc < threshold) continue;
+
+					// Check against the input tcutg (if available).
+					if(useTCutG && !tcutg->IsInside(ctof, tqdc)) continue;
+
+					rxn.SetLabAngle(theta);
+					if(treeMode){
+						ctof = ctof;
+						energy = energy;
+						tqdc = tqdc;
+						theta = theta;
+						
+						angleCOM = rxn.GetEjectile()->comAngle[0];
+			
+						outtree->Fill();
+					}
+					hE->Fill(theta, energy);
+					h2d->Fill(theta, ctof);
+					hEloc->Fill(location, energy);
+					h2dloc->Fill(location, ctof);
+					if(reactionMode){
+						hEcom->Fill(rxn.GetEjectile()->comAngle[0], energy);
+						h2dcom->Fill(rxn.GetEjectile()->comAngle[0], ctof);
 					}
 				}
 				else{
@@ -424,8 +481,12 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 		if(!mcarlo){
 			hE->Write();
 			h2d->Write();
-			hEcom->Write();
-			h2dcom->Write();
+			hEloc->Write();
+			h2dloc->Write();
+			if(reactionMode){
+				hEcom->Write();
+				h2dcom->Write();
+			}
 		}
 
 		if(cut) delete cut;
