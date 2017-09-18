@@ -380,8 +380,9 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 
 	if(!noPeakMode){ // Add the peak function to the function string.
 		for(int i = 0; i < numPeaks; i++){
-			if(gausFit) stream2 << "[" << 3*i+(nPars-3) << "]*TMath::Gaus(" << xstr << ", [" << 3*i+(nPars-2) << "], [" << 3*i+(nPars-1) << "])";
-			else        stream2 << "[" << 3*i+(nPars-3) << "]*TMath::Landau(" << xstr << ", [" << 3*i+(nPars-2) << "], [" << 3*i+(nPars-1) << "])";
+			if(woodsSaxon)   stream2 << "[" << 3*i+(nPars-3) << "]*(1/(1+TMath::Exp((x-[" << 3*i+(nPars-2) << "])/[" << 3*i+(nPars-1) << "])))";
+			else if(gausFit) stream2 << "[" << 3*i+(nPars-3) << "]*TMath::Gaus(" << xstr << ", [" << 3*i+(nPars-2) << "], [" << 3*i+(nPars-1) << "])";
+			else             stream2 << "[" << 3*i+(nPars-3) << "]*TMath::Landau(" << xstr << ", [" << 3*i+(nPars-2) << "], [" << 3*i+(nPars-1) << "])";
 		}
 	}
 
@@ -417,24 +418,35 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 			TLine line(xlo, amplitude*0.5+bkgA, xhi, amplitude*0.5+bkgA);
 			line.Draw("SAME");
 			can2->Update();
-			std::cout << "Mark left and right of peak " << i+1 << "\n";
-			marker = (TMarker*)can2->WaitPrimitive("TMarker");
-			fwhmLeft = marker->GetX();
-			delete marker;
+			if(!woodsSaxon){
+				std::cout << "Mark left and right of peak " << i+1 << "\n";
+				marker = (TMarker*)can2->WaitPrimitive("TMarker");
+				fwhmLeft = marker->GetX();
+				delete marker;
+			}
+			else{
+				std::cout << "Mark crossing point\n";
+			}
 			marker = (TMarker*)can2->WaitPrimitive("TMarker");
 			fwhmRight = marker->GetX();
 			delete marker;
-			if(gausFit) func->SetParameter(3*i+(nPars-3), amplitude);
-			else        func->SetParameter(3*i+(nPars-3), amplitude*5.9);
-			if(!logXaxis){
-				func->SetParameter(3*i+(nPars-2), meanValue);
-				func->SetParameter(3*i+(nPars-1), (fwhmRight-fwhmLeft)/2.35);
+			if(gausFit || woodsSaxon) func->SetParameter(3*i+(nPars-3), amplitude);
+			else                           func->SetParameter(3*i+(nPars-3), amplitude*5.9);
+			if(!woodsSaxon){
+				if(!logXaxis){
+					func->SetParameter(3*i+(nPars-2), meanValue);
+					func->SetParameter(3*i+(nPars-1), (fwhmRight-fwhmLeft)/2.35);
+				}
+				else{
+					func->SetParameter(3*i+(nPars-2), std::log(meanValue));
+					double sig1 = std::log(fwhmRight)-meanValue; // Right side of the maximum.
+					double sig2 = meanValue-std::log(fwhmLeft); // Left side of the maximum.
+					func->SetParameter(3*i+(nPars-1), (sig1+sig2)/2);
+				}
 			}
 			else{
-				func->SetParameter(3*i+(nPars-2), std::log(meanValue));
-				double sig1 = std::log(fwhmRight)-meanValue; // Right side of the maximum.
-				double sig2 = meanValue-std::log(fwhmLeft); // Left side of the maximum.
-				func->SetParameter(3*i+(nPars-1), (sig1+sig2)/2);
+				func->SetParameter(3*i+(nPars-2), fwhmRight);
+				func->SetParameter(3*i+(nPars-1), (fwhmRight-meanValue)/2);
 			}
 		}
 	}
