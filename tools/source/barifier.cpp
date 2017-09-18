@@ -158,8 +158,6 @@ void barHandler::handleEvents(){
 		x = rprime*std::sin(cylTheta); // m
 		z = rprime*std::cos(cylTheta); // m
 		y = bar->cbar*ctdiff/200; // m
-		//theta = std::acos(std::cos(pos->theta)/std::sqrt(1.0+ypos*ypos/(r0*r0)));
-		//phi = std::atan2(ypos, r0*std::sin(theta0));
 
 		r = std::sqrt(x*x + y*y + z*z);
 		theta = std::acos(z/r)*180/pi;
@@ -167,12 +165,27 @@ void barHandler::handleEvents(){
 		//if(x < 0) phi = 2*pi - phi; 
 
 		// Calculate the corrected TOF.
-		//ctof = (pos->r0/std::sqrt(ctdiff*ctdiff + pos->r0*pos->r0))*(0.5*(tdiff_R + tdiff_L)-detectorLength/(2*bar->cbar));
 		ctof = (pos->r0/r)*((tdiff_R + tdiff_L)/2 - time->t0) + 100*pos->r0/bar->cbar;
 
-		// Calculate the TQDC and neutron energy.
-		tqdc = std::sqrt(tqdc_R*tqdc_L);
-		energy = tof2energy(ctof, pos->r0);
+		// Calculate the TQDC.
+                tqdc = std::sqrt(tqdc_R*tqdc_L);
+
+                // Calibrate the TQDC.
+                EnergyCal *ecalLeft = calib.GetEnergyCal(location);
+                EnergyCal *ecalRight = calib.GetEnergyCal(location+1);
+                if(ecalLeft && !ecalLeft->defaultVals){
+                        if(!ecalRight || ecalRight->defaultVals){ // Use pairwise calibration.
+                                tqdc = ecalLeft->GetCalEnergy(std::sqrt(tqdc_R*tqdc_L));
+                        }
+                        else{ // Use individual channel calibration.
+                                tqdc_L = ecalLeft->GetCalEnergy(tqdc_L);
+                                tqdc_R = ecalRight->GetCalEnergy(tqdc_R);
+                                tqdc = std::sqrt(tqdc_R*tqdc_L);
+                        }
+                }
+
+                // Calculate the neutron energy.
+                energy = tof2energy(ctof, pos->r0);
 
 		// Fill the tree with the event.
 		outtree->Fill();
@@ -207,15 +220,9 @@ int barHandler::execute(int argc, char *argv[]){
 		return 1;
 	}
 
-	if(!calib.LoadPositionCal((setupDir+"position.cal").c_str())){
-		std::cout << " Error: Failed to load position calibration file \"" << setupDir << "position.cal\"!\n";
-		return 2;
-	}
-
-	if(!calib.LoadTimeCal((setupDir+"time.cal").c_str())){
-		std::cout << " Error: Failed to load time calibration file \"" << setupDir << "time.cal\"!\n";
-		return 3;
-	}
+	if(!calib.LoadPositionCal((setupDir+"position.cal").c_str())) return 2;
+	if(!calib.LoadTimeCal((setupDir+"time.cal").c_str())) return 3;
+	calib.LoadEnergyCal((setupDir+"energy.cal").c_str());
 
 	if(!LoadCalibFile<barCal>((setupDir+"bars.cal").c_str(), bars)){
 		std::cout << " Error: Failed to load bar calibration file \"" << setupDir << "bars.cal\"!\n";
