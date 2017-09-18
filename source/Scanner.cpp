@@ -832,8 +832,10 @@ bool simpleScanner::Initialize(std::string prefix_){
 	else handler->SetTimingAnalyzer(POLY);
 
 	// Set untriggered mode.
-	if(untriggered_mode)
+	if(untriggered_mode){
+		GetCore()->SetUntriggeredMode(true);	
 		handler->ToggleUntriggered();
+	}
 
 	return (init = true);
 }
