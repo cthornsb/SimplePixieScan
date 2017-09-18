@@ -82,6 +82,8 @@ class specFitter : public simpleHistoFitter {
 
 	bool polyBG;
 	bool gausFit;
+	bool woodsSaxon;
+	bool noBackground;
 
 	bool logXaxis;
 	bool logYaxis;
@@ -102,7 +104,7 @@ class specFitter : public simpleHistoFitter {
 	TGraph *convertHisToGraph(TH1 *h_, const double &xLow, const double &xHigh);
 
   public:
-	specFitter() : simpleHistoFitter(), polyBG(false), gausFit(true), logXaxis(false), logYaxis(false), noPeakMode(false), strictMode(true), waitRun(true), skipNext(false) { }
+	specFitter() : simpleHistoFitter(), polyBG(false), gausFit(true), woodsSaxon(false), noBackground(false), logXaxis(false), logYaxis(false), noPeakMode(false), strictMode(true), waitRun(true), skipNext(false) { }
 
 	bool fitSpectrum(TH1 *h_, const int &binID_);
 
@@ -124,20 +126,24 @@ void specFitter::setupControlPanel(){
 	if(!polyBG){ // Order matters for radio buttons.
 		win->AddRadio("expo");
 		win->AddRadio("poly2", &polyBG);
+		win->AddRadio("none", &noBackground);
 	}
 	else{
 		win->AddRadio("poly2", &polyBG);
 		win->AddRadio("expo");
+		win->AddRadio("none", &noBackground);
 	}
 
 	win->NewGroup("Peak");
 	if(gausFit){ // Order matters for radio buttons.
 		win->AddRadio("gauss", &gausFit);
 		win->AddRadio("landau");
+		win->AddRadio("woods-saxon", &woodsSaxon);
 	}
 	else{
 		win->AddRadio("landau");
 		win->AddRadio("gauss", &gausFit);
+		win->AddRadio("woods-saxon", &woodsSaxon);
 	}
 
 	win->NewGroup("Options");
@@ -309,72 +315,73 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	double bgy[3];
 	double p[3];
 
-	int nPars = 3;
+	int nPars = (!noBackground ? 3 : 0);
 	if(!noPeakMode) nPars += 3*numPeaks;
 
 	std::stringstream stream1, stream2;
 
-	if(!polyBG){ // Set initial function parameters.
-		std::cout << "Mark exponential background (x0,y0)\n";
-		marker = (TMarker*)can2->WaitPrimitive("TMarker");
-		bgx[0] = marker->GetX();
-		bgy[0] = marker->GetY();
-		delete marker;
-		std::cout << "Mark exponential background (x1,y1)\n";
-		marker = (TMarker*)can2->WaitPrimitive("TMarker");	
-		bgx[1] = marker->GetX();
-		bgy[1] = marker->GetY();
-		delete marker;
-		std::cout << "Mark constant (xinf,yinf)\n";
-		marker = (TMarker*)can2->WaitPrimitive("TMarker");
-		bgx[2] = marker->GetX();
-		bgy[2] = marker->GetY();
-		delete marker;
+	if(!noBackground){
+		if(!polyBG){ // Set initial function parameters.
+			std::cout << "Mark exponential background (x0,y0)\n";
+			marker = (TMarker*)can2->WaitPrimitive("TMarker");
+			bgx[0] = marker->GetX();
+			bgy[0] = marker->GetY();
+			delete marker;
+			std::cout << "Mark exponential background (x1,y1)\n";
+			marker = (TMarker*)can2->WaitPrimitive("TMarker");	
+			bgx[1] = marker->GetX();
+			bgy[1] = marker->GetY();
+			delete marker;
+			std::cout << "Mark constant (xinf,yinf)\n";
+			marker = (TMarker*)can2->WaitPrimitive("TMarker");
+			bgx[2] = marker->GetX();
+			bgy[2] = marker->GetY();
+			delete marker;
 
-		if(bgy[2] < bgy[1]) p[0] = bgy[2];
-		else{
-			if(debug) std::cout << " Warning! Y3 is less than Y2 (" << bgy[2] << " < " << bgy[1] << ")! Setting Y3=" << bgy[1]*0.9 << ".\n";
-			p[0] = bgy[1]*0.9;
+			if(bgy[2] < bgy[1]) p[0] = bgy[2];
+			else{
+				if(debug) std::cout << " Warning! Y3 is less than Y2 (" << bgy[2] << " < " << bgy[1] << ")! Setting Y3=" << bgy[1]*0.9 << ".\n";
+				p[0] = bgy[1]*0.9;
+			}
+			if(!logXaxis){
+				p[2] = std::log((bgy[0]-p[0])/(bgy[1]-p[0]))/(bgx[0]-bgx[1]);
+				p[1] = std::log(bgy[1]-p[0])-p[2]*bgx[1];
+			}
+			else{
+				p[2] = std::log((bgy[0]-p[0])/(bgy[1]-p[0]))/std::log(bgx[0]/bgx[1]);
+				p[1] = std::log(bgy[1]-p[0])-p[2]*std::log(bgx[1]);
+			}
+			
+			stream1 << "[0]+exp([1]+[2]*" << xstr << ")+";
 		}
-		if(!logXaxis){
-			p[2] = std::log((bgy[0]-p[0])/(bgy[1]-p[0]))/(bgx[0]-bgx[1]);
-			p[1] = std::log(bgy[1]-p[0])-p[2]*bgx[1];
+		else{ // Set initial function parameters.
+			std::cout << "Mark linear background (x0,y0)\n";
+			marker = (TMarker*)can2->WaitPrimitive("TMarker");
+			bgx[0] = marker->GetX();
+			bgy[0] = marker->GetY();
+			delete marker;
+			std::cout << "Mark linear background (x1,y1)\n";
+			marker = (TMarker*)can2->WaitPrimitive("TMarker");	
+			bgx[1] = marker->GetX();
+			bgy[1] = marker->GetY();
+			delete marker;
+			std::cout << "Mark linear background (x2,y2)\n";
+			marker = (TMarker*)can2->WaitPrimitive("TMarker");	
+			bgx[2] = marker->GetX();
+			bgy[2] = marker->GetY();
+			delete marker;
+
+			calculateP2(bgx, bgy, p, logXaxis);
+			
+			stream1 << "[0]+" << xstr << "*[1]+" << xstr << "^2*[2]+";
 		}
-		else{
-			p[2] = std::log((bgy[0]-p[0])/(bgy[1]-p[0]))/std::log(bgx[0]/bgx[1]);
-			p[1] = std::log(bgy[1]-p[0])-p[2]*std::log(bgx[1]);
-		}
-		
-		stream1 << "[0]+exp([1]+[2]*" << xstr << ")";
+		if(debug) std::cout << " p0 = " << p[0] << ", p1 = " << p[1] << ", p2 = " << p[2] << std::endl;
 	}
-	else{ // Set initial function parameters.
-		std::cout << "Mark linear background (x0,y0)\n";
-		marker = (TMarker*)can2->WaitPrimitive("TMarker");
-		bgx[0] = marker->GetX();
-		bgy[0] = marker->GetY();
-		delete marker;
-		std::cout << "Mark linear background (x1,y1)\n";
-		marker = (TMarker*)can2->WaitPrimitive("TMarker");	
-		bgx[1] = marker->GetX();
-		bgy[1] = marker->GetY();
-		delete marker;
-		std::cout << "Mark linear background (x2,y2)\n";
-		marker = (TMarker*)can2->WaitPrimitive("TMarker");	
-		bgx[2] = marker->GetX();
-		bgy[2] = marker->GetY();
-		delete marker;
-
-		calculateP2(bgx, bgy, p, logXaxis);
-		
-		stream1 << "[0]+" << xstr << "*[1]+" << xstr << "^2*[2]";
-	}
-
-	if(debug) std::cout << " p0 = " << p[0] << ", p1 = " << p[1] << ", p2 = " << p[2] << std::endl;
 
 	if(!noPeakMode){ // Add the peak function to the function string.
 		for(int i = 0; i < numPeaks; i++){
-			if(gausFit) stream2 << "+[" << 3*i+3 << "]*TMath::Gaus(" << xstr << ", [" << 3*i+4 << "], [" << 3*i+5 << "])";
-			else        stream2 << "+[" << 3*i+3 << "]*TMath::Landau(" << xstr << ", [" << 3*i+4 << "], [" << 3*i+5 << "])";
+			if(gausFit) stream2 << "[" << 3*i+(nPars-3) << "]*TMath::Gaus(" << xstr << ", [" << 3*i+(nPars-2) << "], [" << 3*i+(nPars-1) << "])";
+			else        stream2 << "[" << 3*i+(nPars-3) << "]*TMath::Landau(" << xstr << ", [" << 3*i+(nPars-2) << "], [" << 3*i+(nPars-1) << "])";
 		}
 	}
 
@@ -384,9 +391,11 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	if(debug) std::cout << " Declaring function \"" << totalString << "\".\n";
 	TF1 *func = new TF1("func", totalString.c_str(), xlo, xhi);
 
-	func->SetParameter(0, p[0]);
-	func->SetParameter(1, p[1]);
-	func->SetParameter(2, p[2]);
+	if(!noBackground){
+		func->SetParameter(0, p[0]);
+		func->SetParameter(1, p[1]);
+		func->SetParameter(2, p[2]);
+	}
 
 	if(!noPeakMode){ // Get the initial conditions of the peak.
 		double bkgA, fwhmLeft, fwhmRight;
@@ -415,17 +424,17 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 			marker = (TMarker*)can2->WaitPrimitive("TMarker");
 			fwhmRight = marker->GetX();
 			delete marker;
-			if(gausFit) func->SetParameter(3*i+3, amplitude);
-			else        func->SetParameter(3*i+3, amplitude*5.9);
+			if(gausFit) func->SetParameter(3*i+(nPars-3), amplitude);
+			else        func->SetParameter(3*i+(nPars-3), amplitude*5.9);
 			if(!logXaxis){
-				func->SetParameter(3*i+4, meanValue);
-				func->SetParameter(3*i+5, (fwhmRight-fwhmLeft)/2.35);
+				func->SetParameter(3*i+(nPars-2), meanValue);
+				func->SetParameter(3*i+(nPars-1), (fwhmRight-fwhmLeft)/2.35);
 			}
 			else{
-				func->SetParameter(3*i+4, std::log(meanValue));
+				func->SetParameter(3*i+(nPars-2), std::log(meanValue));
 				double sig1 = std::log(fwhmRight)-meanValue; // Right side of the maximum.
 				double sig2 = meanValue-std::log(fwhmLeft); // Left side of the maximum.
-				func->SetParameter(3*i+5, (sig1+sig2)/2);
+				func->SetParameter(3*i+(nPars-1), (sig1+sig2)/2);
 			}
 		}
 	}
@@ -507,18 +516,22 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	func->Draw("SAME");
 
 	TF1 *bkgfunc = NULL;
-	bkgfunc = new TF1("bkgfunc", stream1.str().c_str(), xlo, xhi);
-	
-	bkgfunc->SetLineColor(kMagenta+1);
-	bkgfunc->SetParameter(0, func->GetParameter(0));
-	bkgfunc->SetParameter(1, func->GetParameter(1));
-	bkgfunc->SetParameter(2, func->GetParameter(2));
-	bkgfunc->Draw("SAME");
+	if(!noBackground){
+		std::string bkgstr = stream1.str();
+		if(bkgstr.back() == '+') bkgstr.pop_back();
+		bkgfunc = new TF1("bkgfunc", bkgstr.c_str(), xlo, xhi);
+		
+		bkgfunc->SetLineColor(kMagenta+1);
+		bkgfunc->SetParameter(0, func->GetParameter(0));
+		bkgfunc->SetParameter(1, func->GetParameter(1));
+		bkgfunc->SetParameter(2, func->GetParameter(2));
+		bkgfunc->Draw("SAME");
+	}
 
 	// Draw the composite gaussians.
 	double totalIntegral = 0;
 	double histSum = summation(h_, xlo, xhi);
-	double integral = summation(h_, bkgfunc, xlo, xhi);
+	double integral = (!noBackground) ? summation(h_, bkgfunc, xlo, xhi) : 0;
 	totalIntegral += integral;
 	if(debug){
 		std::cout << " Integrated Counts:\n";
@@ -532,9 +545,9 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 		//for(int i = 0; i < numPeaks; i++){
 			lilfunc = new TF1("peakfunc", stream2.str().c_str(), xlo, xhi);
 			lilfunc->SetLineColor(kGreen+3);
-			lilfunc->SetParameter(0, func->GetParameter(3));
-			lilfunc->SetParameter(1, func->GetParameter(4));
-			lilfunc->SetParameter(2, func->GetParameter(5));
+			lilfunc->SetParameter(0, func->GetParameter(nPars-3));
+			lilfunc->SetParameter(1, func->GetParameter(nPars-2));
+			lilfunc->SetParameter(2, func->GetParameter(nPars-1));
 			lilfunc->Draw("SAME");
 
 			integral = summation(h_, lilfunc, xlo, xhi);
@@ -561,8 +574,10 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	if(noPeakMode) graph->Write("graph");
 	h_->Write();
 	func->Write();
-	bkgfunc->Write();
-	if(!noPeakMode) lilfunc->Write();
+	if(!noBackground) 
+		bkgfunc->Write();
+	if(!noPeakMode) 
+		lilfunc->Write();
 	
 	cdir->mkdir("pars")->cd();
 	const std::string parnames[6] = {"p0", "p1", "p2", "p3", "p4", "p5"};
@@ -570,7 +585,8 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	for(int i = 0; i < nPars; i++) writeTNamed(parnames[i]+"err", func->GetParError(i));
 	
 	delete func;
-	delete bkgfunc;
+	if(!noBackground)
+		delete bkgfunc;
 	if(!noPeakMode) 
 		delete lilfunc;
 	else 
