@@ -399,12 +399,13 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	}
 
 	if(!noPeakMode){ // Get the initial conditions of the peak.
-		double bkgA, fwhmLeft, fwhmRight;
+		double bkgA, fwhmCross;
 		for(int i = 0; i < numPeaks; i++){
 			std::cout << "Mark peak " << i+1 << " maximum\n";
 			marker = (TMarker*)can2->WaitPrimitive("TMarker");
 			amplitude = marker->GetY();
 			meanValue = marker->GetX();
+			writeTNamed("amplitude", amplitude);
 			if(!polyBG){
 				if(!logXaxis) bkgA = p[0]+std::exp(p[1]+p[2]*meanValue);
 				else      bkgA = p[0]+std::exp(p[1])*std::pow(meanValue, p[2]);
@@ -418,35 +419,25 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 			TLine line(xlo, amplitude*0.5+bkgA, xhi, amplitude*0.5+bkgA);
 			line.Draw("SAME");
 			can2->Update();
-			if(!woodsSaxon){
-				std::cout << "Mark left and right of peak " << i+1 << "\n";
-				marker = (TMarker*)can2->WaitPrimitive("TMarker");
-				fwhmLeft = marker->GetX();
-				delete marker;
-			}
-			else{
-				std::cout << "Mark crossing point\n";
-			}
+			std::cout << "Mark crossing point\n";
 			marker = (TMarker*)can2->WaitPrimitive("TMarker");
-			fwhmRight = marker->GetX();
+			fwhmCross = marker->GetX();
 			delete marker;
 			if(gausFit || woodsSaxon) func->SetParameter(3*i+(nPars-3), amplitude);
-			else                           func->SetParameter(3*i+(nPars-3), amplitude*5.9);
+			else                      func->SetParameter(3*i+(nPars-3), amplitude*5.9);
 			if(!woodsSaxon){
 				if(!logXaxis){
 					func->SetParameter(3*i+(nPars-2), meanValue);
-					func->SetParameter(3*i+(nPars-1), (fwhmRight-fwhmLeft)/2.35);
+					func->SetParameter(3*i+(nPars-1), std::fabs(meanValue-fwhmCross)*(2/2.35));
 				}
 				else{
 					func->SetParameter(3*i+(nPars-2), std::log(meanValue));
-					double sig1 = std::log(fwhmRight)-meanValue; // Right side of the maximum.
-					double sig2 = meanValue-std::log(fwhmLeft); // Left side of the maximum.
-					func->SetParameter(3*i+(nPars-1), (sig1+sig2)/2);
+					func->SetParameter(3*i+(nPars-1), std::fabs(std::log(fwhmCross)-meanValue)*(2/2.35));
 				}
 			}
 			else{
-				func->SetParameter(3*i+(nPars-2), fwhmRight);
-				func->SetParameter(3*i+(nPars-1), (fwhmRight-meanValue)/2);
+				func->SetParameter(3*i+(nPars-2), fwhmCross);
+				func->SetParameter(3*i+(nPars-1), (fwhmCross-meanValue)/2);
 			}
 		}
 	}
