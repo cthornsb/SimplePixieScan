@@ -406,6 +406,7 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 			amplitude = marker->GetY();
 			meanValue = marker->GetX();
 			writeTNamed("amplitude", amplitude);
+			writeTNamed("meanValue", meanValue);
 			if(!polyBG){
 				if(!logXaxis) bkgA = p[0]+std::exp(p[1]+p[2]*meanValue);
 				else      bkgA = p[0]+std::exp(p[1])*std::pow(meanValue, p[2]);
