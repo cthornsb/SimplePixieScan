@@ -126,12 +126,6 @@ class Processor{
 
 	void PrintMsg(const std::string &msg_);
 	
-	void PrintError(const std::string &msg_);
-	
-	void PrintWarning(const std::string &msg_);
-	
-	void PrintNote(const std::string &msg_);
-	
 	TF1 *SetFitFunction(double (*func_)(double *, double *), int npar_);
 	
 	TF1 *SetFitFunction(const char* func_);

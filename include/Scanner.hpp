@@ -135,7 +135,7 @@ class simpleScanner : public ScanInterface {
 	  * as active by ::Setup(). This should be overloaded in the derived class.
 	  * \return Nothing.
 	  */
-    virtual void ExtraArguments();
+	virtual void ExtraArguments();
 	
 	/** CmdHelp is used to allow a derived class to print a help statement about
 	  * its own commands. This method is called whenever the user enters 'help'

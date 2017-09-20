@@ -6,6 +6,7 @@
 #include "TObjString.h"
 
 #include "ConfigFile.hpp"
+#include "ColorTerm.hpp"
 
 ConfigFile::ConfigFile(){ 
 	eventWidth = 0.5; // Default value of 500 ns
@@ -24,7 +25,7 @@ ConfigFile::ConfigFile(const char *filename_){
 bool ConfigFile::Load(const char *filename_){
 	std::ifstream configfile(filename_);
 	if(!configfile.good()){
-		std::cout << "ConfigFile: \033[1;31mERROR! Failed to open input configuration file!\033[0m\n";
+		errStr << "ConfigFile: ERROR! Failed to open input configuration file!\n";
 		return (init = false);
 	}
 	

@@ -7,6 +7,7 @@
 #include "XiaData.hpp"
 
 #include "MapFile.hpp"
+#include "ColorTerm.hpp"
 
 double absdiff(const double &v1, const double &v2){
 	return (v1 >= v2)?(v1-v2):(v2-v1);
@@ -184,7 +185,7 @@ bool MapFile::Load(const char *filename_){
 
 	std::ifstream mapfile(filename_);
 	if(!mapfile.good()){
-		std::cout << "MapFile: \033[1;31mERROR! Failed to open input map file!\033[0m\n";
+		errStr << "MapFile: ERROR! Failed to open input map file!\n";
 		return (init = false);
 	}
 	
@@ -236,13 +237,13 @@ bool MapFile::Load(const char *filename_){
 
 		// Check for two few map file arguments.
 		if(values.size() < 3){
-			std::cout << "MapFile: \033[1;33mWARNING! On line " << line_num << ", expected at least 3 parameters but received " << values.size() << ". Ignoring.\033[0m\n";
+			warnStr << "MapFile: WARNING! On line " << line_num << ", expected at least 3 parameters but received " << values.size() << ". Ignoring.\n";
 			continue;
 		}
 
 		// Check for the ':' character in the module specification.
 		if(values.at(0).find(':') != std::string::npos){
-			std::cout << "MapFile: \033[1;31mERROR! On line " << line_num << ", the ':' wildcard is not permitted for specification of modules.\033[0m\n";
+			errStr << "MapFile: ERROR! On line " << line_num << ", the ':' wildcard is not permitted for specification of modules.\n";
 			init = false;
 			break;
 		}
@@ -250,7 +251,7 @@ bool MapFile::Load(const char *filename_){
 		int mod, chan;
 		mod = (unsigned)atoi(values.at(0).c_str());
 		if(mod >= max_modules){
-			std::cout << "MapFile: \033[1;33mWARNING! On line " << line_num << ", invalid module number (" << mod << "). Ignoring.\033[0m\n";
+			warnStr << "MapFile: WARNING! On line " << line_num << ", invalid module number (" << mod << "). Ignoring.\n";
 			continue;
 		}
 		
@@ -269,7 +270,7 @@ bool MapFile::Load(const char *filename_){
 			
 			// Flip the start and stop channels
 			if(start_chan > stop_chan){
-				std::cout << "MapFile: \033[1;33mWARNING! On line " << line_num << ", start channel > stop channel. I'm assuming you swapped the values.\033[0m\n";
+				warnStr << "MapFile: WARNING! On line " << line_num << ", start channel > stop channel. I'm assuming you swapped the values.\n";
 				int dummy = start_chan;
 				start_chan = stop_chan;
 				stop_chan = dummy;
@@ -288,7 +289,7 @@ bool MapFile::Load(const char *filename_){
 				}
 			}
 			else{ // All channels
-				if(leftover != 0x0){ std::cout << "MapFile: \033[1;33mWARNING! On line " << line_num << ", only even (e) or odd (o) may be specified as channel wildcards.\033[0m\n"; }
+				if(leftover != 0x0){ warnStr << "MapFile: WARNING! On line " << line_num << ", only even (e) or odd (o) may be specified as channel wildcards.\n"; }
 				for(int i = start_chan; i <= stop_chan; i++){
 					channels.push_back(i);
 				}
@@ -297,7 +298,7 @@ bool MapFile::Load(const char *filename_){
 			// Iterate over all specified channels and set the detector type.
 			for(std::vector<int>::iterator iter = channels.begin(); iter != channels.end(); iter++){
 				if(*iter >= max_channels){
-					std::cout << "MapFile: \033[1;33mWARNING! On line " << line_num << ", invalid channel number (" << *iter << "). Ignoring.\033[0m\n";
+					warnStr << "MapFile: WARNING! On line " << line_num << ", invalid channel number (" << *iter << "). Ignoring.\n";
 					break;
 				}
 				detectors[mod][*iter].set(values.at(2));
@@ -320,7 +321,7 @@ bool MapFile::Load(const char *filename_){
 		else{ // User has specified a single channel.
 			chan = (unsigned)atoi(values.at(1).c_str());
 			if(chan >= max_channels){
-				std::cout << "MapFile: \033[1;33mWARNING! On line " << line_num << ", invalid channel number (" << chan << "). Ignoring.\033[0m\n";
+				warnStr << "MapFile: WARNING! On line " << line_num << ", invalid channel number (" << chan << "). Ignoring.\n";
 				continue;
 			}
 			detectors[mod][chan].set(values.at(2));
@@ -355,7 +356,7 @@ bool MapFile::Load(const char *filename_){
 	}	
 	
 	if(!validStart)
-		std::cout << "MapFile: \033[1;33mWARNING! Found no start detector!\033[0m\n";
+		warnStr << "MapFile: WARNING! Found no start detector!\n";
 	
 	return init;
 }

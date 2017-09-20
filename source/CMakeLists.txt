@@ -1,5 +1,5 @@
 #Set the scan sources that we will make a lib out of.
-set(CoreSources Plotter.cpp ProcessorHandler.cpp OnlineProcessor.cpp Processor.cpp ConfigFile.cpp MapFile.cpp CalibFile.cpp)
+set(CoreSources ColorTerm.cpp Plotter.cpp ProcessorHandler.cpp OnlineProcessor.cpp Processor.cpp ConfigFile.cpp MapFile.cpp CalibFile.cpp)
 
 set(ProcessorSources TriggerProcessor.cpp VandleProcessor.cpp PhoswichProcessor.cpp LiquidBarProcessor.cpp LiquidProcessor.cpp
                      HagridProcessor.cpp GenericProcessor.cpp GenericBarProcessor.cpp LogicProcessor.cpp TraceProcessor.cpp)

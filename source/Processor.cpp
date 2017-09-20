@@ -55,21 +55,6 @@ void Processor::PrintMsg(const std::string &msg_){
 	std::cout << name << "Processor: " << msg_ << std::endl; 
 }
 
-void Processor::PrintError(const std::string &msg_){ 
-	if(use_color_terminal){ std::cout << name << "Processor: \033[1;31m" << msg_ << "\033[0m" << std::endl; }
-	else{ std::cout << name << "Processor: " << msg_ << std::endl; }
-}
-
-void Processor::PrintWarning(const std::string &msg_){ 
-	if(use_color_terminal){ std::cout << name << "Processor: \033[1;33m" << msg_ << "\033[0m" << std::endl; }
-	else{ std::cout << name << "Processor: " << msg_ << std::endl; }
-}
-
-void Processor::PrintNote(const std::string &msg_){ 
-	if(use_color_terminal){ std::cout << name << "Processor: \033[1;34m" << msg_ << "\033[0m" << std::endl; }
-	else{ std::cout << name << "Processor: " << msg_ << std::endl; }
-}
-
 bool Processor::HandleSingleEndedEvents(){
 	if(!init){ return false; }
 

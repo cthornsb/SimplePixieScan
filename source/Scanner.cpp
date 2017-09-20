@@ -9,6 +9,7 @@
 #include "ProcessorHandler.hpp"
 #include "OnlineProcessor.hpp"
 #include "Plotter.hpp"
+#include "ColorTerm.hpp"
 
 #ifdef USE_HRIBF
 #include "ScanorInterface.hpp"
@@ -734,6 +735,12 @@ bool simpleScanner::Initialize(std::string prefix_){
 	
 	GetCore()->SetEventWidth(configfile->eventWidth * 125); // = eventWidth * 1E-6(s/us) / 8E-9(s/tick)
 	GetCore()->SetEventDelay(configfile->eventDelay * 125); // = eventDelay * 1E-6(s/us) / 8E-9(s/tick)
+
+	if(untriggered_mode && configfile->buildMethod >= 2){
+		warnStr << msgHeader << "Warning! Raw event build method (" << configfile->buildMethod << ") is invalid for untriggered mode.\n";
+		configfile->buildMethod = 0;
+	}
+
 	GetCore()->SetRawEventMode(configfile->buildMethod);
 	std::cout << prefix_ << "Set event width to " << configfile->eventWidth << " μs (" << GetCore()->GetEventWidth() << " pixie clock ticks).\n";
 	std::cout << prefix_ << "Set event delay to " << configfile->eventDelay << " μs (" << GetCore()->GetEventDelay() << " pixie clock ticks).\n";
@@ -761,7 +768,8 @@ bool simpleScanner::Initialize(std::string prefix_){
 				if(defaultCFDparameter > 0)
 					proc->SetDefaultCfdParameters(defaultCFDparameter);
 			}
-			else{ 
+			else{
+				 
 				std::cout << prefix_ << "Failed to add " << *iter << " processor to the processor list!\n"; 
 				hadErrors = true;			
 			}

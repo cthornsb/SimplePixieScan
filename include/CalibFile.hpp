@@ -5,6 +5,7 @@
 #include <string>
 
 #include "CTerminal.h"
+#include "ColorTerm.hpp"
 
 extern const double deg2rad;
 extern const double rad2deg;
@@ -154,7 +155,7 @@ template<class T>
 bool LoadCalibFile(const char *filename_, std::vector<T> &vec){
 	std::ifstream calibfile(filename_);
 	if(!calibfile.good()){
-		std::cout << "LoadCalibFile: \033[1;31mERROR! Failed to open calibration file '" << filename_ << "'!\033[0m\n";
+		errStr << "LoadCalibFile: ERROR! Failed to open calibration file '" << filename_ << "'!\n";
 		return false;
 	}
 
@@ -179,7 +180,7 @@ bool LoadCalibFile(const char *filename_, std::vector<T> &vec){
 		readID = (int)strtol(values[0].c_str(), NULL, 0);
 		
 		if(readID < 0 || readID <= prevID){
-			std::cout << "LoadCalibFile: \033[1;33mWARNING! On line " << line_num++ << " of calibration file, invalid id number (" << readID << "). Ignoring.\033[0m\n";
+			warnStr << "LoadCalibFile: WARNING! On line " << line_num++ << " of calibration file, invalid id number (" << readID << ").\n";
 			continue;
 		}
 		else if(readID > prevID+1){
