@@ -7,6 +7,7 @@
 #include "TCanvas.h"
 #include "TH2.h"
 #include "TCutG.h"
+#include "TNamed.h"
 
 #include "cmcalc.hpp"
 #include "simpleTool.hpp"
@@ -240,6 +241,14 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			return 4;
 		}
 
+		// Write the threshold to the output file.
+		if(threshold > 0){
+			std::stringstream stream;
+			stream << threshold;
+			TNamed named("threshold", stream.str().c_str());
+			named.Write();
+		}
+
 		// Load a root TCutG to use as a gate.
 		bool useTCutG = false;
 		if(!cut_filename.empty()){
@@ -440,13 +449,7 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 
 					rxn.SetLabAngle(theta);
 					if(treeMode){
-						ctof = ctof;
-						energy = energy;
-						tqdc = tqdc;
-						theta = theta;
-						
 						angleCOM = rxn.GetEjectile()->comAngle[0];
-			
 						outtree->Fill();
 					}
 					hE->Fill(theta, energy);
