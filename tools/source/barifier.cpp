@@ -236,7 +236,7 @@ bool barHandler::processArgs(){
 		setupDir = userOpts.at(0).argument;
 		if(setupDir[setupDir.size()-1] != '/') setupDir += '/';
 	}
-	if(userOpts.at(0).active){
+	if(userOpts.at(1).active){
 		singleEndedMode = true;
 	}
 
