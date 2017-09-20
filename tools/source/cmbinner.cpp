@@ -67,6 +67,7 @@ class simpleComCalculator : public simpleTool {
 	double stopAngle;
 	double binWidth;
 	double threshold;
+	double radius;
 	double userEnergy;
 	double timeOffset;
 	int nBins;
@@ -91,7 +92,7 @@ class simpleComCalculator : public simpleTool {
 	void setAngles();
 
   public:
-	simpleComCalculator() : simpleTool(), startAngle(0), stopAngle(180), binWidth(1), threshold(-1), userEnergy(-1), timeOffset(0), nBins(180), xbins(NULL), mcarlo(false), printMode(false), defaultMode(false), treeMode(false), reactionMode(true), cut(NULL), cutFilename(""), configFilename("") { }
+	simpleComCalculator() : simpleTool(), startAngle(0), stopAngle(180), binWidth(1), threshold(-1), radius(0.5), userEnergy(-1), timeOffset(0), nBins(180), xbins(NULL), mcarlo(false), printMode(false), defaultMode(false), treeMode(false), reactionMode(true), cut(NULL), cutFilename(""), configFilename("") { }
 
 	~simpleComCalculator();
 	
@@ -190,6 +191,7 @@ void simpleComCalculator::addOptions(){
 	addOption(optionExt("print", no_argument, NULL, 'p', "", "Instead of scanning a file, print out kinematics information."), userOpts, optstr);
 	addOption(optionExt("default", no_argument, NULL, 'd', "", "When using \"--print\" or \"--tree\" mode, use default settings of theta=[0,180] w/ 1 degree steps."), userOpts, optstr);
 	addOption(optionExt("threshold", required_argument, NULL, 'T', "<threshold>", "Use a software threshold on the trqce QDC (not used by default)."), userOpts, optstr);
+	addOption(optionExt("radius", required_argument, NULL, 0x0, "<radius>", "Set the detector radius (default=0.5 m)."), userOpts, optstr);
 	addOption(optionExt("energy", required_argument, NULL, 'E', "<energy>", "Specify the beam energy in MeV."), userOpts, optstr);
 	addOption(optionExt("time-offset", required_argument, NULL, 0x0, "<offset>", "Specify the TOF offset in ns."), userOpts, optstr);
 	addOption(optionExt("no-reaction", no_argument, NULL, 0x0, "", "Do not use reaction kinematics (no CM calculations)."), userOpts, optstr);
@@ -209,10 +211,12 @@ bool simpleComCalculator::processArgs(){
 	if(userOpts.at(5).active)
 		threshold = strtod(userOpts.at(5).argument.c_str(), 0);
 	if(userOpts.at(6).active)
-		userEnergy = strtod(userOpts.at(6).argument.c_str(), 0);
+		radius = strtod(userOpts.at(6).argument.c_str(), 0);
 	if(userOpts.at(7).active)
-		timeOffset = strtod(userOpts.at(7).argument.c_str(), 0);
+		userEnergy = strtod(userOpts.at(6).argument.c_str(), 0);
 	if(userOpts.at(8).active)
+		timeOffset = strtod(userOpts.at(7).argument.c_str(), 0);
+	if(userOpts.at(9).active)
 		reactionMode = false;
 
 	return true;
@@ -246,6 +250,11 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			std::stringstream stream;
 			stream << threshold;
 			TNamed named("threshold", stream.str().c_str());
+			named.Write();
+			named.SetName("radius");
+			stream.str("");
+			stream << radius;
+			named.SetTitle(stream.str().c_str());
 			named.Write();
 		}
 
@@ -328,7 +337,7 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			}
 
 			std::vector<double> tofBins, energyBins;
-			binTOF(tofBins, energyBins, 2.088, 0.05, 10);
+			binTOF(tofBins, energyBins, radius, 0.05, 10);
 
 			// Create lab histograms.
 			hE = new TH2D("hE", "Lab Angle vs. Energy", nBins, xbins, energyBins.size()-1, energyBins.data());
