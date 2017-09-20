@@ -13,6 +13,7 @@
 #include "Structures.h"
 
 const double pi = 3.1415926536;
+const double cvac = 29.9792458; // cm/ns
 
 // Energy in MeV
 double tof2energy(const double &tof_, const double &d_){
@@ -84,7 +85,10 @@ class barHandler : public simpleTool {
 
 	barCal dummy;
 
-	GenericBarStructure *ptr;
+	GenericBarStructure *gptr;
+	LiquidStructure *lptr;
+
+	bool singleEndedMode;
 
 	double x, y, z, r, theta;
 	double ctof, tqdc, energy;
@@ -102,7 +106,7 @@ class barHandler : public simpleTool {
 	void handleEvents();
 
   public:
-	barHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), dummy(), ptr(NULL) { }
+	barHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), dummy(), gptr(NULL), lptr(NULL), singleEndedMode(false) { }
 
 	~barHandler();
 	
@@ -119,13 +123,20 @@ barCal *barHandler::getBarCal(const unsigned int &id_){
 }
 
 bool barHandler::getNextEvent(){
-	if(index >= ptr->mult) return false;
-
-	tdiff_L = ptr->ltdiff.at(index);
-	tdiff_R = ptr->rtdiff.at(index);
-	tqdc_L = ptr->ltqdc.at(index);
-	tqdc_R = ptr->rtqdc.at(index);
-	location = ptr->loc.at(index);
+	if(!singleEndedMode){
+		if(index >= gptr->mult) return false;
+		tdiff_L = gptr->ltdiff.at(index);
+		tdiff_R = gptr->rtdiff.at(index);
+		tqdc_L = gptr->ltqdc.at(index);
+		tqdc_R = gptr->rtqdc.at(index);
+		location = gptr->loc.at(index);
+	}
+	else{
+		if(index >= lptr->mult) return false;
+		tdiff_L = lptr->tof.at(index);
+		tqdc_L = lptr->ltqdc.at(index);
+		location = lptr->loc.at(index);
+	}
 
 	index++;
 
@@ -136,53 +147,73 @@ void barHandler::handleEvents(){
 	index = 0;
 	double ctdiff, cylTheta, dW, alpha, rprime;
 	while(getNextEvent()){
-		barCal *bar = getBarCal(location);
+		barCal *bar = NULL;
+		if(!singleEndedMode && !(bar = getBarCal(location))) continue;
+
 		TimeCal *time = calib.GetTimeCal(location);
 		PositionCal *pos = calib.GetPositionCal(location);
 
-		if(!bar || !time || !pos) continue;
+		if(!time || !pos) continue;
 
 		// Angle of center of bar in cylindrical coordinates.
 		cylTheta = pos->theta;
 
 		// Take the width of the bar into consideration.
-		dW = frand(-bar->width/200, bar->width/200);
-		rprime = std::sqrt(pos->r0*pos->r0 + dW*dW);
-		alpha = std::atan2(dW, pos->r0);
-		addAngles(cylTheta, alpha);
+		if(!singleEndedMode){
+			dW = frand(-bar->width/200, bar->width/200);
+			rprime = std::sqrt(pos->r0*pos->r0 + dW*dW);
+			alpha = std::atan2(dW, pos->r0);
+			addAngles(cylTheta, alpha);
+		}
+		else rprime = pos->r0;
 
 		// Compute the corrected time difference
-		ctdiff = tdiff_R - tdiff_L - bar->t0;
+		if(!singleEndedMode) ctdiff = tdiff_R - tdiff_L - bar->t0;
 
 		// Calculate the position of the event.
 		x = rprime*std::sin(cylTheta); // m
 		z = rprime*std::cos(cylTheta); // m
-		y = bar->cbar*ctdiff/200; // m
+		if(!singleEndedMode)
+			y = bar->cbar*ctdiff/200; // m
+		else
+			y = 0; // m
 
 		r = std::sqrt(x*x + y*y + z*z);
 		theta = std::acos(z/r)*180/pi;
 		//phi = std::acos(y/std::sqrt(x*x + y*y); }
 		//if(x < 0) phi = 2*pi - phi; 
 
-		// Calculate the corrected TOF.
-		ctof = (pos->r0/r)*((tdiff_R + tdiff_L)/2 - time->t0) + 100*pos->r0/bar->cbar;
+		if(!singleEndedMode){
+			// Calculate the corrected TOF.
+			ctof = (pos->r0/r)*((tdiff_R + tdiff_L)/2 - time->t0) + 100*pos->r0/cvac;
 
-		// Calculate the TQDC.
-                tqdc = std::sqrt(tqdc_R*tqdc_L);
+			// Calculate the TQDC.
+			tqdc = std::sqrt(tqdc_R*tqdc_L);
+		}
+		else{
+			ctof = tdiff_L - time->t0 + 100*pos->r0/cvac;
+			tqdc = tqdc_L;
+		}
 
                 // Calibrate the TQDC.
-                EnergyCal *ecalLeft = calib.GetEnergyCal(location);
-                EnergyCal *ecalRight = calib.GetEnergyCal(location+1);
-                if(ecalLeft && !ecalLeft->defaultVals){
-                        if(!ecalRight || ecalRight->defaultVals){ // Use pairwise calibration.
-                                tqdc = ecalLeft->GetCalEnergy(std::sqrt(tqdc_R*tqdc_L));
-                        }
-                        else{ // Use individual channel calibration.
-                                tqdc_L = ecalLeft->GetCalEnergy(tqdc_L);
-                                tqdc_R = ecalRight->GetCalEnergy(tqdc_R);
-                                tqdc = std::sqrt(tqdc_R*tqdc_L);
-                        }
-                }
+		if(!singleEndedMode){
+			EnergyCal *ecalLeft = calib.GetEnergyCal(location);
+			EnergyCal *ecalRight = calib.GetEnergyCal(location+1);
+			if(ecalLeft && !ecalLeft->defaultVals){
+				if(!ecalRight || ecalRight->defaultVals){ // Use pairwise calibration.
+					tqdc = ecalLeft->GetCalEnergy(std::sqrt(tqdc_R*tqdc_L));
+				}
+				else{ // Use individual channel calibration.
+					tqdc_L = ecalLeft->GetCalEnergy(tqdc_L);
+					tqdc_R = ecalRight->GetCalEnergy(tqdc_R);
+					tqdc = std::sqrt(tqdc_R*tqdc_L);
+				}
+			}
+		}
+		else{
+			EnergyCal *ecal = calib.GetEnergyCal(location);
+			if(ecal) tqdc = ecal->GetCalEnergy(tqdc);
+		}
 
                 // Calculate the neutron energy.
                 energy = tof2energy(ctof, pos->r0);
@@ -197,12 +228,16 @@ barHandler::~barHandler(){
 
 void barHandler::addOptions(){
 	addOption(optionExt("config", required_argument, NULL, 'c', "<fname>", "Read bar speed-of-light from an input cal file."), userOpts, optstr);
+	addOption(optionExt("single", no_argument, NULL, 0x0, "", "Single-ended detector mode."), userOpts, optstr);
 }
 
 bool barHandler::processArgs(){
 	if(userOpts.at(0).active){
 		setupDir = userOpts.at(0).argument;
 		if(setupDir[setupDir.size()-1] != '/') setupDir += '/';
+	}
+	if(userOpts.at(0).active){
+		singleEndedMode = true;
 	}
 
 	return true;
@@ -224,7 +259,7 @@ int barHandler::execute(int argc, char *argv[]){
 	if(!calib.LoadTimeCal((setupDir+"time.cal").c_str())) return 3;
 	calib.LoadEnergyCal((setupDir+"energy.cal").c_str());
 
-	if(!LoadCalibFile<barCal>((setupDir+"bars.cal").c_str(), bars)){
+	if(!singleEndedMode && !LoadCalibFile<barCal>((setupDir+"bars.cal").c_str(), bars)){
 		std::cout << " Error: Failed to load bar calibration file \"" << setupDir << "bars.cal\"!\n";
 		return 4;
 	}
@@ -261,10 +296,16 @@ int barHandler::execute(int argc, char *argv[]){
 		}
 
 		TBranch *branch = NULL;
-		intree->SetBranchAddress("genericbar", &ptr, &branch);
+		if(!singleEndedMode)
+			intree->SetBranchAddress("genericbar", &gptr, &branch);
+		else
+			intree->SetBranchAddress("liquid", &lptr, &branch);
 
 		if(!branch){
-			std::cout << " Error: Failed to load branch \"genericbar\" from input TTree.\n";
+			if(!singleEndedMode)
+				std::cout << " Error: Failed to load branch \"genericbar\" from input TTree.\n";
+			else
+				std::cout << " Error: Failed to load branch \"liquid\" from input TTree.\n";
 			return 7;
 		}
 
