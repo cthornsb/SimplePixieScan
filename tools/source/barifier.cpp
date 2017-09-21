@@ -89,6 +89,8 @@ class barHandler : public simpleTool {
 	LiquidStructure *lptr;
 
 	bool singleEndedMode;
+	bool noTimeMode;
+	bool noPositionMode;
 
 	double x, y, z, r, theta;
 	double ctof, tqdc, energy;
@@ -106,7 +108,7 @@ class barHandler : public simpleTool {
 	void handleEvents();
 
   public:
-	barHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), dummy(), gptr(NULL), lptr(NULL), singleEndedMode(false) { }
+	barHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), dummy(), gptr(NULL), lptr(NULL), singleEndedMode(false), noTimeMode(false), noPositionMode(false) { }
 
 	~barHandler();
 	
@@ -150,48 +152,68 @@ void barHandler::handleEvents(){
 		barCal *bar = NULL;
 		if(!singleEndedMode && !(bar = getBarCal(location))) continue;
 
-		TimeCal *time = calib.GetTimeCal(location);
-		PositionCal *pos = calib.GetPositionCal(location);
+		TimeCal *time = NULL;
+		if(!noTimeMode && !(time = calib.GetTimeCal(location))) continue;
+		
+		PositionCal *pos = NULL;
+		if(!noPositionMode){
+			if(!(pos = calib.GetPositionCal(location))) continue;
+	
+			// Angle of center of bar in cylindrical coordinates.
+			cylTheta = pos->theta;
 
-		if(!time || !pos) continue;
+			// Take the width of the bar into consideration.
+			if(!singleEndedMode){
+				dW = frand(-bar->width/200, bar->width/200);
+				rprime = std::sqrt(pos->r0*pos->r0 + dW*dW);
+				alpha = std::atan2(dW, pos->r0);
+				addAngles(cylTheta, alpha);
+			}
+			else rprime = pos->r0;
 
-		// Angle of center of bar in cylindrical coordinates.
-		cylTheta = pos->theta;
-
-		// Take the width of the bar into consideration.
-		if(!singleEndedMode){
-			dW = frand(-bar->width/200, bar->width/200);
-			rprime = std::sqrt(pos->r0*pos->r0 + dW*dW);
-			alpha = std::atan2(dW, pos->r0);
-			addAngles(cylTheta, alpha);
+			// Calculate the x and z position of the event.
+			x = rprime*std::sin(cylTheta); // m
+			z = rprime*std::cos(cylTheta); // m
 		}
-		else rprime = pos->r0;
+		else{
+			x = 0;
+			z = 0;
+		}
 
 		// Compute the corrected time difference
-		if(!singleEndedMode) ctdiff = tdiff_R - tdiff_L - bar->t0;
-
-		// Calculate the position of the event.
-		x = rprime*std::sin(cylTheta); // m
-		z = rprime*std::cos(cylTheta); // m
-		if(!singleEndedMode)
+		if(!singleEndedMode){
+			ctdiff = tdiff_R - tdiff_L - bar->t0;
 			y = bar->cbar*ctdiff/200; // m
-		else
-			y = 0; // m
+		}
+		else y = 0; // m
 
-		r = std::sqrt(x*x + y*y + z*z);
-		theta = std::acos(z/r)*180/pi;
-		//phi = std::acos(y/std::sqrt(x*x + y*y); }
-		//if(x < 0) phi = 2*pi - phi; 
+		// Calculate the spherical polar angle.
+		if(!noPositionMode){
+			r = std::sqrt(x*x + y*y + z*z);
+			theta = std::acos(z/r)*180/pi;
+			//phi = std::acos(y/std::sqrt(x*x + y*y); }
+			//if(x < 0) phi = 2*pi - phi; 
+		}
+		else{
+			r = 0;
+			theta = 0;
+		}
 
 		if(!singleEndedMode){
 			// Calculate the corrected TOF.
-			ctof = (pos->r0/r)*((tdiff_R + tdiff_L)/2 - time->t0) + 100*pos->r0/cvac;
+			if(!noTimeMode && !noPositionMode)
+				ctof = (pos->r0/r)*((tdiff_R + tdiff_L)/2 - time->t0) + 100*pos->r0/cvac;
+			else
+				ctof = (tdiff_R + tdiff_L)/2;
 
 			// Calculate the TQDC.
 			tqdc = std::sqrt(tqdc_R*tqdc_L);
 		}
 		else{
-			ctof = tdiff_L - time->t0 + 100*pos->r0/cvac;
+			if(!noTimeMode && !noPositionMode)
+				ctof = tdiff_L - time->t0 + 100*pos->r0/cvac;
+			else
+				ctof = tdiff_L;
 			tqdc = tqdc_L;
 		}
 
@@ -229,6 +251,8 @@ barHandler::~barHandler(){
 void barHandler::addOptions(){
 	addOption(optionExt("config", required_argument, NULL, 'c', "<fname>", "Read bar speed-of-light from an input cal file."), userOpts, optstr);
 	addOption(optionExt("single", no_argument, NULL, 0x0, "", "Single-ended detector mode."), userOpts, optstr);
+	addOption(optionExt("no-time", no_argument, NULL, 0x0, "", "Do not use time calibration."), userOpts, optstr);
+	addOption(optionExt("no-position", no_argument, NULL, 0x0, "", "Do not use position calibration."), userOpts, optstr);
 }
 
 bool barHandler::processArgs(){
@@ -238,6 +262,12 @@ bool barHandler::processArgs(){
 	}
 	if(userOpts.at(1).active){
 		singleEndedMode = true;
+	}
+	if(userOpts.at(2).active){
+		noTimeMode = true;
+	}
+	if(userOpts.at(3).active){
+		noPositionMode = true;
 	}
 
 	return true;
@@ -255,8 +285,8 @@ int barHandler::execute(int argc, char *argv[]){
 		return 1;
 	}
 
-	if(!calib.LoadPositionCal((setupDir+"position.cal").c_str())) return 2;
-	if(!calib.LoadTimeCal((setupDir+"time.cal").c_str())) return 3;
+	if(!noPositionMode && !calib.LoadPositionCal((setupDir+"position.cal").c_str())) return 2;
+	if(!noTimeMode && !calib.LoadTimeCal((setupDir+"time.cal").c_str())) return 3;
 	calib.LoadEnergyCal((setupDir+"energy.cal").c_str());
 
 	if(!singleEndedMode && !LoadCalibFile<barCal>((setupDir+"bars.cal").c_str(), bars)){
