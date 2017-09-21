@@ -1,23 +1,25 @@
-#include "LiquidProcessor.hpp"
+#include "LiquidBarProcessor.hpp"
 #include "MapFile.hpp"
 #include "Plotter.hpp"
 
 /// Process all individual events.
-bool LiquidProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEvtR/*=NULL*/){
-	ChanEvent *current_event = chEvt->channelEvent;
+bool LiquidBarProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEvtR/*=NULL*/){
+	ChanEvent *channel_event_L = chEvt->channelEvent;
+	ChanEvent *channel_event_R = chEvtR->channelEvent;
 	
 	// Calculate the time difference between the current event and the start.
-	double tdiff = (current_event->time - start->channelEvent->time)*8 + (current_event->phase - start->channelEvent->phase)*4;
+	double tdiff_L = (channel_event_L->time - start->channelEvent->time)*8 + (channel_event_L->phase - start->channelEvent->phase)*4;
+	double tdiff_R = (channel_event_R->time - start->channelEvent->time)*8 + (channel_event_R->phase - start->channelEvent->phase)*4;
 
 	// Get the location of this detector.
 	int location = chEvt->entry->location;
 
-	short_qdc = current_event->qdc;
-	long_qdc = current_event->qdc2;
+	short_qdc = std::sqrt(channel_event_L->qdc*channel_event_R->qdc);
+	long_qdc = std::sqrt(channel_event_L->qdc2*channel_event_R->qdc2);
 
 	if(histsEnabled){
 		// Fill all diagnostic histograms.
-		loc_tdiff_2d->Fill(tdiff, location);
+		loc_tdiff_2d->Fill((tdiff_L+tdiff_R)/2, location);
 		loc_short_tqdc_2d->Fill(short_qdc, location);
 		loc_long_tqdc_2d->Fill(long_qdc, location);
 		loc_psd_2d->Fill(short_qdc/long_qdc, location);
@@ -25,12 +27,12 @@ bool LiquidProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 	}
 	
 	// Fill the values into the root tree.
-	structure.Append(tdiff, short_qdc, long_qdc, location);
+	structure.Append(tdiff_L, tdiff_R, channel_event_L->qdc2, channel_event_R->qdc2, channel_event_L->qdc, channel_event_R->qdc, location);
 	     
 	return true;
 }
 
-LiquidProcessor::LiquidProcessor(MapFile *map_) : Processor("Liquid", "liquid", map_){
+LiquidBarProcessor::LiquidBarProcessor(MapFile *map_) : Processor("LiquidBar", "liquidbar", map_){
 	fitting_low = -7; // 28 ns
 	fitting_high = 50; // 200 ns
 	fitting_low2 = 7; // -28 ns
@@ -38,9 +40,12 @@ LiquidProcessor::LiquidProcessor(MapFile *map_) : Processor("Liquid", "liquid", 
 
 	root_structure = (Structure*)&structure;
 	root_waveform = &waveform;
+
+	// Set the detector type to a bar.
+	isSingleEnded = false;
 }
 
-LiquidProcessor::~LiquidProcessor(){ 
+LiquidBarProcessor::~LiquidBarProcessor(){ 
 	if(histsEnabled){
 		delete loc_tdiff_2d;
 		delete loc_short_tqdc_2d;
@@ -50,7 +55,7 @@ LiquidProcessor::~LiquidProcessor(){
 	}
 }
 
-void LiquidProcessor::GetHists(std::vector<Plotter*> &plots_){
+void LiquidBarProcessor::GetHists(std::vector<Plotter*> &plots_){
 	if(histsEnabled) return;
 	
 	int minloc = mapfile->GetFirstOccurance("liquid");

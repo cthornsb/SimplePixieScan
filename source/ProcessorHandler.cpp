@@ -4,6 +4,7 @@
 #include "TriggerProcessor.hpp"
 #include "PhoswichProcessor.hpp"
 #include "LiquidProcessor.hpp"
+#include "LiquidBarProcessor.hpp"
 #include "HagridProcessor.hpp"
 #include "GenericProcessor.hpp"
 #include "GenericBarProcessor.hpp"
@@ -83,6 +84,7 @@ Processor *ProcessorHandler::AddProcessor(std::string type_, MapFile *map_){
 	if(type_ == "trigger"){ proc = (Processor*)(new TriggerProcessor(map_)); }
 	else if(type_ == "phoswich"){ proc = (Processor*)(new PhoswichProcessor(map_)); }
 	else if(type_ == "liquid"){ proc = (Processor*)(new LiquidProcessor(map_)); }
+	else if(type_ == "liquidbar"){ proc = (Processor*)(new LiquidBarProcessor(map_)); }
 	else if(type_ == "hagrid"){ proc = (Processor*)(new HagridProcessor(map_)); }
 	else if(type_ == "generic"){ proc = (Processor*)(new GenericProcessor(map_)); }
 	else if(type_ == "genericbar"){ proc = (Processor*)(new GenericBarProcessor(map_)); }

@@ -82,34 +82,6 @@ END_TYPES
 END_CLASS
 
 #####################################################################
-# Vandle
-#####################################################################
-# Class name
-BEGIN_CLASS	Vandle
-
-# Short class description
-SHORT	Vandle bar data structure
-
-# Longer class description
-LONG	Structure for detectors of type "vandle"
-
-# Data types and names
-# type	name	description
-BEGIN_TYPES
-vector:double	ctof	The corrected time of flight of the particle detected by vandle.
-vector:double	r	The flight path of the neutron corrected for bar position.
-vector:double	theta	The polar angle of the neutron with respect to the beam axis.
-vector:double	phi	The azimuthal angle of the neutron about the beam axis.
-vector:double	energy	Neutron energy calculated from the tof.
-vector:float	tqdc	The total light response (sqrt(l*r)).
-vector:u_short	loc	Detector location (ID)
-u_short	mult	Multiplicity of the vandle events.
-END_TYPES
-
-# End this class
-END_CLASS
-
-#####################################################################
 # Phoswich
 #####################################################################
 # Class name
@@ -150,15 +122,14 @@ LONG	Structure for detectors of type "liquidbar"
 # Data types and names
 # type	name	description
 BEGIN_TYPES
-vector:double	ctof	The corrected time of flight of the particle detected by the liquid bar.
-vector:double	r	The flight path of the neutron corrected for bar position.
-vector:double	theta	The polar angle of the neutron with respect to the beam axis.
-vector:double	phi	The azimuthal angle of the neutron about the beam axis.
-vector:double	energy	Neutron energy calculated from the corrected tof.
-vector:float	stqdc	The short integral computed from both pmt traces.
-vector:float	ltqdc	The long integral computed from both pmt traces.
+vector:double	ltdiff	The time difference between the left end signal and the start signal.
+vector:double	rtdiff	The time difference between the right end signal and the start signal.
+vector:float	lltqdc	The long integrated trace QDC for the left end trace.
+vector:float	rltqdc	The long integrated trace QDC for the right end trace.
+vector:float	lstqdc	The short integrated trace QDC for the left end trace.
+vector:float	rstqdc	The short integrated trace QDC for the right end trace.
 vector:u_short	loc	Detector location (ID)
-u_short	mult	Multiplicity of the liquidbar events.
+u_short	mult	Multiplicity of the genericbar type events.
 END_TYPES
 
 # End this class
@@ -180,7 +151,6 @@ LONG	Structure for detectors of type "liquid"
 # type	name	description
 BEGIN_TYPES
 vector:double	tof	The time of flight of the particle detected by the detector.
-vector:double	energy	Neutron energy calculated from the tof.
 vector:float	stqdc	The pmt short integral computed from the trace.
 vector:float	ltqdc	The pmt long integral computed from the trace.
 vector:u_short	loc	Detector location (ID)

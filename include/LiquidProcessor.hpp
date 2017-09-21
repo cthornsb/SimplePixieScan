@@ -16,8 +16,8 @@ class LiquidProcessor : public Processor{
 	float long_qdc; /// The integral of the long portion of the left pmt pulse.
 
 	Plotter *loc_tdiff_2d;
-	Plotter *loc_short_energy_2d;
-	Plotter *loc_long_energy_2d;
+	Plotter *loc_short_tqdc_2d;
+	Plotter *loc_long_tqdc_2d;
 	Plotter *loc_psd_2d;
 	Plotter *loc_1d;
 
