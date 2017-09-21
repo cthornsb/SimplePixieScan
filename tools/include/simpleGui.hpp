@@ -108,6 +108,10 @@ class GuiWindow : public TGMainFrame {
 
 	void Wait(bool *ptr_=NULL);
 
+	void Wait(bool *ptr1_, bool *ptr2_);
+
+	void Wait(bool *ptr1_, bool *ptr2_, bool *ptr3_);
+
 	TGButtonGroup *GetCurrentGroup();
 
 	void NewGroup(const std::string &name_);
@@ -131,6 +135,8 @@ class GuiWindow : public TGMainFrame {
 	size_t valsIndex;
 
 	bool *GetNewBoolPointer();
+
+	void IdleTask();
 };
 
 #endif

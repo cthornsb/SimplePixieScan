@@ -162,12 +162,24 @@ void GuiWindow::Wait(bool *ptr_/*=NULL*/){
 	if(ptr_ == NULL) ptr_ = &isWaiting;
 	(*ptr_) = true;
 	while((*ptr_) && !isQuitting){
-		gSystem->ProcessEvents();
-		usleep(SLEEP_WAIT);
+		IdleTask();
+	}
+}
 
-		for(std::vector<SimpleButtonGroup*>::iterator iter = groups.begin(); iter != groups.end(); iter++){
-			(*iter)->CheckState();
-		}
+void GuiWindow::Wait(bool *ptr1_, bool *ptr2_){
+	(*ptr1_) = true;
+	(*ptr2_) = true;
+	while(((*ptr1_) && (*ptr2_)) && !isQuitting){
+		IdleTask();
+	}
+}
+
+void GuiWindow::Wait(bool *ptr1_, bool *ptr2_, bool *ptr3_){
+	(*ptr1_) = true;
+	(*ptr2_) = true;
+	(*ptr3_) = true;
+	while(((*ptr1_) && (*ptr2_) && (*ptr3_)) && !isQuitting){
+		IdleTask();
 	}
 }
 
@@ -193,4 +205,13 @@ void GuiWindow::PrintValues(){
 bool *GuiWindow::GetNewBoolPointer(){
 	vals[valsIndex] = false;
 	return &vals[valsIndex++];	
+}
+
+void GuiWindow::IdleTask(){
+	gSystem->ProcessEvents();
+	usleep(SLEEP_WAIT);
+
+	for(std::vector<SimpleButtonGroup*>::iterator iter = groups.begin(); iter != groups.end(); iter++){
+		(*iter)->CheckState();
+	}
 }

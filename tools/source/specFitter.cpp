@@ -92,6 +92,7 @@ class specFitter : public simpleHistoFitter {
 	bool strictMode;
 	bool waitRun;
 	bool skipNext;
+	bool waitRedo;
 
 	TDirectory *cdir;
 
@@ -104,7 +105,7 @@ class specFitter : public simpleHistoFitter {
 	TGraph *convertHisToGraph(TH1 *h_, const double &xLow, const double &xHigh);
 
   public:
-	specFitter() : simpleHistoFitter(), polyBG(false), gausFit(true), woodsSaxon(false), noBackground(false), logXaxis(false), logYaxis(false), noPeakMode(false), strictMode(true), waitRun(true), skipNext(false) { }
+	specFitter() : simpleHistoFitter(), polyBG(false), gausFit(true), woodsSaxon(false), noBackground(false), logXaxis(false), logYaxis(false), noPeakMode(false), strictMode(true), waitRun(true), skipNext(false), waitRedo(true) { }
 
 	bool fitSpectrum(TH1 *h_, const int &binID_);
 
@@ -154,6 +155,7 @@ void specFitter::setupControlPanel(){
 
 	win->NewGroup("Control");
 	win->AddButton("okay", &waitRun);
+	win->AddButton("redo", &waitRedo);
 	win->AddButton("skip", &skipNext);
 	win->AddQuitButton("exit");
 
@@ -561,9 +563,9 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	else{ integral = 0; }
 	can2->Update();
 
-	// Wait for the user to press "okay" on the control panel.
+	// Wait for the user to press "okay" or "redo" on the control panel.
 	std::cout << " Press \"okay\" to continue...\n";
-	win->Wait(&waitRun);
+	win->Wait(&waitRun, &waitRedo);
 	std::cout << std::endl;
 
 	if(debug){
@@ -664,6 +666,10 @@ bool specFitter::process(){
 	double binLow, binWidth;
 	int numProjections = getNumProjections(h2d);
 	for(int i = 1; i <= numProjections; i++){
+		if(!waitRedo){ // Redo
+			i = i-1;
+			waitRedo = true;
+		}
 		std::cout << " Processing channel ID " << i << "... ";
 		if(getProjection(h1, h2d, i)){ 
 			std::cout << "DONE\n";
@@ -683,6 +689,9 @@ bool specFitter::process(){
 
 			h1->GetXaxis()->SetRangeUser(Xmin, Xmax);
 			h1->GetYaxis()->SetRangeUser(0, 1.1*h1->GetBinContent(h1->GetMaximumBin()));
+
+			if(ofile->FindKey(stream1.str().c_str()) != NULL) // Directory exists.
+				ofile->rmdir(stream1.str().c_str());
 
 			cdir = ofile->mkdir(stream1.str().c_str());
 			cdir->cd();
