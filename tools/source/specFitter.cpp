@@ -435,7 +435,10 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 				}
 				else{
 					func->SetParameter(3*i+(nPars-2), std::log(meanValue));
-					func->SetParameter(3*i+(nPars-1), std::fabs(std::log(fwhmCross)-meanValue)*(2/2.35));
+					if(meanValue < fwhmCross)
+						func->SetParameter(3*i+(nPars-1), std::log(fwhmCross/meanValue)*(2/2.35));
+					else
+						func->SetParameter(3*i+(nPars-1), std::log(meanValue/fwhmCross)*(2/2.35));
 				}
 			}
 			else{
