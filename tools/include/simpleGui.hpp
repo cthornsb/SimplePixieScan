@@ -11,8 +11,12 @@ class TGWindow;
 class TGMainFrame;
 class TGLabel;
 
+class TFitParametersDialog;
+class TCanvas;
+class TF1;
+
 ///////////////////////////////////////////////////////////////////////////////
-// class CTButton
+// class SimpleTextButton
 ///////////////////////////////////////////////////////////////////////////////
 
 class SimpleTextButton : public TGTextButton {
@@ -92,7 +96,7 @@ class GuiWindow : public TGMainFrame {
   public:
 	GuiWindow();
 	
-	GuiWindow(const TGWindow *p, const std::string &firstName_="group1", const int &w=100, const int &h=100);
+	GuiWindow(const TGWindow *p_, const std::string &firstName_="group1", const int &w=100, const int &h=100);
 	
 	TGCheckButton *AddCheckbox(const std::string &name_, bool *ptr_=NULL, const bool &clicked_=false, const int &x_=0, const int &y_=0, const int &w_=109, const int &h_=20);
 
@@ -121,6 +125,8 @@ class GuiWindow : public TGMainFrame {
 	bool IsQuitting(){ return isQuitting; }
 
 	void PrintValues();
+
+	TFitParametersDialog *OpenFitParameters(TF1 *f_, TCanvas *c_);
 
   private:
   	std::vector<TGLabel*> labels;
