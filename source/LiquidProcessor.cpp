@@ -1,5 +1,4 @@
 #include "LiquidProcessor.hpp"
-#include "CalibFile.hpp"
 #include "MapFile.hpp"
 #include "Plotter.hpp"
 
@@ -20,19 +19,6 @@ bool LiquidProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 	// Calculate the time difference between the current event and the start.
 	double tdiff = (current_event->time - start->channelEvent->time)*8 + (current_event->phase - start->channelEvent->phase)*4;
 
-	// Do time alignment.
-	double r0 = 0.5;
-	if(chEvt->calib->Position())
-		r0 = chEvt->calib->positionCal->r0;
-	
-	// Do time alignment.
-	if(chEvt->calib->Time()){
-		chEvt->calib->timeCal->GetCalTime(tdiff);
-
-		// Check that the corrected neutron ToF is reasonable.
-		if(tdiff < -20 || tdiff > r0*max_tof) return false;
-	}
-	
 	// Get the location of this detector.
 	int location = chEvt->entry->location;
 
@@ -48,10 +34,8 @@ bool LiquidProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 		loc_1d->Fill(location);		
 	}
 	
-	double energy = 0.5E4*M_NEUTRON*r0*r0/(C_IN_VAC*C_IN_VAC*tdiff*tdiff); // MeV
-	
 	// Fill the values into the root tree.
-	structure.Append(tdiff, energy, short_qdc, long_qdc, location);
+	structure.Append(tdiff, 0, short_qdc, long_qdc, location);
 	     
 	return true;
 }

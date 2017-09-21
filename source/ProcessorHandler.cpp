@@ -2,9 +2,7 @@
 
 #include "ProcessorHandler.hpp"
 #include "TriggerProcessor.hpp"
-#include "VandleProcessor.hpp"
 #include "PhoswichProcessor.hpp"
-#include "LiquidBarProcessor.hpp"
 #include "LiquidProcessor.hpp"
 #include "HagridProcessor.hpp"
 #include "GenericProcessor.hpp"
@@ -13,12 +11,11 @@
 #include "TraceProcessor.hpp"
 
 #include "MapFile.hpp"
-#include "CalibFile.hpp"
 
 ChanEvent *dummyEvent = new ChanEvent();
 MapEntry dummyEntry;
 
-ChannelEventPair dummyStart(dummyEvent, &dummyEntry, &dummyCalib);
+ChannelEventPair dummyStart(dummyEvent, &dummyEntry);
 
 ProcessorHandler::ProcessorHandler(){ 
 	total_events = 0; 
@@ -84,9 +81,7 @@ Processor *ProcessorHandler::AddProcessor(std::string type_, MapFile *map_){
 	Processor *proc;
 
 	if(type_ == "trigger"){ proc = (Processor*)(new TriggerProcessor(map_)); }
-	else if(type_ == "vandle"){ proc = (Processor*)(new VandleProcessor(map_)); }
 	else if(type_ == "phoswich"){ proc = (Processor*)(new PhoswichProcessor(map_)); }
-	else if(type_ == "liquidbar"){ proc = (Processor*)(new LiquidBarProcessor(map_)); }
 	else if(type_ == "liquid"){ proc = (Processor*)(new LiquidProcessor(map_)); }
 	else if(type_ == "hagrid"){ proc = (Processor*)(new HagridProcessor(map_)); }
 	else if(type_ == "generic"){ proc = (Processor*)(new GenericProcessor(map_)); }

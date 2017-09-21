@@ -17,7 +17,6 @@ class ChannelEventPair;
 
 class MapFile;
 class ConfigFile;
-class CalibFile;
 class ProcessorHandler;
 class OnlineProcessor;
 class Plotter;
@@ -218,7 +217,6 @@ class simpleScanner : public ScanInterface {
   private:
 	MapFile *mapfile; /// Pointer to the map file to use for channel mapping.
 	ConfigFile *configfile; /// Pointer to the configuration file to use for setting default parameters.
-	CalibFile *calibfile; /// Pointer to the energy calibration file.
 	ProcessorHandler *handler; /// Pointer to the processor handler to use for controlling detector processors.
 	OnlineProcessor *online; /// Pointer to the online processor to use for online plotting.
 	
@@ -256,7 +254,6 @@ class simpleScanner : public ScanInterface {
 	bool firstEvent; /// True if the first event has yet to be processed.
 	bool writePresort; /// True if presorted data is to be written to file.
 	bool forceUseOfTrace; /// True if all map entries are to be set to 'trace' type.
-	bool use_calibrations; /// Set to true if the calibration file is to be used.
 	bool untriggered_mode; /// Set to true if a start detector is not to be used.
 	bool force_overwrite; /// Set to true if existing output files will be overwritten.
 	bool online_mode; /// Set to true if online mode is to be used.

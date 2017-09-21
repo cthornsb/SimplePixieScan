@@ -4,7 +4,6 @@
 #include "Scanner.hpp"
 #include "MapFile.hpp"
 #include "ConfigFile.hpp"
-#include "CalibFile.hpp"
 #include "Processor.hpp"
 #include "ProcessorHandler.hpp"
 #include "OnlineProcessor.hpp"
@@ -189,7 +188,6 @@ simpleScanner::simpleScanner() : ScanInterface() {
 	firstEvent = true;
 	writePresort = false;
 	forceUseOfTrace = false;
-	use_calibrations = true;
 	untriggered_mode = false;
 	force_overwrite = false;
 	online_mode = false;
@@ -201,7 +199,6 @@ simpleScanner::simpleScanner() : ScanInterface() {
 	init = false;
 	mapfile = NULL;
 	configfile = NULL;
-	calibfile = NULL;
 	handler = NULL;
 	online = NULL;
 	spillThreshold = 10000;
@@ -307,7 +304,6 @@ simpleScanner::~simpleScanner(){
 	
 		delete mapfile;
 		delete configfile;
-		delete calibfile;
 		delete handler;
 		delete online;
 	}
@@ -528,35 +524,31 @@ void simpleScanner::ExtraArguments(){
 		std::cout << msgHeader << "Toggling traditional CFD ON.\n";
 		use_traditional_cfd = true;
 	}
-	if(userOpts.at(5).active){ // Uncalibrated mode.
-		std::cout << msgHeader << "Using uncalibrated mode.\n";
-		use_calibrations = false;	
-	}
-	if(userOpts.at(6).active){ // Traces.
+	if(userOpts.at(5).active){ // Traces.
 		std::cout << msgHeader << "Toggling ADC trace output ON.\n";
 		write_traces = true;	
 	}
-	if(userOpts.at(7).active){ // Raw.
+	if(userOpts.at(6).active){ // Raw.
 		std::cout << msgHeader << "Writing raw pixie data to output tree.\n";
 		write_raw = true;	
 	}
-	if(userOpts.at(8).active){ // Stats.
+	if(userOpts.at(7).active){ // Stats.
 		std::cout << msgHeader << "Writing event builder stats to output tree.\n";
 		write_stats = true;		
 	}
-	if(userOpts.at(9).active){ // Presort.
+	if(userOpts.at(8).active){ // Presort.
 		std::cout << msgHeader << "Using presort mode.\n";
 		writePresort = true;	
 	}
-	if(userOpts.at(10).active){ // Record all starts.
+	if(userOpts.at(9).active){ // Record all starts.
 		std::cout << msgHeader << "Recording all start events to output file.\n";
 		recordAllStarts = true;
 	}
-	if(userOpts.at(11).active){ // Set default fitting/CFD parameters
+	if(userOpts.at(10).active){ // Set default fitting/CFD parameters
 		defaultCFDparameter = strtof(userOpts.at(10).argument.c_str(), NULL);
 		std::cout << msgHeader << "Set default CFD parameter to " << defaultCFDparameter << ".\n";
 	}
-	if(userOpts.at(12).active){ // Force trace processing.
+	if(userOpts.at(11).active){ // Force trace processing.
 		std::cout << msgHeader << "Forcing using of trace processor.\n";
 		forceUseOfTrace = true;
 	}
@@ -597,7 +589,6 @@ void simpleScanner::ArgHelp(){
 	AddOption(optionExt("online", no_argument, NULL, 0, "", "Plot online root histograms for monitoring data"));
 	AddOption(optionExt("fitting", no_argument, NULL, 0, "", "Use root fitting for high resolution timing"));
 	AddOption(optionExt("cfd", no_argument, NULL, 0, "", "Use traditional CFD for high resolution timing"));
-	AddOption(optionExt("uncal", no_argument, NULL, 0, "", "Do not calibrate channel energies"));
 	AddOption(optionExt("traces", no_argument, NULL, 0, "", "Dump raw ADC traces to output root file"));
 	AddOption(optionExt("raw", no_argument, NULL, 0, "", "Dump raw pixie module data to output root file"));
 	AddOption(optionExt("stats", no_argument, NULL, 0, "", "Dump event builder information to the output root file"));
@@ -711,28 +702,6 @@ bool simpleScanner::Initialize(std::string prefix_){
 	}
 	
 	bool hadErrors = false;
-	calibfile = new CalibFile();
-	currentFile = setupDirectory + "time.cal";
-	std::cout << prefix_ << "Reading time calibration file " << currentFile << "\n";
-	if(!calibfile->LoadTimeCal(currentFile.c_str())){ // Failed to read time calibration file.
-		std::cout << prefix_ << "Failed to read time calibration file '" << setupDirectory << "'.\n";
-		hadErrors = true;	
-	}
-	
-	currentFile = setupDirectory + "energy.cal";
-	std::cout << prefix_ << "Reading energy calibration file " << currentFile << "\n";
-	if(!calibfile->LoadEnergyCal(currentFile.c_str())){ // Failed to read energy calibration file.
-		std::cout << prefix_ << "Failed to read energy calibration file '" << setupDirectory << "'.\n";
-		hadErrors = true;	
-	}
-	
-	currentFile = setupDirectory + "position.cal";
-	std::cout << prefix_ << "Reading position calibration file " << currentFile << "\n";
-	if(!calibfile->LoadPositionCal(currentFile.c_str())){ // Failed to read position calibration file.
-		std::cout << prefix_ << "Failed to read position calibration file '" << setupDirectory << "'.\n";
-		hadErrors = true;	
-	}
-	
 	GetCore()->SetEventWidth(configfile->eventWidth * 125); // = eventWidth * 1E-6(s/us) / 8E-9(s/tick)
 	GetCore()->SetEventDelay(configfile->eventDelay * 125); // = eventDelay * 1E-6(s/us) / 8E-9(s/tick)
 
@@ -859,9 +828,6 @@ void simpleScanner::FinalInitialization(){
 		// Add map and config file entries to the file.	
 		mapfile->Write(root_file);
 		configfile->Write(root_file);
-
-		// Add calibration entries to the file.
-		calibfile->Write(root_file);
 	}
 	else{
 	}
@@ -979,10 +945,7 @@ bool simpleScanner::AddEvent(XiaData *event_){
 	
 	// Link the channel event to its corresponding map entry.
 	ChannelEventPair *pair_;
-	if(use_calibrations)
-		pair_ = new ChannelEventPair(current_event, mapentry, calibfile->GetCalibEntry(event_));
-	else
-		pair_ = new ChannelEventPair(current_event, mapentry, &dummyCalib);
+	pair_ = new ChannelEventPair(current_event, mapentry);
 
 	// Correct the baseline before using the trace.
 	if(pair_->channelEvent->traceLength != 0 && pair_->channelEvent->ComputeBaseline() >= 0.0){

@@ -10,7 +10,6 @@
 #include "TF1.h"
 #include "TFitResultPtr.h"
 
-class CalibEntry;
 class MapEntry;
 class MapFile;
 class Plotter;
@@ -35,12 +34,11 @@ enum TimingAnalyzer { POLY=0, CFD=1, FIT=2 };
 class ChannelEventPair{
   public:
   	ChanEvent *channelEvent;
-  	CalibEntry *calib;
 	MapEntry *entry;
   
 	ChannelEventPair();
 	
-	ChannelEventPair(ChanEvent *c_event_, MapEntry *entry_, CalibEntry *calib_);
+	ChannelEventPair(ChanEvent *c_event_, MapEntry *entry_);
 	
 	~ChannelEventPair();
 	
@@ -94,7 +92,6 @@ class Processor{
 	float defaultCFD[3]; /// Default CFD parameters (F, D, L)
 
 	bool use_trace; /// Force the use of the ADC trace. Any events without a trace will be rejected.
-	bool use_integration;
 	bool write_waveform;
 	bool isSingleEnded;
 	bool histsEnabled;

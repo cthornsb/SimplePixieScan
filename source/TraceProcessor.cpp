@@ -1,5 +1,4 @@
 #include "TraceProcessor.hpp"
-#include "CalibFile.hpp"
 #include "MapFile.hpp"
 #include "Plotter.hpp"
 

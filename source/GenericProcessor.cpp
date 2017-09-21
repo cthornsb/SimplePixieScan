@@ -1,5 +1,4 @@
 #include "GenericProcessor.hpp"
-#include "CalibFile.hpp"
 #include "MapFile.hpp"
 #include "Plotter.hpp"
 
@@ -16,15 +15,6 @@ bool GenericProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *ch
 		else // No start trace. Cannot correct the phases.
 			tdiff = (current_event->time - start->channelEvent->time)*8;
 		
-	// Do time alignment.
-	if(chEvt->calib->Time()){
-		chEvt->calib->timeCal->GetCalTime(tdiff);
-
-		// Check that the adjusted time difference is reasonable.
-		if(tdiff < -20 || tdiff > 200)
-			return false;
-	}
-	
 	// Get the location of this detector.
 	int location = chEvt->entry->location;
 

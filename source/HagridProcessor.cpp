@@ -1,5 +1,4 @@
 #include "HagridProcessor.hpp"
-#include "CalibFile.hpp"
 #include "MapFile.hpp"
 #include "Plotter.hpp"
 
@@ -9,15 +8,6 @@ bool HagridProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 	// Calculate the time difference between the current event and the start.
 	double tdiff = (current_event->time - start->channelEvent->time)*8 + (current_event->phase - start->channelEvent->phase)*4;
 
-	// Do time alignment.
-	if(chEvt->calib->Time()){
-		chEvt->calib->timeCal->GetCalTime(tdiff);
-
-		// Check that the adjusted time difference is reasonable.
-		if(tdiff < -20 || tdiff > 200)
-			return false;
-	}
-	
 	// Get the location of this detector.
 	int location = chEvt->entry->location;
 
@@ -36,9 +26,6 @@ bool HagridProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 HagridProcessor::HagridProcessor(MapFile *map_) : Processor("Hagrid", "hagrid", map_){
 	root_structure = (Structure*)&structure;
 	root_waveform = &waveform;
-
-	// Set the processor to not use the trace QDC for calibrations.
-	use_integration = false;
 
 	fitting_low = 8;
 	fitting_high = 21;

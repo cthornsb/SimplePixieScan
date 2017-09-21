@@ -6,7 +6,6 @@
 #include "Processor.hpp"
 #include "Structures.h"
 #include "MapFile.hpp"
-#include "CalibFile.hpp"
 
 #include "TTree.h"
 #include "TGraph.h"
@@ -19,13 +18,11 @@ const double twoPi = 6.283185308;
 
 ChannelEventPair::ChannelEventPair(){
 	channelEvent = NULL;
-	calib = NULL;
 	entry = NULL;
 }
 
-ChannelEventPair::ChannelEventPair(ChanEvent *chan_event_, MapEntry *entry_, CalibEntry *calib_){
+ChannelEventPair::ChannelEventPair(ChanEvent *chan_event_, MapEntry *entry_){
 	channelEvent = chan_event_;
-	calib = calib_;
 	entry = entry_;
 }
 
@@ -233,7 +230,6 @@ Processor::Processor(std::string name_, std::string type_, MapFile *map_){
 	write_waveform = false;
 	use_color_terminal = true;
 	use_trace = true;
-	use_integration = true;
 	isSingleEnded = true;
 	histsEnabled = false;
 	presortData = false;
@@ -409,14 +405,6 @@ void Processor::PreProcess(){
 				// Add the phase of the trace to the high resolution time.
 				current_event->hiresTime += current_event->phase * adcClockInSeconds;
 			}
-		}
-		
-		// Calibrate the energy, if applicable.
-		if((*iter)->calib->Energy()){
-			if(use_integration)
-				current_event->qdc = (*iter)->calib->energyCal->GetCalEnergy(current_event->qdc);
-			else
-				current_event->energy = (*iter)->calib->energyCal->GetCalEnergy(current_event->energy);
 		}
 	}
 

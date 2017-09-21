@@ -1,7 +1,6 @@
 #include <cmath>
 
 #include "GenericBarProcessor.hpp"
-#include "CalibFile.hpp"
 #include "MapFile.hpp"
 #include "Plotter.hpp"
 
