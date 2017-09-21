@@ -121,7 +121,7 @@ void specFitter::setupControlPanel(){
 	initRootGraphics();
 
 	// Declare a new options menu.
-	win = new GuiWindow(gClient->GetRoot(), "Background", 200, 400);
+	win = new GuiWindow(gClient->GetRoot(), "Background", 200, 450);
 
 	// Add buttons to the menu..
 	if(!polyBG){ // Order matters for radio buttons.
