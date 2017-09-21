@@ -213,9 +213,9 @@ bool simpleComCalculator::processArgs(){
 	if(userOpts.at(6).active)
 		radius = strtod(userOpts.at(6).argument.c_str(), 0);
 	if(userOpts.at(7).active)
-		userEnergy = strtod(userOpts.at(6).argument.c_str(), 0);
+		userEnergy = strtod(userOpts.at(7).argument.c_str(), 0);
 	if(userOpts.at(8).active)
-		timeOffset = strtod(userOpts.at(7).argument.c_str(), 0);
+		timeOffset = strtod(userOpts.at(8).argument.c_str(), 0);
 	if(userOpts.at(9).active)
 		reactionMode = false;
 
