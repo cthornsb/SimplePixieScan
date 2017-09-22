@@ -493,12 +493,14 @@ bool processSpecOutput(const char *fname, const char *ofname, const double *ptr_
 		currentDirectory = std::string(keyList->At(i)->GetName());
 
 		// Get the bin ID.
-		binID = strtol(currentDirectory.substr(currentDirectory.find("bin")+3).c_str(), NULL, 0);
+		binID = strtol(currentDirectory.substr(currentDirectory.find("bin")+3).c_str(), NULL, 10);
 
 		currentDirectory += "/";
 
 		// Load the fit function from the file.
 		func = (TF1*)getObject(&specFile, "func", currentDirectory);
+
+		if(!func) continue;
 
 		// Get the function string.
 		functionString = (std::string)func->GetExpFormula();
@@ -560,7 +562,7 @@ bool processSpecOutput(const char *fname, const char *ofname, const double *ptr_
 			else if(functionType == 2) peakfunc = new TF1("ff", ENfitFunctions::logGaussian, 0.1, 10, 3); // logGaussian (function==2)
 			else if(functionType == 3) peakfunc = new TF1("ff", ENfitFunctions::logLandau, 0.1, 10, 3); // logLandau (function==3)
 		}
-		
+	
 		double pars[3];
 
 		double intMax = -1E30;
