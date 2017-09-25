@@ -26,6 +26,33 @@ double getBinWidth(const double &E_){
 	return (p0+p1*E_+p2*E_*E_);
 }
 
+double getBinWidth(const double &Elow, const double &l, const double &tolerance=1E-6){
+	const double dl = 0.05; // m
+	const double dt = 2; // ns
+	const double Mn = 10454.0750977429; // MeV
+
+	double diff, Estep=0;
+	double left, right;
+	double Ewidth, Emid;
+	
+	double t;
+	
+	left = Elow;
+	while(true){
+		t = l*std::sqrt(Mn/(2*left));
+		right = Elow/(1-std::sqrt((dl/l)*(dl/l)+(dt/t)*(dt/t)));
+		diff += right-left;
+		if(right-left <= tolerance) break;
+		left = Elow + diff;
+	}
+	
+	Emid = Elow+diff;
+	t = l*std::sqrt(Mn/(2*Emid));
+	Ewidth = 2*Emid*std::sqrt((dl/l)*(dl/l)+(dt/t)*(dt/t));
+	
+	return Ewidth;
+}
+
 size_t binTOF(std::vector<double> &tofBinsLow, std::vector<double> &energyBinsLow, const double &r=0.5, const double &lowLimit=0.1, const double &highLimit=8.0){
 	tofBinsLow.clear();
 	energyBinsLow.clear();
@@ -34,7 +61,7 @@ size_t binTOF(std::vector<double> &tofBinsLow, std::vector<double> &energyBinsLo
 	double width;
 
 	while(low > lowLimit){
-		width = getBinWidth(low);
+		width = getBinWidth(low, r);
 		tofBinsLow.push_back(energy2tof(low, r));
 		energyBinsLow.push_back(low);
 		low = low - width;
