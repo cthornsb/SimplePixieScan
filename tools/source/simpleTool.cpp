@@ -77,8 +77,9 @@ simpleTool::simpleTool(){
 	baseOpts.push_back(optionExt("output", required_argument, NULL, 'o', "<filename>", "Specifies the name of the output file."));
 	baseOpts.push_back(optionExt("name", required_argument, NULL, 'n', "<name>", "Specify the name of the input TTree or TH1."));
 	baseOpts.push_back(optionExt("tcutg", required_argument, NULL, 'C', "<filename:cutname>", "Specify the name of the TCutG input file and the name of the cut."));
+	baseOpts.push_back(optionExt("multi", required_argument, NULL, 'm', "<N>", "Specify multiple input filenames e.g. filename.root, filename-1.root, ..., filename-N.root."));
 
-	optstr = "hi:o:n:C:";
+	optstr = "hi:o:n:C:m:";
 
 	// Get the current working directory.
 	char workingDirectory[1024];
@@ -162,6 +163,9 @@ bool simpleTool::setup(int argc, char *argv[]){
 	
 	int idx = 0;
 	int retval = 0;
+	
+	int largestFileIndex = -1;
+	bool multiFileMode = false;
 
 	//getopt_long is not POSIX compliant. It is provided by GNU. This may mean
 	//that we are not compatable with some systems. If we have enough
@@ -169,6 +173,7 @@ bool simpleTool::setup(int argc, char *argv[]){
 	while ( (retval = getopt_long(argc, argv, optstr.c_str(), longOpts.data(), &idx)) != -1) {
 		if(retval == 0x0){ // Long option
 			for(std::vector<optionExt>::iterator iter = userOpts.begin(); iter != userOpts.end(); iter++){
+				std::cout << " debug: " << longOpts[idx].name << std::endl;
 				if(strcmp(iter->name, longOpts[idx].name) == 0){
 					iter->active = true;
 					if(optarg)
@@ -198,6 +203,10 @@ bool simpleTool::setup(int argc, char *argv[]){
 				case 'C' :
 					cut_filename = optarg;
 					break;
+				case 'm' :
+					largestFileIndex = strtol(optarg, NULL, 0);
+					multiFileMode = true;
+					break;
 				default:
 					for(std::vector<optionExt>::iterator iter = userOpts.begin(); iter != userOpts.end(); iter++){
 						if(retval == iter->val){
@@ -211,7 +220,28 @@ bool simpleTool::setup(int argc, char *argv[]){
 			}
 		}
 	}//while
-	
+
+	if(multiFileMode){
+		if(input_filename.empty()){
+			std::cout << " Error: Input filename not specified, needed for --multi!\n";
+			return false;
+		}
+		if(largestFileIndex < 1){
+			std::cout << " Error: Final filename index must be greater than or equal to 1, user entered (" << largestFileIndex << ")!\n";
+			return false;
+		}
+		size_t index = input_filename.find_last_of('.');
+
+		std::string prefix = input_filename.substr(0, index);
+		std::string suffix = input_filename.substr(index);
+		
+		for(int i = 1; i <= largestFileIndex; i++){
+			std::stringstream stream;
+			stream << prefix << "-" << i << suffix;
+			filename_list.push_back(stream.str().c_str());
+		}
+	}
+
 	if(!processArgs()) return false;
 	
 	return true;
