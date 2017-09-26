@@ -173,7 +173,6 @@ bool simpleTool::setup(int argc, char *argv[]){
 	while ( (retval = getopt_long(argc, argv, optstr.c_str(), longOpts.data(), &idx)) != -1) {
 		if(retval == 0x0){ // Long option
 			for(std::vector<optionExt>::iterator iter = userOpts.begin(); iter != userOpts.end(); iter++){
-				std::cout << " debug: " << longOpts[idx].name << std::endl;
 				if(strcmp(iter->name, longOpts[idx].name) == 0){
 					iter->active = true;
 					if(optarg)
