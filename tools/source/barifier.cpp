@@ -188,6 +188,9 @@ void barHandler::handleEvents(){
 		if(!singleEndedMode){
 			ctdiff = tdiff_R - tdiff_L - bar->t0;
 			y = bar->cbar*ctdiff/200; // m
+
+			// Check for invalid radius.
+			if(y < -bar->length/30.0 || y > bar->length/30.0) continue;
 		}
 		else y = 0; // m
 
