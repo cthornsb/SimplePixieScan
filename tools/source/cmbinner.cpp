@@ -33,7 +33,7 @@ double getBinWidth(const double &Elow, const double &l, const double &tolerance=
 	const double dt = 2; // ns
 	const double Mn = 10454.0750977429; // MeV
 
-	double diff, Estep=0;
+	double diff=0;
 	double left, right;
 	double Ewidth, Emid;
 	

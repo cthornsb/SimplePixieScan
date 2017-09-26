@@ -282,7 +282,7 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	delete marker;
 
 	// Convert the histogram to a TGraph.
-	TGraph *graph;
+	TGraph *graph = NULL;
 	if(noPeakMode) graph = convertHisToGraph(h_, xlo, xhi);
 
 	writeTNamed("winLow", xlo);
