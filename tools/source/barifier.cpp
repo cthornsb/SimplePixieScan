@@ -150,6 +150,9 @@ void barHandler::handleEvents(){
 	index = 0;
 	double ctdiff, cylTheta, dW, alpha, rprime;
 	while(getNextEvent()){
+		// Check for invalid TQDC.
+		if(tqdc_L <= 0 || (!singleEndedMode && tqdc_R <= 0)) continue;
+
 		barCal *bar = NULL;
 		if(!singleEndedMode && !(bar = getBarCal(location))) continue;
 
