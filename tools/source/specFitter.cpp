@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <cmath>
 
 #include "TApplication.h"
 #include "TSpectrum.h"

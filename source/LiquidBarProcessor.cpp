@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include "LiquidBarProcessor.hpp"
 #include "MapFile.hpp"
 #include "Plotter.hpp"

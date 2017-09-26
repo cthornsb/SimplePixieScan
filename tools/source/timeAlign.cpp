@@ -1,6 +1,7 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
+#include <cmath>
 
 #include "TApplication.h"
 #include "TSpectrum.h"
