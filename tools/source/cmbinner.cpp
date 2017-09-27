@@ -98,6 +98,7 @@ class simpleComCalculator : public simpleTool {
 	double threshold;
 	double radius;
 	double userEnergy;
+	double maxRadius;
 	double timeOffset;
 	int nBins;
 
@@ -121,7 +122,7 @@ class simpleComCalculator : public simpleTool {
 	void setAngles();
 
   public:
-	simpleComCalculator() : simpleTool(), startAngle(0), stopAngle(180), binWidth(1), threshold(-1), radius(0.5), userEnergy(-1), timeOffset(0), nBins(180), xbins(NULL), mcarlo(false), printMode(false), defaultMode(false), treeMode(false), reactionMode(true), cut(NULL), cutFilename(""), configFilename("") { }
+	simpleComCalculator() : simpleTool(), startAngle(0), stopAngle(180), binWidth(1), threshold(-1), radius(0.5), userEnergy(-1), maxRadius(-1), timeOffset(0), nBins(180), xbins(NULL), mcarlo(false), printMode(false), defaultMode(false), treeMode(false), reactionMode(true), cut(NULL), cutFilename(""), configFilename("") { }
 
 	~simpleComCalculator();
 	
@@ -222,6 +223,7 @@ void simpleComCalculator::addOptions(){
 	addOption(optionExt("threshold", required_argument, NULL, 'T', "<threshold>", "Use a software threshold on the trqce QDC (not used by default)."), userOpts, optstr);
 	addOption(optionExt("radius", required_argument, NULL, 0x0, "<radius>", "Set the detector radius (default=0.5 m)."), userOpts, optstr);
 	addOption(optionExt("energy", required_argument, NULL, 'E', "<energy>", "Specify the beam energy in MeV."), userOpts, optstr);
+	addOption(optionExt("max-radius", required_argument, NULL, 0x0, "<radius>", "Specify the maximum event radius in m (not used by default)."), userOpts, optstr);
 	addOption(optionExt("time-offset", required_argument, NULL, 0x0, "<offset>", "Specify the TOF offset in ns."), userOpts, optstr);
 	addOption(optionExt("no-reaction", no_argument, NULL, 0x0, "", "Do not use reaction kinematics (no CM calculations)."), userOpts, optstr);
 }
@@ -244,8 +246,10 @@ bool simpleComCalculator::processArgs(){
 	if(userOpts.at(7).active)
 		userEnergy = strtod(userOpts.at(7).argument.c_str(), 0);
 	if(userOpts.at(8).active)
-		timeOffset = strtod(userOpts.at(8).argument.c_str(), 0);
+		maxRadius = strtod(userOpts.at(8).argument.c_str(), 0);
 	if(userOpts.at(9).active)
+		timeOffset = strtod(userOpts.at(9).argument.c_str(), 0);
+	if(userOpts.at(10).active)
 		reactionMode = false;
 
 	return true;
@@ -297,7 +301,7 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			useTCutG = true;
 		}
 
-		double ctof, energy, tqdc, theta, angleCOM;
+		double ctof, energy, tqdc, theta, angleCOM, r;
 		unsigned short location;
 
 		if(treeMode || mcarlo){
@@ -421,6 +425,7 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 				intree->SetBranchAddress("tqdc", &tqdc);
 				intree->SetBranchAddress("theta", &theta);
 				intree->SetBranchAddress("loc", &location);
+				intree->SetBranchAddress("r", &r);
 			}
 			else{
 				intree->SetMakeClass(1);
@@ -479,6 +484,11 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 						hEcom->Fill(rxn.GetEjectile()->comAngle[0], ptr->energy.at(j));
 						h2dcom->Fill(rxn.GetEjectile()->comAngle[0], ptr->ctof.at(j));
 					}*/
+					if(maxRadius > 0 && r >= maxRadius){
+						badCount++;
+						continue;
+					}
+
 					// Check the tqdc threshold (if available).
 					if(threshold > 0 && tqdc < threshold) continue;
 
