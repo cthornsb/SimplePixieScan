@@ -91,6 +91,7 @@ class barHandler : public simpleTool {
 
 	bool singleEndedMode;
 	bool noTimeMode;
+	bool noEnergyMode;
 	bool noPositionMode;
 
 	double x, y, z, r, theta;
@@ -109,7 +110,7 @@ class barHandler : public simpleTool {
 	void handleEvents();
 
   public:
-	barHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), dummy(), gptr(NULL), lptr(NULL), singleEndedMode(false), noTimeMode(false), noPositionMode(false) { }
+	barHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), dummy(), gptr(NULL), lptr(NULL), singleEndedMode(false), noTimeMode(false), noEnergyMode(false), noPositionMode(false) { }
 
 	~barHandler();
 	
@@ -224,24 +225,25 @@ void barHandler::handleEvents(){
 			tqdc = tqdc_L;
 		}
 
-                // Calibrate the TQDC.
-		if(!singleEndedMode){
-			EnergyCal *ecalLeft = calib.GetEnergyCal(location);
-			EnergyCal *ecalRight = calib.GetEnergyCal(location+1);
-			if(ecalLeft && !ecalLeft->defaultVals){
-				if(!ecalRight || ecalRight->defaultVals){ // Use pairwise calibration.
-					tqdc = ecalLeft->GetCalEnergy(std::sqrt(tqdc_R*tqdc_L));
-				}
-				else{ // Use individual channel calibration.
-					tqdc_L = ecalLeft->GetCalEnergy(tqdc_L);
-					tqdc_R = ecalRight->GetCalEnergy(tqdc_R);
-					tqdc = std::sqrt(tqdc_R*tqdc_L);
+		if(!noEnergyMode){// Calibrate the TQDC.
+			if(!singleEndedMode){
+				EnergyCal *ecalLeft = calib.GetEnergyCal(location);
+				EnergyCal *ecalRight = calib.GetEnergyCal(location+1);
+				if(ecalLeft && !ecalLeft->defaultVals){
+					if(!ecalRight || ecalRight->defaultVals){ // Use pairwise calibration.
+						tqdc = ecalLeft->GetCalEnergy(std::sqrt(tqdc_R*tqdc_L));
+					}
+					else{ // Use individual channel calibration.
+						tqdc_L = ecalLeft->GetCalEnergy(tqdc_L);
+						tqdc_R = ecalRight->GetCalEnergy(tqdc_R);
+						tqdc = std::sqrt(tqdc_R*tqdc_L);
+					}
 				}
 			}
-		}
-		else{
-			EnergyCal *ecal = calib.GetEnergyCal(location);
-			if(ecal) tqdc = ecal->GetCalEnergy(tqdc);
+			else{
+				EnergyCal *ecal = calib.GetEnergyCal(location);
+				if(ecal) tqdc = ecal->GetCalEnergy(tqdc);
+			}
 		}
 
                 // Calculate the neutron energy.
@@ -259,6 +261,7 @@ void barHandler::addOptions(){
 	addOption(optionExt("config", required_argument, NULL, 'c', "<fname>", "Read bar speed-of-light from an input cal file."), userOpts, optstr);
 	addOption(optionExt("single", no_argument, NULL, 0x0, "", "Single-ended detector mode."), userOpts, optstr);
 	addOption(optionExt("no-time", no_argument, NULL, 0x0, "", "Do not use time calibration."), userOpts, optstr);
+	addOption(optionExt("no-energy", no_argument, NULL, 0x0, "", "Do not use energy calibration."), userOpts, optstr);
 	addOption(optionExt("no-position", no_argument, NULL, 0x0, "", "Do not use position calibration."), userOpts, optstr);
 }
 
@@ -274,6 +277,9 @@ bool barHandler::processArgs(){
 		noTimeMode = true;
 	}
 	if(userOpts.at(3).active){
+		noEnergyMode = true;
+	}
+	if(userOpts.at(4).active){
 		noPositionMode = true;
 	}
 
@@ -294,7 +300,7 @@ int barHandler::execute(int argc, char *argv[]){
 
 	if(!noPositionMode && !calib.LoadPositionCal((setupDir+"position.cal").c_str())) return 2;
 	if(!noTimeMode && !calib.LoadTimeCal((setupDir+"time.cal").c_str())) return 3;
-	calib.LoadEnergyCal((setupDir+"energy.cal").c_str());
+	if(!noEnergyMode) calib.LoadEnergyCal((setupDir+"energy.cal").c_str());
 
 	if(!singleEndedMode && !LoadCalibFile<barCal>((setupDir+"bars.cal").c_str(), bars)){
 		std::cout << " Error: Failed to load bar calibration file \"" << setupDir << "bars.cal\"!\n";
