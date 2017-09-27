@@ -671,10 +671,10 @@ bool specFitter::process(){
 	int numProjections = getNumProjections(h2d);
 	for(int i = 1; i <= numProjections; i++){
 		if(!waitRedo){ // Redo
-			i = i-1;
+			if(i != 1) i = i-1;
 			waitRedo = true;
 		}
-		std::cout << " Processing channel ID " << i << "... ";
+		std::cout << " Processing channel ID " << i-1 << "... ";
 		if(getProjection(h1, h2d, i)){ 
 			std::cout << "DONE\n";
 
