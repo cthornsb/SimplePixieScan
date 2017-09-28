@@ -757,14 +757,24 @@ bool simpleScanner::Initialize(std::string prefix_){
 	}
 	
 	if(!writePresort){
+		// Get the output filename.
+		std::string ofname = GetOutputFilename();
+
+		if(ofname.empty()){
+			ofname = GetInputFilename(); 
+			size_t index = ofname.find_last_of('.');
+			ofname = ofname.substr(0, index) + ".root";
+			std::cout << prefix_ << "No output filename given, using \"" << ofname << "\".\n";
+		}
+
 		// Initialize the root output file.
 		std::cout << prefix_ << "Initializing root output.\n";
-		if(force_overwrite){ root_file = new TFile(GetOutputFilename().c_str(), "RECREATE"); }
-		else{ root_file = new TFile(GetOutputFilename().c_str(), "CREATE"); }
+		if(force_overwrite){ root_file = new TFile(ofname.c_str(), "RECREATE"); }
+		else{ root_file = new TFile(ofname.c_str(), "CREATE"); }
 
 		// Check that the root file is open.
 		if(!root_file->IsOpen()){
-			std::cout << prefix_ << "Failed to open output root file '" << GetOutputFilename() << "'!\n";
+			std::cout << prefix_ << "Failed to open output root file '" << ofname << "'!\n";
 			root_file->Close();
 			delete root_file;
 			root_file = NULL;
