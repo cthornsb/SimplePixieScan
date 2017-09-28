@@ -762,7 +762,9 @@ bool simpleScanner::Initialize(std::string prefix_){
 
 		if(ofname.empty()){
 			ofname = GetInputFilename(); 
-			size_t index = ofname.find_last_of('.');
+			size_t index = ofname.find_last_of('/');
+			ofname = ofname.substr(index+1);
+			index = ofname.find_last_of('.');
 			ofname = ofname.substr(0, index) + ".root";
 			std::cout << prefix_ << "No output filename given, using \"" << ofname << "\".\n";
 		}
