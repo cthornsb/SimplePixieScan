@@ -552,6 +552,11 @@ void simpleScanner::ExtraArguments(){
 		std::cout << msgHeader << "Forcing using of trace processor.\n";
 		forceUseOfTrace = true;
 	}
+	if(userOpts.at(12).active){ // Set output filename prefix.
+		outputFilenamePrefix = userOpts.at(12).argument;
+		if(outputFilenamePrefix.back() != '/') outputFilenamePrefix += '/';
+		std::cout << msgHeader << "Using output filename prefix \"" << outputFilenamePrefix << "\".\n";
+	}
 }
 
 /** CmdHelp is used to allow a derived class to print a help statement about
@@ -596,6 +601,7 @@ void simpleScanner::ArgHelp(){
 	AddOption(optionExt("record", no_argument, NULL, 0, "", "Write all start events to output file even when no other events are found"));
 	AddOption(optionExt("parameters", required_argument, NULL, 0, "<list>", "Set default fitting/CFD parameters by supplying comma-delimited string"));
 	AddOption(optionExt("force-traces", no_argument, NULL, 0, "", "Change all entries in map file to type 'trace' to do trace analysis"));
+	AddOption(optionExt("output-prefix", required_argument, NULL, 0, "<prefix>", "Set the output file prefix (default is ./)"));
 }
 
 /** SyntaxStr is used to print a linux style usage message to the screen.
@@ -765,7 +771,7 @@ bool simpleScanner::Initialize(std::string prefix_){
 			size_t index = ofname.find_last_of('/');
 			ofname = ofname.substr(index+1);
 			index = ofname.find_last_of('.');
-			ofname = ofname.substr(0, index) + ".root";
+			ofname = outputFilenamePrefix + ofname.substr(0, index) + ".root";
 			std::cout << prefix_ << "No output filename given, using \"" << ofname << "\".\n";
 		}
 

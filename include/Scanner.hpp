@@ -265,6 +265,7 @@ class simpleScanner : public ScanInterface {
 	bool init; /// Set to true when the initialization process successfully completes.
 	
 	std::string head_path;
+	std::string outputFilenamePrefix;
 };
 
 #endif
