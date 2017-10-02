@@ -340,6 +340,20 @@ void multiply(TH1 *h_, const double &c_){
 	}
 }
 
+// Save TObject to output root file.
+void saveObject(const char *fname, TObject *obj, const std::string &name=""){
+	TFile *f = new TFile(fname, "UPDATE");
+	f->cd();
+	
+	if(name.empty())
+		obj->Write(obj->GetName());
+	else
+		obj->Write(name.c_str());
+
+	f->Close();
+	delete f;
+}
+
 // Multiply a 2-d histogram by a constant.
 void scale(TH2F *h, const double &scaling){
 	int gbin;
@@ -644,7 +658,7 @@ void help(const std::string &search_=""){
 	                                        "double", "dt", "Timing resolution of detector, in ns."};
 
 	// Defined functions.
-	const std::string definedFunctions[132] = {"void", "binRatio", "TH1 *h1_, TH1 *h2_", "List the ratio of each bin in two 1-d histograms.",
+	const std::string definedFunctions[136] = {"void", "binRatio", "TH1 *h1_, TH1 *h2_", "List the ratio of each bin in two 1-d histograms.",
 	                                           "double", "calcEnergy", "const double &tof_", "Calculate neutron energy (MeV) given the time-of-flight (in ns).",
 	                                           "double", "calcTOF", "const double &E_", "Calculate neutron time-of-flight (ns) given the energy (in MeV).",
 	                                           "void", "calculateP2", "double *x, double *y, double *p", "Calculate a 2nd order polynomial that passes through three (x,y) pairs.",
@@ -669,6 +683,7 @@ void help(const std::string &search_=""){
 	                                           "void", "multiply", "TH1 *h_, const double &c_", "Multiply a 1-d histogram by a constant.",
 	                                           "void", "processMCarlo", "const char *fname, const char *tname=\"data\"", "Process a VANDMC monte carlo detector test output file.",
 	                                           "bool", "processSpecOutput", "const char *fname, const char *ofname, const double *ptr_=effZero, bool energy_=false", "Process an output file from specFitter (simpleScan tool).",
+                                                   "void", "saveObject", "TFile *ouf, TObject *obj, const std::string &name=\"\"", "Save TObject to output file.",
 	                                           "void", "scale", "TH2F *h, const double &scaling", "Multiply a 2-d histogram by a constant.",
 	                                           "void", "setLine", "TAttLine *ptr_, const short &color_=602, const short &style_=1, const short &width_=1", "Set an object which inherits from TAttLine to have user specified style.",
 	                                           "void", "setMarker", "TAttMarker *ptr_, const short &color_=602, const short &style_=21, const float &size_=1.0", "Set an object which inherits from TAttMarker to have user specified style.",
@@ -725,7 +740,7 @@ void help(const std::string &search_=""){
 			}
 		}
 	
-		for(int i = 0; i < 33; i++){
+		for(int i = 0; i < 34; i++){
 			fIndex = definedFunctions[4*i+1].find(search_);
 			if(fIndex != std::string::npos){
 				strings[0] = definedFunctions[4*i+1].substr(0, fIndex);
