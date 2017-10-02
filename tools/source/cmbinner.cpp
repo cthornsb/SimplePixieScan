@@ -28,31 +28,56 @@ double getBinWidth(const double &E_){
 	return (p0+p1*E_+p2*E_*E_);
 }
 
-double getBinWidth(const double &Elow, const double &l, const double &tolerance=1E-6){
-	const double dl = 0.05; // m
-	const double dt = 2; // ns
+double calcWidth(const double &E, const double &l){
+	const double dl = 0.03;//0.05; // m
+	const double dt = 1;//2; // ns
 	const double Mn = 10454.0750977429; // MeV
+	return (2*E/l)*std::sqrt(dl*dl+(2*E/Mn)*dt*dt);
+}
 
-	double diff=0;
-	double left, right;
-	double Ewidth, Emid;
+double getBinWidth(const double &Ehigh, const double &l, const double &tolerance=1E-8){
+	double x1, y1, x2, y2, El, Er, Ecenter;
+	double Ewidth = calcWidth(Ehigh, l);
+
+	x1 = Ehigh-Ewidth/2;
+	y1 = x1 + calcWidth(x1, l)/2;
+
+	double deltal, deltar;
 	
-	double t;
-	
-	left = Elow;
 	while(true){
-		t = l*std::sqrt(Mn/(2*left));
-		right = Elow/(1-std::sqrt((dl/l)*(dl/l)+(dt/t)*(dt/t)));
-		diff += right-left;
-		if(right-left <= tolerance) break;
-		left = Elow + diff;
+		x2 = x1 - Ewidth/4;
+		y2 = x2 + calcWidth(x2, l)/2;
+		
+		El = (Ehigh-y1)*(x2-x1)/(y2-y1) + x1;
+		deltal = El + calcWidth(El, l)/2;
+
+		x2 = x1 + Ewidth/4;
+		y2 = x2 + calcWidth(x2, l)/2;
+
+		Er = (Ehigh-y1)*(x2-x1)/(y2-y1) + x1;
+
+		deltar = Er + calcWidth(Er, l)/2;
+
+		if(deltal < deltar){
+			if(std::fabs(Ehigh-deltal) <= tolerance){
+				Ecenter = El;
+				break;
+			}
+			x1 = x1 - Ewidth/4;
+		}
+		else{
+			if(std::fabs(Ehigh-deltar) <= tolerance){
+				Ecenter = Er;
+				break;
+			}		
+			x1 = x1 + Ewidth/4;
+		}
+
+		y1 = x1 + calcWidth(x1, l)/2;
+		Ewidth = Ewidth/2;
 	}
 	
-	Emid = Elow+diff;
-	t = l*std::sqrt(Mn/(2*Emid));
-	Ewidth = 2*Emid*std::sqrt((dl/l)*(dl/l)+(dt/t)*(dt/t));
-	
-	return Ewidth;
+	return calcWidth(Ecenter, l);
 }
 
 size_t binTOF(std::vector<double> &tofBinsLow, std::vector<double> &energyBinsLow, const double &r=0.5, const double &lowLimit=0.1, const double &highLimit=8.0){
@@ -370,7 +395,7 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			}
 
 			std::vector<double> tofBins, energyBins;
-			binTOF(tofBins, energyBins, radius, 0.05, 10);
+			binTOF(tofBins, energyBins, radius, 0.1, 8);
 
 			// Create lab histograms.
 			hE = new TH2D("hE", "Lab Angle vs. Energy", nBins, xbins, energyBins.size()-1, energyBins.data());
