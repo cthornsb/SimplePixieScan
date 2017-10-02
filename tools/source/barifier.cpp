@@ -247,7 +247,7 @@ void barHandler::handleEvents(){
 		}
 
                 // Calculate the neutron energy.
-                energy = tof2energy(ctof, pos->r0);
+		if(!noPositionMode) energy = tof2energy(ctof, pos->r0);
 
 		// Fill the tree with the event.
 		outtree->Fill();
