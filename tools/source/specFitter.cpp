@@ -75,6 +75,20 @@ void calculateP2(double *x, double *y, double *p, bool log=false){
 	p[0] = y[0] - p[1]*x1[0] - p[2]*x2[0];
 }
 
+void removeGraphPoints(TGraph *g_, const double &xLow, const double &xHigh){
+	double x, y;
+	int point = 0;
+	while(point < g_->GetN()){
+		g_->GetPoint(point, x, y);
+		if(x < xLow){
+			point++;
+			continue;
+		}
+		else if(x > xHigh) break;
+		g_->RemovePoint(point);
+	}
+}
+
 class specFitter : public simpleHistoFitter {
   private:
 	double Xmin, Xmax;
@@ -85,6 +99,8 @@ class specFitter : public simpleHistoFitter {
 	bool gausFit;
 	bool woodsSaxon;
 	bool noBackground;
+	bool automaticMode;
+	bool firstRun;
 
 	bool logXaxis;
 	bool logYaxis;
@@ -95,6 +111,11 @@ class specFitter : public simpleHistoFitter {
 	bool skipNext;
 	bool waitRedo;
 
+	size_t markerCount;
+
+	std::vector<double> xmarkervals;
+	std::vector<double> ymarkervals;
+
 	TDirectory *cdir;
 
 	GuiWindow *win;
@@ -103,10 +124,14 @@ class specFitter : public simpleHistoFitter {
 
 	void updateAxes(TH1 *h1_);
 
+	void getMarker(double &x, double &y);
+
+	void getMarker(double &x);
+
 	TGraph *convertHisToGraph(TH1 *h_, const double &xLow, const double &xHigh);
 
   public:
-	specFitter() : simpleHistoFitter(), polyBG(false), gausFit(true), woodsSaxon(false), noBackground(false), logXaxis(false), logYaxis(false), noPeakMode(false), strictMode(true), waitRun(true), skipNext(false), waitRedo(true) { }
+	specFitter() : simpleHistoFitter(), polyBG(false), gausFit(true), woodsSaxon(false), noBackground(false), automaticMode(false), firstRun(true), logXaxis(false), logYaxis(false), noPeakMode(false), strictMode(true), waitRun(true), skipNext(false), waitRedo(true) { }
 
 	bool fitSpectrum(TH1 *h_, const int &binID_);
 
@@ -195,18 +220,32 @@ void specFitter::updateAxes(TH1 *h1_){
 	}
 }
 
-void removeGraphPoints(TGraph *g_, const double &xLow, const double &xHigh){
-	double x, y;
-	int point = 0;
-	while(point < g_->GetN()){
-		g_->GetPoint(point, x, y);
-		if(x < xLow){
-			point++;
-			continue;
-		}
-		else if(x > xHigh) break;
-		g_->RemovePoint(point);
+void specFitter::getMarker(double &x, double &y){
+	if(!automaticMode){
+		TMarker *marker = (TMarker*)can2->WaitPrimitive("TMarker");
+		x = marker->GetX();
+		y = marker->GetY();
+		delete marker;
 	}
+	else if(firstRun){
+		TMarker *marker = (TMarker*)can2->WaitPrimitive("TMarker");
+		xmarkervals.push_back(marker->GetX());
+		ymarkervals.push_back(marker->GetY());
+		x = xmarkervals.back();
+		y = ymarkervals.back();
+		delete marker;
+	}
+	else{
+		if(markerCount >= xmarkervals.size()) std::cout << " Error: Invalid index for marker counter??? markerCount=" << markerCount << ", size=" << xmarkervals.size() << "\n";
+		x = xmarkervals.at(markerCount);
+		y = ymarkervals.at(markerCount);
+		markerCount++;				
+	}
+}
+
+void specFitter::getMarker(double &x){
+	double dummy;
+	getMarker(x, dummy);
 }
 
 TGraph *specFitter::convertHisToGraph(TH1 *h_, const double &xLow, const double &xHigh){
@@ -240,6 +279,8 @@ TGraph *specFitter::convertHisToGraph(TH1 *h_, const double &xLow, const double 
 bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	if(!h_) return false; 
 
+	markerCount = 0;
+
 	h_->Draw();
 	can2->Update();
 
@@ -258,28 +299,19 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	// Update log scales based on user input.
 	updateAxes(h_);
 
-	TMarker *marker;
+	double xlo = h_->GetXaxis()->GetXmin();
+	double ylo = 0;
+	double xhi = h_->GetXaxis()->GetXmax();
+	double yhi = h_->GetYaxis()->GetXmax();
 
-	double xlo, ylo;
-	double xhi, yhi;
-
-	if(strictMode){	
-		std::cout << " Mark bottom-left bounding point (xmin,ymin)\n";
-		marker = (TMarker*)can2->WaitPrimitive("TMarker");
-		xlo = marker->GetX();
-		ylo = marker->GetY();
-		delete marker;
+	if(!automaticMode){
+		if(strictMode){
+			std::cout << " Mark bottom-left bounding point (xmin,ymin)\n";
+			getMarker(xlo, ylo);
+		}
+		std::cout << " Mark top-right bounding point (xmax,ymax)\n";
+		getMarker(xhi, yhi);
 	}	
-	else{
-		xlo = h_->GetXaxis()->GetXmin();
-		ylo = 0;
-	}
-
-	std::cout << " Mark top-right bounding point (xmax,ymax)\n";
-	marker = (TMarker*)can2->WaitPrimitive("TMarker");
-	xhi = marker->GetX();
-	yhi = marker->GetY();
-	delete marker;
 
 	// Convert the histogram to a TGraph.
 	TGraph *graph = NULL;
@@ -288,19 +320,20 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	writeTNamed("winLow", xlo);
 	writeTNamed("winHigh", xhi);
 
-	if(!noPeakMode){
-		h_->GetXaxis()->SetRangeUser(xlo, xhi);
-		h_->GetYaxis()->SetRangeUser(ylo, yhi);
-		h_->Draw();
+	if(!automaticMode){
+		if(!noPeakMode){
+			h_->GetXaxis()->SetRangeUser(xlo, xhi);
+			h_->GetYaxis()->SetRangeUser(ylo, yhi);
+			h_->Draw();
+		}
+		else{
+			graph->GetXaxis()->SetRangeUser(xlo, xhi);
+			graph->GetYaxis()->SetRangeUser(ylo, yhi);
+			graph->SetMarkerStyle(2);
+			graph->Draw("APL");
+		}
+		can2->Update();
 	}
-	else{
-		graph = convertHisToGraph(h_, xlo, xhi);
-		graph->GetXaxis()->SetRangeUser(xlo, xhi);
-		graph->GetYaxis()->SetRangeUser(ylo, yhi);
-		graph->SetMarkerStyle(2);
-		graph->Draw("APL");
-	}
-	can2->Update();
 
 	std::string xstr = "x";
 	if(logXaxis) xstr = "log(x)";
@@ -326,20 +359,11 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	if(!noBackground){
 		if(!polyBG){ // Set initial function parameters.
 			std::cout << "Mark exponential background (x0,y0)\n";
-			marker = (TMarker*)can2->WaitPrimitive("TMarker");
-			bgx[0] = marker->GetX();
-			bgy[0] = marker->GetY();
-			delete marker;
+			getMarker(bgx[0], bgy[0]);
 			std::cout << "Mark exponential background (x1,y1)\n";
-			marker = (TMarker*)can2->WaitPrimitive("TMarker");	
-			bgx[1] = marker->GetX();
-			bgy[1] = marker->GetY();
-			delete marker;
+			getMarker(bgx[1], bgy[1]);
 			std::cout << "Mark constant (xinf,yinf)\n";
-			marker = (TMarker*)can2->WaitPrimitive("TMarker");
-			bgx[2] = marker->GetX();
-			bgy[2] = marker->GetY();
-			delete marker;
+			getMarker(bgx[2], bgy[2]);
 
 			if(bgy[2] < bgy[1]) p[0] = bgy[2];
 			else{
@@ -359,20 +383,11 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 		}
 		else{ // Set initial function parameters.
 			std::cout << "Mark linear background (x0,y0)\n";
-			marker = (TMarker*)can2->WaitPrimitive("TMarker");
-			bgx[0] = marker->GetX();
-			bgy[0] = marker->GetY();
-			delete marker;
+			getMarker(bgx[0], bgy[0]);
 			std::cout << "Mark linear background (x1,y1)\n";
-			marker = (TMarker*)can2->WaitPrimitive("TMarker");	
-			bgx[1] = marker->GetX();
-			bgy[1] = marker->GetY();
-			delete marker;
+			getMarker(bgx[1], bgy[1]);
 			std::cout << "Mark linear background (x2,y2)\n";
-			marker = (TMarker*)can2->WaitPrimitive("TMarker");	
-			bgx[2] = marker->GetX();
-			bgy[2] = marker->GetY();
-			delete marker;
+			getMarker(bgx[2], bgy[2]);
 
 			calculateP2(bgx, bgy, p, logXaxis);
 			
@@ -405,9 +420,7 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 		double bkgA, fwhmCross;
 		for(int i = 0; i < numPeaks; i++){
 			std::cout << "Mark peak " << i+1 << " maximum\n";
-			marker = (TMarker*)can2->WaitPrimitive("TMarker");
-			amplitude = marker->GetY();
-			meanValue = marker->GetX();
+			getMarker(meanValue, amplitude);
 			writeTNamed("amplitude", amplitude);
 			writeTNamed("meanValue", meanValue);
 			if(!polyBG){
@@ -419,14 +432,11 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 				else      bkgA = p[0]+p[1]*std::log(meanValue)+p[2]*std::pow(std::log(meanValue), 2);
 			}
 			amplitude = amplitude-bkgA;
-			delete marker;
 			TLine line(xlo, amplitude*0.5+bkgA, xhi, amplitude*0.5+bkgA);
 			line.Draw("SAME");
 			can2->Update();
 			std::cout << "Mark crossing point\n";
-			marker = (TMarker*)can2->WaitPrimitive("TMarker");
-			fwhmCross = marker->GetX();
-			delete marker;
+			getMarker(fwhmCross);
 			if(gausFit || woodsSaxon) func->SetParameter(3*i+(nPars-3), amplitude);
 			else                      func->SetParameter(3*i+(nPars-3), amplitude*5.9);
 			if(!woodsSaxon){
@@ -456,12 +466,8 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 			func->Draw("SAME");
 			can2->Update();
 			std::cout << "Mark upper and lower limits of fitting region\n";
-			marker = (TMarker*)can2->WaitPrimitive("TMarker");
-			fitlow = marker->GetX();
-			delete marker;
-			marker = (TMarker*)can2->WaitPrimitive("TMarker");
-			fithigh = marker->GetX();
-			delete marker;
+			getMarker(fitlow);
+			getMarker(fithigh);
 		}
 		else{
 			fitlow = bgx[0];
@@ -474,20 +480,12 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 		can2->Update();
 
 		std::cout << "Mark upper and lower limits of fitting region to left of peak\n";
-		marker = (TMarker*)can2->WaitPrimitive("TMarker");
-		fitlow = marker->GetX();
-		delete marker;
-		marker = (TMarker*)can2->WaitPrimitive("TMarker");
-		removeLow = marker->GetX();
-		delete marker;
+		getMarker(fitlow);
+		getMarker(removeLow);
 
 		std::cout << "Mark upper and lower limits of fitting region to right of peak\n";
-		marker = (TMarker*)can2->WaitPrimitive("TMarker");
-		removeHigh = marker->GetX();
-		delete marker;
-		marker = (TMarker*)can2->WaitPrimitive("TMarker");
-		fithigh = marker->GetX();
-		delete marker;
+		getMarker(removeHigh);
+		getMarker(fithigh);
 
 		removeGraphPoints(graph, removeLow, removeHigh);
 	}
@@ -602,6 +600,8 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	else 
 		delete graph;
 
+	firstRun = false;
+
 	return true;
 }
 
@@ -610,7 +610,8 @@ void specFitter::addChildOptions(){
 	addOption(optionExt("landau", no_argument, NULL, 'l', "", "Fit peaks with landau distributions."), userOpts, optstr);
 	addOption(optionExt("logx", no_argument, NULL, 0x0, "", "Log the x-axis of the projection histogram."), userOpts, optstr);
 	addOption(optionExt("logy", no_argument, NULL, 0x0, "", "Log the y-axis of the projection histogram."), userOpts, optstr);
-	addOption(optionExt("quick", no_argument, NULL, 0x0, "", "Prompts the user for less input."), userOpts, optstr); 
+	addOption(optionExt("quick", no_argument, NULL, 0x0, "", "Prompts the user for less input."), userOpts, optstr);
+ 	addOption(optionExt("automatic", no_argument, NULL, 0x0, "", "Enable automatic spectrum fitting."), userOpts, optstr); 
 }
 
 bool specFitter::processChildArgs(){
@@ -624,6 +625,8 @@ bool specFitter::processChildArgs(){
 		logYaxis = true;
 	if(userOpts.at(firstChildOption+4).active)
 		strictMode = false;
+	if(userOpts.at(firstChildOption+5).active)
+		automaticMode = true;
 
 	return true;
 }
