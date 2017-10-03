@@ -25,7 +25,7 @@ target_link_libraries(timeAlign ToolStatic Scan ${ROOT_LIBRARIES} -lSpectrum)
 
 #Tools requiring linking against simpleScan root dictionary.
 add_executable(cmbinner cmbinner.cpp)
-target_link_libraries(cmbinner ToolStatic Scan ${DICTIONARY_PREFIX}Static ${ROOT_LIBRARIES})
+target_link_libraries(cmbinner ToolStatic Scan SimpleScanStatic ${DICTIONARY_PREFIX}Static ${ROOT_LIBRARIES})
 
 add_executable(barifier barifier.cpp)
 target_link_libraries(barifier ToolStatic Scan SimpleScanStatic ${DICTIONARY_PREFIX}Static ${ROOT_LIBRARIES})

@@ -13,6 +13,7 @@
 
 #include "cmcalc.hpp"
 #include "simpleTool.hpp"
+#include "CalibFile.hpp"
 #include "Structures.h"
 
 // Energy in MeV
@@ -115,6 +116,34 @@ size_t binTOF(std::vector<double> &tofBinsLow, std::vector<double> &energyBinsLo
 	return tofBinsLow.size();
 }
 
+class threshCal : public CalType {
+  public:
+	double thresh;
+
+	threshCal() : CalType(0), thresh(1E6) { }
+
+	virtual std::string Print(bool fancy=true);
+
+	virtual void ReadPars(const std::vector<std::string> &pars_);
+};
+
+std::string threshCal::Print(bool fancy/*=true*/){
+	std::stringstream output;
+	if(fancy) output << " id=" << id << ", thresh=" << thresh;
+	else output << id << "\t" << thresh;
+	return output.str();
+}
+
+void threshCal::ReadPars(const std::vector<std::string> &pars_){
+	defaultVals = false;
+	int index = 0;
+	for(std::vector<std::string>::const_iterator iter = pars_.begin(); iter != pars_.end(); iter++){
+		if(index == 0) id = strtol(iter->c_str(), NULL, 0);
+		else if(index == 1) thresh = strtod(iter->c_str(), NULL);
+		index++;
+	}
+}
+
 class simpleComCalculator : public simpleTool {
   private:
 	double startAngle;
@@ -134,20 +163,28 @@ class simpleComCalculator : public simpleTool {
 	bool defaultMode;
 	bool treeMode;
 	bool reactionMode;
+	bool thresholdFile;
 	
 	TCutG *cut;
 
 	std::string cutFilename;
 	std::string configFilename;
+	std::string thresholdFilename;
 
 	reaction rxn;
+
+	threshCal dummy;
+
+	std::vector<threshCal> detThresh;
 
 	bool setupReaction();
 
 	void setAngles();
 
+	threshCal *getThreshCal(const unsigned int &id_);
+
   public:
-	simpleComCalculator() : simpleTool(), startAngle(0), stopAngle(180), binWidth(1), threshold(-1), radius(0.5), userEnergy(-1), maxRadius(-1), timeOffset(0), nBins(180), xbins(NULL), mcarlo(false), printMode(false), defaultMode(false), treeMode(false), reactionMode(true), cut(NULL), cutFilename(""), configFilename("") { }
+	simpleComCalculator() : simpleTool(), startAngle(0), stopAngle(180), binWidth(1), threshold(-1), radius(0.5), userEnergy(-1), maxRadius(-1), timeOffset(0), nBins(180), xbins(NULL), mcarlo(false), printMode(false), defaultMode(false), treeMode(false), reactionMode(true), thresholdFile(false), cut(NULL), cutFilename(""), configFilename(""), thresholdFilename("") { }
 
 	~simpleComCalculator();
 	
@@ -235,6 +272,11 @@ void simpleComCalculator::setAngles(){
 	std::cout << std::endl;
 }
 
+threshCal *simpleComCalculator::getThreshCal(const unsigned int &id_){
+	if(id_ >= detThresh.size()){ return NULL; }
+	return &detThresh.at(id_);
+}
+
 simpleComCalculator::~simpleComCalculator(){
 	if(xbins) delete[] xbins;
 }
@@ -264,8 +306,22 @@ bool simpleComCalculator::processArgs(){
 		printMode = true;
 	if(userOpts.at(4).active)
 		defaultMode = true;
-	if(userOpts.at(5).active)
-		threshold = strtod(userOpts.at(5).argument.c_str(), 0);
+	if(userOpts.at(5).active){
+		std::string thresholdString = userOpts.at(5).argument;
+		bool isFullyNumerical = true;
+		for(size_t i = 0; i < thresholdString.size(); i++){
+			if((thresholdString[i] < 0x30 || thresholdString[i] > 0x39) && thresholdString[i] != 0x2E){
+				isFullyNumerical = false;
+				break;
+			}
+		}
+		if(isFullyNumerical)
+			threshold = strtod(userOpts.at(5).argument.c_str(), 0);
+		else{
+			thresholdFilename = thresholdString;
+			thresholdFile = true;
+		}
+	}
 	if(userOpts.at(6).active)
 		radius = strtod(userOpts.at(6).argument.c_str(), 0);
 	if(userOpts.at(7).active)
@@ -295,12 +351,17 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			return 2;
 		}
 
-		if(reactionMode && !setupReaction())
+		if(!thresholdFilename.empty() && !LoadCalibFile<threshCal>(thresholdFilename.c_str(), detThresh)){
+			std::cout << " Error: Failed to load threshold calibration file \"" << thresholdFilename << "\"!\n";
 			return 3;
+		}
+
+		if(reactionMode && !setupReaction())
+			return 4;
 
 		if(!openOutputFile()){
 			std::cout << " Error: Failed to load output file \"" << output_filename << "\".\n";
-			return 4;
+			return 5;
 		}
 
 		// Write the threshold to the output file.
@@ -321,7 +382,7 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 		if(!cut_filename.empty()){
 			if(!loadTCutG()){
 				std::cout << " Error: Failed to load input TCutG \"" << cut_filename << "\".\n";
-				return 8;
+				return 6;
 			}
 			useTCutG = true;
 		}
@@ -516,6 +577,10 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 
 					// Check the tqdc threshold (if available).
 					if(threshold > 0 && tqdc < threshold) continue;
+					else if(thresholdFile){
+						threshCal *det = getThreshCal(location);
+						if(!det || tqdc < det->thresh) continue;
+					}
 
 					// Check against the input tcutg (if available).
 					if(useTCutG && !tcutg->IsInside(ctof, tqdc)) continue;
