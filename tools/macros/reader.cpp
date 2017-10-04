@@ -79,5 +79,7 @@ void readFile(const char *fname){
 }
 
 int reader(){
+	ofile.open("reader.dat");
+
 	return 0;
 }
