@@ -81,7 +81,7 @@ double getBinWidth(const double &Ehigh, const double &l, const double &tolerance
 	return calcWidth(Ecenter, l);
 }
 
-size_t binTOF(std::vector<double> &tofBinsLow, std::vector<double> &energyBinsLow, const double &r=0.5, const double &lowLimit=0.1, const double &highLimit=8.0){
+size_t binTOF(std::vector<double> &tofBinsLow, std::vector<double> &energyBinsLow, const double &r=0.5, const double &lowLimit=0.1, const double &highLimit=8.0, const double &mult_=1){
 	tofBinsLow.clear();
 	energyBinsLow.clear();
 
@@ -89,7 +89,7 @@ size_t binTOF(std::vector<double> &tofBinsLow, std::vector<double> &energyBinsLo
 	double width;
 
 	while(low > lowLimit){
-		width = getBinWidth(low, r);
+		width = mult_*getBinWidth(low, r);
 		tofBinsLow.push_back(energy2tof(low, r));
 		energyBinsLow.push_back(low);
 		low = low - width;
@@ -154,6 +154,7 @@ class simpleComCalculator : public simpleTool {
 	double userEnergy;
 	double maxRadius;
 	double timeOffset;
+	double widthMultiplier;
 	int nBins;
 
 	double *xbins;
@@ -184,7 +185,7 @@ class simpleComCalculator : public simpleTool {
 	threshCal *getThreshCal(const unsigned int &id_);
 
   public:
-	simpleComCalculator() : simpleTool(), startAngle(0), stopAngle(180), binWidth(1), threshold(-1), radius(0.5), userEnergy(-1), maxRadius(-1), timeOffset(0), nBins(180), xbins(NULL), mcarlo(false), printMode(false), defaultMode(false), treeMode(false), reactionMode(true), thresholdFile(false), cut(NULL), cutFilename(""), configFilename(""), thresholdFilename("") { }
+	simpleComCalculator() : simpleTool(), startAngle(0), stopAngle(180), binWidth(1), threshold(-1), radius(0.5), userEnergy(-1), maxRadius(-1), timeOffset(0), widthMultiplier(1), nBins(180), xbins(NULL), mcarlo(false), printMode(false), defaultMode(false), treeMode(false), reactionMode(true), thresholdFile(false), cut(NULL), cutFilename(""), configFilename(""), thresholdFilename("") { }
 
 	~simpleComCalculator();
 	
@@ -293,6 +294,7 @@ void simpleComCalculator::addOptions(){
 	addOption(optionExt("max-radius", required_argument, NULL, 0x0, "<radius>", "Specify the maximum event radius in m (not used by default)."), userOpts, optstr);
 	addOption(optionExt("time-offset", required_argument, NULL, 0x0, "<offset>", "Specify the TOF offset in ns."), userOpts, optstr);
 	addOption(optionExt("no-reaction", no_argument, NULL, 0x0, "", "Do not use reaction kinematics (no CM calculations)."), userOpts, optstr);
+	addOption(optionExt("multiplier", required_argument, NULL, 0x0, "<factor>", "Specify bin width multiplier (1 by default)."), userOpts, optstr);
 }
 
 bool simpleComCalculator::processArgs(){
@@ -332,6 +334,8 @@ bool simpleComCalculator::processArgs(){
 		timeOffset = strtod(userOpts.at(9).argument.c_str(), 0);
 	if(userOpts.at(10).active)
 		reactionMode = false;
+	if(userOpts.at(11).active)
+		widthMultiplier = strtod(userOpts.at(11).argument.c_str(), 0);
 
 	return true;
 }
@@ -456,7 +460,7 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			}
 
 			std::vector<double> tofBins, energyBins;
-			binTOF(tofBins, energyBins, radius, 0.1, 8);
+			binTOF(tofBins, energyBins, radius, 0.1, 8, widthMultiplier);
 
 			// Create lab histograms.
 			hE = new TH2D("hE", "Lab Angle vs. Energy", nBins, xbins, energyBins.size()-1, energyBins.data());
