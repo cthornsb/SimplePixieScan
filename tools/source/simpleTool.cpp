@@ -390,7 +390,7 @@ bool simpleHistoFitter::getProjectionX(TH1 *h1_, TH2 *h2_, const int &binY_){
 	// Fill the output histogram.
 	double total = 0.0;
 	double binContent;
-	for(int i = 0; i <= h2_->GetNbinsX()+1; i++){
+	for(int i = 1; i <= h2_->GetNbinsX(); i++){
 		binContent = h2_->GetBinContent(h2_->GetBin(i, binY_));
 		h1_->SetBinContent(i, binContent);
 		total += binContent;
@@ -415,7 +415,7 @@ bool simpleHistoFitter::getProjectionY(TH1 *h1_, TH2 *h2_, const int &binX_){
 	// Fill the output histogram.
 	double total = 0.0;
 	double binContent;
-	for(int i = 0; i <= h2_->GetNbinsY()+1; i++){
+	for(int i = 1; i <= h2_->GetNbinsY(); i++){
 		binContent = h2_->GetBinContent(h2_->GetBin(binX_, i));
 		h1_->SetBinContent(i, binContent);
 		total += binContent;
