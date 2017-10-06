@@ -6,6 +6,7 @@
 
 #include "TGButton.h"
 #include "TGButtonGroup.h"
+#include "TGTextEntry.h"
 
 class TGWindow;
 class TGMainFrame;
@@ -28,6 +29,27 @@ class SimpleTextButton : public TGTextButton {
 
   private:
 	bool *action;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+// class SimpleTextEntry
+///////////////////////////////////////////////////////////////////////////////
+
+class SimpleTextEntry : public TGTextEntry {
+  public:
+	SimpleTextEntry(TGWindow *p, const char *s, const int &id, std::string *text_, const std::string &initialStr_);
+
+	bool GetTextIsChanged();
+
+	// Copy the entry text to the string pointer.
+	std::string Update();
+
+	virtual void TextChanged(const char *text=0){ textIsChanged = true; }
+
+  private:
+	std::string *text;
+
+	bool textIsChanged;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -70,6 +92,8 @@ class SimpleButtonGroup : public TGButtonGroup {
 
 	TGTextButton *AddButton(const std::string &name_, bool *ptr_, const int &x_=0, const int &y_=0, const int &w_=92, const int &h_=25);
 
+	TGTextEntry *AddTextEntry(const std::string &name_, std::string *ptr_, const std::string &initialStr_, const int &x_=0, const int &y_=0, const int &w_=92, const int &h_=25);
+
 	bool CheckState();
 
 	virtual void ButtonClicked();
@@ -82,6 +106,8 @@ class SimpleButtonGroup : public TGButtonGroup {
 	std::string name;
 
 	std::vector<SimpleButtonParams*> buttons;
+
+	std::vector<SimpleTextEntry*> textEntries;
 
 	void SetProperties(TGTextButton* ptr_);
 
@@ -105,6 +131,8 @@ class GuiWindow : public TGMainFrame {
 	TGTextButton *AddButton(const std::string &name_, bool *ptr_=NULL, const int &x_=0, const int &y_=0, const int &w_=92, const int &h_=25);
 
 	TGTextButton *AddQuitButton(const std::string &name_="Quit", const int &x_=0, const int &y_=0, const int &w_=92, const int &h_=25);
+
+	TGTextEntry *AddTextEntry(const std::string &name_, const std::string &initialStr_, std::string *ptr_=NULL, const int &x_=0, const int &y_=0, const int &w_=92, const int &h_=25);
 
 	TGLabel *AddLabel(const char *name_, const int &x_, const int &y_, const int &w_=57, const int &h_=19);
 

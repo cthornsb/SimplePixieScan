@@ -23,6 +23,25 @@ SimpleTextButton::SimpleTextButton(TGWindow *p, const char *s, const int &id, bo
 void SimpleTextButton::Clicked(){ (*action) = !(*action); }
 
 ///////////////////////////////////////////////////////////////////////////////
+// class SimpleTextEntry
+///////////////////////////////////////////////////////////////////////////////
+
+SimpleTextEntry::SimpleTextEntry(TGWindow *p, const char *s, const int &id, std::string *text_, const std::string &initialStr_) : TGTextEntry(p, s, id), text(text_), textIsChanged(false) { 
+	this->SetText(initialStr_.c_str());
+}
+
+bool SimpleTextEntry::GetTextIsChanged(){
+	if(textIsChanged){
+		textIsChanged = false;
+		return true;
+	}
+	return false;
+}
+
+// Copy the entry text to the string pointer.
+std::string SimpleTextEntry::Update(){ return ((*text) = std::string(this->GetText())); }
+
+///////////////////////////////////////////////////////////////////////////////
 // class SimpleButtonParams
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -88,13 +107,27 @@ TGTextButton *SimpleButtonGroup::AddButton(const std::string &name_, bool *ptr_,
 	return button;
 }
 
+TGTextEntry *SimpleButtonGroup::AddTextEntry(const std::string &name_, std::string *ptr_, const std::string &initialStr_, const int &x_/*=0*/, const int &y_/*=0*/, const int &w_/*=92*/, const int &h_/*=25*/){
+	SimpleTextEntry *entry = new SimpleTextEntry(this, name_.c_str(), id, ptr_, initialStr_);
+	entry->MoveResize(x_, y_, w_, h_);
+	textEntries.push_back(entry);
+	return entry;
+}
+
 bool SimpleButtonGroup::CheckState(){
+	bool retval = false;
 	if(isClicked){
 		UpdateButtonStates();
 		isClicked = false;
-		return true;		
-	} 
-	return false;
+		retval = true;
+	}
+	for(std::vector<SimpleTextEntry*>::iterator iter = textEntries.begin(); iter != textEntries.end(); iter++){
+		if((*iter)->GetTextIsChanged()){
+			(*iter)->Update();
+			retval = true;
+		}
+	}
+	return retval;
 }
 
 void SimpleButtonGroup::ButtonClicked(){ isClicked = true; }
@@ -141,6 +174,10 @@ TGTextButton *GuiWindow::AddButton(const std::string &name_, bool *ptr_/*=NULL*/
 
 TGTextButton *GuiWindow::AddQuitButton(const std::string &name_/*="Quit"*/, const int &x_/*=0*/, const int &y_/*=0*/, const int &w_/*=92*/, const int &h_/*=25*/){
 	return currentGroup->AddButton(name_, &this->isQuitting, x_, y_, w_, h_);
+}
+
+TGTextEntry *GuiWindow::AddTextEntry(const std::string &name_, const std::string &initialStr_, std::string *ptr_/*=NULL*/, const int &x_/*=0*/, const int &y_/*=0*/, const int &w_/*=92*/, const int &h_/*=25*/){
+	return currentGroup->AddTextEntry(name_, ptr_, initialStr_, x_, y_, w_, h_);
 }
 
 TGLabel *GuiWindow::AddLabel(const char *name_, const int &x_, const int &y_, const int &w_/*=57*/, const int &h_/*=19*/){
