@@ -4,6 +4,8 @@
 
 #include <stdlib.h>
 
+class efficiencyFile;
+
 ///////////////////////////////////////////////////////////////////////////////
 // Globals
 ///////////////////////////////////////////////////////////////////////////////
@@ -16,41 +18,14 @@ double d = 0.5; // Distance from target to detector, in m.
 double dd = 0.03; // Thickness of detector, in m.
 double dt = 1; // Timing resolution of detector, in ns.
 
+double tofThreshold;
+double energyThreshold;
+
+efficiencyFile *effPtr;
+
 ///////////////////////////////////////////////////////////////////////////////
 // Efficiency interpolation
 ///////////////////////////////////////////////////////////////////////////////
-
-// Array of energies for use in efficiency interpolation.
-const double effEnergy[44] = {-9999, 0.0250, 0.0450, 0.0650, 0.0850, 0.1050, 0.1250, 0.1500, 0.1800, 0.2100, 
-                               0.2400, 0.2800, 0.3300, 0.3800, 0.4300, 0.4800, 0.5300, 0.5800, 0.6300, 0.6800, 
-                               0.7300, 0.7800, 0.8300, 0.8800, 0.9300, 1.0025, 1.1000, 1.2000, 1.3000, 1.4000, 
-                               1.5000, 1.6000, 1.7000, 1.8000, 1.9000, 2.0500, 2.2500, 2.4500, 2.6500, 2.8500, 
-                               3.1000, 3.4000, 3.7000, 4.0000};
-
-// Array of zero-threshold efficiencies for use in efficiency interpolation.
-const double effZero[44] = {0.045, -4.7827, 0.5460, 0.7381, 0.7755, 0.8057, 0.9023, 0.8351, 0.7991, 0.7651, 
-                            0.7505, 0.7014, 0.6514, 0.6123, 0.5737, 0.5557, 0.5286, 0.5202, 0.4757, 0.4606, 
-                            0.4447, 0.4320, 0.4395, 0.4221, 0.4345, 0.4132, 0.3904, 0.3918, 0.3800, 0.3746, 
-                            0.3658, 0.3636, 0.3591, 0.3485, 0.3534, 0.3524, 0.3433, 0.3408, 0.3320, 0.3285, 
-                            0.3147, 0.3185, 0.3190, 0.2514};
-
-// Array of Barium threshold efficiencies for use in efficiency interpolation.
-const double effBa133[44] = {0.15, -7.751, -1.251, -0.540, -0.243, -0.155, -0.015, 0.001, 0.033, 0.077, 
-                             0.143, 0.223, 0.312, 0.358, 0.371, 0.379, 0.380, 0.380, 0.371, 0.370, 
-                             0.362, 0.353, 0.343, 0.328, 0.344, 0.326, 0.311, 0.311, 0.303, 0.300, 
-                             0.291, 0.289, 0.284, 0.275, 0.282, 0.261, 0.265, 0.263, 0.250, 0.242, 
-                             0.230, 0.221, 0.218, 0.174};
-
-// Array of Americium threshold efficiencies for use in efficiency interpolation.
-const double effAm241[44] = {0.24, -7.590, -1.508, -0.653, -0.358, -0.223, -0.085, -0.060, -0.025, -0.004, 
-                             0.006, 0.007, 0.007, 0.024, 0.064, 0.119, 0.170, 0.214, 0.235, 0.262, 
-                             0.266, 0.267, 0.267, 0.263, 0.281, 0.267, 0.263, 0.266, 0.262, 0.263, 
-                             0.259, 0.261, 0.256, 0.248, 0.256, 0.253, 0.242, 0.243, 0.232, 0.224, 
-                             0.213, 0.204, 0.198, 0.158};
-
-const double *effPtr = effAm241;
-const double *enPtr = effEnergy;
-int nPts = 44;
 
 // Calculate neutron energy (MeV) given the time-of-flight (in ns).
 double calcEnergy(const double &tof_){
@@ -62,32 +37,71 @@ double calcTOF(const double &E_){
 	return (d*std::sqrt(Mn/(2*E_)));
 }
 
-// Use linear interpolation to calculate a value from a distribution.
-bool interpolate(const double *py, const double &E, double &eff){
-	if(E < py[0]) return false;
-	if(E < enPtr[nPts-1]){ // Interpolate.
-		for(int i = 2; i < nPts; i++){
-			if(E >= enPtr[i-1] && E < enPtr[i]){
-				eff = py[i-1] + (E-enPtr[i-1])*(py[i]-py[i-1])/(enPtr[i]-enPtr[i-1]);
+class efficiencyFile{
+  public:
+	std::vector<double> E;
+	std::vector<double> eff;
+
+	efficiencyFile(){ }
+
+	efficiencyFile(const char *fname){ load(fname); }
+
+	bool empty(){ return E.empty(); }
+
+	size_t size(){ return E.size(); }
+
+	size_t load(const char *fname){
+		std::ifstream ifile(fname);
+		if(!ifile.good()) return 0;
+
+		E.clear();
+		eff.clear();
+
+		std::string line;		
+		double energy, efficiency;
+		while(true){
+			std::getline(ifile, line);
+			if(ifile.eof()) break;
+
+			if(line.empty() || line[0] == '#') continue;
+
+			size_t splitIndex = line.find('\t');
+
+			if(splitIndex == std::string::npos) continue;
+
+			E.push_back(strtod(line.substr(0, splitIndex).c_str(), NULL));
+			eff.push_back(strtod(line.substr(splitIndex+1).c_str(), NULL));
+
+			//std::cout << "E=" << E.back() << ", eff=" << eff.back() << std::endl;
+		}
+
+		tofThreshold = calcTOF(E.front());
+		energyThreshold = E.front();
+
+		return E.size();
+	}
+
+	// Use linear interpolation to calculate an efficiency from the distribution.
+	bool getEfficiency(const double &E_, double &efficiency){
+		if(E_ > E.back()) return false;
+		for(int i = 2; i < E.size(); i++){
+			if(E_ >= E[i-1] && E_ < E[i]){
+				efficiency = (eff[i-1] + (E_-E[i-1])*(eff[i]-eff[i-1])/(E[i]-E[i-1]));
 				return true;
 			}
 		}
+		return false;
 	}
-	else{
-		// Extrapolate.
-		const double p0 = 0.299687, p1 = -1.67919, p2 = -0.665115;
-		eff = p0 + std::exp(p1 + p2*E);
-	}
-	return true;
-}
 
-// Scale an input function by the intrinsic efficiency of VANDLE at energy E_.
-double correctEfficiency(const double &E_, const double &funcVal_){
-	double denom;
-	if(interpolate(effPtr, E_, denom))
-		return funcVal_/denom;
-	return 0.0;
-}
+	// Scale an input function by the intrinsic efficiency of VANDLE at energy E_.
+	double correctEfficiency(const double &E_, const double &funcVal_){
+		double denom;
+		if(this->getEfficiency(E_, denom))
+			return funcVal_/denom;
+		return 0.0;
+	}
+
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 // Neutron peak fit functions.
@@ -97,26 +111,26 @@ class TOFfitFunctions{
   public:
 	// Standard gaussian (x in ns) scaled by linearly interpolated intrinsic efficiency. 
 	static double gaussian(double *x, double *p){
-		if(x[0] > 105) return 0.0;
-		return correctEfficiency(calcEnergy(x[0]), p[0]*TMath::Gaus(x[0], p[1], p[2]));
+		if(x[0] > tofThreshold) return 0.0;
+		return effPtr->correctEfficiency(calcEnergy(x[0]), p[0]*TMath::Gaus(x[0], p[1], p[2]));
 	}
 
 	// Logarithmic gaussian (x in ns) scaled by linearly interpolated intrinsic efficiency. 
 	static double logGaussian(double *x, double *p){
-		if(x[0] > 105) return 0.0;
-		return correctEfficiency(calcEnergy(x[0]), p[0]*TMath::Gaus(TMath::Log(x[0]), p[1], p[2]));
+		if(x[0] > tofThreshold) return 0.0;
+		return effPtr->correctEfficiency(calcEnergy(x[0]), p[0]*TMath::Gaus(TMath::Log(x[0]), p[1], p[2]));
 	}
 
 	// Standard landau (x in ns) scaled by linearly interpolated intrinsic efficiency. 
 	static double landau(double *x, double *p){
-		if(x[0] > 105) return 0.0;
-		return correctEfficiency(calcEnergy(x[0]), p[0]*TMath::Landau(x[0], p[1], p[2]));
+		if(x[0] > tofThreshold) return 0.0;
+		return effPtr->correctEfficiency(calcEnergy(x[0]), p[0]*TMath::Landau(x[0], p[1], p[2]));
 	}
 	
 	// Logarithmic landau (x in ns) scaled by linearly interpolated intrinsic efficiency. 
 	static double logLandau(double *x, double *p){
-		if(x[0] > 105) return 0.0;
-		return correctEfficiency(calcEnergy(x[0]), p[0]*TMath::Landau(TMath::Log(x[0]), p[1], p[2]));
+		if(x[0] > tofThreshold) return 0.0;
+		return effPtr->correctEfficiency(calcEnergy(x[0]), p[0]*TMath::Landau(TMath::Log(x[0]), p[1], p[2]));
 	}	
 };
 
@@ -124,26 +138,26 @@ class ENfitFunctions{
   public:
 	// Standard gaussian (x in MeV) scaled by linearly interpolated intrinsic efficiency.
 	static double gaussian(double *x, double *p){
-		if(x[0] < 0.125) return 0.0;
-		return correctEfficiency(x[0], p[0]*TMath::Gaus(x[0], p[1], p[2]));
+		if(x[0] < energyThreshold) return 0.0;
+		return effPtr->correctEfficiency(x[0], p[0]*TMath::Gaus(x[0], p[1], p[2]));
 	}
 
 	// Logarithmic gaussian (x in MeV) scaled by linearly interpolated intrinsic efficiency.
 	static double logGaussian(double *x, double *p){
-		if(x[0] < 0.125) return 0.0;
-		return correctEfficiency(x[0], p[0]*TMath::Gaus(TMath::Log(x[0]), p[1], p[2]));
+		if(x[0] < energyThreshold) return 0.0;
+		return effPtr->correctEfficiency(x[0], p[0]*TMath::Gaus(TMath::Log(x[0]), p[1], p[2]));
 	}
 
 	// Standard landau (x in MeV) scaled by linearly interpolated intrinsic efficiency.
 	static double landau(double *x, double *p){
-		if(x[0] < 0.125) return 0.0;
-		return correctEfficiency(x[0], p[0]*TMath::Landau(x[0], p[1], p[2]));
+		if(x[0] < energyThreshold) return 0.0;
+		return effPtr->correctEfficiency(x[0], p[0]*TMath::Landau(x[0], p[1], p[2]));
 	}
 	
 	// Logarithmic landau (x in MeV) scaled by linearly interpolated intrinsic efficiency.
 	static double logLandau(double *x, double *p){
-		if(x[0] < 0.125) return 0.0;
-		return correctEfficiency(x[0], p[0]*TMath::Landau(TMath::Log(x[0]), p[1], p[2]));
+		if(x[0] < energyThreshold) return 0.0;
+		return effPtr->correctEfficiency(x[0], p[0]*TMath::Landau(TMath::Log(x[0]), p[1], p[2]));
 	}
 };
 
@@ -223,7 +237,7 @@ bool getTNamed(TFile *f, const std::string &name_, double &val, const std::strin
 }
 
 // Process an output file from specFitter (simpleScan tool).
-bool processSpecOutput(const char *fname, const char *ofname, const double *ptr_=effZero, bool energy_=false){
+bool processSpecOutput(const char *fname, const char *ofname, const char *effname, bool energy_=false){
 	TFile specFile(fname, "READ");
 	if(!specFile.IsOpen()){
 		std::cout << " Error! Failed to open input file \"" << fname << "\".\n";
@@ -237,6 +251,16 @@ bool processSpecOutput(const char *fname, const char *ofname, const double *ptr_
 		return false;
 	}
 
+	efficiencyFile eff(effname);
+	if(eff.empty()){
+		std::cout << " Error! Failed to open efficiency file \"" << effname << "\".\n";
+		specFile.Close();
+		outFile.close();
+		return false;
+	}
+
+	effPtr = &eff;
+
 	// Get a list of the directories.
 	TList *keyList = specFile.GetListOfKeys();
 	int numKeys = specFile.GetNkeys();
@@ -248,8 +272,6 @@ bool processSpecOutput(const char *fname, const char *ofname, const double *ptr_
 		specFile.Close();
 		outFile.close();
 	}
-
-	effPtr = ptr_;
 
 	outFile << "binID\tbinLow\tbinCenter\tbinErr\tchi2\tIbkg\thistCounts\tp0\tp0err\tp1\tp1err\tp2\tp2err\tA\tAerr\tmu\tmuerr\tE\tEerr\tsigma\tsigmaerr\tIpeak\tIcor\tIcorErr\tintrinseff\tbinSA\n";
 
@@ -339,53 +361,39 @@ bool processSpecOutput(const char *fname, const char *ofname, const double *ptr_
 		TF1 *peakfunc = (TF1*)getObject(&specFile, "peakfunc", currentDirectory);
 		TH1 *projhist = (TH1*)getObject(&specFile, "h1", currentDirectory);
 
+		/*projhist->GetXaxis()->UnZoom();
+		projhist->GetYaxis()->UnZoom();
+		projhist->Draw();
+		peakfunc->Draw("SAME");*/
+
+		TF1 *peakIntrinsic;
 		if(!energy_){
-			if(functionType == 0) peakfunc = new TF1("ff", TOFfitFunctions::gaussian, -10, 110, 3); // gaussian (function==0)
-			else if(functionType == 1) peakfunc = new TF1("ff", TOFfitFunctions::landau, -10, 110, 3); // landau (function==1)
-			else if(functionType == 2) peakfunc = new TF1("ff", TOFfitFunctions::logGaussian, 10, 110, 3); // logGaussian (function==2)
-			else if(functionType == 3) peakfunc = new TF1("ff", TOFfitFunctions::logLandau, 10, 110, 3); // logLandau (function==3)
+			if(functionType == 0) peakIntrinsic = new TF1("ff", TOFfitFunctions::gaussian, -10, 110, 3); // gaussian (function==0)
+			else if(functionType == 1) peakIntrinsic = new TF1("ff", TOFfitFunctions::landau, -10, 110, 3); // landau (function==1)
+			else if(functionType == 2) peakIntrinsic = new TF1("ff", TOFfitFunctions::logGaussian, 10, 110, 3); // logGaussian (function==2)
+			else if(functionType == 3) peakIntrinsic = new TF1("ff", TOFfitFunctions::logLandau, 10, 110, 3); // logLandau (function==3)
 		}
 		else{
-			if(functionType == 0) peakfunc = new TF1("ff", ENfitFunctions::gaussian, 0, 10, 3); // gaussian (function==0)
-			else if(functionType == 1) peakfunc = new TF1("ff", ENfitFunctions::landau, 0, 10, 3); // landau (function==1)
-			else if(functionType == 2) peakfunc = new TF1("ff", ENfitFunctions::logGaussian, 0.1, 10, 3); // logGaussian (function==2)
-			else if(functionType == 3) peakfunc = new TF1("ff", ENfitFunctions::logLandau, 0.1, 10, 3); // logLandau (function==3)
+			if(functionType == 0) peakIntrinsic = new TF1("ff", ENfitFunctions::gaussian, 0, 10, 3); // gaussian (function==0)
+			else if(functionType == 1) peakIntrinsic = new TF1("ff", ENfitFunctions::landau, 0, 10, 3); // landau (function==1)
+			else if(functionType == 2) peakIntrinsic = new TF1("ff", ENfitFunctions::logGaussian, 0.1, 10, 3); // logGaussian (function==2)
+			else if(functionType == 3) peakIntrinsic = new TF1("ff", ENfitFunctions::logLandau, 0.1, 10, 3); // logLandau (function==3)
 		}
 	
-		double pars[3];
-
-		double intMax = -1E30;
-		double intMin = 1E30;
-
-		const int val1[8] = {-1, -1, -1, 1, -1, 1, 1, 1};
-		const int val2[8] = {-1, -1, 1, -1, 1, 1, -1, 1};
-		const int val3[8] = {-1, 1, -1, -1, 1, -1, 1, 1};
-
-		for(unsigned int i = 0; i < 8; i++){
-			peakfunc->SetParameter(0, peakPars[6]+val1[i]*peakPars[7]);
-			peakfunc->SetParameter(1, peakPars[8]+val1[i]*peakPars[9]);
-			peakfunc->SetParameter(2, peakPars[10]+val1[i]*peakPars[11]);
-
-			integral = summation(projhist, peakfunc);
-
-			if(integral < intMin) intMin = integral;
-			if(integral > intMax) intMax = integral;
-		}
-
 		// Calculate the number of neutrons.
-		peakfunc->SetParameter(0, peakPars[6]);
-		peakfunc->SetParameter(1, peakPars[8]);
-		peakfunc->SetParameter(2, peakPars[10]);
-		integral = summation(projhist, peakfunc);
+		peakIntrinsic->SetParameter(0, peakPars[6]);
+		peakIntrinsic->SetParameter(1, peakPars[8]);
+		peakIntrinsic->SetParameter(2, peakPars[10]);
+		integral = summation(projhist, peakIntrinsic);
 
-		if((intMax - integral) >= (integral - intMin))
-			outFile << integral << "\t" << intMax-integral << "\t" << peakCounts/integral << "\t";
-		else
-			outFile << integral << "\t" << integral-intMin << "\t" << peakCounts/integral << "\t";
-		
+		/*peakIntrinsic->Draw("SAME");
+		gPad->Update();
+		gPad->WaitPrimitive();*/
+
+		outFile << integral << "\t0\t" << peakCounts/integral << "\t";
 		outFile << (twopi*(-std::cos((binLow+binWidth)*pi/180) + std::cos(binLow*pi/180))) << std::endl;
 
-		delete peakfunc;
+		delete peakIntrinsic;
 		
 	}
 
