@@ -113,6 +113,8 @@ class specFitter : public simpleHistoFitter {
 
 	size_t markerCount;
 
+	std::string nPeaksText;
+
 	std::vector<double> xmarkervals;
 	std::vector<double> ymarkervals;
 
@@ -131,7 +133,7 @@ class specFitter : public simpleHistoFitter {
 	TGraph *convertHisToGraph(TH1 *h_, const double &xLow, const double &xHigh);
 
   public:
-	specFitter() : simpleHistoFitter(), polyBG(false), gausFit(true), woodsSaxon(false), noBackground(false), automaticMode(false), firstRun(true), logXaxis(false), logYaxis(false), noPeakMode(false), strictMode(true), waitRun(true), skipNext(false), waitRedo(true) { }
+	specFitter() : simpleHistoFitter(), polyBG(false), gausFit(true), woodsSaxon(false), noBackground(false), automaticMode(false), firstRun(true), logXaxis(false), logYaxis(false), noPeakMode(false), strictMode(true), waitRun(true), skipNext(false), waitRedo(true), markerCount(0), nPeaksText("") { }
 
 	bool fitSpectrum(TH1 *h_, const int &binID_);
 
@@ -178,6 +180,7 @@ void specFitter::setupControlPanel(){
 	win->AddCheckbox("strict", &strictMode, strictMode);
 	win->AddCheckbox("logx", &logXaxis, logXaxis);
 	win->AddCheckbox("logy", &logYaxis, logYaxis);
+	win->AddTextEntry("Npeaks", "1", &nPeaksText);
 
 	win->NewGroup("Control");
 	win->AddButton("okay", &waitRun);
@@ -304,7 +307,11 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	double xhi = h_->GetXaxis()->GetXmax();
 	double yhi = h_->GetYaxis()->GetXmax();
 
+	int nPeaks = 1;
 	if(!automaticMode){
+		nPeaks = strtol(nPeaksText.c_str(), NULL, 10);
+		if(nPeaks <= 0) return false;
+
 		if(strictMode){
 			std::cout << " Mark bottom-left bounding point (xmin,ymin)\n";
 			getMarker(xlo, ylo);
@@ -338,12 +345,6 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	std::string xstr = "x";
 	if(logXaxis) xstr = "log(x)";
 
-	int numPeaks = 1;
-	//std::cout << " How many peaks? "; std::cin >> numPeaks;
-	
-	if(numPeaks <= 0) 
-		return false;
-
 	double amplitude;
 	double meanValue;
 	
@@ -351,8 +352,9 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	double bgy[3];
 	double p[3];
 
-	int nPars = (!noBackground ? 3 : 0);
-	if(!noPeakMode) nPars += 3*numPeaks;
+	int nBkgPars = (!noBackground ? 3 : 0);
+	int nPars = nBkgPars;
+	if(!noPeakMode) nPars += 3*nPeaks;
 
 	std::stringstream stream1, stream2;
 
@@ -379,7 +381,7 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 				p[1] = std::log(bgy[1]-p[0])-p[2]*std::log(bgx[1]);
 			}
 			
-			stream1 << "[0]+exp([1]+[2]*" << xstr << ")+";
+			stream1 << "[0]+exp([1]+[2]*" << xstr << ")";
 		}
 		else{ // Set initial function parameters.
 			std::cout << "Mark linear background (x0,y0)\n";
@@ -391,16 +393,17 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 
 			calculateP2(bgx, bgy, p, logXaxis);
 			
-			stream1 << "[0]+" << xstr << "*[1]+" << xstr << "^2*[2]+";
+			stream1 << "[0]+" << xstr << "*[1]+" << xstr << "^2*[2]";
 		}
 		if(debug) std::cout << " p0 = " << p[0] << ", p1 = " << p[1] << ", p2 = " << p[2] << std::endl;
 	}
 
 	if(!noPeakMode){ // Add the peak function to the function string.
-		for(int i = 0; i < numPeaks; i++){
-			if(woodsSaxon)   stream2 << "[" << 3*i+(nPars-3) << "]*(1/(1+TMath::Exp((x-[" << 3*i+(nPars-2) << "])/[" << 3*i+(nPars-1) << "])))";
-			else if(gausFit) stream2 << "[" << 3*i+(nPars-3) << "]*TMath::Gaus(" << xstr << ", [" << 3*i+(nPars-2) << "], [" << 3*i+(nPars-1) << "])";
-			else             stream2 << "[" << 3*i+(nPars-3) << "]*TMath::Landau(" << xstr << ", [" << 3*i+(nPars-2) << "], [" << 3*i+(nPars-1) << "])";
+		for(int i = 0; i < nPeaks; i++){
+			stream2 << "+";
+			if(woodsSaxon)   stream2 << "[" << nBkgPars+3*i << "]*(1/(1+TMath::Exp((x-[" << nBkgPars+3*i+1 << "])/[" << nBkgPars+3*i+2 << "])))";
+			else if(gausFit) stream2 << "[" << nBkgPars+3*i << "]*TMath::Gaus(" << xstr << ", [" << nBkgPars+3*i+1 << "], [" << nBkgPars+3*i+2 << "])";
+			else             stream2 << "[" << nBkgPars+3*i << "]*TMath::Landau(" << xstr << ", [" << nBkgPars+3*i+1 << "], [" << nBkgPars+3*i+2 << "])";
 		}
 	}
 
@@ -418,7 +421,7 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 
 	if(!noPeakMode){ // Get the initial conditions of the peak.
 		double bkgA, fwhmCross;
-		for(int i = 0; i < numPeaks; i++){
+		for(int i = 0; i < nPeaks; i++){
 			std::cout << "Mark peak " << i+1 << " maximum\n";
 			getMarker(meanValue, amplitude);
 			writeTNamed("amplitude", amplitude);
@@ -437,24 +440,24 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 			can2->Update();
 			std::cout << "Mark crossing point\n";
 			getMarker(fwhmCross);
-			if(gausFit || woodsSaxon) func->SetParameter(3*i+(nPars-3), amplitude);
-			else                      func->SetParameter(3*i+(nPars-3), amplitude*5.9);
+			if(gausFit || woodsSaxon) func->SetParameter(nBkgPars+3*i, amplitude);
+			else                      func->SetParameter(nBkgPars+3*i, amplitude*5.9);
 			if(!woodsSaxon){
 				if(!logXaxis){
-					func->SetParameter(3*i+(nPars-2), meanValue);
-					func->SetParameter(3*i+(nPars-1), std::fabs(meanValue-fwhmCross)*(2/2.35));
+					func->SetParameter(nBkgPars+3*i+1, meanValue);
+					func->SetParameter(nBkgPars+3*i+2, std::fabs(meanValue-fwhmCross)*(2/2.35));
 				}
 				else{
-					func->SetParameter(3*i+(nPars-2), std::log(meanValue));
+					func->SetParameter(nBkgPars+3*i+1, std::log(meanValue));
 					if(meanValue < fwhmCross)
-						func->SetParameter(3*i+(nPars-1), std::log(fwhmCross/meanValue)*(2/2.35));
+						func->SetParameter(nBkgPars+3*i+2, std::log(fwhmCross/meanValue)*(2/2.35));
 					else
-						func->SetParameter(3*i+(nPars-1), std::log(meanValue/fwhmCross)*(2/2.35));
+						func->SetParameter(nBkgPars+3*i+2, std::log(meanValue/fwhmCross)*(2/2.35));
 				}
 			}
 			else{
-				func->SetParameter(3*i+(nPars-2), fwhmCross);
-				func->SetParameter(3*i+(nPars-1), (fwhmCross-meanValue)/2);
+				func->SetParameter(nBkgPars+3*i+1, fwhmCross);
+				func->SetParameter(nBkgPars+3*i+2, (fwhmCross-meanValue)/2);
 			}
 		}
 	}
@@ -549,18 +552,19 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	writeTNamed("Ibkg", integral);
 	TF1 *lilfunc = NULL;
 	if(!noPeakMode){
-		//TF1 **lilfuncs = new TF1*[numPeaks+1];
-		//for(int i = 0; i < numPeaks; i++){
-			lilfunc = new TF1("peakfunc", stream2.str().c_str(), xlo, xhi);
-			lilfunc->SetLineColor(kGreen+3);
-			lilfunc->SetParameter(0, func->GetParameter(nPars-3));
-			lilfunc->SetParameter(1, func->GetParameter(nPars-2));
-			lilfunc->SetParameter(2, func->GetParameter(nPars-1));
-			lilfunc->Draw("SAME");
+		lilfunc = new TF1("peakfunc", stream2.str().c_str(), xlo, xhi);
+		lilfunc->SetLineColor(kGreen+3);
 
-			integral = summation(h_, lilfunc, xlo, xhi);
-			totalIntegral += integral;
-		//}
+		// Set peak params.
+		for(int i = 0; i < nPeaks; i++){
+			lilfunc->SetParameter(3*i, func->GetParameter(nBkgPars+3*i));
+			lilfunc->SetParameter(3*i+1, func->GetParameter(nBkgPars+3*i+1));
+			lilfunc->SetParameter(3*i+2, func->GetParameter(nBkgPars+3*i+2));
+		}
+
+		lilfunc->Draw("SAME");
+		integral = summation(h_, lilfunc, xlo, xhi);
+		totalIntegral += integral;
 	}
 	else{ integral = 0; }
 	can2->Update();
@@ -588,9 +592,12 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 		lilfunc->Write();
 	
 	cdir->mkdir("pars")->cd();
-	const std::string parnames[6] = {"p0", "p1", "p2", "p3", "p4", "p5"};
-	for(int i = 0; i < nPars; i++) writeTNamed(parnames[i], func->GetParameter(i));
-	for(int i = 0; i < nPars; i++) writeTNamed(parnames[i]+"err", func->GetParError(i));
+	for(int i = 0; i < nPars; i++){
+		std::stringstream stream;
+		stream << "p" << i;
+		writeTNamed(stream.str().c_str(), func->GetParameter(i));
+		writeTNamed((stream.str()+"err").c_str(), func->GetParError(i));
+	}
 	
 	delete func;
 	if(!noBackground)
