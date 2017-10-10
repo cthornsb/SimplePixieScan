@@ -19,65 +19,12 @@ const short colors[6] = {kBlue+2, kRed, kGreen+2, kOrange+7, kMagenta+2, kCyan+2
 // Helper functions
 ///////////////////////////////////////////////////////////////////////////////
 
-// Convert logic signal period to beam current (enA).
-void conv(double &x, double &y){
-	x *= 8E-9;
-	y = 1E8/(8*y);
-}
-
-// Determine the mean beam current from a logic signal TGraph.
-double mean(TGraph *g){
-	double sum = 0.0;
-	double x, y;
-	for(int i = 0; i < g->GetN(); i++){
-		g->GetPoint(i, x, y);
-		conv(x, y);
-		sum += y;
-	}
-	return sum/g->GetN();
-}
-
-// Convert a logic signal TGraph to a beam current vs. time graph.
-TGraph *convert(TGraph *g, const char *name){
-	TGraph *output = (TGraph*)(g->Clone(name));
-
-	double x, y;
-	for(int i = 0; i < g->GetN(); i++){
-		g->GetPoint(i, x, y);
-		conv(x, y);
-		output->SetPoint(i, x, y);
-	}
-
-	return output;
-}
-
 // Return the range of bins containing an upper and lower point, rounded to the nearest bins.
 void findBins(TH1 *h, const double &xstart_, const double &xstop_, int &lowBin, int &highBin){
 	if(xstart_ <= h->GetXaxis()->GetXmin()) lowBin = 1;
 	else                                    lowBin = h->FindBin(xstart_);
 	if(xstop_ >= h->GetXaxis()->GetXmax())  highBin = h->GetNbinsX();
 	else                                    highBin = h->FindBin(xstop_);
-}
-
-// Return the total integral of a logic signal TGraph.
-double integrate(TGraph *g){
-	double sum = 0.0;
-	double integral = 0.0;
-	double x1, y1;
-	double x2, y2;
-	g->GetPoint(0, x1, y1);
-	conv(x1, y1);
-	sum += y1;
-	for(int i = 1; i < g->GetN(); i++){
-		g->GetPoint(i, x2, y2);
-		conv(x2, y2);
-		sum += y2;
-		integral += 0.5 * (y1 + y2) * (x2 - x1);
-		x1 = x2;
-		y1 = y2;
-	}
-	std::cout << "mean = " << sum/g->GetN() << " enA, integral = " << integral << " nC\n";
-	return integral;
 }
 
 // Return the total integral of a 1-d histogram.
@@ -123,22 +70,6 @@ void calculateP2(double *x, double *y, double *p){
 	p[0] = (float)((y[0]*(x1[1]*x2[2]-x2[1]*x1[2]) - x1[0]*(y[1]*x2[2]-x2[1]*y[2]) + x2[0]*(y[1]*x1[2]-x1[1]*y[2]))/denom);
 	p[1] = (float)(((y[1]*x2[2]-x2[1]*y[2]) - y[0]*(x2[2]-x2[1]*1) + x2[0]*(y[2]-y[1]*1))/denom);
 	p[2] = (float)(((x1[1]*y[2]-y[1]*x1[2]) - x1[0]*(y[2]-y[1]*1) + y[0]*(x1[2]-x1[1]*1))/denom);
-}
-
-// Return the total run time in seconds.
-double summation(TTree *t){
-	double tdiff;
-	double sum = 0;
-
-	t->SetBranchAddress("tdiff", &tdiff);
-	
-	for(int i = 0; i < t->GetEntries(); i++){
-		t->GetEntry(i);
-		if(tdiff > 0)
-			sum += tdiff;
-	}
-	
-	return sum*8*1E-9;
 }
 
 // Return the total number of counts in a 1-d histogram.
@@ -284,24 +215,19 @@ void help(const std::string &search_=""){
 	                                         "const short", "colors[6]", "A`rray of root colors."};
 
 	// Defined functions.
-	const std::string definedFunctions[88] = {"void", "calculateP2", "double *x, double *y, double *p", "Calculate a 2nd order polynomial that passes through three (x,y) pairs.",
-	                                          "void", "conv", "double &x, double &y", "Convert logic signal period to beam current (enA).",
-	                                          "TGraph", "convert", "TGraph *g, const char *name", "Convert a logic signal TGraph to a beam current vs. time graph.",
+	const std::string definedFunctions[68] = {"void", "calculateP2", "double *x, double *y, double *p", "Calculate a 2nd order polynomial that passes through three (x,y) pairs.",
 	                                          "TGaxis", "extraXaxis", "", "Add a second x-axis to a TCanvas.",
 	                                          "TGaxis", "extraYaxis", "", "Add a second y-axis to a TCanvas.",
 	                                          "void", "findBins", "TH1 *h, const double &xstart_, const double &xstop_, int &lowBin, int &highBin", "Return the range of bins containing an upper and lower point, rounded to the nearest bins.",
-	                                          "double", "integrate", "TGraph *g", "Return the total integral of a logic signal TGraph.",
 	                                          "double", "integrate", "TH1 *h", "Return the total integral of a 1-d histogram.",
 	                                          "double", "integrate", "TH1 *h, const double &xstart_, const double &xstop_", "Return the integral of a 1-d histogram in the range [low, high], rounded to the nearest bins.",
 	                                          "double", "integrate", "const char *funcstr, double *p, double low, double high", "Integrate a root function in the range [low, high] given parameter array p.",
 	                                          "void", "listBins", "TH1 *h_, const double &c_=1", "List all bins of a 1-d histogram.",
-	                                          "double", "mean", "TGraph *g", "Determine the mean beam current from a logic signal TGraph.",
 	                                          "void", "multiply", "TH1 *h_, const double &c_", "Multiply a 1-d histogram by a constant.",
                                                   "void", "saveObject", "TFile *ouf, TObject *obj, const std::string &name=\"\"", "Save TObject to output file.",
 	                                          "void", "scale", "TH2F *h, const double &scaling", "Multiply a 2-d histogram by a constant.",
 	                                          "void", "setLine", "TAttLine *ptr_, const short &color_=602, const short &style_=1, const short &width_=1", "Set an object which inherits from TAttLine to have user specified style.",
 	                                          "void", "setMarker", "TAttMarker *ptr_, const short &color_=602, const short &style_=21, const float &size_=1.0", "Set an object which inherits from TAttMarker to have user specified style.",
-	                                          "double", "summation", "TTree *t", "Return the total run time in seconds.",
 	                                          "double", "summation", "TH1 *h", "Return the total number of counts in a 1-d histogram.",
 	                                          "double", "summation", "TH1 *h, const double &xstart_, const double &xstop_", "Return the number of counts in a 1-d histogram in the range [low, high], rounded to the nearest bins.",
 	                                          "double", "summation", "TH1 *h, TF1 *f", "Return the total number of counts under a TF1.",
@@ -317,7 +243,7 @@ void help(const std::string &search_=""){
 			std::cout << "  " << globalConstants[3*i+1] << std::endl;
 	
 		std::cout << "\n Defined helper functions:\n";
-		for(int i = 0; i < 22; i++)
+		for(int i = 0; i < 17; i++)
 			std::cout << "  " << definedFunctions[4*i+1] << std::endl;
 			
 		std::cout << std::endl;
@@ -338,7 +264,7 @@ void help(const std::string &search_=""){
 			}
 		}
 	
-		for(int i = 0; i < 22; i++){
+		for(int i = 0; i < 17; i++){
 			fIndex = definedFunctions[4*i+1].find(search_);
 			if(fIndex != std::string::npos){
 				strings[0] = definedFunctions[4*i+1].substr(0, fIndex);
