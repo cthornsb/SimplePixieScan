@@ -185,7 +185,7 @@ bool timeAlign::process(){
 				m1->Delete();*/
 
 				// Search for peaks.
-				TSpectrum spec(2);
+				TSpectrum spec(5);
 				spec.Search(h1);
 
 				double xmean = 9999;
