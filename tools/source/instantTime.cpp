@@ -49,7 +49,7 @@ int instantTime::execute(int argc, char *argv[]){
 	intree->SetBranchAddress("logic", &ptr, &branch);
 
 	if(!branch){
-		std::cout << " Error: Failed to load branch \"trigger\" from input TTree.\n";
+		std::cout << " Error: Failed to load branch \"logic\" from input TTree.\n";
 		return false;
 	}
 
