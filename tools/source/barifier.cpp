@@ -110,7 +110,7 @@ class barHandler : public simpleTool {
 	void handleEvents();
 
   public:
-	barHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), dummy(), gptr(NULL), lptr(NULL), singleEndedMode(false), noTimeMode(false), noEnergyMode(false), noPositionMode(false) { }
+	barHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), dummy(), gptr(NULL), lptr(NULL), singleEndedMode(false), noTimeMode(false), noEnergyMode(true), noPositionMode(false) { }
 
 	~barHandler();
 	
@@ -260,8 +260,8 @@ barHandler::~barHandler(){
 void barHandler::addOptions(){
 	addOption(optionExt("config", required_argument, NULL, 'c', "<fname>", "Read bar speed-of-light from an input cal file."), userOpts, optstr);
 	addOption(optionExt("single", no_argument, NULL, 0x0, "", "Single-ended detector mode."), userOpts, optstr);
+	addOption(optionExt("energy", no_argument, NULL, 0x0, "", "Use energy calibration."), userOpts, optstr);
 	addOption(optionExt("no-time", no_argument, NULL, 0x0, "", "Do not use time calibration."), userOpts, optstr);
-	addOption(optionExt("no-energy", no_argument, NULL, 0x0, "", "Do not use energy calibration."), userOpts, optstr);
 	addOption(optionExt("no-position", no_argument, NULL, 0x0, "", "Do not use position calibration."), userOpts, optstr);
 }
 
@@ -274,10 +274,10 @@ bool barHandler::processArgs(){
 		singleEndedMode = true;
 	}
 	if(userOpts.at(2).active){
-		noTimeMode = true;
+		noEnergyMode = false;
 	}
 	if(userOpts.at(3).active){
-		noEnergyMode = true;
+		noTimeMode = true;
 	}
 	if(userOpts.at(4).active){
 		noPositionMode = true;
