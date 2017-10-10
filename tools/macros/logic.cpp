@@ -9,11 +9,18 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 double convFactorX = 8E-9;
-double convFactorY = (1E8)*(1.0/8);
+double convFactorY = 1;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Helper functions
 ///////////////////////////////////////////////////////////////////////////////
+
+double setScale(const int &s){
+	convFactorY = std::pow(10, 16-s)/8;
+	std::cout << " Set integrator scale to (" << s << ")\n";
+	std::cout << " Set y-axis conversion to (" << convFactorY << " enA/ns)\n";
+	return convFactorY;
+}
 
 // Convert logic signal period to beam current (enA).
 void conv(double &x, double &y){
@@ -108,12 +115,13 @@ void help(const std::string &search_=""){
 	                                        "double", "convFactorY", "Logic signal time-difference conversion"};
 
 	// Defined functions.
-	const std::string definedFunctions[28] = {"void", "conv", "double &x, double &y", "Convert logic signal period to beam current (enA).",
+	const std::string definedFunctions[32] = {"void", "conv", "double &x, double &y", "Convert logic signal period to beam current (enA).",
 	                                          "TGraph*", "convert", "TGraph *g, const char *name=\"g\"", "Convert a logic signal TGraph to a beam current vs. time graph.",
 	                                          "TGraph*", "convert", "TTree *t, const char *name=\"g\"", "Convert instantTime output TTree to beam current vs. time graph.",
 	                                          "double", "integrate", "TGraph *g", "Return the total integral of a logic signal TGraph.",
 	                                          "double", "mean", "TGraph *g", "Determine the mean beam current from a logic signal TGraph.",
 	                                          "TGraph*", "process", "TTree *t", "Compute total logic signal integral from instantTime TTree output.",
+	                                          "double", "setScale", "const double &s", "Set the integrator scale factor (default=8).",
 	                                          "double", "summation", "TTree *t", "Return the total run time in seconds."};
 
 	if(search_.empty()){
@@ -130,7 +138,7 @@ void help(const std::string &search_=""){
 			std::cout << "  " << globalVariables[3*i+1] << std::endl;
 
 		std::cout << "\n Defined helper functions:\n";
-		for(int i = 0; i < 7; i++)
+		for(int i = 0; i < 8; i++)
 			std::cout << "  " << definedFunctions[4*i+1] << std::endl;
 			
 		std::cout << std::endl;
@@ -163,7 +171,7 @@ void help(const std::string &search_=""){
 			}
 		}
 	
-		for(int i = 0; i < 7; i++){
+		for(int i = 0; i < 8; i++){
 			fIndex = definedFunctions[4*i+1].find(search_);
 			if(fIndex != std::string::npos){
 				strings[0] = definedFunctions[4*i+1].substr(0, fIndex);
@@ -182,5 +190,6 @@ int logic(){
 	std::cout << " logic.cpp\n";
 	std::cout << "  NOTE - type 'help()' to display a list of commands.\n";
 	std::cout << "  NOTE - or 'help(string)' to search for a command or variable.\n";
+	setScale(8);
 	return 0;
 }
