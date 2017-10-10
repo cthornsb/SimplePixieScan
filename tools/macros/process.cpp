@@ -410,13 +410,9 @@ void help(const std::string &search_=""){
 	const std::string reset("\033[0m");
 
 	// Defined global constants.
-	const std::string globalConstants[21] = {"const double", "Mn", "Mass of neutron, in MeV.",
+	const std::string globalConstants[9] = {"const double", "Mn", "Mass of neutron, in MeV.",
 	                                         "const double", "pi", "pi constant.",
-	                                         "const double", "twopi", "2*pi constant.",
-	                                         "const double", "effEnergy[44]", "Array of energies for use in efficiency interpolation.",
-	                                         "const double", "effZero[44]", "Array of hardware threshold efficiencies for use in efficiency interpolation.",
-	                                         "const double", "effBa133[44]", "Array of 133Ba threshold efficiencies for use in efficiency interpolation.",
-	                                         "const double", "effAm241[44]", "Array of 241Am threshold efficiencies for use in efficiency interpolation."};
+	                                         "const double", "twopi", "2*pi constant."};
 
 	// Defined global variables.
 	const std::string globalVariables[9] = {"double", "d", "Distance from target to detector, in m.",
@@ -433,7 +429,7 @@ void help(const std::string &search_=""){
 	                                          "double", "ENfitFunctions::landau", "double *x, double *p", "Standard landau (x in MeV) scaled by linearly interpolated intrinsic efficiency.",
 	                                          "double", "interpolate", "const double *py, const double &E, double &eff", "Use linear interpolation to calculate a value from a distribution.",
 	                                          "void", "processMCarlo", "const char *fname, const char *tname=\"data\"", "Process a VANDMC monte carlo detector test output file.",
-	                                          "bool", "processSpecOutput", "const char *fname, const char *ofname, const double *ptr_=effZero, bool energy_=false", "Process an output file from specFitter (simpleScan tool).",
+	                                          "bool", "processSpecOutput", "const char *fname, const char *ofname, const char *effname, bool energy_=false", "Process an output file from specFitter (simpleScan tool).",
 	                                          "double", "summation", "TH1 *h, TF1 *f", "Return the total number of counts under a TF1."};
 
 	if(search_.empty()){
@@ -442,7 +438,7 @@ void help(const std::string &search_=""){
 		std::cout << "*****************************\n";
 	
 		std::cout << " Defined global constants:\n";
-		for(int i = 0; i < 7; i++)
+		for(int i = 0; i < 3; i++)
 			std::cout << "  " << globalConstants[3*i+1] << std::endl;
 	
 		std::cout << "\n Defined global variables:\n";
@@ -459,7 +455,7 @@ void help(const std::string &search_=""){
 		size_t fIndex;
 		std::string strings[3];
 		
-		for(int i = 0; i < 7; i++){
+		for(int i = 0; i < 3; i++){
 			fIndex = globalConstants[3*i+1].find(search_);
 			if(fIndex != std::string::npos){
 				strings[0] = globalConstants[3*i+1].substr(0, fIndex);
