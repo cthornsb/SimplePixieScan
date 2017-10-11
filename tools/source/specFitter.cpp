@@ -550,20 +550,33 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	}
 	writeTNamed("counts", histSum);
 	writeTNamed("Ibkg", integral);
-	TF1 *lilfunc = NULL;
+	TF1 *peakfunc = NULL;
+	TF1 **lilfuncs = new TF1*[nPeaks];
 	if(!noPeakMode){
-		lilfunc = new TF1("peakfunc", stream2.str().c_str(), xlo, xhi);
-		lilfunc->SetLineColor(kGreen+3);
-
-		// Set peak params.
-		for(int i = 0; i < nPeaks; i++){
-			lilfunc->SetParameter(3*i, func->GetParameter(nBkgPars+3*i));
-			lilfunc->SetParameter(3*i+1, func->GetParameter(nBkgPars+3*i+1));
-			lilfunc->SetParameter(3*i+2, func->GetParameter(nBkgPars+3*i+2));
+		peakfunc = new TF1("peakfunc", stream2.str().c_str(), xlo, xhi);
+		peakfunc->SetLineColor(kGreen+3);
+		for(int i = 0; i < nPeaks; i++){ // Set peak params.
+			std::stringstream peakstr, funcstr;
+			peakstr << "peak" << i;
+			if(woodsSaxon)
+				funcstr << "[0]*(1/(1+Tmath::Exp((x-[1])/[2])))";
+			else if(gausFit)
+				funcstr << "[0]*TMath::Gaus(" << xstr << ", [1], [2])";
+			else
+				funcstr << "[0]*TMath::Landau(" << xstr << ", [1], [2])";
+			std::cout << peakstr.str() << "\t" << funcstr.str() << std::endl;
+			lilfuncs[i] = new TF1(peakstr.str().c_str(), funcstr.str().c_str(), xlo, xhi);
+			lilfuncs[i]->SetLineColor(kGreen+3);
+			lilfuncs[i]->SetParameter(0, func->GetParameter(nBkgPars+3*i));
+			lilfuncs[i]->SetParameter(1, func->GetParameter(nBkgPars+3*i+1));
+			lilfuncs[i]->SetParameter(2, func->GetParameter(nBkgPars+3*i+2));
+			lilfuncs[i]->Draw("SAME");
+			peakfunc->SetParameter(3*i, func->GetParameter(nBkgPars+3*i));
+			peakfunc->SetParameter(3*i+1, func->GetParameter(nBkgPars+3*i+1));
+			peakfunc->SetParameter(3*i+2, func->GetParameter(nBkgPars+3*i+2));
 		}
-
-		lilfunc->Draw("SAME");
-		integral = summation(h_, lilfunc, xlo, xhi);
+		//peakfunc->Draw("SAME");
+		integral = summation(h_, peakfunc, xlo, xhi);
 		totalIntegral += integral;
 	}
 	else{ integral = 0; }
@@ -589,21 +602,27 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	if(!noBackground) 
 		bkgfunc->Write();
 	if(!noPeakMode) 
-		lilfunc->Write();
+		peakfunc->Write();
+
+	for(int i = 0; i < nPeaks; i++){
+		lilfuncs[i]->Write();
+		delete lilfuncs[i];
+	}
+	delete[] lilfuncs;
 	
-	cdir->mkdir("pars")->cd();
+	/*cdir->mkdir("pars")->cd();
 	for(int i = 0; i < nPars; i++){
 		std::stringstream stream;
 		stream << "p" << i;
 		writeTNamed(stream.str().c_str(), func->GetParameter(i));
 		writeTNamed((stream.str()+"err").c_str(), func->GetParError(i));
-	}
+	}*/
 	
 	delete func;
 	if(!noBackground)
 		delete bkgfunc;
 	if(!noPeakMode) 
-		delete lilfunc;
+		delete peakfunc;
 	else 
 		delete graph;
 
