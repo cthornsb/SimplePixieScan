@@ -574,9 +574,8 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 			peakfunc->SetParameter(3*i+1, func->GetParameter(nBkgPars+3*i+1));
 			peakfunc->SetParameter(3*i+2, func->GetParameter(nBkgPars+3*i+2));
 		}
-		//peakfunc->Draw("SAME");
-		integral = summation(h_, peakfunc, xlo, xhi);
-		totalIntegral += integral;
+		integral = summation(h_, lilfuncs[0], xlo, xhi);
+		totalIntegral += summation(h_, peakfunc, xlo, xhi);
 	}
 	else{ integral = 0; }
 	can2->Update();
