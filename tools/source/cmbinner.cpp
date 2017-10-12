@@ -160,6 +160,7 @@ class simpleComCalculator : public simpleTool {
 	double *xbins;
 
 	bool mcarlo;
+	bool vandmc;
 	bool printMode;
 	bool defaultMode;
 	bool treeMode;
@@ -185,7 +186,12 @@ class simpleComCalculator : public simpleTool {
 	threshCal *getThreshCal(const unsigned int &id_);
 
   public:
-	simpleComCalculator() : simpleTool(), startAngle(0), stopAngle(180), binWidth(1), threshold(-1), radius(0.5), userEnergy(-1), maxRadius(-1), timeOffset(0), widthMultiplier(1), nBins(180), xbins(NULL), mcarlo(false), printMode(false), defaultMode(false), treeMode(false), reactionMode(true), thresholdFile(false), cut(NULL), cutFilename(""), configFilename(""), thresholdFilename("") { }
+	simpleComCalculator() : simpleTool(), startAngle(0), stopAngle(180), binWidth(1), 
+	                        threshold(-1), radius(0.5), userEnergy(-1), maxRadius(-1), 
+	                        timeOffset(0), widthMultiplier(1), nBins(180), xbins(NULL), 
+	                        mcarlo(false), vandmc(false), printMode(false), defaultMode(false), 
+	                        treeMode(false), reactionMode(true), thresholdFile(false), cut(NULL), 
+	                        cutFilename(""), configFilename(""), thresholdFilename("") { }
 
 	~simpleComCalculator();
 	
@@ -295,6 +301,7 @@ void simpleComCalculator::addOptions(){
 	addOption(optionExt("time-offset", required_argument, NULL, 0x0, "<offset>", "Specify the TOF offset in ns."), userOpts, optstr);
 	addOption(optionExt("no-reaction", no_argument, NULL, 0x0, "", "Do not use reaction kinematics (no CM calculations)."), userOpts, optstr);
 	addOption(optionExt("multiplier", required_argument, NULL, 0x0, "<factor>", "Specify bin width multiplier (1 by default)."), userOpts, optstr);
+	addOption(optionExt("vandmc", no_argument, NULL, 0x0, "", "Read from a VANDMC output file."), userOpts, optstr);
 }
 
 bool simpleComCalculator::processArgs(){
@@ -336,6 +343,8 @@ bool simpleComCalculator::processArgs(){
 		reactionMode = false;
 	if(userOpts.at(11).active)
 		widthMultiplier = strtod(userOpts.at(11).argument.c_str(), 0);
+	if(userOpts.at(12).active)
+		vandmc = true;
 
 	return true;
 }
@@ -501,21 +510,30 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			}
 
 			TBranch *branch = NULL;
-			//VandleStructure *ptr = NULL;
 			std::vector<double> hitTheta;
 			std::vector<int> detLocation;
-
-			//double theta, ctof, tqdc, energy;
-			//unsigned short location;
+			
+			// VANDMC data types
+			std::vector<double> tof_v, energy_v, qdc_v, hitR_v;
 	
 			if(!mcarlo){
-				//intree->SetBranchAddress("vandle", &ptr, &branch);
-				intree->SetBranchAddress("ctof", &ctof, &branch);
-				intree->SetBranchAddress("energy", &energy);
-				intree->SetBranchAddress("tqdc", &tqdc);
-				intree->SetBranchAddress("theta", &theta);
-				intree->SetBranchAddress("loc", &location);
-				intree->SetBranchAddress("r", &r);
+				if(!vandmc){
+					intree->SetBranchAddress("ctof", &ctof, &branch);
+					intree->SetBranchAddress("energy", &energy);
+					intree->SetBranchAddress("tqdc", &tqdc);
+					intree->SetBranchAddress("theta", &theta);
+					intree->SetBranchAddress("loc", &location);
+					intree->SetBranchAddress("r", &r);
+				}
+				else{
+					intree->SetMakeClass(1);
+					intree->SetBranchAddress("tof", &tof_v, &branch);
+					intree->SetBranchAddress("energy", &energy_v);
+					intree->SetBranchAddress("qdc", &qdc_v);
+					intree->SetBranchAddress("hitTheta", &hitTheta);
+					intree->SetBranchAddress("loc", &detLocation);
+					intree->SetBranchAddress("hitR", &hitR_v);
+				}
 			}
 			else{
 				intree->SetMakeClass(1);
@@ -530,7 +548,7 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 	
 			progressBar pbar;
 			pbar.start(intree->GetEntries());
-	
+
 			unsigned int badCount = 0;
 			for(unsigned int i = 0; i < intree->GetEntries(); i++){
 				pbar.check(i);
@@ -538,42 +556,16 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 				intree->GetEntry(i);
 		
 				if(!mcarlo){
-					/*for(unsigned int j = 0; j < ptr->mult; j++){
-						if(ptr->r.at(j) >= 0.65){
-							badCount++;
-							continue;
-						}
-			
-						// Check the tqdc threshold (if available).
-						if(threshold > 0 && ptr->tqdc.at(j) < threshold) continue;
-
-						// Apply TOF offset correction.
-						if(timeOffset != 0){
-							const double Mn = 10454.0750977429; // MeV
-							ptr->ctof.at(j) = ptr->ctof.at(j)+timeOffset;
-							ptr->energy.at(j) = 0.5*Mn*std::pow(ptr->r.at(j)/ptr->ctof.at(j), 2.0);
-						}
-	
-						// Check against the input tcutg (if available).
-						if(useTCutG && !tcutg->IsInside(ptr->ctof.at(j), ptr->tqdc.at(j))) continue;
-	
-						rxn.SetLabAngle(ptr->theta.at(j));
-						if(treeMode){
-							ctof = ptr->ctof.at(j);
-							energy = ptr->energy.at(j);
-							tqdc = ptr->tqdc.at(j);
-							theta = ptr->theta.at(j);
-							location = ptr->loc.at(j);
-			
-							angleCOM = rxn.GetEjectile()->comAngle[0];
-				
-							outtree->Fill();
-						}
-						hE->Fill(ptr->theta.at(j), ptr->energy.at(j));
-						h2d->Fill(ptr->theta.at(j), ptr->ctof.at(j));
-						hEcom->Fill(rxn.GetEjectile()->comAngle[0], ptr->energy.at(j));
-						h2dcom->Fill(rxn.GetEjectile()->comAngle[0], ptr->ctof.at(j));
-					}*/
+					if(vandmc){
+						if(tof_v.empty()) continue;
+						ctof = tof_v.front();
+						energy = energy_v.front();
+						tqdc = qdc_v.front();
+						theta = hitTheta.front();
+						location = detLocation.front();
+						r = hitR_v.front();
+					}
+					
 					if(maxRadius > 0 && r >= maxRadius){
 						badCount++;
 						continue;
