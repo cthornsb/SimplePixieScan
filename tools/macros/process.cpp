@@ -84,7 +84,7 @@ class efficiencyFile{
 	// Use linear interpolation to calculate an efficiency from the distribution.
 	bool getEfficiency(const double &E_, double &efficiency){
 		if(E_ > E.back()) return false;
-		for(int i = 2; i < E.size(); i++){
+		for(int i = 1; i < E.size(); i++){
 			if(E_ >= E[i-1] && E_ < E[i]){
 				efficiency = (eff[i-1] + (E_-E[i-1])*(eff[i]-eff[i-1])/(E[i]-E[i-1]));
 				return true;
@@ -181,27 +181,32 @@ double summation(TH1 *h, TF1 *f){
 // List the ratio of each bin in two 1-d histograms.
 void binRatio(TH1 *h1_, TH1 *h2_){
 	double content1, content2;
+	double angleLow, angleHigh;
+	double solidAngle;
 	for(int i = 1; i <= h1_->GetNbinsX(); i++){
 		content1 = h1_->GetBinContent(i);
 		content2 = h2_->GetBinContent(i);
-		std::cout << i << "\t" << content1 << "\t" << content2 << "\t" << content2/content1 << std::endl;
+		angleLow = h1_->GetBinLowEdge(i);
+		angleHigh = angleLow + h1_->GetBinWidth(i);
+		solidAngle = twopi*(std::cos(angleLow*pi/180)-std::cos(angleHigh*pi/180));
+		std::cout << i << "\t" << content1 << "\t" << content2 << "\t";
+		std::cout << std::fixed << content2/content1 << "\t" << solidAngle << "\t" << solidAngle*(content2/content1) << std::endl;
+		std::cout.unsetf(ios_base::floatfield);
 	}
 }
 
 // Process a VANDMC monte carlo detector test output file.
-bool processMCarlo(const char *fname, const char *tname="data"){
-	const int comBins = 18;
-	const double comLow = 0;
-	const double comHigh = 90;
-
+bool processMCarlo(const char *fname, const int &comBins=18, const double &comLow=0, const double &comHigh=90){
 	TFile *f = new TFile(fname, "READ");
 	if(!f->IsOpen()) return false;
 	
-	TTree *t = (TTree*)f->Get(tname);
+	TTree *t = (TTree*)f->Get("data");
 	if(!t){
 		f->Close();
 		return false;
 	}
+
+	std::cout.precision(6);
 
 	std::stringstream stream;
 	stream << "comAngle>>(" << comBins << "," << comLow << "," << comHigh << ")";
@@ -211,6 +216,8 @@ bool processMCarlo(const char *fname, const char *tname="data"){
 
 	t->Draw(stream.str().c_str(), "mcarlo.mult>0", "");
 	TH1 *h2 = (TH1*)t->GetHistogram()->Clone("h2");
+
+	std::cout << "bin\tN1\tN2\tbinCoverage\tbinSolidAngle\tsolidAngle\n";
 
 	binRatio(h1, h2);
 
@@ -273,7 +280,7 @@ bool processSpecOutput(const char *fname, const char *ofname, const char *effnam
 		outFile.close();
 	}
 
-	outFile << "binID\tbinLow\tbinCenter\tbinErr\tchi2\tIbkg\thistCounts\tp0\tp0err\tp1\tp1err\tp2\tp2err\tA\tAerr\tmu\tmuerr\tE\tEerr\tsigma\tsigmaerr\tIpeak\tIcor\tIcorErr\tintrinseff\tbinSA\n";
+	outFile << "binID\tbinLow\tbinCenter\tbinErr\tchi2\tIbkg\thistCounts\tE\tEerr\tIpeak\tIcor\tIcorErr\tintrinseff\tbinSA\n";
 
 	double En;
 	double geomeff;
@@ -290,31 +297,37 @@ bool processSpecOutput(const char *fname, const char *ofname, const char *effnam
 	double bkgCounts;
 	double peakCounts;
 
-	double peakPars[12];
-
 	int functionType;
 	bool gaussianFit = true;
 	bool logXaxis = false;
 
-	TF1 *func;
+	TF1 *peakfunc;
 
 	std::string functionString;
 	std::string currentDirectory;
-	for(int i = 6; i < numKeys; i++){
+	for(int i = 0; i < numKeys; i++){
 		currentDirectory = std::string(keyList->At(i)->GetName());
 
+		size_t index = currentDirectory.find("bin");
+
+		// Check that this is not a directory.
+		if(index == std::string::npos) continue;
+
 		// Get the bin ID.
-		binID = strtol(currentDirectory.substr(currentDirectory.find("bin")+3).c_str(), NULL, 10);
+		binID = strtol(currentDirectory.substr(index+3).c_str(), NULL, 10);
 
 		currentDirectory += "/";
 
 		// Load the fit function from the file.
-		func = (TF1*)getObject(&specFile, "func", currentDirectory);
+		peakfunc = (TF1*)getObject(&specFile, "peak0", currentDirectory);
 
-		if(!func) continue;
+		if(!peakfunc) // Backwards compatibility mode.
+			peakfunc = (TF1*)getObject(&specFile, "peakfunc", currentDirectory);
+
+		if(!peakfunc) continue;
 
 		// Get the function string.
-		functionString = (std::string)func->GetExpFormula();
+		functionString = (std::string)peakfunc->GetExpFormula();
 
 		gaussianFit = (functionString.find("Gaus") != std::string::npos);
 		logXaxis = (functionString.find("log(x)") != std::string::npos);
@@ -323,48 +336,31 @@ bool processSpecOutput(const char *fname, const char *ofname, const char *effnam
 		if(gaussianFit) functionType = (!logXaxis ? 0 : 2);
 		else            functionType = (!logXaxis ? 1 : 3);
 
-		// Get the 6 fit parameters.
-		for(int j = 0; j < 6; j++){
-			peakPars[2*j] = func->GetParameter(j);
-			peakPars[2*j+1] = func->GetParError(j);
-		}
-
 		getTNamed(&specFile, "binLow", binLow, currentDirectory);
 		getTNamed(&specFile, "binWidth", binWidth, currentDirectory);
 		getTNamed(&specFile, "chi2", chisquare, currentDirectory);
 		getTNamed(&specFile, "NDF", funcNDF, currentDirectory);
 		getTNamed(&specFile, "counts", histCounts, currentDirectory);
 		getTNamed(&specFile, "Ibkg", bkgCounts, currentDirectory);
-		getTNamed(&specFile, "Ipeak", peakCounts, currentDirectory);
 
 		outFile << binID << "\t" << binLow << "\t" << binLow+binWidth/2 << "\t" << binWidth/2 << "\t";
 		outFile << chisquare/funcNDF << "\t" << bkgCounts << "\t" << histCounts << "\t";
-		for(int j = 0; j <= 4; j++){
-			outFile << peakPars[2*j] << "\t" << peakPars[2*j+1] << "\t";
-		}
 
 		// Calculate the neutron energy.
 		if(!energy_){
-			if(functionType <= 1) En = 0.5*Mn*d*d/(peakPars[8]*peakPars[8]);
-			else                  En = 0.5*Mn*d*d/(TMath::Exp(2*(peakPars[8]-peakPars[10]*peakPars[10])));
-			outFile << En << "\t" << En*std::sqrt(std::pow(dt/peakPars[8], 2.0) + std::pow(dd/d, 2.0)) << "\t";
+			if(functionType <= 1) En = 0.5*Mn*d*d/std::pow(peakfunc->GetParameter(1), 2.0);
+			else                  En = 0.5*Mn*d*d/(TMath::Exp(2*(peakfunc->GetParameter(1)-std::pow(peakfunc->GetParameter(2), 2.0))));
+			outFile << En << "\t" << En*std::sqrt(std::pow(dt/peakfunc->GetParameter(1), 2.0) + std::pow(dd/d, 2.0)) << "\t";
 		}
 		else{ 
 			// Energy resolution in %.
-			if(functionType <= 1) En = peakPars[8];
-			else                  En = TMath::Exp(peakPars[8]-peakPars[10]*peakPars[10]);
-			outFile << En << "\t" << 235.482*peakPars[10]/peakPars[8] << "\t";
+			if(functionType <= 1) En = peakfunc->GetParameter(1);
+			else                  En = TMath::Exp(peakfunc->GetParameter(1)-std::pow(peakfunc->GetParameter(2), 2.0));
+			outFile << En << "\t" << 235.482*peakfunc->GetParameter(2)/peakfunc->GetParameter(1) << "\t";
 		}
-	
-		outFile << peakPars[10] << "\t" << peakPars[11] << "\t" << peakCounts << "\t";
-	
-		TF1 *peakfunc = (TF1*)getObject(&specFile, "peakfunc", currentDirectory);
+		
+		// Load the projection histogram from the input file.
 		TH1 *projhist = (TH1*)getObject(&specFile, "h1", currentDirectory);
-
-		/*projhist->GetXaxis()->UnZoom();
-		projhist->GetYaxis()->UnZoom();
-		projhist->Draw();
-		peakfunc->Draw("SAME");*/
 
 		TF1 *peakIntrinsic;
 		if(!energy_){
@@ -379,18 +375,17 @@ bool processSpecOutput(const char *fname, const char *ofname, const char *effnam
 			else if(functionType == 2) peakIntrinsic = new TF1("ff", ENfitFunctions::logGaussian, 0.1, 10, 3); // logGaussian (function==2)
 			else if(functionType == 3) peakIntrinsic = new TF1("ff", ENfitFunctions::logLandau, 0.1, 10, 3); // logLandau (function==3)
 		}
-	
+
 		// Calculate the number of neutrons.
-		peakIntrinsic->SetParameter(0, peakPars[6]);
-		peakIntrinsic->SetParameter(1, peakPars[8]);
-		peakIntrinsic->SetParameter(2, peakPars[10]);
+		peakIntrinsic->SetParameter(0, peakfunc->GetParameter(0));
+		peakIntrinsic->SetParameter(1, peakfunc->GetParameter(1));
+		peakIntrinsic->SetParameter(2, peakfunc->GetParameter(2));
 		integral = summation(projhist, peakIntrinsic);
 
-		/*peakIntrinsic->Draw("SAME");
-		gPad->Update();
-		gPad->WaitPrimitive();*/
+		// Calculate the number of neutron counts (not efficiency corrected).
+		peakCounts = summation(projhist, peakfunc);
 
-		outFile << integral << "\t0\t" << peakCounts/integral << "\t";
+		outFile << peakCounts << "\t" << integral << "\t0\t" << peakCounts/integral << "\t";
 		outFile << (twopi*(-std::cos((binLow+binWidth)*pi/180) + std::cos(binLow*pi/180))) << std::endl;
 
 		delete peakIntrinsic;
@@ -428,7 +423,7 @@ void help(const std::string &search_=""){
 	                                          "double", "ENfitFunctions::gaussian", "double *x, double *p", "Standard gaussian (x in MeV) scaled by linearly interpolated intrinsic efficiency.",
 	                                          "double", "ENfitFunctions::landau", "double *x, double *p", "Standard landau (x in MeV) scaled by linearly interpolated intrinsic efficiency.",
 	                                          "double", "interpolate", "const double *py, const double &E, double &eff", "Use linear interpolation to calculate a value from a distribution.",
-	                                          "void", "processMCarlo", "const char *fname, const char *tname=\"data\"", "Process a VANDMC monte carlo detector test output file.",
+	                                          "void", "processMCarlo", "const char *fname, const int &comBins=18, const double &comLow=0, const double &comHigh=90", "Process a VANDMC monte carlo detector test output file.",
 	                                          "bool", "processSpecOutput", "const char *fname, const char *ofname, const char *effname, bool energy_=false", "Process an output file from specFitter (simpleScan tool).",
 	                                          "double", "summation", "TH1 *h, TF1 *f", "Return the total number of counts under a TF1."};
 
