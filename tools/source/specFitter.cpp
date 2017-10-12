@@ -564,7 +564,6 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 				funcstr << "[0]*TMath::Gaus(" << xstr << ", [1], [2])";
 			else
 				funcstr << "[0]*TMath::Landau(" << xstr << ", [1], [2])";
-			std::cout << peakstr.str() << "\t" << funcstr.str() << std::endl;
 			lilfuncs[i] = new TF1(peakstr.str().c_str(), funcstr.str().c_str(), xlo, xhi);
 			lilfuncs[i]->SetLineColor(kGreen+3);
 			lilfuncs[i]->SetParameter(0, func->GetParameter(nBkgPars+3*i));
