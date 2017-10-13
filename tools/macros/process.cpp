@@ -323,7 +323,7 @@ bool processSpecOutput(const char *fname, const char *ofname, const char *effnam
 		outFile.close();
 	}
 
-	outFile << "binID\tbinLow\tbinCenter\tbinErr\tchi2\tIbkg\thistCounts\tE\tEerr\tIpeak\tIcor\tIcorErr\tintrinseff\tbinSA\n";
+	outFile << "binID\tbinLow\tbinCenter\tbinErr\tchi2\tIbkg\thistCounts\tE\tEerr\tIpeak\tIcor\tIcorErr\tintrinseff\n";
 
 	double En;
 	double geomeff;
@@ -432,8 +432,7 @@ bool processSpecOutput(const char *fname, const char *ofname, const char *effnam
 		// Calculate the number of neutron counts (not efficiency corrected).
 		peakCounts = summation(projhist, peakfunc);
 
-		outFile << peakCounts << "\t" << integral << "\t0\t" << peakCounts/integral << "\t";
-		outFile << (twopi*(-std::cos((binLow+binWidth)*pi/180) + std::cos(binLow*pi/180))) << std::endl;
+		outFile << peakCounts << "\t" << integral << "\t0\t" << peakCounts/integral << std::endl;
 
 		delete peakIntrinsic;
 		
