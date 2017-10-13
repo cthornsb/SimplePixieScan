@@ -180,6 +180,8 @@ double summation(TH1 *h, TF1 *f){
 
 // List the ratio of each bin in two 1-d histograms.
 void binRatio(TH1 *h1_, TH1 *h2_){
+	std::cout << "bin\tN1\tN2\tbinCoverage\tbinSolidAngle\tsolidAngle\n";
+	std::cout.precision(6);
 	double content1, content2;
 	double angleLow, angleHigh;
 	double solidAngle;
@@ -206,8 +208,6 @@ bool processMCarlo(const char *fname, const int &comBins=18, const double &comLo
 		return false;
 	}
 
-	std::cout.precision(6);
-
 	std::stringstream stream;
 	stream << "comAngle>>(" << comBins << "," << comLow << "," << comHigh << ")";
 
@@ -217,7 +217,50 @@ bool processMCarlo(const char *fname, const int &comBins=18, const double &comLo
 	t->Draw(stream.str().c_str(), "mcarlo.mult>0", "");
 	TH1 *h2 = (TH1*)t->GetHistogram()->Clone("h2");
 
-	std::cout << "bin\tN1\tN2\tbinCoverage\tbinSolidAngle\tsolidAngle\n";
+	binRatio(h1, h2);
+
+	delete h1;
+	delete h2;
+	
+	f->Close();
+	delete f;
+	
+	return true;
+}
+
+// Process a VANDMC monte carlo detector test output file.
+bool processMCarlo(const char *fname, const char *binfname){
+	TFile *f = new TFile(fname, "READ");
+	if(!f->IsOpen()) return false;
+	
+	TTree *t = (TTree*)f->Get("data");
+	if(!t){
+		f->Close();
+		return false;
+	}
+
+	std::ifstream binfile(binfname);
+	if(!binfile.good()){
+		f->Close();
+		return false;
+	}
+
+	std::vector<double> xbins;
+
+	double tempValue;
+	while(true){
+		binfile >> tempValue;
+		if(binfile.eof()) break;
+		xbins.push_back(tempValue);
+	}
+
+	binfile.close();
+
+	TH1F *h1 = new TH1F("h1", "h1", xbins.size()-1, xbins.data());
+	TH1F *h2 = new TH1F("h2", "h2", xbins.size()-1, xbins.data());
+	
+	t->Draw("comAngle>>h1", "", "");
+	t->Draw("comAngle>>h2", "mcarlo.mult>0", "");
 
 	binRatio(h1, h2);
 
@@ -419,7 +462,7 @@ void help(const std::string &search_=""){
 	                                        "double", "dt", "Timing resolution of detector, in ns."};
 
 	// Defined functions.
-	const std::string definedFunctions[44] = {"void", "binRatio", "TH1 *h1_, TH1 *h2_", "List the ratio of each bin in two 1-d histograms.",
+	const std::string definedFunctions[48] = {"void", "binRatio", "TH1 *h1_, TH1 *h2_", "List the ratio of each bin in two 1-d histograms.",
 	                                          "double", "calcEnergy", "const double &tof_", "Calculate neutron energy (MeV) given the time-of-flight (in ns).",
 	                                          "double", "calcTOF", "const double &E_", "Calculate neutron time-of-flight (ns) given the energy (in MeV).",
 	                                          "double", "TOFfitFunctions::gaussian", "double *x, double *p", "Standard gaussian (x in ns) scaled by linearly interpolated intrinsic efficiency.",
@@ -428,6 +471,7 @@ void help(const std::string &search_=""){
 	                                          "double", "ENfitFunctions::landau", "double *x, double *p", "Standard landau (x in MeV) scaled by linearly interpolated intrinsic efficiency.",
 	                                          "double", "interpolate", "const double *py, const double &E, double &eff", "Use linear interpolation to calculate a value from a distribution.",
 	                                          "void", "processMCarlo", "const char *fname, const int &comBins=18, const double &comLow=0, const double &comHigh=90", "Process a VANDMC monte carlo detector test output file.",
+	                                          "void", "processMCarlo", "const char *fname, const char *binfname", "Process a VANDMC monte carlo output file and load CM bins from a file.",
 	                                          "bool", "processSpecOutput", "const char *fname, const char *ofname, const char *effname, bool energy_=false", "Process an output file from specFitter (simpleScan tool).",
 	                                          "double", "summation", "TH1 *h, TF1 *f", "Return the total number of counts under a TF1."};
 
@@ -445,7 +489,7 @@ void help(const std::string &search_=""){
 			std::cout << "  " << globalVariables[3*i+1] << std::endl;
 	
 		std::cout << "\n Defined helper functions:\n";
-		for(int i = 0; i < 11; i++)
+		for(int i = 0; i < 12; i++)
 			std::cout << "  " << definedFunctions[4*i+1] << std::endl;
 			
 		std::cout << std::endl;
@@ -478,7 +522,7 @@ void help(const std::string &search_=""){
 			}
 		}
 	
-		for(int i = 0; i < 11; i++){
+		for(int i = 0; i < 12; i++){
 			fIndex = definedFunctions[4*i+1].find(search_);
 			if(fIndex != std::string::npos){
 				strings[0] = definedFunctions[4*i+1].substr(0, fIndex);
