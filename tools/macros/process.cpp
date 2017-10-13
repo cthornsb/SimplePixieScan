@@ -244,7 +244,7 @@ bool getTNamed(TFile *f, const std::string &name_, double &val, const std::strin
 }
 
 // Process an output file from specFitter (simpleScan tool).
-bool processSpecOutput(const char *fname, const char *ofname, const char *effname, bool energy_=false){
+bool processSpecOutput(const char *fname, const char *ofname, const char *effname, bool energy_=false, const char *peakname="peak0"){
 	TFile specFile(fname, "READ");
 	if(!specFile.IsOpen()){
 		std::cout << " Error! Failed to open input file \"" << fname << "\".\n";
@@ -319,10 +319,14 @@ bool processSpecOutput(const char *fname, const char *ofname, const char *effnam
 		currentDirectory += "/";
 
 		// Load the fit function from the file.
-		peakfunc = (TF1*)getObject(&specFile, "peak0", currentDirectory);
+		peakfunc = (TF1*)getObject(&specFile, peakname, currentDirectory);
 
-		if(!peakfunc) // Backwards compatibility mode.
-			peakfunc = (TF1*)getObject(&specFile, "peakfunc", currentDirectory);
+		if(!peakfunc){ // Backwards compatibility mode.
+			if(strcmp(peakname, "peak0") == 0) 
+				peakfunc = (TF1*)getObject(&specFile, "peakfunc", currentDirectory);
+			else
+				continue;
+		}
 
 		if(!peakfunc) continue;
 
