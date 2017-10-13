@@ -471,6 +471,11 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 			std::cout << "Mark upper and lower limits of fitting region\n";
 			getMarker(fitlow);
 			getMarker(fithigh);
+			if(fitlow > fithigh){ // Prevent root from crashing on invalid limits.
+				double tempLimit = fitlow;
+				fitlow = fithigh;
+				fithigh = tempLimit;
+			}
 		}
 		else{
 			fitlow = bgx[0];
