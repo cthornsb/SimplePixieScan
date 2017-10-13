@@ -157,8 +157,6 @@ class simpleComCalculator : public simpleTool {
 	double widthMultiplier;
 	int nBins;
 
-	double *xbins;
-
 	bool mcarlo;
 	bool vandmc;
 	bool printMode;
@@ -172,6 +170,7 @@ class simpleComCalculator : public simpleTool {
 	std::string cutFilename;
 	std::string configFilename;
 	std::string thresholdFilename;
+	std::string binWidthFilename;
 
 	reaction rxn;
 
@@ -188,10 +187,10 @@ class simpleComCalculator : public simpleTool {
   public:
 	simpleComCalculator() : simpleTool(), startAngle(0), stopAngle(180), binWidth(1), 
 	                        threshold(-1), radius(0.5), userEnergy(-1), maxRadius(-1), 
-	                        timeOffset(0), widthMultiplier(1), nBins(180), xbins(NULL), 
+	                        timeOffset(0), widthMultiplier(1), nBins(180), 
 	                        mcarlo(false), vandmc(false), printMode(false), defaultMode(false), 
 	                        treeMode(false), reactionMode(true), thresholdFile(false), cut(NULL), 
-	                        cutFilename(""), configFilename(""), thresholdFilename("") { }
+	                        cutFilename(""), configFilename(""), thresholdFilename(""), binWidthFilename("") { }
 
 	~simpleComCalculator();
 	
@@ -285,7 +284,6 @@ threshCal *simpleComCalculator::getThreshCal(const unsigned int &id_){
 }
 
 simpleComCalculator::~simpleComCalculator(){
-	if(xbins) delete[] xbins;
 }
 
 void simpleComCalculator::addOptions(){
@@ -302,6 +300,7 @@ void simpleComCalculator::addOptions(){
 	addOption(optionExt("no-reaction", no_argument, NULL, 0x0, "", "Do not use reaction kinematics (no CM calculations)."), userOpts, optstr);
 	addOption(optionExt("multiplier", required_argument, NULL, 0x0, "<factor>", "Specify bin width multiplier (1 by default)."), userOpts, optstr);
 	addOption(optionExt("vandmc", no_argument, NULL, 0x0, "", "Read from a VANDMC output file."), userOpts, optstr);
+	addOption(optionExt("xbins", required_argument, NULL, 0x0, "<filename>", "Read CM bin widths from a file."), userOpts, optstr);
 }
 
 bool simpleComCalculator::processArgs(){
@@ -345,6 +344,8 @@ bool simpleComCalculator::processArgs(){
 		widthMultiplier = strtod(userOpts.at(11).argument.c_str(), 0);
 	if(userOpts.at(12).active)
 		vandmc = true;
+	if(userOpts.at(13).active)
+		binWidthFilename = userOpts.at(13).argument;
 
 	return true;
 }
@@ -425,58 +426,77 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 		if(!mcarlo){
 			std::cout << std::endl;
 
-			if(!defaultMode) setAngles();
+			std::vector<double> xbinsLowLab;
+			std::vector<double> xbinsLow;
+			if(!binWidthFilename.empty()){
+				std::ifstream binFile(binWidthFilename.c_str());
+				if(!binFile.good()){
+					std::cout << " Error: Failed to load bin width file \"" << binWidthFilename << "\".\n";
+					return 6;
+				}
 
-			xbins = new double[nBins+1];
+				double readValue;
+				while(true){
+					binFile >> readValue;
+					if(binFile.eof()) break;
+					xbinsLow.push_back(readValue);
+				}
+
+				binFile.close();
+
+				nBins = xbinsLow.size()-1;
+				startAngle = xbinsLow.front();
+				stopAngle = xbinsLow.back();
+				binWidth = (stopAngle-startAngle)/nBins;
+
+				std::cout << " debug: nBins=" << nBins << ", startAngle=" << startAngle << ", stopAngle=" << stopAngle << ", binWidth=" << binWidth << std::endl;
+			}
+			else{
+				if(!defaultMode) setAngles();
+				xbinsLow.resize(nBins);
+			}
 
 			if(reactionMode){ // Fixed width CM angle bins.
 				particle *ejectile = rxn.GetEjectile();
 
+				std::cout << "bin\tlowCom\tlowLab\n";
+
 				double comAngle = startAngle;
 				for(int i = 0; i <= nBins; i++){
-					if(!ejectile->inverseKin){
-						rxn.SetComAngle(comAngle);
-						xbins[i] = ejectile->labAngle[0];				
-					}
-					else{
-						rxn.SetComAngle(180-comAngle);
-						xbins[nBins-i] = ejectile->labAngle[0];
-					}
+					if(binWidthFilename.empty())
+						comAngle = startAngle + i*binWidth;
+					else
+						comAngle = xbinsLow[i];
 
-					comAngle += binWidth;
+					// Handle inverse kinematics case.
+					if(ejectile->inverseKin) comAngle = 180 - comAngle;
+
+					rxn.SetComAngle(comAngle);
+					xbinsLowLab.push_back(ejectile->labAngle[0]);
+					std::cout << i << "\t" << comAngle << "\t" << xbinsLowLab[i] << "\n";
 				}
 
-				if(!ejectile->inverseKin){
-					comAngle = startAngle;
-					std::cout << "bin\tlowCom\thighCom\tlowLab\thighLab\n";
-					for(int i = 0; i < nBins; i++){
-						std::cout << i << "\t" << comAngle << "\t" << (comAngle + binWidth) << "\t" << xbins[i] << "\t" << xbins[i+1] << "\n";
-						comAngle += binWidth;			
-					}
-				}
-				else{
-					comAngle = stopAngle;
-					std::cout << "bin\thighCom\tlowCom\tlowLab\thighLab\n";
-					for(int i = 0; i < nBins; i++){
-						std::cout << i << "\t" << comAngle << "\t" << (comAngle - binWidth) << "\t" << xbins[i] << "\t" << xbins[i+1] << "\n";
-						comAngle -= binWidth;			
-					}
-				}
+				// Reverse the bins in inverse kinematics so that they are in increasing order.
+				if(ejectile->inverseKin) std::reverse(xbinsLowLab.begin(), xbinsLowLab.end());
 			}
-			else{ // Fixed width lab angle bins.
-				for(int i = 0; i <= nBins; i++)
-					xbins[i] = startAngle + i*(stopAngle-startAngle)/nBins;				
+			else{ // No CM calculation.
+				for(int i = 0; i <= nBins; i++){
+					if(binWidthFilename.empty()) // Fixed width lab angle bins.
+						xbinsLowLab[i] = startAngle + i*(stopAngle-startAngle)/nBins;
+					else
+						xbinsLowLab[i] = xbinsLow.at(i);
+				}
 			}
 
 			std::vector<double> tofBins, energyBins;
 			binTOF(tofBins, energyBins, radius, 0.1, 8, widthMultiplier);
 
 			// Create lab histograms.
-			hE = new TH2D("hE", "Lab Angle vs. Energy", nBins, xbins, energyBins.size()-1, energyBins.data());
+			hE = new TH2D("hE", "Lab Angle vs. Energy", nBins, xbinsLowLab.data(), energyBins.size()-1, energyBins.data());
 			hE->GetXaxis()->SetTitle("Lab Angle (deg)");
 			hE->GetYaxis()->SetTitle("Neutron Energy (MeV)");
 
-			h2d = new TH2D("h2d", "Lab Angle vs. ctof", nBins, xbins, tofBins.size()-1, tofBins.data());
+			h2d = new TH2D("h2d", "Lab Angle vs. ctof", nBins, xbinsLowLab.data(), tofBins.size()-1, tofBins.data());
 			h2d->GetXaxis()->SetTitle("Lab Angle (deg)");
 			h2d->GetYaxis()->SetTitle("Neutron TOF (ns)");
 
@@ -490,11 +510,17 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			h2dloc->GetYaxis()->SetTitle("Neutron TOF (ns)");
 
 			if(reactionMode){ // Create CM histograms.
-				h2dcom = new TH2D("h2dcom", "COM Angle vs. ctof", nBins, startAngle, stopAngle, tofBins.size()-1, tofBins.data());
+				if(binWidthFilename.empty()){
+					h2dcom = new TH2D("h2dcom", "COM Angle vs. ctof", nBins, startAngle, stopAngle, tofBins.size()-1, tofBins.data());
+					hEcom = new TH2D("hEcom", "COM Angle vs. Energy", nBins, startAngle, stopAngle, energyBins.size()-1, energyBins.data());
+				}
+				else{
+					h2dcom = new TH2D("h2dcom", "COM Angle vs. ctof", nBins, xbinsLow.data(), tofBins.size()-1, tofBins.data());
+					hEcom = new TH2D("hEcom", "COM Angle vs. Energy", nBins, xbinsLow.data(), energyBins.size()-1, energyBins.data());
+				}
+
 				h2dcom->GetXaxis()->SetTitle("COM Angle (deg)");
 				h2dcom->GetYaxis()->SetTitle("Neutron TOF (ns)");
-
-				hEcom = new TH2D("hEcom", "COM Angle vs. Energy", nBins, startAngle, stopAngle, energyBins.size()-1, energyBins.data());
 				hEcom->GetXaxis()->SetTitle("COM Angle (deg)");
 				hEcom->GetYaxis()->SetTitle("Neutron Energy (MeV)");
 			}
