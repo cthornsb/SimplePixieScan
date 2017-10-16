@@ -71,6 +71,9 @@ simpleTool::simpleTool(){
 	output_filename = "";
 	output_objname = "";
 	cut_filename = "";
+
+	entries_to_process = 0;
+	max_entries_to_process = -1;
 	
 	baseOpts.push_back(optionExt("help", no_argument, NULL, 'h', "", "Display this dialogue."));
 	baseOpts.push_back(optionExt("input", required_argument, NULL, 'i', "<filename>", "Specifies an input file to analyze."));
@@ -78,8 +81,9 @@ simpleTool::simpleTool(){
 	baseOpts.push_back(optionExt("name", required_argument, NULL, 'n', "<name>", "Specify the name of the input TTree or TH1."));
 	baseOpts.push_back(optionExt("tcutg", required_argument, NULL, 'C', "<filename:cutname>", "Specify the name of the TCutG input file and the name of the cut."));
 	baseOpts.push_back(optionExt("multi", required_argument, NULL, 'm', "<N>", "Specify multiple input filenames e.g. filename.root, filename-1.root, ..., filename-N.root."));
+	baseOpts.push_back(optionExt("entries", required_argument, NULL, 'E', "<N>", "Specify the number of entries to process from the input tree."));
 
-	optstr = "hi:o:n:C:m:";
+	optstr = "hi:o:n:C:m:E:";
 
 	// Get the current working directory.
 	char workingDirectory[1024];
@@ -206,6 +210,13 @@ bool simpleTool::setup(int argc, char *argv[]){
 					largestFileIndex = strtol(optarg, NULL, 0);
 					multiFileMode = true;
 					break;
+				case 'E' :
+					max_entries_to_process = strtoll(optarg, NULL, 0);
+					if(max_entries_to_process <= 0){
+						std::cout << " Error: Invalid number of entries to process (" << max_entries_to_process << ")!\n";
+						return false;
+					}
+					break;
 				default:
 					for(std::vector<optionExt>::iterator iter = userOpts.begin(); iter != userOpts.end(); iter++){
 						if(retval == iter->val){
@@ -293,6 +304,10 @@ TTree *simpleTool::loadInputTree(){
 		std::cout << " Error! Failed to load input TTree '" << input_objname << "'.\n";
 		return NULL;
 	}
+	if(max_entries_to_process <= 0) // No user specified number of entries.
+		entries_to_process = intree->GetEntries();
+	else // The user has specified a maximum number of entries to read.
+		entries_to_process = (intree->GetEntries() > max_entries_to_process ? max_entries_to_process : intree->GetEntries());
 	return intree;
 }
 

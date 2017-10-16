@@ -68,6 +68,9 @@ class simpleTool{
 	std::string home_dir;
 
 	bool filledFromTree;
+
+	long long entries_to_process;
+	long long max_entries_to_process;
 	
 	virtual void addOptions(){ }
 	
