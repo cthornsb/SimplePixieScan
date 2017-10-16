@@ -482,6 +482,7 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 				if(ejectile->inverseKin) std::reverse(xbinsLowLab.begin(), xbinsLowLab.end());
 			}
 			else{ // No CM calculation.
+				xbinsLowLab.resize(nBins+1);
 				for(int i = 0; i <= nBins; i++){
 					if(binWidthFilename.empty()) // Fixed width lab angle bins.
 						xbinsLowLab[i] = startAngle + i*(stopAngle-startAngle)/nBins;
