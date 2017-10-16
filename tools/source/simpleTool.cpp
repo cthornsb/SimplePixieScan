@@ -25,7 +25,7 @@
 // class progressBar
 ///////////////////////////////////////////////////////////////////////////////
 
-void progressBar::start(const unsigned int &numEntries_){
+void progressBar::start(const long long &numEntries_){
 	if(numEntries_ < length){
 		length = numEntries_;
 		progStr = std::string(numEntries_, ' ');
@@ -37,7 +37,7 @@ void progressBar::start(const unsigned int &numEntries_){
 	std::cout << "  Working - 0% [" << progStr << "] 100%\r" << std::flush;
 }
 
-void progressBar::check(const unsigned int &entry_){
+void progressBar::check(const long long &entry_){
 	if(entry_ % chunkSize == 0 && entry_ != 0){
 		progStr[chunkCount] = '=';
 		std::cout << "  Working - 0% [" << progStr << "] 100%\r" << std::flush;
@@ -72,8 +72,10 @@ simpleTool::simpleTool(){
 	output_objname = "";
 	cut_filename = "";
 
+	start_entry = 0;
 	entries_to_process = 0;
 	max_entries_to_process = -1;
+	current_entry = 0;
 	
 	baseOpts.push_back(optionExt("help", no_argument, NULL, 'h', "", "Display this dialogue."));
 	baseOpts.push_back(optionExt("input", required_argument, NULL, 'i', "<filename>", "Specifies an input file to analyze."));
@@ -81,9 +83,10 @@ simpleTool::simpleTool(){
 	baseOpts.push_back(optionExt("name", required_argument, NULL, 'n', "<name>", "Specify the name of the input TTree or TH1."));
 	baseOpts.push_back(optionExt("tcutg", required_argument, NULL, 'C', "<filename:cutname>", "Specify the name of the TCutG input file and the name of the cut."));
 	baseOpts.push_back(optionExt("multi", required_argument, NULL, 'm', "<N>", "Specify multiple input filenames e.g. filename.root, filename-1.root, ..., filename-N.root."));
-	baseOpts.push_back(optionExt("entries", required_argument, NULL, 'E', "<N>", "Specify the number of entries to process from the input tree."));
+	baseOpts.push_back(optionExt("start", required_argument, NULL, 's', "<N>", "Specify the start entry in the input tree (default=0)."));
+	baseOpts.push_back(optionExt("entries", required_argument, NULL, 'e', "<N>", "Specify the number of entries to process from the input tree."));
 
-	optstr = "hi:o:n:C:m:E:";
+	optstr = "hi:o:n:C:m:s:e:";
 
 	// Get the current working directory.
 	char workingDirectory[1024];
@@ -112,6 +115,26 @@ simpleTool::~simpleTool(){
 		can2->Close();
 		delete can2;
 	}
+}
+
+/** Get the specified entry from the input TTree. Does not update the progress bar.
+  * \param[in]  entry_ The entry to get from the TTree.
+  * \return True if the TTree is loaded and the specified entry exists and return false otherwise.
+  */
+bool simpleTool::getEntry(const long long &entry_){
+	if(!intree) return false;
+	return (intree->GetEntry(entry_) > 0);
+}
+
+/** Get the next entry from the input TTree.
+  * \return True if the TTree is loaded, the next entry exists, and the max number of entries has not been reached. Returns false otherwise.
+  */
+bool simpleTool::getNextEntry(){
+	if(!intree || current_entry >= start_entry+entries_to_process) return false;
+	pbar.check(current_entry);
+	if(current_entry+1 >= start_entry+entries_to_process) 
+		pbar.finalize();
+	return (intree->GetEntry(current_entry++) > 0);
 }
 
 /** Get the full pathname from an input string.
@@ -210,7 +233,14 @@ bool simpleTool::setup(int argc, char *argv[]){
 					largestFileIndex = strtol(optarg, NULL, 0);
 					multiFileMode = true;
 					break;
-				case 'E' :
+				case 's' :
+					start_entry = strtoll(optarg, NULL, 0);
+					if(start_entry < 0){
+						std::cout << " Error: Invalid starting TTree entry (" << start_entry << ")!\n";
+						return false;
+					}
+					break;
+				case 'e' :
 					max_entries_to_process = strtoll(optarg, NULL, 0);
 					if(max_entries_to_process <= 0){
 						std::cout << " Error: Invalid number of entries to process (" << max_entries_to_process << ")!\n";
@@ -308,6 +338,8 @@ TTree *simpleTool::loadInputTree(){
 		entries_to_process = intree->GetEntries();
 	else // The user has specified a maximum number of entries to read.
 		entries_to_process = (intree->GetEntries() > max_entries_to_process ? max_entries_to_process : intree->GetEntries());
+	pbar.start(entries_to_process);
+	current_entry = start_entry;
 	return intree;
 }
 

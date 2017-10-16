@@ -584,15 +584,8 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 				return 8;
 			}
 	
-			progressBar pbar;
-			pbar.start(intree->GetEntries());
-
 			unsigned int badCount = 0;
-			for(unsigned int i = 0; i < intree->GetEntries(); i++){
-				pbar.check(i);
-	
-				intree->GetEntry(i);
-		
+			while(getNextEntry()){
 				if(!mcarlo){
 					if(vandmc){
 						if(tof_v.empty()) continue;
@@ -646,9 +639,6 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 					}
 				}
 			}
-	
-			pbar.finalize();
-		
 			std::cout << "  Rejected " << badCount << " events.\n";
 		}
 		

@@ -71,9 +71,7 @@ bool phasePhase::process(){
 		return false;
 	}
 
-	std::cout << " Processing " << intree->GetEntries() << " entries.\n";
-	for(int i = 0; i < intree->GetEntries(); i++){
-		intree->GetEntry(i);
+	while(getNextEntry()){
 		if(ptr->mult == 0)
 			continue;
 		p1 = -1;

@@ -25,9 +25,6 @@ TBranch *branches[6];
 
 class rawEventAnalyzer : public simpleTool {
   private:
-  	long long startEntry;
-  	long long numEntries;
-  	
   	bool absoluteTime;
 
 	TBox *box;
@@ -36,7 +33,7 @@ class rawEventAnalyzer : public simpleTool {
 
 	bool setAddresses();
 
-	void getEntry();
+	void process();
 
   public:
 	rawEventAnalyzer();
@@ -67,9 +64,7 @@ bool rawEventAnalyzer::setAddresses(){
 	return true;
 }
 
-void rawEventAnalyzer::getEntry(){
-	if(!intree) return;
-
+void rawEventAnalyzer::process(){
 	std::vector<double> x;
 	std::vector<int> y;
 	std::vector<int> colors;
@@ -78,17 +73,12 @@ void rawEventAnalyzer::getEntry(){
 	std::vector<double> startTimes;
 	std::vector<double> stopTimes;
 	
-	long long stopEntry = startEntry+numEntries;
-	if(stopEntry > intree->GetEntries()) stopEntry = intree->GetEntries();
-	
 	int startCounts = 0;
 	int goodCounts = 0;
 	int badCounts = 0;
 	
 	int count = 0;
-	for(long long entry = startEntry; entry < stopEntry; entry++){
-		intree->GetEntry(entry);
-	
+	while(getNextEntry()){
 		startTimes.push_back(rawEventStartTime*TIME_MULTIPLIER);
 		stopTimes.push_back(rawEventStopTime*TIME_MULTIPLIER);
 		
@@ -191,7 +181,9 @@ void rawEventAnalyzer::getEntry(){
 	}
 }
 
-rawEventAnalyzer::rawEventAnalyzer() : simpleTool(), startEntry(0), numEntries(1), absoluteTime(false) { 
+rawEventAnalyzer::rawEventAnalyzer() : simpleTool(), absoluteTime(false) { 
+	max_entries_to_process = 1;
+
 	box = new TBox();
 	box->SetFillColor(kBlue);
 	
@@ -213,27 +205,11 @@ rawEventAnalyzer::~rawEventAnalyzer(){
 }
 
 void rawEventAnalyzer::addOptions(){
-	addOption(optionExt("start", required_argument, NULL, 's', "<start-entry>", "Specify the first tree entry."), userOpts, optstr);
-	addOption(optionExt("number", required_argument, NULL, 'N', "<num-entries>", "Specify the number of entries to read."), userOpts, optstr);
 	addOption(optionExt("absolute", no_argument, NULL, 'a', "", "Output absolute time instead of time relative to the earliest event."), userOpts, optstr);
 }
 
 bool rawEventAnalyzer::processArgs(){
-	if(userOpts.at(0).active){
-		startEntry = strtoll(userOpts.at(0).argument.c_str(), NULL, 0);
-		if(startEntry < 0){
-			std::cout << " Error: User specified illegal start entry (" << startEntry << ")!\n";
-			return false;
-		}
-	}
-	if(userOpts.at(1).active){
-		numEntries = strtoll(userOpts.at(1).argument.c_str(), NULL, 0);
-		if(numEntries < 0){
-			std::cout << " Error: User specified illegal number of entries (" << numEntries << ")!\n";
-			return false;
-		}
-	}
-	if(userOpts.at(2).active)
+	if(userOpts.at(0).active)
 		absoluteTime = true;
 		
 	return true;
@@ -270,7 +246,8 @@ int rawEventAnalyzer::execute(int argc, char *argv[]){
 		return 5;
 	}
 
-	getEntry();
+	// Start the main loop.
+	process();
 	
 	return 0;
 }

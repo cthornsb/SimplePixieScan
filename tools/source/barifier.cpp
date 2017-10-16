@@ -352,18 +352,8 @@ int barHandler::execute(int argc, char *argv[]){
 			return 7;
 		}
 
-		progressBar pbar;
-		pbar.start(intree->GetEntries());
-
-		for(unsigned int i = 0; i < intree->GetEntries(); i++){
-			pbar.check(i);
-
-			intree->GetEntry(i);
-	
+		while(getNextEntry())
 			handleEvents();
-		}
-
-		pbar.finalize();
 	}
 		
 	outfile->cd();

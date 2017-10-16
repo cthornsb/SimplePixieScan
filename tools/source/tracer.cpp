@@ -15,8 +15,6 @@
 
 class tracer : public simpleTool {
   private:
-  	long long startEntry;
-  	unsigned int numEntries;
 	unsigned int tlength;
  
 	Trace *trace;
@@ -26,8 +24,6 @@ class tracer : public simpleTool {
 	TH2I *hist;
 
 	bool setAddresses();
-
-	void getEntry();
 
   public:
 	tracer();
@@ -49,38 +45,8 @@ bool tracer::setAddresses(){
 	return (branch != NULL);
 }
 
-void tracer::getEntry(){
-	if(!intree) return;
-
-	long long stopEntry = startEntry+numEntries;
-	if(stopEntry > intree->GetEntries()) stopEntry = intree->GetEntries();
-	
-	unsigned int bin = 0;
-	long long entry = startEntry;
-	while(bin <= numEntries && entry < intree->GetEntries()){
-		intree->GetEntry(entry++);
-
-		// Skip empty traces.
-		if(trace->wave.empty()) continue;
-
-		// Get the trace length.
-		if(bin == 0){
-			tlength = trace->wave.size()/trace->mult;
-			std::cout << " Trace length is " << tlength << " ADC ticks (" << tlength*ADC_CLOCK << " ns).\n";
-			hist = new TH2I("hist", "Traces", tlength, 0, tlength*ADC_CLOCK, numEntries, 0, numEntries);
-			hist->SetStats(0);
-		}
-	
-		int globalBin;
-		for(unsigned int i = 0; i < tlength; i++){
-			globalBin = hist->GetBin(i, bin);
-			hist->SetBinContent(globalBin, trace->wave.at(i));
-		}
-		bin++;
-	}
-}
-
-tracer::tracer() : simpleTool(), startEntry(0), numEntries(1), tlength(0), trace(NULL), branch(NULL), hist(NULL) { 
+tracer::tracer() : simpleTool(), tlength(0), trace(NULL), branch(NULL), hist(NULL) {
+	max_entries_to_process = 1; 
 	input_objname = "trace";
 }
 
@@ -89,26 +55,9 @@ tracer::~tracer(){
 }
 
 void tracer::addOptions(){
-	addOption(optionExt("start", required_argument, NULL, 's', "<start-entry>", "Specify the first tree entry."), userOpts, optstr);
-	addOption(optionExt("number", required_argument, NULL, 'N', "<num-entries>", "Specify the number of entries to read."), userOpts, optstr);
 }
 
 bool tracer::processArgs(){
-	if(userOpts.at(0).active){
-		startEntry = strtoll(userOpts.at(0).argument.c_str(), NULL, 0);
-		if(startEntry < 0){
-			std::cout << " Error: User specified illegal start entry (" << startEntry << ")!\n";
-			return false;
-		}
-	}
-	if(userOpts.at(1).active){
-		numEntries = strtoul(userOpts.at(1).argument.c_str(), NULL, 0);
-		if(numEntries < 0){
-			std::cout << " Error: User specified illegal number of entries (" << numEntries << ")!\n";
-			return false;
-		}
-	}
-		
 	return true;
 }
 
@@ -143,8 +92,27 @@ int tracer::execute(int argc, char *argv[]){
 		return 5;
 	}
 
-	getEntry();
+	unsigned int count = 0;
+	while(getNextEntry()){
+		// Skip empty traces.
+		if(trace->wave.empty()) continue;
+
+		// Get the trace length.
+		if(count == 0){
+			tlength = trace->wave.size()/trace->mult;
+			std::cout << " Trace length is " << tlength << " ADC ticks (" << tlength*ADC_CLOCK << " ns).\n";
+			hist = new TH2I("hist", "Traces", tlength, 0, tlength*ADC_CLOCK, max_entries_to_process, 0, max_entries_to_process);
+			hist->SetStats(0);
+		}
 	
+		int globalBin;
+		for(unsigned int i = 0; i < tlength; i++){
+			globalBin = hist->GetBin(i, count);
+			hist->SetBinContent(globalBin, trace->wave.at(i));
+		}
+		count++;
+	}
+
 	openCanvas1();
 	hist->Draw("COLZ");
 

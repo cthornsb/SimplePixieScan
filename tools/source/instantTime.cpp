@@ -74,12 +74,7 @@ int instantTime::execute(int argc, char *argv[]){
 	outtree->Branch("tdiff", &tdiff);
 	outtree->Branch("time", &currTime);
 
-	progressBar pbar;
-	pbar.start(intree->GetEntries());
-
-	for(int i = 0; i < intree->GetEntries(); i++){
-		pbar.check(i);
-		intree->GetEntry(i);
+	while(getNextEntry()){
 		if(ptr->mult == 0)
 			continue;
 		for(unsigned int j = 0; j < ptr->mult; j++){

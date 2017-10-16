@@ -19,17 +19,17 @@ class TCutG;
 
 class progressBar{
   public:
-	unsigned int numEntries;
-	unsigned int length;
-	unsigned int chunkSize;
-	unsigned int chunkCount;
+	long long numEntries;
+	long long length;
+	long long chunkSize;
+	long long chunkCount;
 	std::string progStr;
 	
-	progressBar(const unsigned int &len=20) : numEntries(0), length(len), chunkSize(0), chunkCount(0), progStr(len, ' '){ }
+	progressBar(const long long &len=20) : numEntries(0), length(len), chunkSize(0), chunkCount(0), progStr(len, ' '){ }
 
-	void start(const unsigned int &numEntries_);
+	void start(const long long &numEntries_);
 
-	void check(const unsigned int &entry_);
+	void check(const long long &entry_);
 
 	void finalize();
 };
@@ -69,12 +69,27 @@ class simpleTool{
 
 	bool filledFromTree;
 
+	long long start_entry;
 	long long entries_to_process;
 	long long max_entries_to_process;
-	
+	long long current_entry;
+
+	progressBar pbar;
+
 	virtual void addOptions(){ }
 	
 	virtual bool processArgs(){ return true; }
+
+	/** Get the specified entry from the input TTree.
+	  * \param[in]  entry_ The entry to get from the TTree.
+	  * \return True if the TTree is loaded and the specified entry exists and return false otherwise.
+	  */
+	virtual bool getEntry(const long long &entry_);
+
+	/** Get the next entry from the input TTree.
+	  * \return True if the TTree is loaded and the next entry exists and return false otherwise.
+	  */
+	virtual bool getNextEntry();
 
 	/** Get the full pathname from an input string.
 	  * \param[in]  path_ The user specified filename. May be relative or absolute.
