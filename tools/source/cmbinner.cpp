@@ -172,6 +172,8 @@ class simpleComCalculator : public simpleTool {
 	std::string thresholdFilename;
 	std::string binWidthFilename;
 
+	int restrictLocation;
+
 	reaction rxn;
 
 	threshCal dummy;
@@ -190,7 +192,8 @@ class simpleComCalculator : public simpleTool {
 	                        timeOffset(0), widthMultiplier(1), nBins(180), 
 	                        mcarlo(false), vandmc(false), printMode(false), defaultMode(false), 
 	                        treeMode(false), reactionMode(true), thresholdFile(false), cut(NULL), 
-	                        cutFilename(""), configFilename(""), thresholdFilename(""), binWidthFilename("") { }
+	                        cutFilename(""), configFilename(""), thresholdFilename(""), binWidthFilename(""),
+	                        restrictLocation(-1) { }
 
 	~simpleComCalculator();
 	
@@ -301,6 +304,7 @@ void simpleComCalculator::addOptions(){
 	addOption(optionExt("multiplier", required_argument, NULL, 0x0, "<factor>", "Specify bin width multiplier (1 by default)."), userOpts, optstr);
 	addOption(optionExt("vandmc", no_argument, NULL, 0x0, "", "Read from a VANDMC output file."), userOpts, optstr);
 	addOption(optionExt("xbins", required_argument, NULL, 0x0, "<filename>", "Read CM bin widths from a file."), userOpts, optstr);
+	addOption(optionExt("location", required_argument, NULL, 0x0, "<location>", "Only process events from a particular pixie ID."), userOpts, optstr);
 }
 
 bool simpleComCalculator::processArgs(){
@@ -346,6 +350,8 @@ bool simpleComCalculator::processArgs(){
 		vandmc = true;
 	if(userOpts.at(13).active)
 		binWidthFilename = userOpts.at(13).argument;
+	if(userOpts.at(14).active)
+		restrictLocation = strtol(userOpts.at(14).argument.c_str(), NULL, 0);
 
 	return true;
 }
@@ -529,11 +535,11 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			}
 
 			// Create TQDC histograms.
-			hEtqdc = new TH2F("hEtqdc", "Trace QDC vs. Energy", energyBins.size()-1, energyBins.data(), 500, 0, 10000);
+			hEtqdc = new TH2F("hEtqdc", "Trace QDC vs. Energy", energyBins.size()-1, energyBins.data(), 1000, 0, 20000);
 			hEtqdc->GetXaxis()->SetTitle("Neutron Energy (MeV)");
 			hEtqdc->GetYaxis()->SetTitle("Trace QDC");
 
-			h2dtqdc = new TH2F("h2dtqdc", "Trace QDC vs. Corrected TOF", tofBins.size()-1, tofBins.data(), 500, 0, 10000);
+			h2dtqdc = new TH2F("h2dtqdc", "Trace QDC vs. Corrected TOF", tofBins.size()-1, tofBins.data(), 1000, 0, 20000);
 			h2dtqdc->GetXaxis()->SetTitle("Neutron TOF (ns)");
 			h2dtqdc->GetYaxis()->SetTitle("Trace QDC");
 		}
@@ -596,7 +602,10 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 						location = detLocation.front();
 						r = hitR_v.front();
 					}
-					
+				
+					// Check the location of this event.
+					if(restrictLocation >= 0 && location != restrictLocation) continue;
+	
 					if(maxRadius > 0 && r >= maxRadius){
 						badCount++;
 						continue;
