@@ -417,12 +417,14 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			outtree->Branch("loc", &location);
 		}
 
-		TH2D *hE = NULL;
-		TH2D *h2d = NULL;
-		TH2D *hEcom = NULL;
-		TH2D *h2dcom = NULL;
-		TH2D *hEloc = NULL;
-		TH2D *h2dloc = NULL;
+		TH2F *hElab = NULL;
+		TH2F *h2dlab = NULL;
+		TH2F *hEcom = NULL;
+		TH2F *h2dcom = NULL;
+		TH2F *hEloc = NULL;
+		TH2F *h2dloc = NULL;
+		TH2F *hEtqdc = NULL;
+		TH2F *h2dtqdc = NULL;
 		if(!mcarlo){
 			std::cout << std::endl;
 
@@ -492,31 +494,31 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			binTOF(tofBins, energyBins, radius, 0.1, 8, widthMultiplier);
 
 			// Create lab histograms.
-			hE = new TH2D("hE", "Lab Angle vs. Energy", nBins, xbinsLowLab.data(), energyBins.size()-1, energyBins.data());
-			hE->GetXaxis()->SetTitle("Lab Angle (deg)");
-			hE->GetYaxis()->SetTitle("Neutron Energy (MeV)");
+			hElab = new TH2F("hElab", "Energy vs. Lab Angle", nBins, xbinsLowLab.data(), energyBins.size()-1, energyBins.data());
+			hElab->GetXaxis()->SetTitle("Lab Angle (deg)");
+			hElab->GetYaxis()->SetTitle("Neutron Energy (MeV)");
 
-			h2d = new TH2D("h2d", "Lab Angle vs. ctof", nBins, xbinsLowLab.data(), tofBins.size()-1, tofBins.data());
-			h2d->GetXaxis()->SetTitle("Lab Angle (deg)");
-			h2d->GetYaxis()->SetTitle("Neutron TOF (ns)");
+			h2dlab = new TH2F("h2dlab", "Corrected TOF vs. Lab Angle", nBins, xbinsLowLab.data(), tofBins.size()-1, tofBins.data());
+			h2dlab->GetXaxis()->SetTitle("Lab Angle (deg)");
+			h2dlab->GetYaxis()->SetTitle("Neutron TOF (ns)");
 
 			// Create location histograms.
-			hEloc = new TH2D("hEloc", "Location vs. Energy", 100, 0, 100, energyBins.size()-1, energyBins.data());
+			hEloc = new TH2F("hEloc", "Energy vs. Location", 100, 0, 100, energyBins.size()-1, energyBins.data());
 			hEloc->GetXaxis()->SetTitle("Detector Location");
 			hEloc->GetYaxis()->SetTitle("Neutron Energy (MeV)");
 
-			h2dloc = new TH2D("h2dloc", "Lab Angle vs. ctof", 100, 0, 100, tofBins.size()-1, tofBins.data());
+			h2dloc = new TH2F("h2dloc", "Corrected TOF vs. Location", 100, 0, 100, tofBins.size()-1, tofBins.data());
 			h2dloc->GetXaxis()->SetTitle("Detector Location");
 			h2dloc->GetYaxis()->SetTitle("Neutron TOF (ns)");
 
 			if(reactionMode){ // Create CM histograms.
 				if(binWidthFilename.empty()){
-					h2dcom = new TH2D("h2dcom", "COM Angle vs. ctof", nBins, startAngle, stopAngle, tofBins.size()-1, tofBins.data());
-					hEcom = new TH2D("hEcom", "COM Angle vs. Energy", nBins, startAngle, stopAngle, energyBins.size()-1, energyBins.data());
+					h2dcom = new TH2F("h2dcom", "Corrected TOF vs. CM Angle", nBins, startAngle, stopAngle, tofBins.size()-1, tofBins.data());
+					hEcom = new TH2F("hEcom", "Energy vs. CM Angle", nBins, startAngle, stopAngle, energyBins.size()-1, energyBins.data());
 				}
 				else{
-					h2dcom = new TH2D("h2dcom", "COM Angle vs. ctof", nBins, xbinsLow.data(), tofBins.size()-1, tofBins.data());
-					hEcom = new TH2D("hEcom", "COM Angle vs. Energy", nBins, xbinsLow.data(), energyBins.size()-1, energyBins.data());
+					h2dcom = new TH2F("h2dcom", "Corrected TOF vs. CM Angle", nBins, xbinsLow.data(), tofBins.size()-1, tofBins.data());
+					hEcom = new TH2F("hEcom", "Energy vs. CM Angle", nBins, xbinsLow.data(), energyBins.size()-1, energyBins.data());
 				}
 
 				h2dcom->GetXaxis()->SetTitle("COM Angle (deg)");
@@ -524,6 +526,15 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 				hEcom->GetXaxis()->SetTitle("COM Angle (deg)");
 				hEcom->GetYaxis()->SetTitle("Neutron Energy (MeV)");
 			}
+
+			// Create TQDC histograms.
+			hEtqdc = new TH2F("hEtqdc", "Trace QDC vs. Energy", energyBins.size()-1, energyBins.data(), 500, 0, 10000);
+			hEtqdc->GetXaxis()->SetTitle("Neutron Energy (MeV)");
+			hEtqdc->GetYaxis()->SetTitle("Trace QDC");
+
+			h2dtqdc = new TH2F("h2dtqdc", "Trace QDC vs. Corrected TOF", tofBins.size()-1, tofBins.data(), 500, 0, 10000);
+			h2dtqdc->GetXaxis()->SetTitle("Neutron TOF (ns)");
+			h2dtqdc->GetYaxis()->SetTitle("Trace QDC");
 		}
 
 		int file_counter = 1;
@@ -612,14 +623,16 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 						angleCOM = rxn.GetEjectile()->comAngle[0];
 						outtree->Fill();
 					}
-					hE->Fill(theta, energy);
-					h2d->Fill(theta, ctof);
+					hElab->Fill(theta, energy);
+					h2dlab->Fill(theta, ctof);
 					hEloc->Fill(location, energy);
 					h2dloc->Fill(location, ctof);
 					if(reactionMode){
 						hEcom->Fill(rxn.GetEjectile()->comAngle[0], energy);
 						h2dcom->Fill(rxn.GetEjectile()->comAngle[0], ctof);
 					}
+					hEtqdc->Fill(energy, tqdc);
+					h2dtqdc->Fill(ctof, tqdc);
 				}
 				else{
 					for(unsigned int j = 0; j < hitTheta.size(); j++){
@@ -642,20 +655,22 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 		if(treeMode || mcarlo)
 			outtree->Write();
 		if(!mcarlo){
-			hE->Write();
-			h2d->Write();
+			hElab->Write();
+			h2dlab->Write();
 			hEloc->Write();
 			h2dloc->Write();
 			if(reactionMode){
 				hEcom->Write();
 				h2dcom->Write();
 			}
+			hEtqdc->Write();
+			h2dtqdc->Write();
 		}
 
 		if(cut) delete cut;
 
 		if(treeMode || mcarlo) std::cout << "\n\n Done! Wrote " << outtree->GetEntries() << " entries to '" << output_filename << "'.\n";
-		if(!mcarlo) std::cout << "\n\n Done! Wrote " << h2d->GetEntries() << " entries to histogram.\n";
+		if(!mcarlo) std::cout << "\n\n Done! Wrote " << h2dlab->GetEntries() << " entries to histogram.\n";
 	}
 	else{ // Print kinematics to the screen instead of scanning an input file.
 		if(!setupReaction())
