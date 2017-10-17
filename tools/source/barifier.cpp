@@ -94,6 +94,10 @@ class barHandler : public simpleTool {
 	bool noEnergyMode;
 	bool noPositionMode;
 
+	std::string countsString;
+	unsigned long long totalCounts;
+	double totalDataTime;
+
 	double x, y, z, r, theta;
 	double ctof, tqdc, ctqdc, energy;
 	unsigned short location;
@@ -110,7 +114,7 @@ class barHandler : public simpleTool {
 	void handleEvents();
 
   public:
-	barHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), dummy(), gptr(NULL), lptr(NULL), singleEndedMode(false), noTimeMode(false), noEnergyMode(false), noPositionMode(false) { }
+	barHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), dummy(), gptr(NULL), lptr(NULL), singleEndedMode(false), noTimeMode(false), noEnergyMode(false), noPositionMode(false), countsString(""), totalCounts(0), totalDataTime(0) { }
 
 	~barHandler();
 	
@@ -260,6 +264,7 @@ barHandler::~barHandler(){
 void barHandler::addOptions(){
 	addOption(optionExt("config", required_argument, NULL, 'c', "<fname>", "Read bar speed-of-light from an input cal file."), userOpts, optstr);
 	addOption(optionExt("single", no_argument, NULL, 0x0, "", "Single-ended detector mode."), userOpts, optstr);
+	addOption(optionExt("counts", required_argument, NULL, 0x0, "<path>", "Sum counts from the input root files (not used by default)."), userOpts, optstr);
 	addOption(optionExt("no-energy", no_argument, NULL, 0x0, "", "Do not use energy calibration."), userOpts, optstr);
 	addOption(optionExt("no-time", no_argument, NULL, 0x0, "", "Do not use time calibration."), userOpts, optstr);
 	addOption(optionExt("no-position", no_argument, NULL, 0x0, "", "Do not use position calibration."), userOpts, optstr);
@@ -274,12 +279,15 @@ bool barHandler::processArgs(){
 		singleEndedMode = true;
 	}
 	if(userOpts.at(2).active){
-		noEnergyMode = true;
+		countsString = userOpts.at(2).argument;
 	}
 	if(userOpts.at(3).active){
-		noTimeMode = true;
+		noEnergyMode = true;
 	}
 	if(userOpts.at(4).active){
+		noTimeMode = true;
+	}
+	if(userOpts.at(5).active){
 		noPositionMode = true;
 	}
 
@@ -334,17 +342,19 @@ int barHandler::execute(int argc, char *argv[]){
 	outtree->Branch("z", &z);
 	outtree->Branch("loc", &location);
 
+	TNamed *named;
+
 	int file_counter = 1;
 	while(openInputFile()){
 		std::cout << "\n " << file_counter++ << ") Processing file " << input_filename << std::endl;
 
-		if(!loadInputTree()){
+		if(!loadInputTree()){ // Load the input tree.
 			std::cout << " Error: Failed to load TTree \"" << input_objname << "\".\n";
 			continue;
 		}
 
 		TBranch *branch = NULL;
-		if(!singleEndedMode)
+		if(!singleEndedMode) // TODO: Make this more generic at some point.
 			intree->SetBranchAddress("genericbar", &gptr, &branch);
 		else
 			intree->SetBranchAddress("liquid", &lptr, &branch);
@@ -357,6 +367,22 @@ int barHandler::execute(int argc, char *argv[]){
 			return 7;
 		}
 
+		if(!countsString.empty()){ // Get the counts from the input file.
+			infile->GetObject(("counts/"+countsString+"/Total").c_str(), named);
+			if(named)
+				totalCounts += strtoull(named->GetTitle(), NULL, 10);
+			else 
+				std::cout << " Warning: Failed to find object named \"counts/" << countsString << "/Total\" in input file!\n";
+		}
+
+		// Get the data time from the input file.
+		infile->GetObject("head/file01/Data time", named);
+		if(named)
+			totalDataTime += strtod(named->GetTitle(), NULL);
+		else 
+			std::cout << " Warning: Failed to find pixie data time in input file!\n";
+
+		// Handle all events.
 		while(getNextEntry())
 			handleEvents();
 	}
@@ -374,9 +400,24 @@ int barHandler::execute(int argc, char *argv[]){
 		TObjString str(iter->Print(false).c_str());
 		str.Write();
 	}
+
+	outfile->cd();
+
+	// Write the total number of logic counts, if enabled.
+	std::stringstream stream;
+	if(totalCounts > 0){
+		stream << totalCounts;
+		named = new TNamed(countsString.c_str(), stream.str().c_str());
+		named->Write();
+	}
+
+	// Write the total data time.
+	stream.str("");
+	stream << totalDataTime;
+	named = new TNamed("time", stream.str().c_str());
+	named->Write();
 	
 	// Write output tree to file.
-	outfile->cd();
 	outtree->Write();
 
 	std::cout << "\n\n Done! Wrote " << outtree->GetEntries() << " entries to '" << output_filename << "'.\n";
