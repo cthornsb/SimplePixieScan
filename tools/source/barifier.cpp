@@ -363,6 +363,17 @@ int barHandler::execute(int argc, char *argv[]){
 
 	// Write calibration information to output file.
 	calib.Write(outfile);
+
+	// Write bar calibration information to output file.
+	outfile->mkdir("calib/bars");
+	outfile->cd("calib/bars");
+
+	// Write individual bar calibration entries.
+	for(std::vector<barCal>::iterator iter = bars.begin(); iter != bars.end(); ++iter){
+		if(iter->defaultVals) continue; // Skip entries with default values.
+		TObjString str(iter->Print(false).c_str());
+		str.Write();
+	}
 	
 	// Write output tree to file.
 	outfile->cd();
