@@ -360,7 +360,11 @@ int barHandler::execute(int argc, char *argv[]){
 		while(getNextEntry())
 			handleEvents();
 	}
-		
+
+	// Write calibration information to output file.
+	calib.Write(outfile);
+	
+	// Write output tree to file.
 	outfile->cd();
 	outtree->Write();
 
