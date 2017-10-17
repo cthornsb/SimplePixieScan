@@ -95,7 +95,7 @@ class barHandler : public simpleTool {
 	bool noPositionMode;
 
 	double x, y, z, r, theta;
-	double ctof, tqdc, energy;
+	double ctof, tqdc, ctqdc, energy;
 	unsigned short location;
 
 	double tdiff_L, tdiff_R;
@@ -110,7 +110,7 @@ class barHandler : public simpleTool {
 	void handleEvents();
 
   public:
-	barHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), dummy(), gptr(NULL), lptr(NULL), singleEndedMode(false), noTimeMode(false), noEnergyMode(true), noPositionMode(false) { }
+	barHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), dummy(), gptr(NULL), lptr(NULL), singleEndedMode(false), noTimeMode(false), noEnergyMode(false), noPositionMode(false) { }
 
 	~barHandler();
 	
@@ -231,18 +231,18 @@ void barHandler::handleEvents(){
 				EnergyCal *ecalRight = calib.GetEnergyCal(location+1);
 				if(ecalLeft && !ecalLeft->defaultVals){
 					if(!ecalRight || ecalRight->defaultVals){ // Use pairwise calibration.
-						tqdc = ecalLeft->GetCalEnergy(std::sqrt(tqdc_R*tqdc_L));
+						ctqdc = ecalLeft->GetCalEnergy(std::sqrt(tqdc_R*tqdc_L));
 					}
 					else{ // Use individual channel calibration.
 						tqdc_L = ecalLeft->GetCalEnergy(tqdc_L);
 						tqdc_R = ecalRight->GetCalEnergy(tqdc_R);
-						tqdc = std::sqrt(tqdc_R*tqdc_L);
+						ctqdc = std::sqrt(tqdc_R*tqdc_L);
 					}
 				}
 			}
 			else{
 				EnergyCal *ecal = calib.GetEnergyCal(location);
-				if(ecal) tqdc = ecal->GetCalEnergy(tqdc);
+				if(ecal) ctqdc = ecal->GetCalEnergy(tqdc);
 			}
 		}
 
@@ -260,7 +260,7 @@ barHandler::~barHandler(){
 void barHandler::addOptions(){
 	addOption(optionExt("config", required_argument, NULL, 'c', "<fname>", "Read bar speed-of-light from an input cal file."), userOpts, optstr);
 	addOption(optionExt("single", no_argument, NULL, 0x0, "", "Single-ended detector mode."), userOpts, optstr);
-	addOption(optionExt("energy", no_argument, NULL, 0x0, "", "Use energy calibration."), userOpts, optstr);
+	addOption(optionExt("no-energy", no_argument, NULL, 0x0, "", "Do not use energy calibration."), userOpts, optstr);
 	addOption(optionExt("no-time", no_argument, NULL, 0x0, "", "Do not use time calibration."), userOpts, optstr);
 	addOption(optionExt("no-position", no_argument, NULL, 0x0, "", "Do not use position calibration."), userOpts, optstr);
 }
@@ -274,7 +274,7 @@ bool barHandler::processArgs(){
 		singleEndedMode = true;
 	}
 	if(userOpts.at(2).active){
-		noEnergyMode = false;
+		noEnergyMode = true;
 	}
 	if(userOpts.at(3).active){
 		noTimeMode = true;
@@ -300,7 +300,10 @@ int barHandler::execute(int argc, char *argv[]){
 
 	if(!noPositionMode && !calib.LoadPositionCal((setupDir+"position.cal").c_str())) return 2;
 	if(!noTimeMode && !calib.LoadTimeCal((setupDir+"time.cal").c_str())) return 3;
-	if(!noEnergyMode) calib.LoadEnergyCal((setupDir+"energy.cal").c_str());
+	if(!noEnergyMode){
+		if(!calib.LoadEnergyCal((setupDir+"energy.cal").c_str()))
+			noEnergyMode = true;
+	}
 
 	if(!singleEndedMode && !LoadCalibFile<barCal>((setupDir+"bars.cal").c_str(), bars)){
 		std::cout << " Error: Failed to load bar calibration file \"" << setupDir << "bars.cal\"!\n";
@@ -322,6 +325,8 @@ int barHandler::execute(int argc, char *argv[]){
 	outtree->Branch("ctof", &ctof);
 	outtree->Branch("energy", &energy);
 	outtree->Branch("tqdc", &tqdc);
+	if(!noEnergyMode)
+		outtree->Branch("ctqdc", &ctqdc);
 	outtree->Branch("r", &r);
 	outtree->Branch("theta", &theta);
 	outtree->Branch("x", &x);
