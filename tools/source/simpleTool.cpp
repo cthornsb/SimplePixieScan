@@ -26,13 +26,12 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 void progressBar::start(const long long &numEntries_){
-	if(numEntries_ < length){
+	if(numEntries_ < length) // Probably will rarely happen, but just to be safe.
 		length = numEntries_;
-		progStr = std::string(numEntries_, ' ');
-	}
- 
+	progStr = std::string(length, ' ');
 	numEntries = numEntries_;
 	chunkSize = numEntries / length;
+	chunkCount = 0;
 	std::cout << "\n Processing " << numEntries << " events.\n";
 	std::cout << "  Working - 0% [" << progStr << "] 100%\r" << std::flush;
 }
@@ -338,8 +337,8 @@ TTree *simpleTool::loadInputTree(){
 		entries_to_process = intree->GetEntries();
 	else // The user has specified a maximum number of entries to read.
 		entries_to_process = (intree->GetEntries() > max_entries_to_process ? max_entries_to_process : intree->GetEntries());
-	pbar.start(entries_to_process);
 	current_entry = start_entry;
+	pbar.start(entries_to_process);
 	return intree;
 }
 
