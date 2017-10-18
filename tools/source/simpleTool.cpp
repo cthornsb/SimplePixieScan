@@ -16,6 +16,7 @@
 #include "TCutG.h"
 
 #include "CTerminal.h"
+#include "optionHandler.hpp"
 
 #include "simpleTool.hpp"
 
