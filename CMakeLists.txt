@@ -89,6 +89,10 @@ set(TOP_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 set(DICTIONARY_PREFIX "RootDict" CACHE STRING "Prefix to root dictionary.")
 set(DEF_STRUCT_FILE "${TOP_DIRECTORY}/dict/def.struct" CACHE PATH "Root structure definition file.")
 
+include_directories(include)
+include_directories(core/include)
+include_directories(scan/include)
+
 #Add the core components directory.
 add_subdirectory(core)
 
@@ -99,7 +103,6 @@ add_subdirectory(scan)
 add_subdirectory(dict)
 
 #Add the simpleScan source directories.
-include_directories(include)
 add_subdirectory(source)
 
 set(CONFIG_INSTALL_DIR "${TOP_DIRECTORY}/config" CACHE PATH "Path to configuration file install directory.")

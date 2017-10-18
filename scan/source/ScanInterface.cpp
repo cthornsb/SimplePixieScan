@@ -39,36 +39,6 @@ void start_cmd_control(ScanInterface *main_){
 }
 
 /////////////////////////////////////////////////////////////////////
-// class optionExt
-/////////////////////////////////////////////////////////////////////
-
-optionExt::optionExt(const char *name_, const int &has_arg_, int *flag_, const int &val_, const std::string &argstr_, const std::string &helpstr_) : 
-  name(name_), has_arg(has_arg_), flag(flag_), val(val_), argstr(argstr_), helpstr(helpstr_), active(false) {
-}
-
-void optionExt::print(const size_t &len_/*=0*/, const std::string &prefix_/*=""*/){
-	std::stringstream stream;
-	stream << prefix_ << "--" << name << " ";
-	if(val) stream << "(-" << (char)val << ") ";
-	stream << argstr;
-	
-	if(stream.str().length() < len_)
-		stream << std::string(len_ - stream.str().length(), ' ');
-	
-	stream << "- " << helpstr;
-	std::cout << stream.str() << std::endl;
-}
-
-option optionExt::getOption(){
-	struct option output;
-	output.name = name;
-	output.has_arg = has_arg;
-	output.flag = flag;
-	output.val = val;
-	return output;
-}
-
-/////////////////////////////////////////////////////////////////////
 // class fileInformation
 /////////////////////////////////////////////////////////////////////
 
@@ -1211,26 +1181,6 @@ std::string get_extension(std::string filename_, std::string &prefix){
 	}
 	
 	return output;
-}
-
-/** Add a command line option to the option list.
-  * \param[in]  opt_ The option to add to the list.
-  * \return Nothing.
-  */
-void addOption(optionExt opt_, std::vector<optionExt> &vec, std::string &optstr){
-	char tempChar = opt_.val;
-	if(tempChar){
-		if(optstr.find(tempChar) != std::string::npos)
-			opt_.val = 0x0;
-		else{
-			optstr += tempChar;
-			if(opt_.has_arg == required_argument)
-				optstr += ":";
-			else if(opt_.has_arg == optional_argument)
-				optstr += "::";
-		}
-	}
-	vec.push_back(opt_);
 }
 
 /** Check whether or not a cstring is a numeric value containing a decimal.
