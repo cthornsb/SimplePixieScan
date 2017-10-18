@@ -50,6 +50,8 @@ endif(CMAKE_BUILD_TYPE MATCHES "Debug")
 #Install options
 option(BUILD_TOOLS "Build and install tool programs." OFF)
 option(INSTALL_CONFIG "Copy default configuration files." OFF)
+option(USE_NCURSES "Use ncurses for terminal" ON)
+mark_as_advanced(USE_NCURSES)
 
 #------------------------------------------------------------------------------
 
@@ -64,24 +66,39 @@ else()
 	message(STATUS "Searching for rcbuild: ${RCBUILD_EXE}")
 endif()
 
-#Find paass install.
-find_package (PAASS REQUIRED)
-include_directories(${PAASS_INCLUDE_DIR})
-link_directories(${PAASS_LIBRARY_DIR})
-
 #Find ROOT install.
 find_package (ROOT REQUIRED)
 mark_as_advanced(FORCE GENREFLEX_EXECUTABLE ROOTCINT_EXECUTABLE ROOT_CONFIG_EXECUTABLE)
 include_directories(${ROOT_INCLUDE_DIR})
 link_directories(${ROOT_LIBRARY_DIR})
 
+#Find curses library used for Scan library
+if(USE_NCURSES)
+	find_package(Curses REQUIRED)
+endif()
+if (CURSES_FOUND)
+	add_definitions("-D USE_NCURSES")
+	mark_as_advanced(FORCE CURSES_HAVE_CURSES_H CURSES_CURSES_H_PATH CURSES_FORM_LIBRARY)
+else()
+	message(STATUS "Curses unavailable, basic terminal will be used.")
+	set(USE_NCURSES OFF)
+endif()
+
 set(TOP_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 
 set(DICTIONARY_PREFIX "RootDict" CACHE STRING "Prefix to root dictionary.")
 set(DEF_STRUCT_FILE "${TOP_DIRECTORY}/dict/def.struct" CACHE PATH "Root structure definition file.")
 
+#Add the core components directory.
+add_subdirectory(core)
+
+#Add the scan controller directory.
+add_subdirectory(scan)
+
+#Add the root dictionary directory.
 add_subdirectory(dict)
 
+#Add the simpleScan source directories.
 include_directories(include)
 add_subdirectory(source)
 

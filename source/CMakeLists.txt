@@ -1,20 +1,17 @@
 #Set the scan sources that we will make a lib out of.
-set(CoreSources ColorTerm.cpp Plotter.cpp ProcessorHandler.cpp OnlineProcessor.cpp Processor.cpp ConfigFile.cpp MapFile.cpp)
+set(SimpleCoreSources ColorTerm.cpp Plotter.cpp ProcessorHandler.cpp OnlineProcessor.cpp Processor.cpp ConfigFile.cpp MapFile.cpp)
 
 set(ProcessorSources TriggerProcessor.cpp PhoswichProcessor.cpp LiquidProcessor.cpp LiquidBarProcessor.cpp
     HagridProcessor.cpp GenericProcessor.cpp GenericBarProcessor.cpp LogicProcessor.cpp TraceProcessor.cpp)
 
-add_library(Scan SHARED IMPORTED)
-set_property(TARGET Scan PROPERTY IMPORTED_LOCATION ${PAASS_LIB_SCAN})
-
 #Add the sources to the library.
-add_library(CoreObjects OBJECT ${CoreSources})
+add_library(SimpleCoreObjects OBJECT ${SimpleCoreSources})
 add_library(ProcessorObjects OBJECT ${ProcessorSources})
 
 #Generate a static library.
-add_library(SimpleScanStatic STATIC $<TARGET_OBJECTS:CoreObjects> $<TARGET_OBJECTS:ProcessorObjects>)
+add_library(SimpleScanStatic STATIC $<TARGET_OBJECTS:SimpleCoreObjects> $<TARGET_OBJECTS:ProcessorObjects>)
 
-target_link_libraries(SimpleScanStatic Scan)
+target_link_libraries(SimpleScanStatic ScanStatic)
 
 #Build simpleScan executable.
 add_executable(simpleScan Scanner.cpp)
