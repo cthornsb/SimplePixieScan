@@ -16,6 +16,19 @@
 const double pi = 3.1415926536;
 const double cvac = 29.9792458; // cm/ns
 
+template <typename T>
+void writeTNamed(const char *label_, const T &val_, const int &precision_=-1){
+	std::stringstream stream; 
+	if(precision_ < 0) 
+		stream << val_;
+	else{ // Set the precision of the output stream.
+		stream.precision(precision_);
+		stream << std::fixed << val_;
+	}
+	TNamed named(label_, stream.str().c_str());
+	named.Write();
+}
+
 // Energy in MeV
 double tof2energy(const double &tof_, const double &d_){
 	const double Mn = 10454.0750977429; // MeV
@@ -342,8 +355,6 @@ int barHandler::execute(int argc, char *argv[]){
 	outtree->Branch("z", &z);
 	outtree->Branch("loc", &location);
 
-	TNamed *named;
-
 	int file_counter = 1;
 	while(openInputFile()){
 		std::cout << "\n " << file_counter++ << ") Processing file " << input_filename << std::endl;
@@ -367,6 +378,7 @@ int barHandler::execute(int argc, char *argv[]){
 			return 7;
 		}
 
+		TNamed *named;
 		if(!countsString.empty()){ // Get the counts from the input file.
 			infile->GetObject(("counts/"+countsString+"/Total").c_str(), named);
 			if(named)
@@ -377,8 +389,14 @@ int barHandler::execute(int argc, char *argv[]){
 
 		// Get the data time from the input file.
 		infile->GetObject("head/file01/Data time", named);
-		if(named)
-			totalDataTime += strtod(named->GetTitle(), NULL);
+		if(named){
+			double fileDataTime = strtod(named->GetTitle(), NULL);
+			if(fileDataTime <= 0){
+				std::cout << "debug: Encountered negative data time (" << fileDataTime << std::endl;
+				fileDataTime = 60651.1;
+			}
+			totalDataTime += fileDataTime;
+		}
 		else 
 			std::cout << " Warning: Failed to find pixie data time in input file!\n";
 
@@ -407,18 +425,11 @@ int barHandler::execute(int argc, char *argv[]){
 
 	// Write the total number of logic counts, if enabled.
 	outfile->cd();
-	std::stringstream stream;
-	if(totalCounts > 0){
-		stream << totalCounts;
-		named = new TNamed(countsString.c_str(), stream.str().c_str());
-		named->Write();
-	}
+	if(totalCounts > 0) 
+		writeTNamed(countsString.c_str(), totalCounts);
 
 	// Write the total data time.
-	stream.str("");
-	stream << totalDataTime;
-	named = new TNamed("time", stream.str().c_str());
-	named->Write();
+	writeTNamed("time", totalDataTime, 1);
 
 	std::cout << "\n\n Done! Wrote " << outtree->GetEntries() << " entries to '" << output_filename << "'.\n";
 			
