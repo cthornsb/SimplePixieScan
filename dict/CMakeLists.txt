@@ -14,8 +14,10 @@ add_custom_target(GenerateDict ALL DEPENDS ${STRUCTURES_SOURCE} ${STRUCTURES_HEA
 #Use rcbuild to generate data structure source files.
 add_custom_command(OUTPUT ${STRUCTURES_SOURCE} ${STRUCTURES_HEADER} ${LINKDEF_FILE} COMMAND rcbuild -i ${DEF_STRUCT_FILE} -d ${ROOT_DICT_BUILD_DIR} DEPENDS ${DEF_STRUCT_FILE} VERBATIM)
 
-#Install the new Structures file.
-install(FILES ${STRUCTURES_HEADER} DESTINATION include)
+if(${BUILD_SHARED})
+	#Install the new Structures file.
+	install(FILES ${STRUCTURES_HEADER} DESTINATION include)
+endif(${BUILD_SHARED})
 
 #Copy the new Structures file to the top-level include directory.
 add_custom_command(OUTPUT ${COPIED_STRUCTURES_HEADER} COMMAND cp ${STRUCTURES_HEADER} ${COPIED_STRUCTURES_HEADER} DEPENDS ${STRUCTURES_HEADER} VERBATIM)
@@ -29,11 +31,11 @@ set(DictSources ${STRUCTURES_SOURCE} ${CINT_OUTPUT_FILE})
 #Add the sources to the library.
 add_library(DictObjects OBJECT ${DictSources})
 
-#Create shared library.
-message(STATUS "Building Root Dictionary Shared Objects")
-add_library(${DICTIONARY_PREFIX} SHARED $<TARGET_OBJECTS:DictObjects>)
-install(TARGETS ${DICTIONARY_PREFIX} DESTINATION lib)
-
 #Create static library.
 add_library(${DICTIONARY_PREFIX}Static STATIC $<TARGET_OBJECTS:DictObjects>)
-install(TARGETS ${DICTIONARY_PREFIX}Static DESTINATION lib)
+
+if(${BUILD_SHARED})
+	#Create shared library for the dictionary.
+	add_library(${DICTIONARY_PREFIX} SHARED $<TARGET_OBJECTS:DictObjects>)
+	install(TARGETS ${DICTIONARY_PREFIX} DESTINATION lib)
+endif(${BUILD_SHARED})

@@ -48,6 +48,7 @@ endif(CMAKE_BUILD_TYPE MATCHES "Debug")
 #------------------------------------------------------------------------------
 
 #Install options
+option(BUILD_SHARED "Build and install shared libraries." OFF)
 option(BUILD_TOOLS "Build and install tool programs." OFF)
 option(INSTALL_CONFIG "Copy default configuration files." OFF)
 option(USE_NCURSES "Use ncurses for terminal" ON)
