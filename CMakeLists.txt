@@ -58,14 +58,6 @@ mark_as_advanced(USE_NCURSES)
 #Find required packages.
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
 
-#Find rcbuild executable (https://github.com/cthornsb/devTools)
-find_program(RCBUILD_EXECUTABLE rcbuild /opt/devTools/install/bin)
-if("${RCBUILD_EXECUTABLE}" STREQUAL "RCBUILD_EXE-NOTFOUND")
-	message(FATAL_ERROR "Could NOT find rcbuild")
-else()
-	message(STATUS "Searching for rcbuild: ${RCBUILD_EXE}")
-endif()
-
 #Find ROOT install.
 find_package (ROOT REQUIRED)
 mark_as_advanced(FORCE GENREFLEX_EXECUTABLE ROOTCINT_EXECUTABLE ROOT_CONFIG_EXECUTABLE)
@@ -98,6 +90,9 @@ add_subdirectory(core)
 
 #Add the scan controller directory.
 add_subdirectory(scan)
+
+#Add the root dictionary builder directory.
+add_subdirectory(rcbuild)
 
 #Add the root dictionary directory.
 add_subdirectory(dict)
