@@ -387,6 +387,10 @@ int barHandler::execute(int argc, char *argv[]){
 			handleEvents();
 	}
 
+	// Write output tree to file.
+	outfile->cd();
+	outtree->Write();
+
 	// Write calibration information to output file.
 	calib.Write(outfile);
 
@@ -401,9 +405,8 @@ int barHandler::execute(int argc, char *argv[]){
 		str.Write();
 	}
 
-	outfile->cd();
-
 	// Write the total number of logic counts, if enabled.
+	outfile->cd();
 	std::stringstream stream;
 	if(totalCounts > 0){
 		stream << totalCounts;
@@ -416,9 +419,6 @@ int barHandler::execute(int argc, char *argv[]){
 	stream << totalDataTime;
 	named = new TNamed("time", stream.str().c_str());
 	named->Write();
-	
-	// Write output tree to file.
-	outtree->Write();
 
 	std::cout << "\n\n Done! Wrote " << outtree->GetEntries() << " entries to '" << output_filename << "'.\n";
 			
