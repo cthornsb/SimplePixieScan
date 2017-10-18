@@ -32,8 +32,15 @@ const unsigned int fileHeaderWord = 0x44414548; // "HEAD"
 const unsigned int dataHeaderWord = 0x41544144; // "DATA"
 const unsigned int endBufferWord = 0xFFFFFFFF;
 
-void writeTNamed(const char *label_, const unsigned long &val_){
-	std::stringstream stream; stream << val_;
+template <typename T>
+void writeTNamed(const char *label_, const T &val_, const int &precision_=-1){
+	std::stringstream stream; 
+	if(precision_ < 0) 
+		stream << val_;
+	else{ // Set the precision of the output stream.
+		stream.precision(precision_);
+		stream << std::fixed << val_;
+	}
 	TNamed named(label_, stream.str().c_str());
 	named.Write();
 }
@@ -215,10 +222,6 @@ simpleScanner::~simpleScanner(){
 	if(init){
 		std::cout << msgHeader << "Found " << chanCounts->GetHist()->GetEntries() << " total events.\n";
 
-		// Get the total acquisition time.
-		std::stringstream stream;
-		stream << handler->GetDeltaEventTime() << " s";
-
 		// If the root file is open, write the tree and histogram.
 		if(!writePresort && root_file->IsOpen()){
 			if(online_mode) // Write all online diagnostic histograms to the output root file.
@@ -226,9 +229,11 @@ simpleScanner::~simpleScanner(){
 
 			// Add total data time to the file.
 			root_file->cd(head_path.c_str());
-			TNamed named("Data time", stream.str().c_str());
-			named.Write();
-		
+			writeTNamed("Data time", handler->GetDeltaEventTime(), 1);
+
+			// Add data start time to the file.
+			writeTNamed("Start time", handler->GetFirstEventTime(), 1);
+	
 			root_file->cd();
 
 			// Write root trees to output file.
@@ -300,7 +305,7 @@ simpleScanner::~simpleScanner(){
 		std::cout << msgHeader << "Processed " << loaded_files << " files.\n";
 		std::cout << msgHeader << "Found " << handler->GetTotalEvents() << " events.\n";
 		if(!untriggered_mode) std::cout << msgHeader << "Found " << handler->GetStartEvents() << " start events.\n";
-		std::cout << msgHeader << "Total data time is " << stream.str() << std::endl;
+		std::cout << msgHeader << "Total data time is " << handler->GetDeltaEventTime() << std::endl;
 	
 		delete mapfile;
 		delete configfile;
@@ -875,8 +880,7 @@ void simpleScanner::Notify(const std::string &code_/*=""*/){
 				root_file->cd(head_path.c_str());
 				for(size_t index = 0; index < finfo->size(); index++){
 					finfo->at(index, name, value);
-					TNamed named(name.c_str(), value.c_str());
-					named.Write();
+					writeTNamed(name.c_str(), value);
 				}
 			}
 			else{

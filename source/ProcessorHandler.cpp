@@ -13,6 +13,8 @@
 
 #include "MapFile.hpp"
 
+const double MAX_SYSTEM_CLOCK = std::pow(2, 48); // Maximum of the 48-bit system clock. Roughly 26 days for 8 ns/tick system clock.
+
 ChanEvent *dummyEvent = new ChanEvent();
 MapEntry dummyEntry;
 
@@ -103,8 +105,8 @@ bool ProcessorHandler::AddEvent(ChannelEventPair *pair_){
 			iter->proc->AddEvent(pair_); 
 			if(pair_->entry->hasTag("start")) start_events++;
 			else if(pair_->entry->hasTag("untriggered")) untrigChannel = true;
-			if(total_events == 0){ first_event_time = pair_->channelEvent->time * 8E-9; }
-			delta_event_time = (pair_->channelEvent->time * 8E-9) - first_event_time;
+			if(total_events == 0){ first_event_time = pair_->channelEvent->time; }
+			delta_event_time = pair_->channelEvent->time - first_event_time;
 			total_events++; 
 			return true;
 		}
@@ -163,6 +165,18 @@ bool ProcessorHandler::Process(){
 	}
 	
 	return retval;
+}
+
+double ProcessorHandler::GetDeltaEventTime(){
+	if(delta_event_time < 0){ // Detect if the system clock rolled over during the run.
+		double tStop = delta_event_time+first_event_time;
+		delta_event_time = MAX_SYSTEM_CLOCK - first_event_time + tStop;
+		// There is a chance that the delta time may be positive even when the system clock rolls over.
+		// This will occur when tStop > tStart. But for this to occur for a single data file, there
+		// would need to be 26+ days worth of data in a single binary data file. So, we may safely
+		// ignore this scenario and checking for negative delta time is sufficient.
+	}
+	return delta_event_time*8E-9;
 }
 
 void ProcessorHandler::ZeroAll(){

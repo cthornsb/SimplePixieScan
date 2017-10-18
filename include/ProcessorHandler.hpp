@@ -70,9 +70,9 @@ class ProcessorHandler{
 	
 	unsigned long GetStartEvents(){ return start_events; }
 	
-	double GetFirstEventTime(){ return first_event_time; }
+	double GetFirstEventTime(){ return first_event_time*8E-9; }
 	
-	double GetDeltaEventTime(){ return delta_event_time; }
+	double GetDeltaEventTime();
 	
 	void ZeroAll();
 };
