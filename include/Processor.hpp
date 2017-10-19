@@ -57,7 +57,6 @@ class Processor{
 	std::string type;
 	bool init;
 	bool use_color_terminal;
-	bool presortData; /// True if data is being read in from a presort file.
 
 	clock_t start_time;
 	unsigned long total_time;
@@ -176,8 +175,6 @@ class Processor{
 	void SetPolynomialCFD(){ analyzer = POLY; }
 
 	void SetTraceAnalyzer(TimingAnalyzer mode_){ analyzer = mode_; }
-
-	bool SetPresortMode(bool state_=true){ return (presortData = state_); }
 
 	void SetDefaultCfdParameters(const float &F_, const float &D_=1, const float &L_=1){ defaultCFD[0] = F_; defaultCFD[1] = D_; defaultCFD[2] = L_; }
 	

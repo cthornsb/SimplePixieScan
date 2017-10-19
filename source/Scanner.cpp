@@ -191,9 +191,7 @@ extTree *simpleUnpacker::InitTree(){
 simpleScanner::simpleScanner() : ScanInterface() {
 	recordAllStarts = false;
 	nonStartEvents = false;
-	presortData = false;
 	firstEvent = true;
-	writePresort = false;
 	forceUseOfTrace = false;
 	untriggered_mode = false;
 	force_overwrite = false;
@@ -222,85 +220,64 @@ simpleScanner::~simpleScanner(){
 	if(init){
 		std::cout << msgHeader << "Found " << chanCounts->GetHist()->GetEntries() << " total events.\n";
 
-		// If the root file is open, write the tree and histogram.
-		if(!writePresort && root_file->IsOpen()){
-			if(online_mode) // Write all online diagnostic histograms to the output root file.
-				std::cout << msgHeader << "Writing " << online->WriteHists(root_file) << " histograms to root file.\n";
+		// If the root file is open, write the tree and histograms.
+		if(online_mode) // Write all online diagnostic histograms to the output root file.
+			std::cout << msgHeader << "Writing " << online->WriteHists(root_file) << " histograms to root file.\n";
 
-			// Add total data time to the file.
-			root_file->cd(head_path.c_str());
-			writeTNamed("Data time", handler->GetDeltaEventTime(), 1);
+		// Add total data time to the file.
+		root_file->cd(head_path.c_str());
+		writeTNamed("Data time", handler->GetDeltaEventTime(), 1);
 
-			// Add data start time to the file.
-			writeTNamed("Start time", handler->GetFirstEventTime(), 1);
-	
-			root_file->cd();
+		// Add data start time to the file.
+		writeTNamed("Start time", handler->GetFirstEventTime(), 1);
 
-			// Write root trees to output file.
-			std::cout << msgHeader << "Writing " << root_tree->GetEntries() << " processed data entries to root file.\n";
-			root_tree->Write();			
-			
-			if(write_raw){
-				std::cout << msgHeader << "Writing " << raw_tree->GetEntries() << " raw data entries to root file.\n";
-				raw_tree->Write();
-			}
-			
-			if(write_traces){
-				std::cout << msgHeader << "Writing " << trace_tree->GetEntries() << " raw ADC traces to root file.\n";
-				trace_tree->Write();
-			}
-			
-			if(write_stats){
-				std::cout << msgHeader << "Writing " << stat_tree->GetEntries() << " raw event stats entries to root file.\n";
-				stat_tree->Write();
-			}
-			
-			// Write debug histograms.
-			chanCounts->GetHist()->Write();
-			chanMaxADC->GetHist()->Write();
-			chanEnergy->GetHist()->Write();
-	
-			// Write processor count statistics.
-			root_file->mkdir("counts");
-			root_file->cd("counts");
+		root_file->cd();
 
-			writeTNamed("Global", chanCounts->GetHist()->GetEntries());
-			writeTNamed("Handled", handler->GetTotalEvents());
-			writeTNamed("Starts", handler->GetStartEvents());
-	
-			for(size_t i = 0; i < handler->GetNumProcessors(); i++){
-				ProcessorEntry *ptr = handler->GetProcessor(i);
-				std::stringstream stream; stream << "counts/" << ptr->type;
-				root_file->mkdir(stream.str().c_str());
-				root_file->cd(stream.str().c_str());
-				writeTNamed("Total", ptr->proc->GetNumTotalEvents());
-				writeTNamed("Handled", ptr->proc->GetNumHandledEvents());
-				writeTNamed("Unhandled", ptr->proc->GetNumUnprocessed());
-			}
-	
-			// Close the root file.
-			root_file->Close();
-			delete root_file;
-		}
-		else if(writePresort){
-			// Write the remaining sorted data to the output file.
-			HandlePresortOutput(true);
-
-			// Close the file.
-			psort_file.write((char *)&fileFooterWord, 4);
-			psort_file.write((char *)&endBufferWord, 4);
+		// Write root trees to output file.
+		std::cout << msgHeader << "Writing " << root_tree->GetEntries() << " processed data entries to root file.\n";
+		root_tree->Write();			
 		
-			// Write the maximum raw event spill length and the total time to the header.
-			PLD_header tempHeader;
-			tempHeader.SetMaxSpillSize(maxSpillLength);
-			tempHeader.SetRunTime(handler->GetDeltaEventTime());
-			tempHeader.OverwriteValues(&psort_file);
-		
-			std::cout << msgHeader << "Wrote " << psort_file.tellp() << " B to output file.\n";
-			
-			// Close the presort file.
-			psort_file.close();
+		if(write_raw){
+			std::cout << msgHeader << "Writing " << raw_tree->GetEntries() << " raw data entries to root file.\n";
+			raw_tree->Write();
 		}
+		
+		if(write_traces){
+			std::cout << msgHeader << "Writing " << trace_tree->GetEntries() << " raw ADC traces to root file.\n";
+			trace_tree->Write();
+		}
+		
+		if(write_stats){
+			std::cout << msgHeader << "Writing " << stat_tree->GetEntries() << " raw event stats entries to root file.\n";
+			stat_tree->Write();
+		}
+		
+		// Write debug histograms.
+		chanCounts->GetHist()->Write();
+		chanMaxADC->GetHist()->Write();
+		chanEnergy->GetHist()->Write();
+
+		// Write processor count statistics.
+		root_file->mkdir("counts");
+		root_file->cd("counts");
+
+		writeTNamed("Global", chanCounts->GetHist()->GetEntries());
+		writeTNamed("Handled", handler->GetTotalEvents());
+		writeTNamed("Starts", handler->GetStartEvents());
+
+		for(size_t i = 0; i < handler->GetNumProcessors(); i++){
+			ProcessorEntry *ptr = handler->GetProcessor(i);
+			std::stringstream stream; stream << "counts/" << ptr->type;
+			root_file->mkdir(stream.str().c_str());
+			root_file->cd(stream.str().c_str());
+			writeTNamed("Total", ptr->proc->GetNumTotalEvents());
+			writeTNamed("Handled", ptr->proc->GetNumHandledEvents());
+			writeTNamed("Unhandled", ptr->proc->GetNumUnprocessed());
+		}
+
+		// Close the root file.
+		root_file->Close();
+		delete root_file;
 		
 		std::cout << msgHeader << "Processed " << loaded_files << " files.\n";
 		std::cout << msgHeader << "Found " << handler->GetTotalEvents() << " events.\n";
@@ -541,24 +518,20 @@ void simpleScanner::ExtraArguments(){
 		std::cout << msgHeader << "Writing event builder stats to output tree.\n";
 		write_stats = true;		
 	}
-	if(userOpts.at(8).active){ // Presort.
-		std::cout << msgHeader << "Using presort mode.\n";
-		writePresort = true;	
-	}
-	if(userOpts.at(9).active){ // Record all starts.
+	if(userOpts.at(8).active){ // Record all starts.
 		std::cout << msgHeader << "Recording all start events to output file.\n";
 		recordAllStarts = true;
 	}
-	if(userOpts.at(10).active){ // Set default fitting/CFD parameters
-		defaultCFDparameter = strtof(userOpts.at(10).argument.c_str(), NULL);
+	if(userOpts.at(9).active){ // Set default fitting/CFD parameters
+		defaultCFDparameter = strtof(userOpts.at(9).argument.c_str(), NULL);
 		std::cout << msgHeader << "Set default CFD parameter to " << defaultCFDparameter << ".\n";
 	}
-	if(userOpts.at(11).active){ // Force trace processing.
+	if(userOpts.at(10).active){ // Force trace processing.
 		std::cout << msgHeader << "Forcing using of trace processor.\n";
 		forceUseOfTrace = true;
 	}
-	if(userOpts.at(12).active){ // Set output filename prefix.
-		outputFilenamePrefix = userOpts.at(12).argument;
+	if(userOpts.at(11).active){ // Set output filename prefix.
+		outputFilenamePrefix = userOpts.at(11).argument;
 		if(outputFilenamePrefix.back() != '/') outputFilenamePrefix += '/';
 		std::cout << msgHeader << "Using output filename prefix \"" << outputFilenamePrefix << "\".\n";
 	}
@@ -602,7 +575,6 @@ void simpleScanner::ArgHelp(){
 	AddOption(optionExt("traces", no_argument, NULL, 0, "", "Dump raw ADC traces to output root file"));
 	AddOption(optionExt("raw", no_argument, NULL, 0, "", "Dump raw pixie module data to output root file"));
 	AddOption(optionExt("stats", no_argument, NULL, 0, "", "Dump event builder information to the output root file"));
-	AddOption(optionExt("presort", no_argument, NULL, 'P', "", "Write an intermediate binary output file containing presorted data"));
 	AddOption(optionExt("record", no_argument, NULL, 0, "", "Write all start events to output file even when no other events are found"));
 	AddOption(optionExt("parameters", required_argument, NULL, 0, "<list>", "Set default fitting/CFD parameters by supplying comma-delimited string"));
 	AddOption(optionExt("force-traces", no_argument, NULL, 0, "", "Change all entries in map file to type 'trace' to do trace analysis"));
@@ -767,63 +739,56 @@ bool simpleScanner::Initialize(std::string prefix_){
 		}
 	}
 	
-	if(!writePresort){
-		// Get the output filename.
-		std::string ofname = GetOutputFilename();
+	// Get the output filename.
+	std::string ofname = GetOutputFilename();
 
-		if(ofname.empty()){
-			ofname = GetInputFilename(); 
-			size_t index = ofname.find_last_of('/');
-			ofname = ofname.substr(index+1);
-			index = ofname.find_last_of('.');
-			ofname = outputFilenamePrefix + ofname.substr(0, index) + ".root";
-			std::cout << prefix_ << "No output filename given, using \"" << ofname << "\".\n";
-		}
-
-		// Initialize the root output file.
-		std::cout << prefix_ << "Initializing root output.\n";
-		if(force_overwrite){ root_file = new TFile(ofname.c_str(), "RECREATE"); }
-		else{ root_file = new TFile(ofname.c_str(), "CREATE"); }
-
-		// Check that the root file is open.
-		if(!root_file->IsOpen()){
-			std::cout << prefix_ << "Failed to open output root file '" << ofname << "'!\n";
-			root_file->Close();
-			delete root_file;
-			root_file = NULL;
-			return false;
-		}
-		
-		// Setup the root tree for data output.
-		root_tree = new extTree("data", "Pixie data");
-	
-		// Setup the raw data tree for output.
-		if(write_raw){
-			raw_tree = new extTree("raw", "Raw pixie data");
-	
-			// Add branches to the xia data tree.
-			raw_tree->Branch("loc", &xia_data_location);
-			raw_tree->Branch("energy", &xia_data_energy);
-			raw_tree->Branch("time", &xia_data_time);
-		}
-
-		// Initialize the unpacker tree.
-		if(write_stats)
-			stat_tree = ((simpleUnpacker*)GetCore())->InitTree();
-
-		// Add branches to the output tree.
-		handler->InitRootOutput(root_tree);		
-
-		// Set processor options.
-		if(write_traces){ 
-			trace_tree = new extTree("trace", "Raw pixie ADC traces");
-			handler->InitTraceOutput(trace_tree); 
-		}
+	if(ofname.empty()){
+		ofname = GetInputFilename(); 
+		size_t index = ofname.find_last_of('/');
+		ofname = ofname.substr(index+1);
+		index = ofname.find_last_of('.');
+		ofname = outputFilenamePrefix + ofname.substr(0, index) + ".root";
+		std::cout << prefix_ << "No output filename given, using \"" << ofname << "\".\n";
 	}
-	else{
-		// Initialize the presort file.
-		std::cout << prefix_ << "Initializing presort output file.\n";
-		psort_file.open(GetOutputFilename().c_str());
+
+	// Initialize the root output file.
+	std::cout << prefix_ << "Initializing root output.\n";
+	if(force_overwrite){ root_file = new TFile(ofname.c_str(), "RECREATE"); }
+	else{ root_file = new TFile(ofname.c_str(), "CREATE"); }
+
+	// Check that the root file is open.
+	if(!root_file->IsOpen()){
+		std::cout << prefix_ << "Failed to open output root file '" << ofname << "'!\n";
+		root_file->Close();
+		delete root_file;
+		root_file = NULL;
+		return false;
+	}
+	
+	// Setup the root tree for data output.
+	root_tree = new extTree("data", "Pixie data");
+
+	// Setup the raw data tree for output.
+	if(write_raw){
+		raw_tree = new extTree("raw", "Raw pixie data");
+
+		// Add branches to the xia data tree.
+		raw_tree->Branch("loc", &xia_data_location);
+		raw_tree->Branch("energy", &xia_data_energy);
+		raw_tree->Branch("time", &xia_data_time);
+	}
+
+	// Initialize the unpacker tree.
+	if(write_stats)
+		stat_tree = ((simpleUnpacker*)GetCore())->InitTree();
+
+	// Add branches to the output tree.
+	handler->InitRootOutput(root_tree);		
+
+	// Set processor options.
+	if(write_traces){ 
+		trace_tree = new extTree("trace", "Raw pixie ADC traces");
+		handler->InitTraceOutput(trace_tree); 
 	}
 
 	// Set trace analysis processor.
@@ -844,16 +809,12 @@ bool simpleScanner::Initialize(std::string prefix_){
   * /return Nothing.
   */
 void simpleScanner::FinalInitialization(){
-	if(!writePresort){
-		// Add file header information to the output root file.
-		root_file->mkdir("head");
-	
-		// Add map and config file entries to the file.	
-		mapfile->Write(root_file);
-		configfile->Write(root_file);
-	}
-	else{
-	}
+	// Add file header information to the output root file.
+	root_file->mkdir("head");
+
+	// Add map and config file entries to the file.	
+	mapfile->Write(root_file);
+	configfile->Write(root_file);
 }
 
 /** Receive various status notifications from the scan.
@@ -870,35 +831,17 @@ void simpleScanner::Notify(const std::string &code_/*=""*/){
 		if(finfo){
 			loaded_files++;
 			std::string name, value;
-			if(!writePresort){
-				// Write header information to the output root file.
-				std::stringstream stream;
-				if(loaded_files < 10){ stream << "head/file0" << loaded_files; }
-				else{ stream << "head/file" << loaded_files; }
-				head_path = stream.str();
-				root_file->mkdir(head_path.c_str());
-				root_file->cd(head_path.c_str());
-				for(size_t index = 0; index < finfo->size(); index++){
-					finfo->at(index, name, value);
-					writeTNamed(name.c_str(), value);
-				}
-			}
-			else{
-				// Write header information to the output presort file.
-				if(GetFileFormat() == 0){
-					PLD_header tempHeader;
-					tempHeader.SetFacility(std::string(GetLdfHeader()->GetFacility()));
-					tempHeader.SetFormat("PRESORTED_EVENTS");
-					tempHeader.SetStartDateTime(std::string(GetLdfHeader()->GetDate()));
-					tempHeader.SetEndDateTime(std::string(GetLdfHeader()->GetDate()));					
-					tempHeader.SetTitle(std::string(GetLdfHeader()->GetRunTitle()));
-					tempHeader.SetRunNumber(GetLdfHeader()->GetRunNumber());
-					tempHeader.Write(&psort_file);
-				}
-				else{
-					GetPldHeader()->SetFormat("PRESORTED_EVENTS");
-					GetPldHeader()->Write(&psort_file);
-				}
+				
+			// Write header information to the output root file.
+			std::stringstream stream;
+			if(loaded_files < 10){ stream << "head/file0" << loaded_files; }
+			else{ stream << "head/file" << loaded_files; }
+			head_path = stream.str();
+			root_file->mkdir(head_path.c_str());
+			root_file->cd(head_path.c_str());
+			for(size_t index = 0; index < finfo->size(); index++){
+				finfo->at(index, name, value);
+				writeTNamed(name.c_str(), value);
 			}
 		}
 		else{ std::cout << msgHeader << "Failed to fetch input file info!\n"; }
@@ -925,14 +868,7 @@ Unpacker *simpleScanner::GetCore(){
 bool simpleScanner::AddEvent(XiaData *event_){
 	if(!event_){ return false; }
 
-	if(firstEvent){ // This is the first event to be processed.
-		if(this->GetFileFormat() == 2){ // Reading presorted data from file.
-			handler->SetPresortMode(true);
-			presortData = true;
-		}
-		
-		firstEvent = false;
-	}
+	if(firstEvent) firstEvent = false; // This is the first event to be processed.
 
 	// Fill the output histograms.
 	chanCounts->Fill(event_->chanNum, event_->modNum);
@@ -954,16 +890,12 @@ bool simpleScanner::AddEvent(XiaData *event_){
 	}
 	
 	ChanEvent *current_event = NULL;
+
+	// Create a new ChanEvent.	
+	current_event = new ChanEvent(event_);
 	
-	if(!presortData){ // Non presorted data. Create a new ChanEvent.
-		current_event = new ChanEvent(event_);
-		
-		// We no longer need the XiaData since we made a copy of it using ChanEvent.
-		delete event_;
-	}
-	else{ // We already have a ChanEvent. Convert XiaData pointer to ChanEvent pointer.
-		current_event = (ChanEvent*)event_;
-	}
+	// We no longer need the XiaData since we made a copy of it using ChanEvent.
+	delete event_;
 	
 	// Link the channel event to its corresponding map entry.
 	ChannelEventPair *pair_;
@@ -1008,26 +940,15 @@ bool simpleScanner::ProcessEvents(){
 	// start event. This is done to avoid writing a lot of useless data
 	// to the output file in the event of a high trigger rate.
 	if(nonStartEvents || recordAllStarts){
-		if(!writePresort){
-			// Call each processor to do the processing.
-			if(handler->Process()){ // This event had at least one valid signal
-				// Fill the root tree with processed data.
-				root_tree->SafeFill();
+		// Call each processor to do the processing.
+		if(handler->Process()){ // This event had at least one valid signal
+			// Fill the root tree with processed data.
+			root_tree->SafeFill();
 
-				// Fill the ADC trace tree with raw traces.		
-				if(write_traces){ trace_tree->SafeFill(); }
-			}
-			else{ retval = false; }
+			// Fill the ADC trace tree with raw traces.		
+			if(write_traces){ trace_tree->SafeFill(); }
 		}
-		else{
-			// Call each processor's preprocess routine.
-			// The preprocessors will calculate high res timing, energy, etc.
-			handler->PreProcess();
-
-			// Write the sorted data to the output file.
-			HandlePresortOutput();
-		}
-		
+		else{ retval = false; }
 		nonStartEvents = false;
 	}
 
@@ -1050,73 +971,6 @@ bool simpleScanner::ProcessEvents(){
 	}
 	
 	return retval;
-}
-
-/** Write pixie events in the raw event to the output presort file.
-  * \param[in]  forceWrite Close the raw event spill even if the threshold has not been reached.
-  */
-void simpleScanner::HandlePresortOutput(bool forceWrite/*=false*/){
-	// This is a new raw event spill.
-	if(currSpillLength == 0){
-		// The 1-word DATA identifier.
-		psort_file.write((char *)&dataHeaderWord, 4);
-		
-		// This is where we would write the length of the raw event "spill".
-		// Since we don't currently know how long it will be we will use a placeholder for now.
-		// We will save the index so we may overwrite it with the correct value later.
-		spillLengthIndex = psort_file.tellp();
-		
-		// Write a 0xFFFFFFFF as a placeholder.
-		psort_file.write((char *)&endBufferWord, 4);
-		
-		// Update the current length of our raw event spill.
-		// We will need to subtract these two words later, but we
-		// need this now to prevent writing the header more than once.
-		currSpillLength += 2; 
-	}
-
-	// If there are events in the raw event, write it to the file.
-	if(!chanEventList.empty()){
-		// Write the event data.
-		for(std::deque<ChannelEventPair*>::iterator iter = chanEventList.begin(); iter != chanEventList.end(); ++iter){ 
-			// Write each event to the presort file.
-			int numBytesWritten = (*iter)->channelEvent->writeEvent(&psort_file, NULL, (*iter)->entry->hasTag("recordTrace"));
-
-			if(numBytesWritten % 4 != 0)
-				std::cout << msgHeader << "Warning! Number of bytes written to presort file not divisible by 4!\n";
-
-			// Add the length of the event.
-			if(numBytesWritten >= 0)
-				currSpillLength += numBytesWritten/4;
-		}
-
-		// Close the raw event with a delimiter.
-		psort_file.write((char *)&endBufferWord, 4);
-	
-		// Account for the delimiter.
-		currSpillLength++;
-	}
-
-	// Check if we have enough data to close the spill.
-	if(currSpillLength >= spillThreshold + 2 || forceWrite){
-		// Close the spill with a delimiter.
-		psort_file.write((char *)&endBufferWord, 4);
-
-		// Remove the length of the header from the spill length.
-		currSpillLength = currSpillLength - 2;
-		
-		// Overwrite the 1-word raw event spill length in 4-byte words.
-		psort_file.seekp(spillLengthIndex, std::ios::beg);
-		psort_file.write((char *)&currSpillLength, 4);
-		psort_file.seekp(0, std::ios::end);
-
-		// Keep track of the maximum raw event length. Required for later scanning.
-		if(currSpillLength > maxSpillLength)
-			maxSpillLength = currSpillLength;
-	
-		// Reset the spill length.
-		currSpillLength = 0;
-	}
 }
 
 #ifndef USE_HRIBF

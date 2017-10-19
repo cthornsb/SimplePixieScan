@@ -44,13 +44,6 @@ bool ProcessorHandler::ToggleTraces(){
 	return retval;
 }
 
-bool ProcessorHandler::SetPresortMode(bool state_/*=true*/){
-	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
-		iter->proc->SetPresortMode(state_);
-	}
-	return state_;
-}
-
 void ProcessorHandler::SetTimingAnalyzer(TimingAnalyzer mode_){
 	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++)
 		iter->proc->SetTraceAnalyzer(mode_);

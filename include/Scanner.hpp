@@ -209,11 +209,6 @@ class simpleScanner : public ScanInterface {
 	  */
 	virtual bool ProcessEvents();
 
-	/** Write pixie events in the raw event to the output presort file.
-	  * \param[in]  forceWrite Close the raw event spill even if the threshold has not been reached.
-	  */
-	void HandlePresortOutput(bool forceWrite=false);
-
   private:
 	MapFile *mapfile; /// Pointer to the map file to use for channel mapping.
 	ConfigFile *configfile; /// Pointer to the configuration file to use for setting default parameters.
@@ -250,9 +245,7 @@ class simpleScanner : public ScanInterface {
 	
 	bool recordAllStarts; /// True if the user wishes to record all start events to the output file.
 	bool nonStartEvents; /// True if the current event list has at least one non-start.
-	bool presortData; /// True if the incoming data is in presorted format.
 	bool firstEvent; /// True if the first event has yet to be processed.
-	bool writePresort; /// True if presorted data is to be written to file.
 	bool forceUseOfTrace; /// True if all map entries are to be set to 'trace' type.
 	bool untriggered_mode; /// Set to true if a start detector is not to be used.
 	bool force_overwrite; /// Set to true if existing output files will be overwritten.

@@ -282,7 +282,7 @@ class ScanInterface{
 	std::string output_filename; //!< Name of file to be used for output
 
 	int max_spill_size; /// Maximum size of a spill to read.
-	int file_format; /// Input file format to use (0=.ldf, 1=.pld, 2=.pld(presort)).
+	int file_format; /// Input file format to use (0=.ldf, 1=.pld).
 	
 	unsigned long num_spills_recvd; /// The total number of good spills received from either the input file or shared memory.
 	std::streampos file_start_offset; /// The first word in the file at which to start scanning.

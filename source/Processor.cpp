@@ -232,7 +232,6 @@ Processor::Processor(std::string name_, std::string type_, MapFile *map_){
 	use_trace = true;
 	isSingleEnded = true;
 	histsEnabled = false;
-	presortData = false;
 
 	total_time = 0;
 	start_time = clock();
@@ -353,58 +352,56 @@ void Processor::PreProcess(){
 	for(std::deque<ChannelEventPair*>::iterator iter = events.begin(); iter != events.end(); iter++){
 		current_event = (*iter)->channelEvent;
 		
-		if(!presortData){
-			// Set the default values for high resolution energy and time.
-			current_event->hiresTime = current_event->time * filterClockInSeconds;
-		
-			// Check for trace with zero size.
-			if(current_event->traceLength == 0){
-				if(use_trace && !presortData){
-					// The trace is required by this processor, but does not exist.
-					preprocess_emptyTrace++;
-					continue; 
-				}				
-				// The trace is not required by the processor. Set the channel event to valid.
-				current_event->valid_chan = true;
+		// Set the default values for high resolution energy and time.
+		current_event->hiresTime = current_event->time * filterClockInSeconds;
+	
+		// Check for trace with zero size.
+		if(current_event->traceLength == 0){
+			if(use_trace){
+				// The trace is required by this processor, but does not exist.
+				preprocess_emptyTrace++;
+				continue; 
+			}				
+			// The trace is not required by the processor. Set the channel event to valid.
+			current_event->valid_chan = true;
+		}
+		else{ // The trace exists.
+			// Calculate the baseline.
+			if(current_event->ComputeBaseline() < 0){
+				preprocess_badBaseline++;
+				continue; 
 			}
-			else{ // The trace exists.
-				// Calculate the baseline.
-				if(current_event->ComputeBaseline() < 0){
-					preprocess_badBaseline++;
-					continue; 
-				}
-		
-				// Check for large SNR.
-				//if(current_event->stddev > 3.0){ continue; }
+	
+			// Check for large SNR.
+			//if(current_event->stddev > 3.0){ continue; }
 
-				// Compute the integral of the pulse within the integration window.
-				current_event->IntegratePulse(current_event->max_index - fitting_low, current_event->max_index + fitting_high);
-				if(fitting_low2 != -9999 && fitting_high2 != -9999) 
-					current_event->IntegratePulse(current_event->max_index - fitting_low2, current_event->max_index + fitting_high2, true);		
-		
-				// Set the channel event to valid.
-				current_event->valid_chan = true;
-		
-				if(analyzer == FIT){ // Do root fitting for high resolution timing (very slow).
-					if(!FitPulse(current_event, (*iter)->entry)){
-						// Set the channel event to invalid.
-						current_event->valid_chan = false;
-						preprocess_badFit++;
-						continue;
-					}
+			// Compute the integral of the pulse within the integration window.
+			current_event->IntegratePulse(current_event->max_index - fitting_low, current_event->max_index + fitting_high);
+			if(fitting_low2 != -9999 && fitting_high2 != -9999) 
+				current_event->IntegratePulse(current_event->max_index - fitting_low2, current_event->max_index + fitting_high2, true);		
+	
+			// Set the channel event to valid.
+			current_event->valid_chan = true;
+	
+			if(analyzer == FIT){ // Do root fitting for high resolution timing (very slow).
+				if(!FitPulse(current_event, (*iter)->entry)){
+					// Set the channel event to invalid.
+					current_event->valid_chan = false;
+					preprocess_badFit++;
+					continue;
 				}
-				else{ // Do a more simplified CFD analysis to save time.
-					if(!CfdPulse(current_event, (*iter)->entry)){
-						// Set the channel event to invalid.
-						current_event->valid_chan = false;
-						preprocess_badCfd++;
-						continue;
-					}
-				}
-			
-				// Add the phase of the trace to the high resolution time.
-				current_event->hiresTime += current_event->phase * adcClockInSeconds;
 			}
+			else{ // Do a more simplified CFD analysis to save time.
+				if(!CfdPulse(current_event, (*iter)->entry)){
+					// Set the channel event to invalid.
+					current_event->valid_chan = false;
+					preprocess_badCfd++;
+					continue;
+				}
+			}
+		
+			// Add the phase of the trace to the high resolution time.
+			current_event->hiresTime += current_event->phase * adcClockInSeconds;
 		}
 	}
 
