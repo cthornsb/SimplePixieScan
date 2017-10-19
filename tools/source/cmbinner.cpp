@@ -16,7 +16,13 @@
 #include "CalibFile.hpp"
 #include "Structures.h"
 
-// Energy in MeV
+// E_ in MeV, return TQDC in keVee.
+double energy2tqdc(const double &E_){
+	const double a=0.95, b=8, c=0.1, d=0.9;
+	return 1000*(a*E_-b*(1-std::exp(-c*std::pow(E_, d))));
+}
+
+// E_ in MeV and d in m, return TOF in ns.
 double energy2tof(const double &E_, const double &d){
 	const double coeff = 72.2982541205; // 
 	return coeff*d/std::sqrt(E_);
@@ -114,6 +120,37 @@ size_t binTOF(std::vector<double> &tofBinsLow, std::vector<double> &energyBinsLo
 	std::reverse(energyBinsLow.begin(), energyBinsLow.end());	
 
 	return tofBinsLow.size();
+}
+
+class branchHolder{
+  public:
+	branchHolder() : isGood(true) { }
+
+	bool AddBranch(TTree *tree_, const std::string &name_, void *ptr_, bool isRequired_=true);
+
+	bool IsGood(){ return isGood; }
+
+  private:
+	std::vector<std::string> names;
+	std::vector<TBranch*> branches;
+	std::vector<void*> ptrs;
+	bool isGood;
+};
+
+bool branchHolder::AddBranch(TTree *tree_, const std::string &name_, void *ptr_, bool isRequired_/*=true*/){
+	ptrs.push_back(ptr_);
+	names.push_back(name_);
+	TBranch *branch = NULL;
+	int retval = tree_->SetBranchAddress(name_.c_str(), ptr_, &branch);
+	branches.push_back(branch);
+	if(retval < 0){
+		if(isRequired_){
+			std::cout << " Error: Failed to load branch \"" << name_ << "\" from input TTree (code=" << retval << ").\n";
+			isGood = false;
+		}
+		return false;
+	}
+	return true;
 }
 
 class threshCal : public CalType {
@@ -407,7 +444,7 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			useTCutG = true;
 		}
 
-		double ctof, energy, tqdc, theta, angleCOM, r;
+		double ctof, energy, ctqdc, tqdc, theta, angleCOM, r;
 		unsigned short location;
 
 		if(treeMode || mcarlo){
@@ -534,14 +571,21 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 				hEcom->GetYaxis()->SetTitle("Neutron Energy (MeV)");
 			}
 
-			// Create TQDC histograms.
-			hEtqdc = new TH2F("hEtqdc", "Trace QDC vs. Energy", energyBins.size()-1, energyBins.data(), 1000, 0, 20000);
-			hEtqdc->GetXaxis()->SetTitle("Neutron Energy (MeV)");
-			hEtqdc->GetYaxis()->SetTitle("Trace QDC");
+			// Generate TQDC bins.
+			std::vector<double> tqdcBins;
+			tqdcBins.reserve(energyBins.size());
+			for(size_t i = 0; i < energyBins.size(); i++){
+				tqdcBins.push_back(energy2tqdc(energyBins.at(i)));
+			}
 
-			h2dtqdc = new TH2F("h2dtqdc", "Trace QDC vs. Corrected TOF", tofBins.size()-1, tofBins.data(), 1000, 0, 20000);
+			// Create TQDC histograms.
+			hEtqdc = new TH2F("hEtqdc", "Trace QDC vs. Energy", energyBins.size()-1, energyBins.data(), tqdcBins.size()-1, tqdcBins.data());
+			hEtqdc->GetXaxis()->SetTitle("Neutron Energy (MeV)");
+			hEtqdc->GetYaxis()->SetTitle("Trace QDC (keVee)");
+
+			h2dtqdc = new TH2F("h2dtqdc", "Trace QDC vs. Corrected TOF", tofBins.size()-1, tofBins.data(), tqdcBins.size()-1, tqdcBins.data());
 			h2dtqdc->GetXaxis()->SetTitle("Neutron TOF (ns)");
-			h2dtqdc->GetYaxis()->SetTitle("Trace QDC");
+			h2dtqdc->GetYaxis()->SetTitle("Trace QDC (keVee)");
 		}
 
 		int file_counter = 1;
@@ -553,42 +597,43 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 				continue;
 			}
 
-			TBranch *branch = NULL;
+			branchHolder branches;
 			std::vector<double> hitTheta;
 			std::vector<int> detLocation;
 			
 			// VANDMC data types
 			std::vector<double> tof_v, energy_v, qdc_v, hitR_v;
 	
+			bool hasCorTqdcBranch = false;
 			if(!mcarlo){
 				if(!vandmc){
-					intree->SetBranchAddress("ctof", &ctof, &branch);
-					intree->SetBranchAddress("energy", &energy);
-					intree->SetBranchAddress("tqdc", &tqdc);
-					intree->SetBranchAddress("theta", &theta);
-					intree->SetBranchAddress("loc", &location);
-					intree->SetBranchAddress("r", &r);
+					branches.AddBranch(intree, "ctof", &ctof);
+					branches.AddBranch(intree, "ctof", &ctof);
+					branches.AddBranch(intree, "energy", &energy);
+					branches.AddBranch(intree, "tqdc", &tqdc);
+					branches.AddBranch(intree, "theta", &theta);
+					branches.AddBranch(intree, "loc", &location);
+					branches.AddBranch(intree, "r", &r);
+					hasCorTqdcBranch = branches.AddBranch(intree, "ctqdc", &ctqdc, false);
 				}
 				else{
 					intree->SetMakeClass(1);
-					intree->SetBranchAddress("tof", &tof_v, &branch);
-					intree->SetBranchAddress("energy", &energy_v);
-					intree->SetBranchAddress("qdc", &qdc_v);
-					intree->SetBranchAddress("hitTheta", &hitTheta);
-					intree->SetBranchAddress("loc", &detLocation);
-					intree->SetBranchAddress("hitR", &hitR_v);
+					branches.AddBranch(intree, "tof", &tof_v);
+					branches.AddBranch(intree, "energy", &energy_v);
+					branches.AddBranch(intree, "qdc", &qdc_v);
+					branches.AddBranch(intree, "hitTheta", &hitTheta);
+					branches.AddBranch(intree, "loc", &detLocation);
+					branches.AddBranch(intree, "hitR", &hitR_v);
 				}
 			}
 			else{
 				intree->SetMakeClass(1);
-				intree->SetBranchAddress("hitTheta", &hitTheta, &branch);
-				intree->SetBranchAddress("location", &detLocation);
+				branches.AddBranch(intree, "hitTheta", &hitTheta);
+				branches.AddBranch(intree, "location", &detLocation);
 			}
-	
-			if(!branch){
-				std::cout << " Error: Failed to load branch \"ctof\" from input TTree.\n";
-				return 8;
-			}
+
+			// Check for all required branches.
+			if(!branches.IsGood()) continue;
 	
 			unsigned int badCount = 0;
 			while(getNextEntry()){
@@ -634,8 +679,10 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 						hEcom->Fill(rxn.GetEjectile()->comAngle[0], energy);
 						h2dcom->Fill(rxn.GetEjectile()->comAngle[0], ctof);
 					}
-					hEtqdc->Fill(energy, tqdc);
-					h2dtqdc->Fill(ctof, tqdc);
+					if(hasCorTqdcBranch){
+						hEtqdc->Fill(energy, ctqdc);
+						h2dtqdc->Fill(ctof, ctqdc);
+					}
 				}
 				else{
 					for(unsigned int j = 0; j < hitTheta.size(); j++){
