@@ -51,9 +51,9 @@ endif(CMAKE_BUILD_TYPE MATCHES "Debug")
 option(BUILD_SHARED "Build and install shared libraries." OFF)
 option(BUILD_TOOLS "Build and install tool programs." OFF)
 option(INSTALL_CONFIG "Copy default configuration files." OFF)
-option(REMOVE_REGISTER "Remove \"Error <TCling::RegisterModule>\" error message from dictionary." ON)
+option(REMOVE_REGISTER "Remove \"Error <TCling::RegisterModule>\" error message from dictionary." OFF)
 option(USE_NCURSES "Use ncurses for terminal" ON)
-mark_as_advanced(USE_NCURSES)
+mark_as_advanced(REMOVE_REGISTER USE_NCURSES)
 
 #------------------------------------------------------------------------------
 
