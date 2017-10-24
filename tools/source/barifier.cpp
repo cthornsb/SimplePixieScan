@@ -391,11 +391,10 @@ int barHandler::execute(int argc, char *argv[]){
 		infile->GetObject("head/file01/Data time", named);
 		if(named){
 			double fileDataTime = strtod(named->GetTitle(), NULL);
-			if(fileDataTime <= 0){
-				std::cout << "debug: Encountered negative data time (" << fileDataTime << std::endl;
-				fileDataTime = 60651.1;
-			}
-			totalDataTime += fileDataTime;
+			if(fileDataTime > 0)
+				totalDataTime += fileDataTime;
+			else
+				std::cout << " Warning: Encountered negative data time (" << fileDataTime << " s)\n";
 		}
 		else 
 			std::cout << " Warning: Failed to find pixie data time in input file!\n";
