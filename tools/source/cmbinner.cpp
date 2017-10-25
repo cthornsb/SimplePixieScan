@@ -189,7 +189,7 @@ class simpleComCalculator : public simpleTool {
 	double threshold;
 	double radius;
 	double userEnergy;
-	double maxRadius;
+	double maxAxialPosition;
 	double timeOffset;
 	double widthMultiplier;
 	int nBins;
@@ -225,7 +225,7 @@ class simpleComCalculator : public simpleTool {
 
   public:
 	simpleComCalculator() : simpleTool(), startAngle(0), stopAngle(180), binWidth(1), 
-	                        threshold(-1), radius(0.5), userEnergy(-1), maxRadius(-1), 
+	                        threshold(-1), radius(0.5), userEnergy(-1), maxAxialPosition(-1), 
 	                        timeOffset(0), widthMultiplier(1), nBins(180), 
 	                        mcarlo(false), vandmc(false), printMode(false), defaultMode(false), 
 	                        treeMode(false), reactionMode(true), thresholdFile(false), cut(NULL), 
@@ -335,7 +335,7 @@ void simpleComCalculator::addOptions(){
 	addOption(optionExt("threshold", required_argument, NULL, 'T', "<threshold>", "Use a software threshold on the trqce QDC (not used by default)."), userOpts, optstr);
 	addOption(optionExt("radius", required_argument, NULL, 0x0, "<radius>", "Set the detector radius (default=0.5 m)."), userOpts, optstr);
 	addOption(optionExt("energy", required_argument, NULL, 'E', "<energy>", "Specify the beam energy in MeV."), userOpts, optstr);
-	addOption(optionExt("max-radius", required_argument, NULL, 0x0, "<radius>", "Specify the maximum event radius in m (not used by default)."), userOpts, optstr);
+	addOption(optionExt("max-yaxis", required_argument, NULL, 0x0, "<radius>", "Specify the maximum detector axial position in m (not used by default)."), userOpts, optstr);
 	addOption(optionExt("time-offset", required_argument, NULL, 0x0, "<offset>", "Specify the TOF offset in ns."), userOpts, optstr);
 	addOption(optionExt("no-reaction", no_argument, NULL, 0x0, "", "Do not use reaction kinematics (no CM calculations)."), userOpts, optstr);
 	addOption(optionExt("multiplier", required_argument, NULL, 0x0, "<factor>", "Specify bin width multiplier (1 by default)."), userOpts, optstr);
@@ -376,7 +376,7 @@ bool simpleComCalculator::processArgs(){
 	if(userOpts.at(7).active)
 		userEnergy = strtod(userOpts.at(7).argument.c_str(), 0);
 	if(userOpts.at(8).active)
-		maxRadius = strtod(userOpts.at(8).argument.c_str(), 0);
+		maxAxialPosition = strtod(userOpts.at(8).argument.c_str(), 0);
 	if(userOpts.at(9).active)
 		timeOffset = strtod(userOpts.at(9).argument.c_str(), 0);
 	if(userOpts.at(10).active)
@@ -444,7 +444,7 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			useTCutG = true;
 		}
 
-		double ctof, energy, ctqdc, tqdc, theta, angleCOM, r;
+		double ctof, energy, ctqdc, tqdc, theta, angleCOM, yaxis;
 		unsigned short location;
 
 		if(treeMode || mcarlo){
@@ -602,18 +602,20 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			std::vector<int> detLocation;
 			
 			// VANDMC data types
-			std::vector<double> tof_v, energy_v, qdc_v, hitR_v;
+			std::vector<double> tof_v, energy_v, qdc_v, hitY_v;
 	
 			bool hasCorTqdcBranch = false;
 			if(!mcarlo){
 				if(!vandmc){
-					branches.AddBranch(intree, "ctof", &ctof);
+					// Required branches.
 					branches.AddBranch(intree, "ctof", &ctof);
 					branches.AddBranch(intree, "energy", &energy);
 					branches.AddBranch(intree, "tqdc", &tqdc);
 					branches.AddBranch(intree, "theta", &theta);
 					branches.AddBranch(intree, "loc", &location);
-					branches.AddBranch(intree, "r", &r);
+					branches.AddBranch(intree, "y", &yaxis);
+
+					// Optional branch.
 					hasCorTqdcBranch = branches.AddBranch(intree, "ctqdc", &ctqdc, false);
 				}
 				else{
@@ -623,7 +625,7 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 					branches.AddBranch(intree, "qdc", &qdc_v);
 					branches.AddBranch(intree, "hitTheta", &hitTheta);
 					branches.AddBranch(intree, "loc", &detLocation);
-					branches.AddBranch(intree, "hitR", &hitR_v);
+					branches.AddBranch(intree, "hitY", &hitY_v);
 				}
 			}
 			else{
@@ -645,13 +647,13 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 						tqdc = qdc_v.front();
 						theta = hitTheta.front();
 						location = detLocation.front();
-						r = hitR_v.front();
+						yaxis = hitY_v.front();
 					}
 				
 					// Check the location of this event.
 					if(restrictLocation >= 0 && location != restrictLocation) continue;
 	
-					if(maxRadius > 0 && r >= maxRadius){
+					if(maxAxialPosition > 0 && std::fabs(yaxis) > maxAxialPosition){
 						badCount++;
 						continue;
 					}
