@@ -41,6 +41,7 @@ class efficiencyFile{
   public:
 	std::vector<double> E;
 	std::vector<double> eff;
+	std::vector<double> deff;
 
 	efficiencyFile(){ }
 
@@ -56,6 +57,7 @@ class efficiencyFile{
 
 		E.clear();
 		eff.clear();
+		deff.clear();
 
 		std::string line;		
 		double energy, efficiency;
@@ -65,14 +67,25 @@ class efficiencyFile{
 
 			if(line.empty() || line[0] == '#') continue;
 
-			size_t splitIndex = line.find('\t');
+			size_t splitIndex1 = line.find('\t');
 
-			if(splitIndex == std::string::npos) continue;
+			if(splitIndex1 == std::string::npos) continue;
 
-			E.push_back(strtod(line.substr(0, splitIndex).c_str(), NULL));
-			eff.push_back(strtod(line.substr(splitIndex+1).c_str(), NULL));
+			// Read the energy.			
+			E.push_back(strtod(line.substr(0, splitIndex1).c_str(), NULL));
 
-			//std::cout << "E=" << E.back() << ", eff=" << eff.back() << std::endl;
+			// Read the efficiency and the uncertainty (if available).
+			size_t splitIndex2 = line.find('\t', splitIndex1+1);
+			if(splitIndex2 != std::string::npos){
+				eff.push_back(strtod(line.substr(splitIndex1+1, splitIndex2).c_str(), NULL));
+				deff.push_back(strtod(line.substr(splitIndex2+1).c_str(), NULL));
+			}
+			else{
+				eff.push_back(strtod(line.substr(splitIndex1+1).c_str(), NULL));
+				deff.push_back(0);
+			}
+
+			//std::cout << " debug: E=" << E.back() << ", eff=" << eff.back() << ", deff=" << deff.back() << std::endl;
 		}
 
 		tofThreshold = calcTOF(E.front());
@@ -93,6 +106,19 @@ class efficiencyFile{
 		return false;
 	}
 
+	// Use linear interpolation to calculate an efficiency from the distribution.
+	bool getEfficiency(const double &E_, double &efficiency, double &uncertainty){
+		if(E_ > E.back()) return false;
+		for(int i = 1; i < E.size(); i++){
+			if(E_ >= E[i-1] && E_ < E[i]){
+				efficiency = (eff[i-1] + (E_-E[i-1])*(eff[i]-eff[i-1])/(E[i]-E[i-1]));
+				uncertainty = (deff[i-1]+deff[i])/2;
+				return true;
+			}
+		}
+		return false;
+	}
+
 	// Scale an input function by the intrinsic efficiency of VANDLE at energy E_.
 	double correctEfficiency(const double &E_, const double &funcVal_){
 		double denom;
@@ -101,6 +127,15 @@ class efficiencyFile{
 		return 0.0;
 	}
 
+	// Return a new TGraphErrors containing all the data points.
+	TGraphErrors *graph(){
+		TGraphErrors *output = new TGraphErrors(E.size());
+		for(size_t i = 0; i < E.size(); i++){
+			output->SetPoint(i, E[i], eff[i]);
+			output->SetPointError(i, 0, deff[i]);
+		}
+		return output;
+	}
 };
 
 ///////////////////////////////////////////////////////////////////////////////
