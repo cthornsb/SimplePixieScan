@@ -95,7 +95,7 @@ class specFitter : public simpleHistoFitter {
 	double Xrange;
 	int nBins;
 
-	bool polyBG;
+	bool polyBG[3];
 	bool gausFit;
 	bool woodsSaxon;
 	bool noBackground;
@@ -133,7 +133,7 @@ class specFitter : public simpleHistoFitter {
 	TGraph *convertHisToGraph(TH1 *h_, const double &xLow, const double &xHigh);
 
   public:
-	specFitter() : simpleHistoFitter(), polyBG(false), gausFit(true), woodsSaxon(false), noBackground(false), automaticMode(false), firstRun(true), logXaxis(false), logYaxis(false), noPeakMode(false), strictMode(true), waitRun(true), skipNext(false), waitRedo(true), markerCount(0), nPeaksText("") { }
+	specFitter() : simpleHistoFitter(), polyBG{0,0,0}, gausFit(true), woodsSaxon(false), noBackground(false), automaticMode(false), firstRun(true), logXaxis(false), logYaxis(false), noPeakMode(false), strictMode(true), waitRun(true), skipNext(false), waitRedo(true), markerCount(0), nPeaksText("") { }
 
 	bool fitSpectrum(TH1 *h_, const int &binID_);
 
@@ -151,29 +151,17 @@ void specFitter::setupControlPanel(){
 	// Declare a new options menu.
 	win = new GuiWindow(gClient->GetRoot(), "Background", 200, 450);
 
-	// Add buttons to the menu..
-	if(!polyBG){ // Order matters for radio buttons.
-		win->AddRadio("expo");
-		win->AddRadio("poly2", &polyBG);
-		win->AddRadio("none", &noBackground);
-	}
-	else{
-		win->AddRadio("poly2", &polyBG);
-		win->AddRadio("expo");
-		win->AddRadio("none", &noBackground);
-	}
+	// Add buttons to the menu. Order matters.
+	win->AddRadio("expo");
+	win->AddRadio("poly0", &polyBG[0]);
+	win->AddRadio("poly1", &polyBG[1]);
+	win->AddRadio("poly2", &polyBG[2]);
+	win->AddRadio("none", &noBackground);
 
 	win->NewGroup("Peak");
-	if(gausFit){ // Order matters for radio buttons.
-		win->AddRadio("gauss", &gausFit);
-		win->AddRadio("landau");
-		win->AddRadio("woods-saxon", &woodsSaxon);
-	}
-	else{
-		win->AddRadio("landau");
-		win->AddRadio("gauss", &gausFit);
-		win->AddRadio("woods-saxon", &woodsSaxon);
-	}
+	win->AddRadio("gauss", &gausFit);
+	win->AddRadio("landau");
+	win->AddRadio("woods-saxon", &woodsSaxon);
 
 	win->NewGroup("Options");
 	win->AddCheckbox("no-peak", &noPeakMode, noPeakMode);
@@ -352,14 +340,18 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	double bgy[3];
 	double p[3];
 
-	int nBkgPars = (!noBackground ? 3 : 0);
+	int nBkgPars = 0;
+	if(polyBG[0]) nBkgPars = 1;
+	else if(polyBG[1]) nBkgPars = 2;
+	else if(polyBG[2] || !noBackground) nBkgPars = 3;
+	
 	int nPars = nBkgPars;
 	if(!noPeakMode) nPars += 3*nPeaks;
 
 	std::stringstream stream1, stream2;
 
 	if(!noBackground){
-		if(!polyBG){ // Set initial function parameters.
+		if(!polyBG[0] && !polyBG[1] && !polyBG[2]){ // Set initial function parameters.
 			std::cout << "Mark exponential background (x0,y0)\n";
 			getMarker(bgx[0], bgy[0]);
 			std::cout << "Mark exponential background (x1,y1)\n";
@@ -386,14 +378,30 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 		else{ // Set initial function parameters.
 			std::cout << "Mark linear background (x0,y0)\n";
 			getMarker(bgx[0], bgy[0]);
-			std::cout << "Mark linear background (x1,y1)\n";
-			getMarker(bgx[1], bgy[1]);
-			std::cout << "Mark linear background (x2,y2)\n";
-			getMarker(bgx[2], bgy[2]);
+			stream1 << "[0]";
+			if(polyBG[1] || polyBG[2]){
+				std::cout << "Mark linear background (x1,y1)\n";
+				getMarker(bgx[1], bgy[1]);
+				stream1 << "+" << xstr << "*[1]";	
+			}
 
-			calculateP2(bgx, bgy, p, logXaxis);
-			
-			stream1 << "[0]+" << xstr << "*[1]+" << xstr << "^2*[2]";
+			if(polyBG[0]){
+				p[0] = bgy[0];
+				p[1] = 0;
+				p[2] = 0;		
+			}
+			else if(polyBG[1]){
+				p[1] = (bgy[1]-bgy[0])/(bgx[1]-bgx[0]);
+				p[0] = (bgy[0]-p[1]*bgx[0]);
+				p[2] = 0;
+			}
+			else if(polyBG[2]){
+				std::cout << "Mark linear background (x2,y2)\n";
+				getMarker(bgx[2], bgy[2]);
+				stream1 << "+" << xstr << "^2*[2]";
+				calculateP2(bgx, bgy, p, logXaxis);
+			}
+
 		}
 		if(debug) std::cout << " p0 = " << p[0] << ", p1 = " << p[1] << ", p2 = " << p[2] << std::endl;
 	}
@@ -635,26 +643,11 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 }
 
 void specFitter::addChildOptions(){
-	addOption(optionExt("poly", no_argument, NULL, 'p', "", "Fit background spectrum with 2nd order polynomial."), userOpts, optstr);
-	addOption(optionExt("landau", no_argument, NULL, 'l', "", "Fit peaks with landau distributions."), userOpts, optstr);
-	addOption(optionExt("logx", no_argument, NULL, 0x0, "", "Log the x-axis of the projection histogram."), userOpts, optstr);
-	addOption(optionExt("logy", no_argument, NULL, 0x0, "", "Log the y-axis of the projection histogram."), userOpts, optstr);
-	addOption(optionExt("quick", no_argument, NULL, 0x0, "", "Prompts the user for less input."), userOpts, optstr);
  	addOption(optionExt("automatic", no_argument, NULL, 0x0, "", "Enable automatic spectrum fitting."), userOpts, optstr); 
 }
 
 bool specFitter::processChildArgs(){
 	if(userOpts.at(firstChildOption).active)
-		polyBG = true;
-	if(userOpts.at(firstChildOption+1).active)
-		gausFit = false;
-	if(userOpts.at(firstChildOption+2).active)
-		logXaxis = true;
-	if(userOpts.at(firstChildOption+3).active)
-		logYaxis = true;
-	if(userOpts.at(firstChildOption+4).active)
-		strictMode = false;
-	if(userOpts.at(firstChildOption+5).active)
 		automaticMode = true;
 
 	return true;
