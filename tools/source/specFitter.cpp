@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <cmath>
 
@@ -118,6 +119,8 @@ class specFitter : public simpleHistoFitter {
 	std::vector<double> xmarkervals;
 	std::vector<double> ymarkervals;
 
+	std::ofstream outputASCII;
+
 	TDirectory *cdir;
 
 	GuiWindow *win;
@@ -133,7 +136,13 @@ class specFitter : public simpleHistoFitter {
 	TGraph *convertHisToGraph(TH1 *h_, const double &xLow, const double &xHigh);
 
   public:
-	specFitter() : simpleHistoFitter(), polyBG{0,0,0}, gausFit(true), woodsSaxon(false), noBackground(false), automaticMode(false), firstRun(true), logXaxis(false), logYaxis(false), noPeakMode(false), strictMode(true), waitRun(true), skipNext(false), waitRedo(true), markerCount(0), nPeaksText("") { }
+	specFitter() : simpleHistoFitter(), polyBG{0,0,0}, gausFit(true), woodsSaxon(false), noBackground(false), automaticMode(false), firstRun(true), logXaxis(false), logYaxis(false), noPeakMode(false), strictMode(true), waitRun(true), skipNext(false), waitRedo(true), markerCount(0), nPeaksText("") { 
+		outputASCII.open("specFitter.dat");
+	}
+
+	~specFitter(){
+		outputASCII.close();
+	}
 
 	bool fitSpectrum(TH1 *h_, const int &binID_);
 
@@ -517,7 +526,7 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 			std::cout << "  p[" << i << "] = " << func->GetParameter(i) << std::endl;
 		}
 	}
-	
+
 	// Fit the spectrum.
 	if(!noPeakMode)
 		h_->Fit(func, "QN0R");
@@ -621,13 +630,12 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	}
 	delete[] lilfuncs;
 	
-	/*cdir->mkdir("pars")->cd();
+	// Write the final parameters to the output ascii file.
+	outputASCII << binID_;
 	for(int i = 0; i < nPars; i++){
-		std::stringstream stream;
-		stream << "p" << i;
-		writeTNamed(stream.str().c_str(), func->GetParameter(i));
-		writeTNamed((stream.str()+"err").c_str(), func->GetParError(i));
-	}*/
+		outputASCII << "\t" << func->GetParameter(i);
+	}
+	outputASCII << std::endl;
 	
 	delete func;
 	if(!noBackground)
