@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include "Processor.hpp"
 
 #include "ProcessorHandler.hpp"
