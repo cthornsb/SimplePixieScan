@@ -1,5 +1,6 @@
 #include <cmath>
 #include <string.h>
+#include <bitset>
 
 #include "XiaData.hpp"
 
@@ -147,21 +148,21 @@ bool XiaData::readEventRevD(unsigned int *buf, unsigned int &bufferIndex, unsign
 bool XiaData::readEventRevF(unsigned int *buf, unsigned int &bufferIndex, unsigned int module/*=9999*/){	
 	// Decoding event data... see pixie16app.c
 	// buf points to the start of channel data
-	chanNum	    =  (buf[bufferIndex] & 0x0000000F);
-	slotNum	    =  (buf[bufferIndex] & 0x000000F0) >> 4;
-	crateNum	   =  (buf[bufferIndex] & 0x00000F00) >> 8;
+	chanNum        =  (buf[bufferIndex] & 0x0000000F);
+	slotNum        =  (buf[bufferIndex] & 0x000000F0) >> 4;
+	crateNum       =  (buf[bufferIndex] & 0x00000F00) >> 8;
 	headerLength   =  (buf[bufferIndex] & 0x0001F000) >> 12;
-	eventLength	=  (buf[bufferIndex] & 0x1FFE0000) >> 17;
+	eventLength    =  (buf[bufferIndex] & 0x1FFE0000) >> 17;
 	virtualChannel = ((buf[bufferIndex] & 0x20000000) != 0);
 	saturatedBit   = ((buf[bufferIndex] & 0x40000000) != 0);
-	pileupBit	  = ((buf[bufferIndex] & 0x80000000) != 0);	
+	pileupBit      = ((buf[bufferIndex] & 0x80000000) != 0);	
 
 	eventTimeLo =  buf[bufferIndex + 1];
 	eventTimeHi =  buf[bufferIndex + 2] & 0x0000FFFF;
-	cfdTime	 = (buf[bufferIndex + 2] & 0xFFFF0000) >> 16;
-	energy	  =  buf[bufferIndex + 3] & 0x0000FFFF;
+	cfdTime     = (buf[bufferIndex + 2] & 0xFFFF0000) >> 16;
+	energy      =  buf[bufferIndex + 3] & 0x0000FFFF;
 	traceLength = (buf[bufferIndex + 3] & 0x7FFF0000) >> 16;
-	outOfRange = ((buf[bufferIndex] & 0x80000000) != 0);
+	outOfRange  = ((buf[bufferIndex] & 0x80000000) != 0);
 
 	// Handle saturated filter energy.
 	if(saturatedBit){ energy = 32767; }
@@ -177,20 +178,20 @@ bool XiaData::readEventRevF(unsigned int *buf, unsigned int &bufferIndex, unsign
 	// Handle multiple crates
 	modNum += 100 * crateNum;
 
-	// Rev. D header lengths not clearly defined in pixie16app_defs
+	/*// Rev. D header lengths not clearly defined in pixie16app_defs
 	//! magic numbers here for now
 	if(headerLength == 1){
 		// this is a manual statistics block inserted by the poll program
-		/*stats.DoStatisticsBlock(&buf[bufferIndex + 1], modNum);
-		numEvents = -10;*/
+		//stats.DoStatisticsBlock(&buf[bufferIndex + 1], modNum);
+		//numEvents = -10;
 		
 		// Advance to next event.
 		bufferIndex += eventLength;
 		return false;
-	}
-	
+	}*/
+
 	// Check that the header length is valid.
-	if(headerLength != 4 && headerLength != 8 && headerLength != 12 && headerLength != 16){
+	if(headerLength < 4 || headerLength > 18 || ((headerLength-4) % 2 != 0)){
 		std::cout << "ReadEventRevF: Unexpected header length: " << headerLength << std::endl;
 		std::cout << "ReadEventRevF:  Module " << modNum << std::endl;
 		std::cout << "ReadEventRevF:  CHAN:SLOT:CRATE " << chanNum << ":" << slotNum << ":" << crateNum << std::endl;
@@ -207,6 +208,13 @@ bool XiaData::readEventRevF(unsigned int *buf, unsigned int &bufferIndex, unsign
 		return false;
 	}
 
+	// Determine what information is contained in the header.
+	std::bitset<3> headerBits((headerLength-4)/2);
+
+	bool hasRawEnergySums = headerBits[2];
+	bool hasRawQdcSums = headerBits[1];
+	bool hasExternalTimestamp = headerBits[0];
+
 	// One last check on the event length.
 	if( traceLength / 2 + headerLength != eventLength ){
 		std::cout << "ReadEventRevF: Bad event length (" << eventLength << ") does not correspond with length of header (";
@@ -220,15 +228,30 @@ bool XiaData::readEventRevF(unsigned int *buf, unsigned int &bufferIndex, unsign
 	// Move the buffer index past the header.
 	bufferIndex += 4;
 
-	if(headerLength == 8 || headerLength == 16){
+	// Handle the raw energy sums (4 words).
+	if(hasRawEnergySums){
 		// Skip the onboard partial sums for now 
 		// trailing, leading, gap, baseline
 		bufferIndex += 4;
 	}
 
-	if(headerLength >= 12){ // Copy the QDCs.
+	// Handle the QDCs (8 words).
+	if(hasRawQdcSums){
 		copyQDCs((char *)&buf[bufferIndex], 8);
 		bufferIndex += 8;
+	}
+
+	// Handle the external timestamp (2 words).
+	if(hasExternalTimestamp){
+		unsigned int externalTimestampLo =  buf[bufferIndex];
+		unsigned int externalTimestampHi =  buf[bufferIndex+1] & 0x0000FFFF;
+		bufferIndex += 2;
+
+		// Calculate the 48-bit external timestamp.
+		double externalTime = externalTimestampLo + externalTimestampHi * HIGH_BIT_MULT;
+	
+		// Do something with the timestamp.
+		//std::cout << " timestamp = " << externalTimestampLo << ", " << externalTimestampHi << std::endl;
 	}
 
 	/*if(currentEvt->virtualChannel){
