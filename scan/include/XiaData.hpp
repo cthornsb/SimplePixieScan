@@ -37,7 +37,11 @@ class XiaData{
 	unsigned short cfdTime; /// CFD trigger time in units of 1/256 pixie clock ticks.
 	unsigned int eventTimeLo; /// Lower 32 bits of pixie16 event time.
 	unsigned int eventTimeHi; /// Upper 32 bits of pixie16 event time.
-	
+
+	unsigned int externalTimeLo; /// Lower 32 bits of external timestamp.
+	unsigned int externalTimeHi; /// Upper 32 bits of external timestamp.
+	double externalTime; /// 48 bit external timestamp.
+
 	bool virtualChannel; /// Flagged if generated virtually in Pixie DSP.
 	bool pileupBit; /// Pile-up flag from Pixie.
 	bool saturatedBit; /// Saturation flag from Pixie.
@@ -45,6 +49,10 @@ class XiaData{
 	bool cfdTrigSource; /// The ADC that the CFD/FPGA synched with.
 	bool outOfRange; /// Set to true if the trace is saturated.
 	bool saturatedTrace; /// Set to true if the ADC trace is saturated.
+
+	bool hasRawEnergySums;
+	bool hasRawQdcSums;
+	bool hasExternalTimestamp;
 	
 	/// Default constructor.
 	XiaData();

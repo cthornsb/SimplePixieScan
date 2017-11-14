@@ -29,6 +29,10 @@ XiaData::XiaData(XiaData *other_){
 	cfdTime = other_->cfdTime;
 	eventTimeLo = other_->eventTimeLo;
 	eventTimeHi = other_->eventTimeHi;
+	
+	externalTimeLo = other_->externalTimeLo;
+	externalTimeHi = other_->externalTimeHi;
+	externalTime = other_->externalTime;
 
 	virtualChannel = other_->virtualChannel;
 	pileupBit = other_->pileupBit;
@@ -37,6 +41,10 @@ XiaData::XiaData(XiaData *other_){
 	cfdTrigSource = other_->cfdTrigSource; 
 	outOfRange = other_->outOfRange;
 	saturatedTrace = other_->saturatedTrace;
+
+	hasRawEnergySums = other_->hasRawEnergySums;
+	hasRawQdcSums = other_->hasRawQdcSums;
+	hasExternalTimestamp = other_->hasExternalTimestamp;
 
 	// Copy the ADC trace, if enabled.
 	if(other_->traceLength > 0)
@@ -84,6 +92,10 @@ void XiaData::clear(){
 	eventTimeLo = 0;
 	eventTimeHi = 0;
 
+	externalTimeLo = 0;
+	externalTimeHi = 0;
+	externalTime = 0;
+
 	virtualChannel = false;
 	pileupBit = false;
 	saturatedBit = false;
@@ -91,6 +103,10 @@ void XiaData::clear(){
 	cfdTrigSource = false; 
 	outOfRange = false;
 	saturatedTrace = false;	
+
+	hasRawEnergySums = false;
+	hasRawQdcSums = false;
+	hasExternalTimestamp = false;
 
 	clearTrace();
 	clearQDCs();
@@ -211,9 +227,9 @@ bool XiaData::readEventRevF(unsigned int *buf, unsigned int &bufferIndex, unsign
 	// Determine what information is contained in the header.
 	std::bitset<3> headerBits((headerLength-4)/2);
 
-	bool hasRawEnergySums = headerBits[2];
-	bool hasRawQdcSums = headerBits[1];
-	bool hasExternalTimestamp = headerBits[0];
+	hasRawEnergySums = headerBits[2];
+	hasRawQdcSums = headerBits[1];
+	hasExternalTimestamp = headerBits[0];
 
 	// One last check on the event length.
 	if( traceLength / 2 + headerLength != eventLength ){
@@ -243,15 +259,15 @@ bool XiaData::readEventRevF(unsigned int *buf, unsigned int &bufferIndex, unsign
 
 	// Handle the external timestamp (2 words).
 	if(hasExternalTimestamp){
-		unsigned int externalTimestampLo =  buf[bufferIndex];
-		unsigned int externalTimestampHi =  buf[bufferIndex+1] & 0x0000FFFF;
+		externalTimeLo =  buf[bufferIndex];
+		externalTimeHi =  buf[bufferIndex+1] & 0x0000FFFF;
 		bufferIndex += 2;
 
 		// Calculate the 48-bit external timestamp.
-		double externalTime = externalTimestampLo + externalTimestampHi * HIGH_BIT_MULT;
+		externalTime = externalTimeLo + externalTimeHi * HIGH_BIT_MULT;
 	
 		// Do something with the timestamp.
-		//std::cout << " timestamp = " << externalTimestampLo << ", " << externalTimestampHi << std::endl;
+		//std::cout << " timestamp = " << externalTimeLo << ", " << externalTimeHi << std::endl;
 	}
 
 	/*if(currentEvt->virtualChannel){
