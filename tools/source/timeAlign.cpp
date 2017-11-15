@@ -40,10 +40,12 @@ class timeAlign : public simpleHistoFitter {
 	double detectorLength; /// Total length of detector (in cm).
 	double timeOffset; /// Desired time offset of gaussian peak after alignment (in ns).
 
+	int numPeaks; /// Specify the number of peaks to search for using the peak finder.
+
 	bool classicMode;
 
   public:
-	timeAlign() : simpleHistoFitter(), fitRangeMult(1.5), detectorLength(60), timeOffset(0), classicMode(false) { }
+	timeAlign() : simpleHistoFitter(), fitRangeMult(1.5), detectorLength(60), timeOffset(0), numPeaks(1), classicMode(false) { }
 
 	void addChildOptions();
 
@@ -56,6 +58,7 @@ void timeAlign::addChildOptions(){
 	addOption(optionExt("fit-range", required_argument, NULL, 0, "<multiplier>", "Specify FWHM multiplier for range of fit of distribution (default = 1.5)."), userOpts, optstr);
 	addOption(optionExt("length", required_argument, NULL, 0, "<length>", "Specify the length of the detectors (in cm, default = 60)."), userOpts, optstr);
 	addOption(optionExt("classic", optional_argument, NULL, 0, "[offset=0ns]", "Enable \"classic\" mode for simple gaussian fitting of TOF spectra."), userOpts, optstr);
+	addOption(optionExt("num-peaks", required_argument, NULL, 0, "<Npeaks>", "Specify the number of peaks to search for using the peak finder."), userOpts, optstr);
 }
 
 bool timeAlign::processChildArgs(){
@@ -67,6 +70,9 @@ bool timeAlign::processChildArgs(){
 		classicMode = true;
 		if(!userOpts.at(firstChildOption+2).argument.empty())
 			timeOffset = strtod(userOpts.at(firstChildOption+2).argument.c_str(), NULL);
+	}
+	if(userOpts.at(firstChildOption+3).active){
+		numPeaks = strtol(userOpts.at(firstChildOption+3).argument.c_str(), NULL, 0);
 	}
 
 	return true;
@@ -173,11 +179,13 @@ bool timeAlign::process(){
 				f1->SetParameters(v0, beta, t0, a, b);	
 			}
 			else{
-				/*can2->Clear();
-				h1->Draw();
-				can2->Update();
+				if(debug){
+					can2->Clear();
+					h1->Draw();
+					can2->Update();
+				}
 			
-				m1 = (TMarker*)can2->WaitPrimitive("TMarker");
+				/*m1 = (TMarker*)can2->WaitPrimitive("TMarker");
 				xmin = m1->GetX();
 				m1->Delete();
 				m1 = (TMarker*)can2->WaitPrimitive("TMarker");
@@ -185,7 +193,7 @@ bool timeAlign::process(){
 				m1->Delete();*/
 
 				// Search for peaks.
-				TSpectrum spec(5);
+				TSpectrum spec(numPeaks);
 				spec.Search(h1);
 
 				double xmean = 9999;
@@ -212,8 +220,11 @@ bool timeAlign::process(){
 			f1->SetRange(xmin, xmax);
 			h1->Fit(f1, "QR");
 		
-			//f1->Draw("SAME");
-			//can2->Update();
+			if(debug){
+				f1->Draw("SAME");
+				can2->Update();
+				can2->WaitPrimitive();
+			}
 
 			// Output the fit results.
 			if(!classicMode){
