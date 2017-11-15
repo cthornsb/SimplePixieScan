@@ -226,8 +226,10 @@ void barHandler::handleEvents(){
 
 		if(!singleEndedMode){
 			// Calculate the corrected TOF.
-			if(!noTimeMode && !noPositionMode)
+			if(!noPositionMode)
 				ctof = (pos->r0/r)*((tdiff_R + tdiff_L)/2 - time->t0) + 100*pos->r0/cvac;
+			else if(!noTimeMode)
+				ctof = (tdiff_R + tdiff_L)/2 - time->t0;
 			else
 				ctof = (tdiff_R + tdiff_L)/2;
 
@@ -235,8 +237,10 @@ void barHandler::handleEvents(){
 			tqdc = std::sqrt(tqdc_R*tqdc_L);
 		}
 		else{
-			if(!noTimeMode && !noPositionMode)
+			if(!noPositionMode)
 				ctof = tdiff_L - time->t0 + 100*pos->r0/cvac;
+			else if(!noTimeMode)
+				ctof = tdiff_L - time->t0;
 			else
 				ctof = tdiff_L;
 			tqdc = tqdc_L;
