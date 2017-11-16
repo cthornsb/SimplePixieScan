@@ -121,8 +121,8 @@ class efficiencyFile{
 
 	// Scale an input function by the intrinsic efficiency of VANDLE at energy E_.
 	double correctEfficiency(const double &E_, const double &funcVal_){
-		double denom;
-		if(this->getEfficiency(E_, denom))
+		double denom = 0;
+		if(this->getEfficiency(E_, denom) && denom != 0)
 			return funcVal_/denom;
 		return 0.0;
 	}
@@ -214,9 +214,9 @@ double summation(TH1 *h, TF1 *f){
 }
 
 // List the ratio of each bin in two 1-d histograms.
-void binRatio(TH1 *h1_, TH1 *h2_){
-	std::cout << "bin\tN1\tN2\tbinCoverage\tbinSolidAngle\tsolidAngle\n";
-	std::cout.precision(6);
+void binRatio(TH1 *h1_, TH1 *h2_, std::ostream &out=std::cout){
+	out << "bin\tN1\tN2\tbinCoverage\tbinSolidAngle\tsolidAngle\n";
+	out.precision(6);
 	double content1, content2;
 	double angleLow, angleHigh;
 	double solidAngle;
@@ -226,14 +226,14 @@ void binRatio(TH1 *h1_, TH1 *h2_){
 		angleLow = h1_->GetBinLowEdge(i);
 		angleHigh = angleLow + h1_->GetBinWidth(i);
 		solidAngle = twopi*(std::cos(angleLow*pi/180)-std::cos(angleHigh*pi/180));
-		std::cout << i << "\t" << content1 << "\t" << content2 << "\t";
-		std::cout << std::fixed << content2/content1 << "\t" << solidAngle << "\t" << solidAngle*(content2/content1) << std::endl;
-		std::cout.unsetf(ios_base::floatfield);
+		out << i << "\t" << content1 << "\t" << content2 << "\t";
+		out << std::fixed << content2/content1 << "\t" << solidAngle << "\t" << solidAngle*(content2/content1) << std::endl;
+		out.unsetf(ios_base::floatfield);
 	}
 }
 
 // Process a VANDMC monte carlo detector test output file.
-bool processMCarlo(const char *fname, const int &comBins=18, const double &comLow=0, const double &comHigh=90){
+bool processMCarlo(const char *fname, std::ostream &out=std::cout, const int &comBins=18, const double &comLow=0, const double &comHigh=90){
 	TFile *f = new TFile(fname, "READ");
 	if(!f->IsOpen()) return false;
 	
@@ -252,7 +252,7 @@ bool processMCarlo(const char *fname, const int &comBins=18, const double &comLo
 	t->Draw(stream.str().c_str(), "mcarlo.mult>0", "");
 	TH1 *h2 = (TH1*)t->GetHistogram()->Clone("h2");
 
-	binRatio(h1, h2);
+	binRatio(h1, h2, out);
 
 	delete h1;
 	delete h2;
