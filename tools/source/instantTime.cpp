@@ -88,8 +88,6 @@ int instantTime::execute(int argc, char *argv[]){
 		}
 	}
 
-	pbar.finalize();
-
 	std::cout << " First event time   = " << firstTime*8E-9 << " s.\n";
 	std::cout << " Total elapsed time = " << currTime*8E-9 << " s.\n";
 
