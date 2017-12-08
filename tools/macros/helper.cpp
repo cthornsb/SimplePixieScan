@@ -161,12 +161,11 @@ void listBins(TH1 *h_, const double &c_=1){
 
 // Add a second x-axis to a TCanvas.
 TGaxis *extraXaxis(const double &low_, const double &high_, const char *title_=""){
-	TGaxis *axis = new TGaxis(gPad->GetUxmin(),gPad->GetUymax(),gPad->GetUxmax(),gPad->GetUymax(),low_,high_,510,"+L");
-        axis->SetTextFont(42);
+	TGaxis *axis = new TGaxis(gPad->GetUxmin(),gPad->GetUymax(),gPad->GetUxmax(),gPad->GetUymax(),low_,high_,510,"-L");
+        axis->SetLabelFont(42);
         axis->SetTitleFont(42);
         axis->SetLabelSize(0.035);
         axis->SetTitleSize(0.035);
-        axis->SetTitleOffset(0.9);
         axis->SetTitle(title_);
 	axis->Draw();
 	return axis;
@@ -176,11 +175,10 @@ TGaxis *extraXaxis(const double &low_, const double &high_, const char *title_="
 TGaxis *extraYaxis(const double &low_, const double &high_, const char *title_=""){
 	TGaxis *axis = new TGaxis(gPad->GetUxmax(),gPad->GetUymin(),gPad->GetUxmax(),gPad->GetUymax(),low_,high_,510,"+L");
 	axis->Draw();
-        axis->SetTextFont(42);
+        axis->SetLabelFont(42);
         axis->SetTitleFont(42);
         axis->SetLabelSize(0.035);
         axis->SetTitleSize(0.035);
-        axis->SetTitleOffset(0.9);
         axis->SetTitle(title_);
 	return axis;
 }
