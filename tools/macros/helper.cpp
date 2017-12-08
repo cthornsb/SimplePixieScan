@@ -160,16 +160,28 @@ void listBins(TH1 *h_, const double &c_=1){
 }
 
 // Add a second x-axis to a TCanvas.
-TGaxis *extraXaxis(){
-	TGaxis *axis = new TGaxis(gPad->GetUxmin(),gPad->GetUymax(),gPad->GetUxmax(),gPad->GetUymax(),0,100,510,"+L");
+TGaxis *extraXaxis(const double &low_, const double &high_, const char *title_=""){
+	TGaxis *axis = new TGaxis(gPad->GetUxmin(),gPad->GetUymax(),gPad->GetUxmax(),gPad->GetUymax(),low_,high_,510,"+L");
+        axis->SetTextFont(42);
+        axis->SetTitleFont(42);
+        axis->SetLabelSize(0.035);
+        axis->SetTitleSize(0.035);
+        axis->SetTitleOffset(0.9);
+        axis->SetTitle(title_);
 	axis->Draw();
 	return axis;
 }
 
 // Add a second y-axis to a TCanvas.
-TGaxis *extraYaxis(){
-	TGaxis *axis = new TGaxis(gPad->GetUxmax(),gPad->GetUymin(),gPad->GetUxmax(),gPad->GetUymax(),0,100,510,"+L");
+TGaxis *extraYaxis(const double &low_, const double &high_, const char *title_=""){
+	TGaxis *axis = new TGaxis(gPad->GetUxmax(),gPad->GetUymin(),gPad->GetUxmax(),gPad->GetUymax(),low_,high_,510,"+L");
 	axis->Draw();
+        axis->SetTextFont(42);
+        axis->SetTitleFont(42);
+        axis->SetLabelSize(0.035);
+        axis->SetTitleSize(0.035);
+        axis->SetTitleOffset(0.9);
+        axis->SetTitle(title_);
 	return axis;
 }
 
@@ -216,8 +228,8 @@ void help(const std::string &search_=""){
 
 	// Defined functions.
 	const std::string definedFunctions[68] = {"void", "calculateP2", "double *x, double *y, double *p", "Calculate a 2nd order polynomial that passes through three (x,y) pairs.",
-	                                          "TGaxis", "extraXaxis", "", "Add a second x-axis to a TCanvas.",
-	                                          "TGaxis", "extraYaxis", "", "Add a second y-axis to a TCanvas.",
+	                                          "TGaxis", "extraXaxis", "const double &low_, const double &high_, const char *title_=\"\"", "Add a second x-axis to a TCanvas.",
+	                                          "TGaxis", "extraYaxis", "const double &low_, const double &high_, const char *title_=\"\"", "Add a second y-axis to a TCanvas.",
 	                                          "void", "findBins", "TH1 *h, const double &xstart_, const double &xstop_, int &lowBin, int &highBin", "Return the range of bins containing an upper and lower point, rounded to the nearest bins.",
 	                                          "double", "integrate", "TH1 *h", "Return the total integral of a 1-d histogram.",
 	                                          "double", "integrate", "TH1 *h, const double &xstart_, const double &xstop_", "Return the integral of a 1-d histogram in the range [low, high], rounded to the nearest bins.",
