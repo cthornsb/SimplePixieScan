@@ -183,6 +183,19 @@ TGaxis *extraYaxis(const double &low_, const double &high_, const char *title_="
 	return axis;
 }
 
+TH2F *drawFrame(const double &xlow_, const double &xhigh_, const double &ylow_, const double &yhigh_, const char *xtitle_="", const char *ytitle_=""){
+	TObject *obj = gROOT->FindObject("frame");
+	if(obj) obj->Delete();
+	TH2F *frame = new TH2F("frame", "", 100, xlow_, xhigh_, 100, ylow_, yhigh_);
+	frame->SetStats(0);
+	frame->GetXaxis()->SetTitle(xtitle_);
+	frame->GetYaxis()->SetTitle(ytitle_);
+	if(!gPad) gPad = new TCanvas();
+	gPad->cd();
+	frame->Draw();
+	return frame;
+}
+
 TObject *getObject(TFile *f, const std::string &name_, const std::string &dir_=""){
 	TObject *ptr = f->Get((dir_+name_).c_str());
 	if(!ptr) std::cout << " Error! Failed to find \"" << dir_ << "/" << name_ << "\" in input file.\n";
@@ -225,9 +238,11 @@ void help(const std::string &search_=""){
 	                                         "const short", "colors[6]", "A`rray of root colors."};
 
 	// Defined functions.
-	const std::string definedFunctions[68] = {"void", "calculateP2", "double *x, double *y, double *p", "Calculate a 2nd order polynomial that passes through three (x,y) pairs.",
+	const std::string definedFunctions[72] = {"void", "calculateP2", "double *x, double *y, double *p", "Calculate a 2nd order polynomial that passes through three (x,y) pairs.",
 	                                          "TGaxis", "extraXaxis", "const double &low_, const double &high_, const char *title_=\"\"", "Add a second x-axis to a TCanvas.",
 	                                          "TGaxis", "extraYaxis", "const double &low_, const double &high_, const char *title_=\"\"", "Add a second y-axis to a TCanvas.",
+	                                          "TH2F", "drawFrame", "const double &xlow_, const double &xhigh_, const double &ylow_, const double &yhigh_, const char *xtitle_=\"\", const char *ytitle_=\"\"", "Draw a 2d frame on the current canavas.",
+
 	                                          "void", "findBins", "TH1 *h, const double &xstart_, const double &xstop_, int &lowBin, int &highBin", "Return the range of bins containing an upper and lower point, rounded to the nearest bins.",
 	                                          "double", "integrate", "TH1 *h", "Return the total integral of a 1-d histogram.",
 	                                          "double", "integrate", "TH1 *h, const double &xstart_, const double &xstop_", "Return the integral of a 1-d histogram in the range [low, high], rounded to the nearest bins.",
@@ -253,7 +268,7 @@ void help(const std::string &search_=""){
 			std::cout << "  " << globalConstants[3*i+1] << std::endl;
 	
 		std::cout << "\n Defined helper functions:\n";
-		for(int i = 0; i < 17; i++)
+		for(int i = 0; i < 18; i++)
 			std::cout << "  " << definedFunctions[4*i+1] << std::endl;
 			
 		std::cout << std::endl;
@@ -274,7 +289,7 @@ void help(const std::string &search_=""){
 			}
 		}
 	
-		for(int i = 0; i < 17; i++){
+		for(int i = 0; i < 18; i++){
 			fIndex = definedFunctions[4*i+1].find(search_);
 			if(fIndex != std::string::npos){
 				strings[0] = definedFunctions[4*i+1].substr(0, fIndex);
