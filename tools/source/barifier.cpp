@@ -101,8 +101,10 @@ class barHandler : public simpleTool {
 
 	GenericBarStructure *gptr;
 	LiquidStructure *lptr;
+	HagridStructure *hptr;
 
 	bool singleEndedMode;
+	bool gammaDetectorMode;
 	bool noTimeMode;
 	bool noEnergyMode;
 	bool noPositionMode;
@@ -127,7 +129,7 @@ class barHandler : public simpleTool {
 	void handleEvents();
 
   public:
-	barHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), dummy(), gptr(NULL), lptr(NULL), singleEndedMode(false), noTimeMode(false), noEnergyMode(false), noPositionMode(false), countsString(""), totalCounts(0), totalDataTime(0) { }
+	barHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), dummy(), gptr(NULL), lptr(NULL), singleEndedMode(false), gammaDetectorMode(false), noTimeMode(false), noEnergyMode(false), noPositionMode(false), countsString(""), totalCounts(0), totalDataTime(0) { }
 
 	~barHandler();
 	
@@ -153,10 +155,18 @@ bool barHandler::getNextEvent(){
 		location = gptr->loc.at(index);
 	}
 	else{
-		if(index >= lptr->mult) return false;
-		tdiff_L = lptr->tof.at(index);
-		tqdc_L = lptr->ltqdc.at(index);
-		location = lptr->loc.at(index);
+		if(!gammaDetectorMode){
+			if(index >= lptr->mult) return false;
+			tdiff_L = lptr->tof.at(index);
+			tqdc_L = lptr->ltqdc.at(index);
+			location = lptr->loc.at(index);
+		}
+		else{
+			if(index >= hptr->mult) return false;
+			tdiff_L = hptr->tof.at(index);
+			tqdc_L = hptr->tqdc.at(index);
+			location = hptr->loc.at(index);
+		}
 	}
 
 	index++;
@@ -288,7 +298,8 @@ barHandler::~barHandler(){
 
 void barHandler::addOptions(){
 	addOption(optionExt("config", required_argument, NULL, 'c', "<fname>", "Read bar speed-of-light from an input cal file."), userOpts, optstr);
-	addOption(optionExt("single", no_argument, NULL, 0x0, "", "Single-ended detector mode."), userOpts, optstr);
+	addOption(optionExt("liquid", no_argument, NULL, 0x0, "", "Single-ended liquid detector mode."), userOpts, optstr);
+	addOption(optionExt("hagrid", no_argument, NULL, 0x0, "", "Gamma-ray detector mode."), userOpts, optstr);
 	addOption(optionExt("counts", required_argument, NULL, 0x0, "<path>", "Sum counts from the input root files (not used by default)."), userOpts, optstr);
 	addOption(optionExt("no-energy", no_argument, NULL, 0x0, "", "Do not use energy calibration."), userOpts, optstr);
 	addOption(optionExt("no-time", no_argument, NULL, 0x0, "", "Do not use time calibration."), userOpts, optstr);
@@ -302,17 +313,22 @@ bool barHandler::processArgs(){
 	}
 	if(userOpts.at(1).active){
 		singleEndedMode = true;
+		gammaDetectorMode = false;
 	}
 	if(userOpts.at(2).active){
-		countsString = userOpts.at(2).argument;
+		singleEndedMode = true;
+		gammaDetectorMode = true;
 	}
 	if(userOpts.at(3).active){
-		noEnergyMode = true;
+		countsString = userOpts.at(2).argument;
 	}
 	if(userOpts.at(4).active){
-		noTimeMode = true;
+		noEnergyMode = true;
 	}
 	if(userOpts.at(5).active){
+		noTimeMode = true;
+	}
+	if(userOpts.at(6).active){
 		noPositionMode = true;
 	}
 
@@ -379,14 +395,22 @@ int barHandler::execute(int argc, char *argv[]){
 		TBranch *branch = NULL;
 		if(!singleEndedMode) // TODO: Make this more generic at some point.
 			intree->SetBranchAddress("genericbar", &gptr, &branch);
-		else
-			intree->SetBranchAddress("liquid", &lptr, &branch);
+		else{
+			if(!gammaDetectorMode)
+				intree->SetBranchAddress("liquid", &lptr, &branch);
+			else
+				intree->SetBranchAddress("hagrid", &hptr, &branch);
+		}
 
 		if(!branch){
 			if(!singleEndedMode)
 				std::cout << " Error: Failed to load branch \"genericbar\" from input TTree.\n";
-			else
-				std::cout << " Error: Failed to load branch \"liquid\" from input TTree.\n";
+			else{
+				if(!gammaDetectorMode)
+					std::cout << " Error: Failed to load branch \"liquid\" from input TTree.\n";
+				else
+					std::cout << " Error: Failed to load branch \"hagrid\" from input TTree.\n";
+			}
 			return 7;
 		}
 
@@ -449,6 +473,6 @@ int barHandler::execute(int argc, char *argv[]){
 
 int main(int argc, char *argv[]){
 	barHandler obj;
-	
+
 	return obj.execute(argc, argv);
 }
