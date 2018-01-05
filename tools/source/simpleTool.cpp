@@ -23,6 +23,54 @@
 #define USLEEP_WAIT_TIME 1E4 // = 0.01 seconds
 
 ///////////////////////////////////////////////////////////////////////////////
+// class interpolator
+///////////////////////////////////////////////////////////////////////////////
+
+interpolator::interpolator(){ }
+
+interpolator::interpolator(const char *fname_){
+	load(fname_);
+}
+
+bool interpolator::load(const char *fname_){
+	std::ifstream ifile(fname_);
+	
+	if(!ifile.good()) return false;
+
+	double x, y;
+	while(true){
+		ifile >> x >> y;
+		if(ifile.eof()) break;
+
+		xvals.push_back(x);
+		yvals.push_back(y);
+	}
+	
+	ifile.close();
+
+	return !xvals.empty();
+}
+
+bool interpolator::interpolate(const double &x_, double &y){
+	for(size_t i = 1; i < xvals.size(); i++){
+		if(xvals[i-1] <= x_ && xvals[i] > x_){
+			double x1 = xvals[i-1]; double x2 = xvals[i];
+			double y1 = yvals[i-1]; double y2 = yvals[i];
+			y = y1 + (x_-x1)*(y2-y1)/(x2-x1);
+			return true;
+		}
+	}
+	return false;
+}
+
+double interpolator::interpolate(const double &x_){
+	double dummy;
+	if(interpolate(x_, dummy))
+		return dummy;
+	return -9999;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // class progressBar
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -201,13 +201,14 @@ class simpleComCalculator : public simpleTool {
 	bool treeMode;
 	bool reactionMode;
 	bool thresholdFile;
+	bool tqdcGateFile;
 	
-	TCutG *cut;
+	interpolator *tqdcGate;
 
-	std::string cutFilename;
 	std::string configFilename;
 	std::string thresholdFilename;
 	std::string binWidthFilename;
+	std::string tqdcGateFilename;
 
 	int restrictLocation;
 
@@ -228,9 +229,9 @@ class simpleComCalculator : public simpleTool {
 	                        threshold(-1), radius(0.5), userEnergy(-1), maxAxialPosition(-1), 
 	                        timeOffset(0), widthMultiplier(1), nBins(180), 
 	                        mcarlo(false), vandmc(false), printMode(false), defaultMode(false), 
-	                        treeMode(false), reactionMode(true), thresholdFile(false), cut(NULL), 
-	                        cutFilename(""), configFilename(""), thresholdFilename(""), binWidthFilename(""),
-	                        restrictLocation(-1) { }
+	                        treeMode(false), reactionMode(true), thresholdFile(false), tqdcGateFile(false),
+	                        tqdcGate(NULL), configFilename(""), thresholdFilename(""), binWidthFilename(""),
+	                        tqdcGateFilename(""), restrictLocation(-1) { }
 
 	~simpleComCalculator();
 	
@@ -324,6 +325,7 @@ threshCal *simpleComCalculator::getThreshCal(const unsigned int &id_){
 }
 
 simpleComCalculator::~simpleComCalculator(){
+	if(tqdcGate) delete tqdcGate;
 }
 
 void simpleComCalculator::addOptions(){
@@ -342,6 +344,7 @@ void simpleComCalculator::addOptions(){
 	addOption(optionExt("vandmc", no_argument, NULL, 0x0, "", "Read from a VANDMC output file."), userOpts, optstr);
 	addOption(optionExt("xbins", required_argument, NULL, 0x0, "<filename>", "Read CM bin widths from a file."), userOpts, optstr);
 	addOption(optionExt("location", required_argument, NULL, 0x0, "<location>", "Only process events from a particular pixie ID."), userOpts, optstr);
+	addOption(optionExt("tqdc-gate", required_argument, NULL, 0x0, "<filename>", "Use a TQDC gate on the input data."), userOpts, optstr);
 }
 
 bool simpleComCalculator::processArgs(){
@@ -389,6 +392,10 @@ bool simpleComCalculator::processArgs(){
 		binWidthFilename = userOpts.at(13).argument;
 	if(userOpts.at(14).active)
 		restrictLocation = strtol(userOpts.at(14).argument.c_str(), NULL, 0);
+	if(userOpts.at(15).active){
+		tqdcGateFilename = userOpts.at(15).argument;
+		tqdcGateFile = true;
+	}
 
 	return true;
 }
@@ -413,12 +420,19 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			return 3;
 		}
 
-		if(reactionMode && !setupReaction())
+		// Load a curve to use as a TQDC gate.
+		tqdcGate = new interpolator(tqdcGateFilename.c_str());
+		if(tqdcGate->empty()){
+			std::cout << " Error: Failed to load entries from TQDC gate file \"" << tqdcGateFilename << "\".\n";
 			return 4;
+		}
+
+		if(reactionMode && !setupReaction())
+			return 5;
 
 		if(!openOutputFile()){
 			std::cout << " Error: Failed to load output file \"" << output_filename << "\".\n";
-			return 5;
+			return 6;
 		}
 
 		// Write the threshold to the output file.
@@ -432,16 +446,6 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			stream << radius;
 			named.SetTitle(stream.str().c_str());
 			named.Write();
-		}
-
-		// Load a root TCutG to use as a gate.
-		bool useTCutG = false;
-		if(!cut_filename.empty()){
-			if(!loadTCutG()){
-				std::cout << " Error: Failed to load input TCutG \"" << cut_filename << "\".\n";
-				return 6;
-			}
-			useTCutG = true;
 		}
 
 		double ctof, energy, ctqdc, tqdc, theta, angleCOM, yaxis;
@@ -658,15 +662,20 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 						continue;
 					}
 
-					// Check the tqdc threshold (if available).
+					// Check the TQDC gate (if available).
+					if(hasCorTqdcBranch && tqdcGateFile){
+						double tqdcLimit;
+						if(!tqdcGate->interpolate(energy, tqdcLimit)) continue;
+						tqdcLimit *= 1.1; // Add 10% to the cutoff.
+						if(ctqdc > tqdcLimit) continue;
+					}
+
+					// Check the TQDC threshold (if available).
 					if(threshold > 0 && tqdc < threshold) continue;
 					else if(thresholdFile){
 						threshCal *det = getThreshCal(location);
 						if(!det || tqdc < det->thresh) continue;
 					}
-
-					// Check against the input tcutg (if available).
-					if(useTCutG && !tcutg->IsInside(ctof, tqdc)) continue;
 
 					rxn.SetLabAngle(theta);
 					if(treeMode){
@@ -715,8 +724,6 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 			hEtqdc->Write();
 			h2dtqdc->Write();
 		}
-
-		if(cut) delete cut;
 
 		if(treeMode || mcarlo) std::cout << "\n\n Done! Wrote " << outtree->GetEntries() << " entries to '" << output_filename << "'.\n";
 		if(!mcarlo) std::cout << "\n\n Done! Wrote " << h2dlab->GetEntries() << " entries to histogram.\n";

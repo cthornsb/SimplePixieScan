@@ -17,6 +17,25 @@ class TH2;
 class TH1D;
 class TCutG;
 
+class interpolator{
+  public:
+	interpolator();
+
+	interpolator(const char *fname_);
+
+	bool load(const char *fname_);
+
+	bool interpolate(const double &x_, double &y);
+
+	double interpolate(const double &x_);
+
+	bool empty(){ return xvals.empty(); }
+
+  private:
+	std::vector<double> xvals;
+	std::vector<double> yvals;
+};
+
 class progressBar{
   public:
 	long long numEntries;
