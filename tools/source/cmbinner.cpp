@@ -421,10 +421,12 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 		}
 
 		// Load a curve to use as a TQDC gate.
-		tqdcGate = new interpolator(tqdcGateFilename.c_str());
-		if(tqdcGate->empty()){
-			std::cout << " Error: Failed to load entries from TQDC gate file \"" << tqdcGateFilename << "\".\n";
-			return 4;
+		if(tqdcGateFile){
+			tqdcGate = new interpolator(tqdcGateFilename.c_str());
+			if(tqdcGate->empty()){
+				std::cout << " Error: Failed to load entries from TQDC gate file \"" << tqdcGateFilename << "\".\n";
+				return 4;
+			}
 		}
 
 		if(reactionMode && !setupReaction())
