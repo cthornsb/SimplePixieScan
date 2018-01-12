@@ -99,12 +99,13 @@ class barHandler : public simpleTool {
 
 	barCal dummy;
 
-	GenericBarStructure *gptr;
+	GenericBarStructure *gbptr;
+	LiquidBarStructure *lbptr;
 	LiquidStructure *lptr;
 	HagridStructure *hptr;
 
+	int detectorType;
 	bool singleEndedMode;
-	bool gammaDetectorMode;
 	bool noTimeMode;
 	bool noEnergyMode;
 	bool noPositionMode;
@@ -129,7 +130,7 @@ class barHandler : public simpleTool {
 	void handleEvents();
 
   public:
-	barHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), dummy(), gptr(NULL), lptr(NULL), singleEndedMode(false), gammaDetectorMode(false), noTimeMode(false), noEnergyMode(false), noPositionMode(false), countsString(""), totalCounts(0), totalDataTime(0) { }
+	barHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), dummy(), gbptr(NULL), lbptr(NULL), lptr(NULL), hptr(NULL), detectorType(0), singleEndedMode(false), noTimeMode(false), noEnergyMode(false), noPositionMode(false), countsString(""), totalCounts(0), totalDataTime(0) { }
 
 	~barHandler();
 	
@@ -146,27 +147,33 @@ barCal *barHandler::getBarCal(const unsigned int &id_){
 }
 
 bool barHandler::getNextEvent(){
-	if(!singleEndedMode){
-		if(index >= gptr->mult) return false;
-		tdiff_L = gptr->ltdiff.at(index);
-		tdiff_R = gptr->rtdiff.at(index);
-		tqdc_L = gptr->ltqdc.at(index);
-		tqdc_R = gptr->rtqdc.at(index);
-		location = gptr->loc.at(index);
+	if(detectorType == 0){ // GenericBar
+		if(index >= gbptr->mult) return false;
+		tdiff_L = gbptr->ltdiff.at(index);
+		tdiff_R = gbptr->rtdiff.at(index);
+		tqdc_L = gbptr->ltqdc.at(index);
+		tqdc_R = gbptr->rtqdc.at(index);
+		location = gbptr->loc.at(index);
 	}
-	else{
-		if(!gammaDetectorMode){
-			if(index >= lptr->mult) return false;
-			tdiff_L = lptr->tof.at(index);
-			tqdc_L = lptr->ltqdc.at(index);
-			location = lptr->loc.at(index);
-		}
-		else{
-			if(index >= hptr->mult) return false;
-			tdiff_L = hptr->tof.at(index);
-			tqdc_L = hptr->tqdc.at(index);
-			location = hptr->loc.at(index);
-		}
+	else if(detectorType == 1){ // LiquidBar
+		if(index >= lbptr->mult) return false;
+		tdiff_L = lbptr->ltdiff.at(index);
+		tdiff_R = lbptr->rtdiff.at(index);
+		tqdc_L = lbptr->lltqdc.at(index);
+		tqdc_R = lbptr->rltqdc.at(index);
+		location = lbptr->loc.at(index);
+	}
+	else if(detectorType == 2){ // Liquid
+		if(index >= lptr->mult) return false;
+		tdiff_L = lptr->tof.at(index);
+		tqdc_L = lptr->ltqdc.at(index);
+		location = lptr->loc.at(index);
+	}
+	else{ // HAGRiD
+		if(index >= hptr->mult) return false;
+		tdiff_L = hptr->tof.at(index);
+		tqdc_L = hptr->adcMax.at(index);
+		location = hptr->loc.at(index);
 	}
 
 	index++;
@@ -298,8 +305,9 @@ barHandler::~barHandler(){
 
 void barHandler::addOptions(){
 	addOption(optionExt("config", required_argument, NULL, 'c', "<fname>", "Read bar speed-of-light from an input cal file."), userOpts, optstr);
-	addOption(optionExt("liquid", no_argument, NULL, 0x0, "", "Single-ended liquid detector mode."), userOpts, optstr);
-	addOption(optionExt("hagrid", no_argument, NULL, 0x0, "", "Gamma-ray detector mode."), userOpts, optstr);
+	addOption(optionExt("single", no_argument, NULL, 0x0, "", "Single-ended detector mode."), userOpts, optstr);
+	addOption(optionExt("liquid", no_argument, NULL, 0x0, "", "Liquid detector mode."), userOpts, optstr);
+	addOption(optionExt("hagrid", no_argument, NULL, 0x0, "", "HAGRiD detector mode."), userOpts, optstr);
 	addOption(optionExt("counts", required_argument, NULL, 0x0, "<path>", "Sum counts from the input root files (not used by default)."), userOpts, optstr);
 	addOption(optionExt("no-energy", no_argument, NULL, 0x0, "", "Do not use energy calibration."), userOpts, optstr);
 	addOption(optionExt("no-time", no_argument, NULL, 0x0, "", "Do not use time calibration."), userOpts, optstr);
@@ -307,30 +315,48 @@ void barHandler::addOptions(){
 }
 
 bool barHandler::processArgs(){
+	bool single = false;
+	bool liquid = false;
+	bool hagrid = false;
 	if(userOpts.at(0).active){
 		setupDir = userOpts.at(0).argument;
 		if(setupDir[setupDir.size()-1] != '/') setupDir += '/';
 	}
-	if(userOpts.at(1).active){
-		singleEndedMode = true;
-		gammaDetectorMode = false;
+	if(userOpts.at(1).active){ // Single-ended
+		single = true;
 	}
-	if(userOpts.at(2).active){
-		singleEndedMode = true;
-		gammaDetectorMode = true;
+	if(userOpts.at(2).active){ // Liquid detector
+		liquid = true;
 	}
-	if(userOpts.at(3).active){
-		countsString = userOpts.at(2).argument;
+	if(userOpts.at(3).active){ // HAGRiD detector
+		hagrid = true;
 	}
 	if(userOpts.at(4).active){
-		noEnergyMode = true;
+		countsString = userOpts.at(2).argument;
 	}
 	if(userOpts.at(5).active){
-		noTimeMode = true;
+		noEnergyMode = true;
 	}
 	if(userOpts.at(6).active){
+		noTimeMode = true;
+	}
+	if(userOpts.at(7).active){
 		noPositionMode = true;
 	}
+
+	detectorType = 0;
+	if(!single && !liquid && !hagrid) detectorType = 0;
+	else if(!single && liquid && !hagrid) detectorType = 1;
+	else if(single && liquid && !hagrid) detectorType = 2;
+	else if(single && !liquid && hagrid) detectorType = 3;
+	else{
+		std::cout << " Error: Unrecognized detector type (SLH=" << single << liquid << hagrid << ")\n";
+		return false;
+	}
+
+	singleEndedMode = (detectorType >= 2);
+
+	//std::cout << " debug: detectorType=" << detectorType << " (SLH=" << single << liquid << hagrid << ")\n";
 
 	return true;
 }
@@ -393,24 +419,26 @@ int barHandler::execute(int argc, char *argv[]){
 		}
 
 		TBranch *branch = NULL;
-		if(!singleEndedMode) // TODO: Make this more generic at some point.
-			intree->SetBranchAddress("genericbar", &gptr, &branch);
-		else{
-			if(!gammaDetectorMode)
-				intree->SetBranchAddress("liquid", &lptr, &branch);
-			else
-				intree->SetBranchAddress("hagrid", &hptr, &branch);
-		}
+		if(detectorType == 0) // GenericBar
+			intree->SetBranchAddress("genericbar", &gbptr, &branch);
+		else if(detectorType == 1) // LiquidBar
+			intree->SetBranchAddress("liquidbar", &lbptr, &branch);
+		else if(detectorType == 2) // Liquid
+			intree->SetBranchAddress("liquid", &lptr, &branch);
+		else // HAGRiD
+			intree->SetBranchAddress("hagrid", &hptr, &branch);
 
 		if(!branch){
-			if(!singleEndedMode)
-				std::cout << " Error: Failed to load branch \"genericbar\" from input TTree.\n";
-			else{
-				if(!gammaDetectorMode)
-					std::cout << " Error: Failed to load branch \"liquid\" from input TTree.\n";
-				else
-					std::cout << " Error: Failed to load branch \"hagrid\" from input TTree.\n";
-			}
+			std::cout << " Error: Failed to load branch \"";
+			if(detectorType == 0) // GenericBar
+				std::cout << "genericbar";
+			else if(detectorType == 1) // LiquidBar
+				std::cout << "liquidbar";
+			else if(detectorType == 2) // Liquid
+				std::cout << "liquid";
+			else // HAGRiD
+				std::cout << "hagrid";
+			std::cout << "\" from input TTree.\n";
 			return 7;
 		}
 
