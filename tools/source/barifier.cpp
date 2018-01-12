@@ -106,6 +106,7 @@ class barHandler : public simpleTool {
 
 	int detectorType;
 	bool singleEndedMode;
+	bool liquidDetMode;
 	bool noTimeMode;
 	bool noEnergyMode;
 	bool noPositionMode;
@@ -115,11 +116,12 @@ class barHandler : public simpleTool {
 	double totalDataTime;
 
 	double x, y, z, r, theta;
-	double ctof, tqdc, ctqdc, energy;
+	double ctof, tqdc, stqdc, ctqdc, energy;
 	unsigned short location;
 
 	double tdiff_L, tdiff_R;
 	float tqdc_L, tqdc_R;
+	float stqdc_L, stqdc_R;	
 
 	std::vector<barCal> bars;
 
@@ -130,7 +132,7 @@ class barHandler : public simpleTool {
 	void handleEvents();
 
   public:
-	barHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), dummy(), gbptr(NULL), lbptr(NULL), lptr(NULL), hptr(NULL), detectorType(0), singleEndedMode(false), noTimeMode(false), noEnergyMode(false), noPositionMode(false), countsString(""), totalCounts(0), totalDataTime(0) { }
+	barHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), dummy(), gbptr(NULL), lbptr(NULL), lptr(NULL), hptr(NULL), detectorType(0), singleEndedMode(false), liquidDetMode(false), noTimeMode(false), noEnergyMode(false), noPositionMode(false), countsString(""), totalCounts(0), totalDataTime(0) { }
 
 	~barHandler();
 	
@@ -161,12 +163,15 @@ bool barHandler::getNextEvent(){
 		tdiff_R = lbptr->rtdiff.at(index);
 		tqdc_L = lbptr->lltqdc.at(index);
 		tqdc_R = lbptr->rltqdc.at(index);
+		stqdc_L = lbptr->lstqdc.at(index);
+		stqdc_R = lbptr->rstqdc.at(index);
 		location = lbptr->loc.at(index);
 	}
 	else if(detectorType == 2){ // Liquid
 		if(index >= lptr->mult) return false;
 		tdiff_L = lptr->tof.at(index);
 		tqdc_L = lptr->ltqdc.at(index);
+		stqdc_L = lptr->stqdc.at(index);
 		location = lptr->loc.at(index);
 	}
 	else{ // HAGRiD
@@ -271,6 +276,13 @@ void barHandler::handleEvents(){
 			tqdc = tqdc_L;
 		}
 
+		if(liquidDetMode){ // Calculate the short integral for PSD.
+			if(!singleEndedMode)
+				stqdc = std::sqrt(stqdc_R*stqdc_L);
+			else
+				stqdc = stqdc_L;
+		}
+
 		if(!noEnergyMode){// Calibrate the TQDC.
 			if(!singleEndedMode){
 				EnergyCal *ecalLeft = calib.GetEnergyCal(location);
@@ -355,6 +367,7 @@ bool barHandler::processArgs(){
 	}
 
 	singleEndedMode = (detectorType >= 2);
+	liquidDetMode = liquid;
 
 	//std::cout << " debug: detectorType=" << detectorType << " (SLH=" << single << liquid << hagrid << ")\n";
 
@@ -400,6 +413,8 @@ int barHandler::execute(int argc, char *argv[]){
 	outtree->Branch("ctof", &ctof);
 	outtree->Branch("energy", &energy);
 	outtree->Branch("tqdc", &tqdc);
+	if(liquidDetMode)
+		outtree->Branch("stqdc", &stqdc);
 	if(!noEnergyMode)
 		outtree->Branch("ctqdc", &ctqdc);
 	outtree->Branch("r", &r);
