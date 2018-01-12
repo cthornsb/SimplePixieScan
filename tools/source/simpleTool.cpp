@@ -382,6 +382,10 @@ TTree *simpleTool::loadInputTree(){
 		std::cout << " Error! Failed to load input TTree '" << input_objname << "'.\n";
 		return NULL;
 	}
+	if(intree->GetEntries() == 0){
+		std::cout << " Error! Input tree has zero entries.\n";
+		return NULL;
+	}
 	if(max_entries_to_process <= 0) // No user specified number of entries.
 		entries_to_process = intree->GetEntries();
 	else // The user has specified a maximum number of entries to read.
