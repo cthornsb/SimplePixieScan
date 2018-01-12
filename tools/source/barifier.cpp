@@ -172,7 +172,7 @@ bool barHandler::getNextEvent(){
 	else{ // HAGRiD
 		if(index >= hptr->mult) return false;
 		tdiff_L = hptr->tof.at(index);
-		tqdc_L = hptr->adcMax.at(index);
+		tqdc_L = hptr->energy.at(index);
 		location = hptr->loc.at(index);
 	}
 
