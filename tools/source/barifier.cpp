@@ -100,6 +100,7 @@ class barHandler : public simpleTool {
 	barCal dummy;
 
 	GenericBarStructure *gbptr;
+	GenericStructure *gptr;
 	LiquidBarStructure *lbptr;
 	LiquidStructure *lptr;
 	HagridStructure *hptr;
@@ -132,7 +133,7 @@ class barHandler : public simpleTool {
 	void handleEvents();
 
   public:
-	barHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), dummy(), gbptr(NULL), lbptr(NULL), lptr(NULL), hptr(NULL), detectorType(0), singleEndedMode(false), liquidDetMode(false), noTimeMode(false), noEnergyMode(false), noPositionMode(false), countsString(""), totalCounts(0), totalDataTime(0) { }
+	barHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), dummy(), gbptr(NULL), gptr(NULL), lbptr(NULL), lptr(NULL), hptr(NULL), detectorType(0), singleEndedMode(false), liquidDetMode(false), noTimeMode(false), noEnergyMode(false), noPositionMode(false), countsString(""), totalCounts(0), totalDataTime(0) { }
 
 	~barHandler();
 	
@@ -157,7 +158,13 @@ bool barHandler::getNextEvent(){
 		tqdc_R = gbptr->rtqdc.at(index);
 		location = gbptr->loc.at(index);
 	}
-	else if(detectorType == 1){ // LiquidBar
+	else if(detectorType == 1){ // Generic
+		if(index >= gptr->mult) return false;
+		tdiff_L = gptr->tof.at(index);
+		tqdc_L = gptr->tqdc.at(index);
+		location = gptr->loc.at(index);
+	}
+	else if(detectorType == 2){ // LiquidBar
 		if(index >= lbptr->mult) return false;
 		tdiff_L = lbptr->ltdiff.at(index);
 		tdiff_R = lbptr->rtdiff.at(index);
@@ -167,7 +174,7 @@ bool barHandler::getNextEvent(){
 		stqdc_R = lbptr->rstqdc.at(index);
 		location = lbptr->loc.at(index);
 	}
-	else if(detectorType == 2){ // Liquid
+	else if(detectorType == 3){ // Liquid
 		if(index >= lptr->mult) return false;
 		tdiff_L = lptr->tof.at(index);
 		tqdc_L = lptr->ltqdc.at(index);
@@ -358,15 +365,16 @@ bool barHandler::processArgs(){
 
 	detectorType = 0;
 	if(!single && !liquid && !hagrid) detectorType = 0;
-	else if(!single && liquid && !hagrid) detectorType = 1;
-	else if(single && liquid && !hagrid) detectorType = 2;
-	else if(single && !liquid && hagrid) detectorType = 3;
+	else if(single && !liquid && !hagrid) detectorType = 1;
+	else if(!single && liquid && !hagrid) detectorType = 2;
+	else if(single && liquid && !hagrid) detectorType = 3;
+	else if(single && !liquid && hagrid) detectorType = 4;
 	else{
 		std::cout << " Error: Unrecognized detector type (SLH=" << single << liquid << hagrid << ")\n";
 		return false;
 	}
 
-	singleEndedMode = (detectorType >= 2);
+	singleEndedMode = single;
 	liquidDetMode = liquid;
 
 	//std::cout << " debug: detectorType=" << detectorType << " (SLH=" << single << liquid << hagrid << ")\n";
@@ -436,9 +444,11 @@ int barHandler::execute(int argc, char *argv[]){
 		TBranch *branch = NULL;
 		if(detectorType == 0) // GenericBar
 			intree->SetBranchAddress("genericbar", &gbptr, &branch);
-		else if(detectorType == 1) // LiquidBar
+		else if(detectorType == 1) // Generic
+			intree->SetBranchAddress("generic", &gptr, &branch);
+		else if(detectorType == 2) // LiquidBar
 			intree->SetBranchAddress("liquidbar", &lbptr, &branch);
-		else if(detectorType == 2) // Liquid
+		else if(detectorType == 3) // Liquid
 			intree->SetBranchAddress("liquid", &lptr, &branch);
 		else // HAGRiD
 			intree->SetBranchAddress("hagrid", &hptr, &branch);
@@ -447,9 +457,11 @@ int barHandler::execute(int argc, char *argv[]){
 			std::cout << " Error: Failed to load branch \"";
 			if(detectorType == 0) // GenericBar
 				std::cout << "genericbar";
-			else if(detectorType == 1) // LiquidBar
+			else if(detectorType == 1) // Generic
+				std::cout << "generic";
+			else if(detectorType == 2) // LiquidBar
 				std::cout << "liquidbar";
-			else if(detectorType == 2) // Liquid
+			else if(detectorType == 3) // Liquid
 				std::cout << "liquid";
 			else // HAGRiD
 				std::cout << "hagrid";
