@@ -260,6 +260,11 @@ class ScanInterface{
 	  */
 	virtual Unpacker *GetCore();
 
+	/** Return a pointer to the Terminal object used for interfacing with the user.
+	  * \return Pointer to a Terminal object.
+	  */
+	Terminal *GetTerminal(){ return term; }
+
 	/// Seek to a specified position in the file.
 	bool rewind(const std::streampos &offset_=0);
 
