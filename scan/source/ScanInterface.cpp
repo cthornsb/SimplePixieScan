@@ -1065,11 +1065,8 @@ bool ScanInterface::Setup(int argc, char *argv[]){
 	// Load the input file, if the user has supplied a filename.
 	if(!shm_mode && !input_filename.empty()){
 		std::cout << msgHeader << "Using filename " << input_filename << ".\n";
-		if(open_input_file(input_filename)){
-			// Start the scan.
-			start_scan();
-		}
-		else{ std::cout << msgHeader << "Failed to load input file!\n"; }
+		if(!open_input_file(input_filename))
+			std::cout << msgHeader << "Failed to load input file!\n";
 	}
 	
 	return true;
