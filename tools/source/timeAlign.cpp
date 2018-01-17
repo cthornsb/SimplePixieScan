@@ -38,6 +38,7 @@ class timeAlign : public simpleHistoFitter {
   private:
 	double fitRangeMult; /// Range of fit in multiples of beta (FWHM) of distribution.
 	double detectorLength; /// Total length of detector (in cm).
+	double detectorWidth; /// Total width of the detector (in cm).
 	double timeOffset; /// Desired time offset of gaussian peak after alignment (in ns).
 
 	int numPeaks; /// Specify the number of peaks to search for using the peak finder.
@@ -45,7 +46,7 @@ class timeAlign : public simpleHistoFitter {
 	bool classicMode;
 
   public:
-	timeAlign() : simpleHistoFitter(), fitRangeMult(1.5), detectorLength(60), timeOffset(0), numPeaks(1), classicMode(false) { }
+	timeAlign() : simpleHistoFitter(), fitRangeMult(1.5), detectorLength(60), detectorWidth(3), timeOffset(0), numPeaks(1), classicMode(false) { }
 
 	void addChildOptions();
 
@@ -57,6 +58,7 @@ class timeAlign : public simpleHistoFitter {
 void timeAlign::addChildOptions(){
 	addOption(optionExt("fit-range", required_argument, NULL, 0, "<multiplier>", "Specify FWHM multiplier for range of fit of distribution (default = 1.5)."), userOpts, optstr);
 	addOption(optionExt("length", required_argument, NULL, 0, "<length>", "Specify the length of the detectors (in cm, default = 60)."), userOpts, optstr);
+	addOption(optionExt("width", required_argument, NULL, 0, "<width>", "Specify the width of the detectors (in cm, default = 3)."), userOpts, optstr);
 	addOption(optionExt("classic", optional_argument, NULL, 0, "[offset=0ns]", "Enable \"classic\" mode for simple gaussian fitting of TOF spectra."), userOpts, optstr);
 	addOption(optionExt("num-peaks", required_argument, NULL, 0, "<Npeaks>", "Specify the number of peaks to search for using the peak finder."), userOpts, optstr);
 }
@@ -66,12 +68,14 @@ bool timeAlign::processChildArgs(){
 		fitRangeMult = strtod(userOpts.at(firstChildOption).argument.c_str(), NULL);
 	if(userOpts.at(firstChildOption+1).active)
 		detectorLength = strtod(userOpts.at(firstChildOption+1).argument.c_str(), NULL);
-	if(userOpts.at(firstChildOption+2).active){
+	if(userOpts.at(firstChildOption+2).active)
+		detectorWidth = strtod(userOpts.at(firstChildOption+2).argument.c_str(), NULL);
+	if(userOpts.at(firstChildOption+3).active){
 		classicMode = true;
 		if(!userOpts.at(firstChildOption+2).argument.empty())
 			timeOffset = strtod(userOpts.at(firstChildOption+2).argument.c_str(), NULL);
 	}
-	if(userOpts.at(firstChildOption+3).active){
+	if(userOpts.at(firstChildOption+4).active){
 		numPeaks = strtol(userOpts.at(firstChildOption+3).argument.c_str(), NULL, 0);
 	}
 
@@ -93,6 +97,7 @@ bool timeAlign::process(){
 	if(!classicMode){
 		can2->cd();
 		std::cout << "Using detector length of " << detectorLength << " cm.\n";
+		std::cout << "Using detector width of " << detectorWidth << " cm.\n";
 		std::cout << "Using fitting range of " << fitRangeMult << " multiples of beta.\n"; 
 		f1 = new TF1("f1", doubleWoodsSaxon, 0, 1, 5);
 
@@ -229,7 +234,6 @@ bool timeAlign::process(){
 			// Output the fit results.
 			if(!classicMode){
 				// Calculate bar speed-of-light.
-				const double detectorWidth = 3; // cm
 				cbar = 2*detectorLength/f1->GetParameter(1);
 
 				std::cout << "  Fit: chi^2 = " << f1->GetChisquare()/f1->GetNDF() << ", t0 = " << f1->GetParameter(2) << " ns, cbar  = " << cbar << " cm/ns\n";
