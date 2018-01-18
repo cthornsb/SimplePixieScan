@@ -337,12 +337,4 @@ class ScanInterface{
 	bool open_input_file(const std::string &fname_);
 };
 
-/// Get the file extension from an input filename string.
-std::string get_extension(std::string filename_, std::string &prefix);
-
-/** Check whether or not a cstring is a numeric value containing a decimal.
-  * \return True if the input cstring is a numeric value with a decimal and false otherwise.
-  */
-bool isDecimal(const char *str_);
-
 #endif

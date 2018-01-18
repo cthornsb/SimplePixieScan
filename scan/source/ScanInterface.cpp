@@ -23,6 +23,7 @@
 #include "Unpacker.hpp"
 #include "poll2_socket.h"
 #include "CTerminal.h"
+#include "helperFunctions.h"
 
 #include "ScanInterface.hpp"
 
@@ -1150,50 +1151,4 @@ bool ScanInterface::Close(){
 	
 	scan_init = false;
 	return true;
-}
-
-/** Get the file extension from an input filename string.
-  * \param[in]  filename_ The full input filename path.
-  * \param[out] prefix	The input filename path without the file extension.
-  * \return The file extension string.
-  */
-std::string get_extension(std::string filename_, std::string &prefix){
-	size_t count = 0;
-	size_t last_index = 0;
-	std::string output = "";
-	prefix = "";
-	
-	if(filename_.find('.') != std::string::npos){
-		// Find the final period in the filename
-		for(count = 0; count < filename_.size(); count++){
-			if(filename_[count] == '.'){ last_index = count; }
-		}
-	
-		// Get the filename prefix and the extension
-		for(size_t i = 0; i < count; i++){
-			if(i < last_index){ prefix += filename_[i]; }
-			else if(i > last_index){ output += filename_[i]; }
-		}
-	}
-	else{ // The filename has no extension.
-		prefix = filename_;
-	}
-	
-	return output;
-}
-
-/** Check whether or not a cstring is a numeric value containing a decimal.
-  * \return True if the input cstring is a numeric value with a decimal and false otherwise.
-  */
-bool isDecimal(const char *str_){
-	size_t length = strlen(str_);
-	bool retval = false;
-	for(size_t i = 0; i < length; i++){
-		if(str_[i] == '.'){
-			retval = true;
-			continue;
-		}
-		else if(str_[i] < 0x30 || str_[i] > 0x39) return false; // Not a number.
-	}
-	return retval;
 }

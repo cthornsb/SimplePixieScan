@@ -1,4 +1,4 @@
-set(CoreSources Display.cpp hribf_buffers.cpp poll2_socket.cpp)
+set(CoreSources helperFunctions.cpp Display.cpp hribf_buffers.cpp poll2_socket.cpp)
 
 if (${CURSES_FOUND})
 	list(APPEND CoreSources CTerminal.cpp)

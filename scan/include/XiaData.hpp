@@ -213,8 +213,4 @@ class ChannelEvent : public XiaData {
 	virtual void print2();
 };
 
-double calculateP2(const short &x0, unsigned short *y, double *p);
-
-double calculateP3(const short &x0, unsigned short *y, double *p);
-
 #endif
