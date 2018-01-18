@@ -306,6 +306,7 @@ class ScanInterface{
 	bool batch_mode; /// Set to true if the program is to be run with no interactive command line.
 	bool scan_init; /// Set to true when ScanInterface is initialized properly and is ready to scan.
 	bool file_open; /// Set to true when an input binary file is successfully opened for reading.
+	bool automatic_start; /// Start the scan automatically upon loading the input file.
 
 	bool kill_all; /// Set to true when user has sent kill command.
 	bool run_ctrl_exit; /// Set to true when run control thread has exited.

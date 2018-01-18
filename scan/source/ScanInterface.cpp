@@ -383,6 +383,7 @@ ScanInterface::ScanInterface(Unpacker *core_/*=NULL*/){
 	batch_mode = false;
 	scan_init = false;
 	file_open = false;
+	automatic_start = false;
 
 	kill_all = false;
 	run_ctrl_exit = false;
@@ -408,8 +409,9 @@ ScanInterface::ScanInterface(Unpacker *core_/*=NULL*/){
 	baseOpts.push_back(optionExt("quiet", no_argument, NULL, 'q', "", "Toggle off verbosity flag"));
 	baseOpts.push_back(optionExt("shm", no_argument, NULL, 's', "", "Enable shared memory readout"));
 	baseOpts.push_back(optionExt("version", no_argument, NULL, 'v', "", "Display version information"));
+	baseOpts.push_back(optionExt("auto-start", no_argument, NULL, 'A', "", "Automatically start scan upon loading input file"));
 
-	optstr = "bc:hi:o:qsv";
+	optstr = "bc:hi:o:qsvA";
 
 	progName = std::string(PROG_NAME);
 	msgHeader = progName + ": ";
@@ -983,6 +985,9 @@ bool ScanInterface::Setup(int argc, char *argv[]){
 					std::cout << "  HRIBF Buffers v" << HRIBF_BUFFERS_VERSION << " (" << HRIBF_BUFFERS_DATE << ")\n";
 					std::cout << "  CTerminal	 v" << CTERMINAL_VERSION << " (" << CTERMINAL_DATE << ")\n";
 					return false;
+				case 'A' :
+					automatic_start = true;
+					break;
 				default :
 					for(std::vector<optionExt>::iterator iter = userOpts.begin(); iter != userOpts.end(); iter++){
 						if(retval == iter->val){
@@ -1065,8 +1070,11 @@ bool ScanInterface::Setup(int argc, char *argv[]){
 	// Load the input file, if the user has supplied a filename.
 	if(!shm_mode && !input_filename.empty()){
 		std::cout << msgHeader << "Using filename " << input_filename << ".\n";
-		if(!open_input_file(input_filename))
-			std::cout << msgHeader << "Failed to load input file!\n";
+		if(open_input_file(input_filename)){ // Start the scan automatically in batch mode.
+			if(batch_mode || automatic_start) 
+				start_scan();
+		}
+		else std::cout << msgHeader << "Failed to load input file \"" << input_filename << "\"!\n";
 	}
 	
 	return true;
