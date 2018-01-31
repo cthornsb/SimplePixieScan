@@ -14,7 +14,7 @@
 const double deg2rad = 0.0174532925;
 const double rad2deg = 57.295779579;
 
-CalibEntry dummyCalib(NULL, NULL, NULL);
+CalibEntry dummyCalib(NULL, NULL, NULL, NULL);
 
 void PositionCal::ReadPars(const std::vector<std::string> &pars_){ 
 	defaultVals = false;
@@ -102,6 +102,27 @@ std::string EnergyCal::Print(bool fancy/*=true*/){
 	return output.str();
 }
 
+std::string BarCal::Print(bool fancy/*=true*/){
+	std::stringstream output;
+	if(fancy) output << " id=" << id << ", t0=" << t0 << ", beta=" << beta << ", cbar=" << cbar << ", length=" << length << ", width=" << width;
+	else output << id << "\t" << t0 << "\t" << beta << "\t" << cbar << "\t" << length << "\t" << width;
+	return output.str();
+}
+
+void BarCal::ReadPars(const std::vector<std::string> &pars_){
+	defaultVals = false;
+	int index = 0;
+	for(std::vector<std::string>::const_iterator iter = pars_.begin(); iter != pars_.end(); iter++){
+		if(index == 0) id = strtol(iter->c_str(), NULL, 0);
+		else if(index == 1) t0 = strtod(iter->c_str(), NULL);
+		else if(index == 2) beta = strtod(iter->c_str(), NULL);
+		else if(index == 3) cbar = strtod(iter->c_str(), NULL);
+		else if(index == 4) length = strtod(iter->c_str(), NULL);
+		else if(index == 5) width = strtod(iter->c_str(), NULL);
+		index++;
+	}
+}
+
 CalibFile::CalibFile(const char *timeFilename_, const char *energyFilename_, const char *positionFilename_){ 
 	Load(timeFilename_, energyFilename_, positionFilename_);
 }
@@ -116,6 +137,10 @@ bool CalibFile::LoadEnergyCal(const char *filename_){
 
 bool CalibFile::LoadPositionCal(const char *filename_){
 	return LoadCalibFile(filename_, position_calib);
+}
+
+bool CalibFile::LoadBarCal(const char *filename_){
+	return LoadCalibFile(filename_, bar_calib);
 }
 
 bool CalibFile::Load(const char *timeFilename_, const char *energyFilename_, const char *positionFilename_){
@@ -149,11 +174,21 @@ PositionCal *CalibFile::GetPositionCal(XiaData *event_){
 	return GetPositionCal(16*event_->modNum+event_->chanNum); 
 }
 
+BarCal *CalibFile::GetBarCal(const unsigned int &id_){
+	if(id_ >= bar_calib.size()){ return NULL; }
+	return &bar_calib.at(id_);
+}
+
+BarCal *CalibFile::GetBarCal(XiaData *event_){
+	return GetBarCal(16*event_->modNum+event_->chanNum); 
+}
+
 CalibEntry *CalibFile::GetCalibEntry(const unsigned int &id_){
 	TimeCal *tcal = this->GetTimeCal(id_);
 	EnergyCal *ecal = this->GetEnergyCal(id_);
 	PositionCal *pcal = this->GetPositionCal(id_);
-	return (new CalibEntry(tcal, ecal, pcal));
+	BarCal *bcal = this->GetBarCal(id_);
+	return (new CalibEntry(tcal, ecal, pcal, bcal));
 }
 
 CalibEntry *CalibFile::GetCalibEntry(XiaData *event_){
@@ -210,6 +245,17 @@ bool CalibFile::Write(TFile *f_){
 	f_->cd("calib/position");
 
 	for(std::vector<PositionCal>::iterator iter = position_calib.begin(); iter != position_calib.end(); ++iter){
+		if(iter->defaultVals) continue; // Skip entries with default values.
+		TObjString str(iter->Print(false).c_str());
+		str.Write();
+	}
+
+	// Write bar calibration information to output file.
+	f_->mkdir("calib/bars");
+	f_->cd("calib/bars");
+
+	// Write individual bar calibration entries.
+	for(std::vector<BarCal>::iterator iter = bar_calib.begin(); iter != bar_calib.end(); ++iter){
 		if(iter->defaultVals) continue; // Skip entries with default values.
 		TObjString str(iter->Print(false).c_str());
 		str.Write();

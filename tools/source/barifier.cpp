@@ -11,7 +11,6 @@
 
 #include "simpleTool.hpp"
 #include "CalibFile.hpp"
-#include "barCal.hpp"
 #include "Structures.h"
 
 template <typename T>
@@ -34,8 +33,6 @@ class barHandler : public simpleTool {
 	unsigned short index;
 
 	CalibFile calib;
-
-	barCal dummy;
 
 	GenericBarStructure *gbptr;
 	GenericStructure *gptr;
@@ -62,16 +59,12 @@ class barHandler : public simpleTool {
 	float tqdc_L, tqdc_R;
 	float stqdc_L, stqdc_R;	
 
-	std::vector<barCal> bars;
-
-	barCal *getBarCal(const unsigned int &id_);
-
 	bool getNextEvent();
 
 	void handleEvents();
 
   public:
-	barHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), dummy(), gbptr(NULL), gptr(NULL), lbptr(NULL), lptr(NULL), hptr(NULL), detectorType(0), singleEndedMode(false), liquidDetMode(false), noTimeMode(false), noEnergyMode(false), noPositionMode(false), countsString(""), totalCounts(0), totalDataTime(0) { }
+	barHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), gbptr(NULL), gptr(NULL), lbptr(NULL), lptr(NULL), hptr(NULL), detectorType(0), singleEndedMode(false), liquidDetMode(false), noTimeMode(false), noEnergyMode(false), noPositionMode(false), countsString(""), totalCounts(0), totalDataTime(0) { }
 
 	~barHandler();
 	
@@ -81,11 +74,6 @@ class barHandler : public simpleTool {
 	
 	int execute(int argc, char *argv[]);
 };
-
-barCal *barHandler::getBarCal(const unsigned int &id_){
-	if(id_ >= bars.size()){ return NULL; }
-	return &bars.at(id_);
-}
 
 bool barHandler::getNextEvent(){
 	if(detectorType == 0){ // GenericBar
@@ -138,8 +126,8 @@ void barHandler::handleEvents(){
 		// Check for invalid TQDC.
 		if(tqdc_L <= 0 || (!singleEndedMode && tqdc_R <= 0)) continue;
 
-		barCal *bar = NULL;
-		if(!singleEndedMode && !(bar = getBarCal(location))) continue;
+		BarCal *bar = NULL;
+		if(!singleEndedMode && !(bar = calib.GetBarCal(location))) continue;
 
 		TimeCal *time = NULL;
 		if(!noTimeMode && !(time = calib.GetTimeCal(location))) continue;
@@ -339,7 +327,7 @@ int barHandler::execute(int argc, char *argv[]){
 			noEnergyMode = true;
 	}
 
-	if(!singleEndedMode && !LoadCalibFile<barCal>((setupDir+"bars.cal").c_str(), bars)){
+	if(!singleEndedMode && !calib.LoadBarCal((setupDir+"bars.cal").c_str())){
 		std::cout << " Error: Failed to load bar calibration file \"" << setupDir << "bars.cal\"!\n";
 		return 4;
 	}
@@ -439,17 +427,6 @@ int barHandler::execute(int argc, char *argv[]){
 
 	// Write calibration information to output file.
 	calib.Write(outfile);
-
-	// Write bar calibration information to output file.
-	outfile->mkdir("calib/bars");
-	outfile->cd("calib/bars");
-
-	// Write individual bar calibration entries.
-	for(std::vector<barCal>::iterator iter = bars.begin(); iter != bars.end(); ++iter){
-		if(iter->defaultVals) continue; // Skip entries with default values.
-		TObjString str(iter->Print(false).c_str());
-		str.Write();
-	}
 
 	// Write the total number of logic counts, if enabled.
 	outfile->cd();

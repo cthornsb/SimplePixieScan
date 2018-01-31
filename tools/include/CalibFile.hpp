@@ -92,21 +92,39 @@ class EnergyCal : public CalType {
 	std::vector<double> vals;
 };
 
+class BarCal : public CalType {
+  public:
+	double t0;
+	double beta;
+	double cbar;
+	double length;
+	double width;
+
+	BarCal() : CalType(0), t0(0), beta(0), cbar(0), length(0), width(0) { }
+
+	virtual std::string Print(bool fancy=true);
+
+	virtual void ReadPars(const std::vector<std::string> &pars_);
+};
+
 class CalibEntry{
   public:
 	TimeCal *timeCal;
 	EnergyCal *energyCal;
 	PositionCal *positionCal;
+	BarCal *barCal;
 	
-	CalibEntry() : timeCal(NULL), energyCal(NULL), positionCal(NULL) { }
+	CalibEntry() : timeCal(NULL), energyCal(NULL), positionCal(NULL), barCal(NULL) { }
 	
-	CalibEntry(TimeCal *time_, EnergyCal *energy_, PositionCal *pos_) : timeCal(time_), energyCal(energy_), positionCal(pos_) { }
+	CalibEntry(TimeCal *time_, EnergyCal *energy_, PositionCal *pos_, BarCal *bar_) : timeCal(time_), energyCal(energy_), positionCal(pos_), barCal(bar_) { }
 	
 	bool Time(){ return (timeCal != NULL); }
 	
 	bool Energy(){ return (energyCal != NULL); }
 	
 	bool Position(){ return (positionCal != NULL); }
+
+	bool Bar(){ return (barCal != NULL); }
 };
 
 class CalibFile{
@@ -114,6 +132,7 @@ class CalibFile{
   	std::vector<TimeCal> time_calib;
   	std::vector<EnergyCal> energy_calib;
   	std::vector<PositionCal> position_calib;
+	std::vector<BarCal> bar_calib;
 
   public:
 	CalibFile(){ }
@@ -125,6 +144,8 @@ class CalibFile{
 	bool LoadEnergyCal(const char *filename_);
 	
 	bool LoadPositionCal(const char *filename_);
+
+	bool LoadBarCal(const char *filename_);
 	
 	bool Load(const char *timeFilename_, const char *energyFilename_, const char *positionFilename_);
 
@@ -139,6 +160,10 @@ class CalibFile{
 	PositionCal *GetPositionCal(const unsigned int &id_);
 	
 	PositionCal *GetPositionCal(XiaData *event_);
+
+	BarCal *GetBarCal(const unsigned int &id_);
+	
+	BarCal *GetBarCal(XiaData *event_);
 	
 	CalibEntry *GetCalibEntry(const unsigned int &id_);
 	
