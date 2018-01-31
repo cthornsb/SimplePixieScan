@@ -11,10 +11,8 @@
 
 #include "simpleTool.hpp"
 #include "CalibFile.hpp"
+#include "barCal.hpp"
 #include "Structures.h"
-
-const double pi = 3.1415926536;
-const double cvac = 29.9792458; // cm/ns
 
 template <typename T>
 void writeTNamed(const char *label_, const T &val_, const int &precision_=-1){
@@ -27,66 +25,6 @@ void writeTNamed(const char *label_, const T &val_, const int &precision_=-1){
 	}
 	TNamed named(label_, stream.str().c_str());
 	named.Write();
-}
-
-// Energy in MeV
-double tof2energy(const double &tof_, const double &d_){
-	const double Mn = 10454.0750977429; // MeV
-	return (0.5*Mn*d_*d_/(tof_*tof_));
-}
-
-// Add dtheta_ to theta and wrap between 0 and 2pi
-void addAngles(double &theta, const double &dtheta_){
-	theta += dtheta_;
-	if(theta < 0) theta += 2*pi;
-	else if(theta > 2*pi) theta -= 2*pi;
-}
-
-// Return a random number between low and high
-double frand(double low, double high){
-	return low+(double(rand())/RAND_MAX)*(high-low);
-}
-
-void sphere2Cart(const double &r_, const double &theta_, const double &phi_, double &x, double &y, double &z){ 
-	x = r_*std::sin(theta_)*std::cos(phi_);
-	y = r_*std::sin(theta_)*std::sin(phi_);
-	z = r_*std::cos(theta_);
-} 
-
-class barCal : public CalType {
-  public:
-	double t0;
-	double beta;
-	double cbar;
-	double length;
-	double width;
-
-	barCal() : CalType(0), t0(0), beta(0), cbar(0), length(0), width(0) { }
-
-	virtual std::string Print(bool fancy=true);
-
-	virtual void ReadPars(const std::vector<std::string> &pars_);
-};
-
-std::string barCal::Print(bool fancy/*=true*/){
-	std::stringstream output;
-	if(fancy) output << " id=" << id << ", t0=" << t0 << ", beta=" << beta << ", cbar=" << cbar << ", length=" << length << ", width=" << width;
-	else output << id << "\t" << t0 << "\t" << beta << "\t" << cbar << "\t" << length << "\t" << width;
-	return output.str();
-}
-
-void barCal::ReadPars(const std::vector<std::string> &pars_){
-	defaultVals = false;
-	int index = 0;
-	for(std::vector<std::string>::const_iterator iter = pars_.begin(); iter != pars_.end(); iter++){
-		if(index == 0) id = strtol(iter->c_str(), NULL, 0);
-		else if(index == 1) t0 = strtod(iter->c_str(), NULL);
-		else if(index == 2) beta = strtod(iter->c_str(), NULL);
-		else if(index == 3) cbar = strtod(iter->c_str(), NULL);
-		else if(index == 4) length = strtod(iter->c_str(), NULL);
-		else if(index == 5) width = strtod(iter->c_str(), NULL);
-		index++;
-	}
 }
 
 class barHandler : public simpleTool {

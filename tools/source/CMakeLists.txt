@@ -1,7 +1,7 @@
 add_library(GuiObj OBJECT simpleGui.cpp)
 add_library(GuiStatic STATIC $<TARGET_OBJECTS:GuiObj>)
 
-add_library(ToolObj OBJECT cmcalc.cpp CalibFile.cpp simpleTool.cpp)
+add_library(ToolObj OBJECT cmcalc.cpp CalibFile.cpp simpleTool.cpp barCal.cpp)
 add_library(ToolStatic STATIC $<TARGET_OBJECTS:ToolObj>)
 target_link_libraries(ToolStatic OptionStatic ScanStatic)
 

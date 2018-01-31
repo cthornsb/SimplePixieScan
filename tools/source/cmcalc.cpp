@@ -8,7 +8,6 @@
 
 const double c = 2.99792458E8; // m/s
 const double cSquare = 8.9875517873E16; // m^2/s^2
-const double pi = 3.14159265359;
 const double twoPi = 6.28318530718;
 
 const double proton_RME = 938.272046; // MeV/c^2
