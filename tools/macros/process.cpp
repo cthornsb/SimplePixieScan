@@ -232,6 +232,36 @@ void binRatio(TH1 *h1_, TH1 *h2_, std::ostream &out=std::cout){
 	}
 }
 
+// List the ratio of each bin in two 1-d histograms.
+void binRatio(TH1 *h1_, TH1 *h2_, const std::vector<double> &comAngles_, std::ostream &out=std::cout){
+	out << "\nbin\tlabCenter\tcomLow\tcomCenter\tcomErr\tN1\tN2\tbinSolidAngle\tsolidAngle\n";
+	out.precision(6);
+	double binWidth;
+	double content1, content2;
+	double angleLow, angleHigh;
+	double solidAngle;
+	for(int i = 1; i <= h1_->GetNbinsX(); i++){
+		content1 = h1_->GetBinContent(i);
+		content2 = h2_->GetBinContent(i);
+
+		angleLow = comAngles_.at(i-1);
+		angleHigh = comAngles_.at(i);
+
+		if(angleLow > angleHigh){ // Inverse kinematics.
+			double tempValue = angleLow;
+			angleLow = angleHigh;
+			angleHigh = tempValue;
+		}
+
+		binWidth = angleHigh-angleLow;
+		
+		solidAngle = twopi*(std::cos(angleLow*pi/180)-std::cos(angleHigh*pi/180));
+		out << i << "\t" << h1_->GetBinCenter(i) << "\t" << angleLow << "\t" << angleLow+binWidth/2 << "\t" << binWidth/2 << "\t" << content1 << "\t" << content2 << "\t";
+		out << std::fixed << solidAngle << "\t" << solidAngle*(content2/content1) << std::endl;
+		out.unsetf(ios_base::floatfield);
+	}
+}
+
 // Process a VANDMC monte carlo detector test output file.
 bool processMCarlo(const char *fname, std::ostream &out=std::cout, const int &comBins=18, const double &comLow=0, const double &comHigh=90){
 	TFile *f = new TFile(fname, "READ");
@@ -280,24 +310,37 @@ bool processMCarlo(const char *fname, const char *binfname){
 		return false;
 	}
 
-	std::vector<double> xbins;
+	std::vector<double> xbinsLab;
+	std::vector<double> xbinsCom;
 
-	double tempValue;
+	std::cout << "\nbin\tlowCom\tlowLab\n";
+
+	int count = 1;
+	double tempLabValue, tempComValue;
 	while(true){
-		binfile >> tempValue;
+		binfile >> tempLabValue >> tempComValue;
 		if(binfile.eof()) break;
-		xbins.push_back(tempValue);
+		xbinsLab.push_back(tempLabValue);
+		xbinsCom.push_back(tempComValue);
+		std::cout << count++ << "\t" << tempComValue << "\t" << tempLabValue << std::endl;
 	}
 
 	binfile.close();
 
-	TH1F *h1 = new TH1F("h1", "h1", xbins.size()-1, xbins.data());
-	TH1F *h2 = new TH1F("h2", "h2", xbins.size()-1, xbins.data());
+	TH1F *h1 = new TH1F("h1", "h1", xbinsLab.size()-1, xbinsLab.data());
+	TH1F *h2 = new TH1F("h2", "h2", xbinsLab.size()-1, xbinsLab.data());
 	
-	t->Draw("comAngle>>h1", "", "");
-	t->Draw("comAngle>>h2", "mcarlo.mult>0", "");
+	t->Draw("labTheta>>h1", "", "");
+	t->Draw("labTheta>>h2", "mult>0", "");
 
-	binRatio(h1, h2);
+	h1->Draw();
+	h2->SetLineColor(kRed);
+	h2->Draw("SAME");
+
+	gPad->WaitPrimitive();
+	gPad->Close();
+
+	binRatio(h1, h2, xbinsCom);
 
 	delete h1;
 	delete h2;
