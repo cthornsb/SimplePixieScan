@@ -168,7 +168,15 @@ class CalibFile{
 	CalibEntry *GetCalibEntry(const unsigned int &id_);
 	
 	CalibEntry *GetCalibEntry(XiaData *event_);
-	
+
+	size_t GetMaxTime(){ return time_calib.size(); }
+
+	size_t GetMaxEnergy(){ return energy_calib.size(); }
+
+	size_t GetMaxPosition(){ return position_calib.size(); }
+
+	size_t GetMaxBar(){ return bar_calib.size(); }
+
 	void Debug(int mode);
 
 	bool Write(TFile *f_);
