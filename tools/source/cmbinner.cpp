@@ -491,17 +491,10 @@ int simpleComCalculator::execute(int argc, char *argv[]){
 				nBins = 0;
 				double readValueLab, readValueCOM;
 				while(true){
-					if(reactionMode){
-						binFile >> readValueLab >> readValueCOM;
-						if(binFile.eof()) break;
-						xbinsLowLab.push_back(readValueLab);
-						xbinsLow.push_back(readValueCOM);
-					}
-					else{
-						binFile >> readValueLab;
-						if(binFile.eof()) break;
-						xbinsLowLab.push_back(readValueLab);
-					}
+					binFile >> readValueLab >> readValueCOM;
+					if(binFile.eof()) break;
+					xbinsLowLab.push_back(readValueLab);
+					xbinsLow.push_back(readValueCOM);
 					nBins++;
 				}
 
