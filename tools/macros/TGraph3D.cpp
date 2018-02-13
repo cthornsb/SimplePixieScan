@@ -255,7 +255,7 @@ class TGraph3D{
 
 class TGraphGroup3D{
   public:
-	TGraphGroup3D(const size_t &nGraphs_, const size_t &graphLength_) : nGraphs(nGraphs_), graphLength(graphLength_), graphs(NULL), h3(NULL), axisLabels("xyz") {
+	TGraphGroup3D(const size_t &nGraphs_, const size_t &graphLength_) : nGraphs(nGraphs_), graphLength(graphLength_), reverseDrawOrder(false), graphs(NULL), h3(NULL), xAxisLabel("x"), yAxisLabel("y"), zAxisLabel("z") {
 		graphs = new TGraph3D*[nGraphs];
 		for(size_t i = 0; i < nGraphs; i++)
 			graphs[i] = new TGraph3D(graphLength);
@@ -341,9 +341,16 @@ class TGraphGroup3D{
 
 	///////////////////////////////////////////////////////////////////////////////
 
+	void SetXaxisLabel(const std::string &label_){ xAxisLabel = label_; }
+
+	void SetYaxisLabel(const std::string &label_){ yAxisLabel = label_; }
+
+	void SetZaxisLabel(const std::string &label_){ zAxisLabel = label_; }
+
+	bool ToggleReverseDrawOrder(){ return (reverseDrawOrder = !reverseDrawOrder); }
+
 	bool SetAxes(const std::string &axes){ 
 		if(axes.length() < 3) return false;
-		axisLabels = axes;
 		for(size_t i = 0; i < nGraphs; i++) 
 			graphs[i]->SetAxes(axes);
 		return true;
@@ -406,19 +413,29 @@ class TGraphGroup3D{
 	void Draw3D(){
 		SetupAxes3D();
 		h3->Draw();
-		for(size_t i = 0; i < nGraphs; i++)
-			graphs[i]->Draw3D("SAME");
+		if(!reverseDrawOrder){
+			for(size_t i = 0; i < nGraphs; i++)
+				graphs[i]->Draw3D("SAME");
+		}
+		else{
+			for(size_t i = nGraphs; i > 0; i--)
+				graphs[i-1]->Draw3D("SAME");
+		}
 	}
 
   private:
 	size_t nGraphs;
 	size_t graphLength;
 
+	bool reverseDrawOrder;
+
 	TGraph3D **graphs;
 
 	TH3F *h3;
 
-	std::string axisLabels;
+	std::string xAxisLabel;
+	std::string yAxisLabel;
+	std::string zAxisLabel;
 	
 	double xMinOverall, xMaxOverall;
 	double yMinOverall, yMaxOverall;
@@ -454,9 +471,9 @@ class TGraphGroup3D{
 				                        100, yMinOverall-std::fabs(yMinOverall)*0.1, yMaxOverall+std::fabs(yMaxOverall)*0.1, 
 				                        100, zMinOverall-std::fabs(zMinOverall)*0.1, zMaxOverall+std::fabs(zMaxOverall)*0.1);
 			h3->SetStats(0);
-			h3->GetXaxis()->SetTitle(&axisLabels.c_str()[0]);
-			h3->GetYaxis()->SetTitle(&axisLabels.c_str()[1]);
-			h3->GetZaxis()->SetTitle(&axisLabels.c_str()[2]);
+			h3->GetXaxis()->SetTitle(xAxisLabel.c_str());
+			h3->GetYaxis()->SetTitle(yAxisLabel.c_str());
+			h3->GetZaxis()->SetTitle(zAxisLabel.c_str());
 		}
 	}
 };
