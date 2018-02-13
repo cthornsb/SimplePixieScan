@@ -1,10 +1,45 @@
 
+/** Returns a color on a smooth spectrum (magenta to red).
+  * \param[in]  val_: The current value to convert to a color.
+  * \param[in]  max_: The maximum value in the data set.
+  * \param[out] color_: The root TColor representing the smoothed spectrum color.
+  * \return Nothing
+  */
+void SmoothSpectrum(const double &val_, const double &max_, TColor &color){
+        int code = int((val_/max_)*1195);
+        if(code == 0)
+		color.SetRGB(0.6, 0.8, 1.0);
+        else if(code < 175)
+		color.SetRGB((175-code)/255.0, 0, 1.0);
+        else if(code < 430)
+		color.SetRGB(0, (code-175)/255.0 , 1.0);
+        else if(code < 685)
+		color.SetRGB(0, 1.0, 1.0-(code-430)/255.0);
+        else if(code < 940)
+		color.SetRGB((code-685)/255.0, 1.0, 0);
+        else if(code < 1195)
+		color.SetRGB(1.0, 1.0-(code-940)/255.0,0);
+        else
+		color.SetRGB(1.0, 0, 0);
+}
+
 void CreateColorSpectrum(const size_t &N, const TColor &color1, const TColor &color2, std::vector<Color_t> &colors){
 	colors.clear();
 	double stepSize[3] = {(color2.GetRed()-color1.GetRed())/(N-1), (color2.GetGreen()-color1.GetGreen())/(N-1), (color2.GetBlue()-color1.GetBlue())/(N-1)};
 	TColor tempColor;
 	for(size_t i = 0; i < N; i++){
 		tempColor.SetRGB(color1.GetRed()+stepSize[0]*i, color1.GetGreen()+stepSize[1]*i, color1.GetBlue()+stepSize[2]*i);
+		colors.push_back(TColor::GetColor(tempColor.GetRed(), tempColor.GetGreen(), tempColor.GetBlue()));
+	}
+}
+
+void CreateColorSpectrum(const size_t &N, std::vector<Color_t> &colors){
+	colors.clear();
+	TColor tempColor;
+	size_t numColors = (N >= 2 ? N : 2);
+	double stepSize = 1.0/(N-1);
+	for(size_t i = 0; i < numColors; i++){
+		SmoothSpectrum(i*stepSize, 1.0, tempColor);
 		colors.push_back(TColor::GetColor(tempColor.GetRed(), tempColor.GetGreen(), tempColor.GetBlue()));
 	}
 }
@@ -45,11 +80,11 @@ class TGraph3D{
 		delete marker;
 	}
 
-	void SetMarkerColor(Color_t mcolor=1){ marker->SetMarkerColor(mcolor); }
+	void SetMarkerColor(Color_t mcolor_){ mcolor = mcolor_; }
 	
-	void SetMarkerSize(Size_t msize=1){ marker->SetMarkerSize(msize); }
+	void SetMarkerSize(Size_t msize_){ msize = msize_; }
 	
-	void SetMarkerStyle(Style_t mstyle=1){ marker->SetMarkerStyle(mstyle); }
+	void SetMarkerStyle(Style_t mstyle_){ mstyle = mstyle_; }
 
 	void SetLineColor(Color_t lcolor){ poly->SetLineColor(lcolor); }
 	
@@ -184,12 +219,14 @@ class TGraph3D{
 			isModified = false;
 			nPtsToDraw = fMarkerPts.size()/3;
 			poly->SetPolyLine(nPtsToDraw, fMarkerPts.data());
-			marker->SetPolyMarker(nPtsToDraw, fMarkerPts.data(), 0);
+			marker->SetPolyMarker(nPtsToDraw, fMarkerPts.data(), mstyle);
+			marker->SetMarkerColor(mcolor);
+			marker->SetMarkerSize(msize);
 		}
 		if(drawLine)
 			poly->DrawPolyLine(0, fMarkerPts.data(), opt_);
 		if(drawMarkers)
-			marker->DrawPolyMarker(0, fMarkerPts.data(), 0, opt_);
+			marker->DrawPolyMarker(0, fMarkerPts.data(), mstyle, opt_);
 	}
 
   private:
@@ -208,6 +245,10 @@ class TGraph3D{
 	const char *xaxis;
 	const char *yaxis;
 	const char *zaxis;
+
+	Color_t	mcolor;
+	Size_t msize;
+	Style_t mstyle;
 
 	std::vector<float> fMarkerPts;
 };
