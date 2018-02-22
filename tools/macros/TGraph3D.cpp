@@ -5,7 +5,7 @@
   * \param[out] color_: The root TColor representing the smoothed spectrum color.
   * \return Nothing
   */
-void SmoothSpectrum(const double &val_, const double &max_, TColor &color){
+void SmoothSpectrum(const double &val_, const double &max_, TColor &color, bool invert=false){
         int code = int((val_/max_)*1195);
         if(code == 0)
 		color.SetRGB(0.6, 0.8, 1.0);
@@ -21,25 +21,31 @@ void SmoothSpectrum(const double &val_, const double &max_, TColor &color){
 		color.SetRGB(1.0, 1.0-(code-940)/255.0,0);
         else
 		color.SetRGB(1.0, 0, 0);
+
+	// Invert the color spectrum.
+	if(invert) color.SetRGB(1-color.GetRed(), 1-color.GetGreen(), 1-color.GetBlue());
 }
 
-void CreateColorSpectrum(const size_t &N, const TColor &color1, const TColor &color2, std::vector<Color_t> &colors){
+void CreateColorSpectrum(const size_t &N, const TColor &color1, const TColor &color2, std::vector<Color_t> &colors, bool invert=false){
 	colors.clear();
 	double stepSize[3] = {(color2.GetRed()-color1.GetRed())/(N-1), (color2.GetGreen()-color1.GetGreen())/(N-1), (color2.GetBlue()-color1.GetBlue())/(N-1)};
 	TColor tempColor;
 	for(size_t i = 0; i < N; i++){
-		tempColor.SetRGB(color1.GetRed()+stepSize[0]*i, color1.GetGreen()+stepSize[1]*i, color1.GetBlue()+stepSize[2]*i);
+		if(!invert)
+			tempColor.SetRGB(color1.GetRed()+stepSize[0]*i, color1.GetGreen()+stepSize[1]*i, color1.GetBlue()+stepSize[2]*i);
+		else
+			tempColor.SetRGB(1-(color1.GetRed()+stepSize[0]*i), 1-(color1.GetGreen()+stepSize[1]*i), 1-(color1.GetBlue()+stepSize[2]*i));
 		colors.push_back(TColor::GetColor(tempColor.GetRed(), tempColor.GetGreen(), tempColor.GetBlue()));
 	}
 }
 
-void CreateColorSpectrum(const size_t &N, std::vector<Color_t> &colors){
+void CreateColorSpectrum(const size_t &N, std::vector<Color_t> &colors, bool invert=false){
 	colors.clear();
 	TColor tempColor;
 	size_t numColors = (N >= 2 ? N : 2);
 	double stepSize = 1.0/(N-1);
 	for(size_t i = 0; i < numColors; i++){
-		SmoothSpectrum(i*stepSize, 1.0, tempColor);
+		SmoothSpectrum(i*stepSize, 1.0, tempColor, invert);
 		colors.push_back(TColor::GetColor(tempColor.GetRed(), tempColor.GetGreen(), tempColor.GetBlue()));
 	}
 }
