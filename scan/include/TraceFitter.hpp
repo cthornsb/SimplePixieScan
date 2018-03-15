@@ -30,8 +30,8 @@ class TraceFitter{
   protected:
 	TF1 *func;
 	
-	size_t fittingLow;
-	size_t fittingHigh;
+	short fittingLow;
+	short fittingHigh;
 	
 	double beta;
 	double gamma;
@@ -56,7 +56,7 @@ class TraceFitter{
 	TF1 *GetFunction(){ return func; }
 	
 	/// Set the range of the fit as [maxIndex-low_, maxIndex+high_].
-	bool SetFitRange(const size_t &low_, const size_t &high_);
+	bool SetFitRange(const short &low_, const short &high_);
 	
 	/// Set the fixed beta and gamma parameters.
 	bool SetBetaGamma(const double &beta_, const double &gamma_);

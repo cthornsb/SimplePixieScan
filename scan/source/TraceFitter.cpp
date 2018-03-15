@@ -33,16 +33,16 @@ double paulauskas(double *x, double *p){
 // class TraceFitter
 ///////////////////////////////////////////////////////////////////////////////
 
-TraceFitter::TraceFitter() : fittingLow(5), fittingHigh(10), beta(0.5), gamma(0.1), xAxisMult(1), floatingMode(false) {
+TraceFitter::TraceFitter() : fittingLow(-5), fittingHigh(10), beta(0.5), gamma(0.1), xAxisMult(1), floatingMode(false) {
 	func = new TF1("func", paulauskas, 0, 1, 5);
 	func->SetParNames("baseline","amplitude","phase","beta","gamma");
 }
 
-TraceFitter::TraceFitter(const char* funcStr_) : fittingLow(5), fittingHigh(10), beta(0.5), gamma(0.3), xAxisMult(1), floatingMode(false) {
+TraceFitter::TraceFitter(const char* funcStr_) : fittingLow(-5), fittingHigh(10), beta(0.5), gamma(0.1), xAxisMult(1), floatingMode(false) {
 	func = new TF1("func", funcStr_, 0, 1);
 }
 
-TraceFitter::TraceFitter(double (*funcPtr_)(double *, double *), int npar_) : fittingLow(5), fittingHigh(10), beta(0.5), gamma(0.3), xAxisMult(1), floatingMode(false) {
+TraceFitter::TraceFitter(double (*funcPtr_)(double *, double *), int npar_) : fittingLow(-5), fittingHigh(10), beta(0.5), gamma(0.1), xAxisMult(1), floatingMode(false) {
 	func = new TF1("func", funcPtr_, 0, 1, npar_);
 }
 
@@ -55,8 +55,8 @@ double *TraceFitter::GetParameters(){
 	return func->GetParameters(); 
 }
 
-/// Set the range of the fit as [maxIndex-low_, maxIndex+high_].
-bool TraceFitter::SetFitRange(const size_t &low_, const size_t &high_){
+/// Set the range of the fit as [maxIndex+low_, maxIndex+high_].
+bool TraceFitter::SetFitRange(const short &low_, const short &high_){
 	if(low_ >= high_) return false;
 	
 	fittingLow = low_;
@@ -80,7 +80,7 @@ bool TraceFitter::SetInitialConditions(ChannelEvent *event_){
 	// Set the initial fitting conditions.
 	func->FixParameter(0, event_->baseline); // Baseline of pulse
 	func->SetParameter(1, event_->max_ADC/0.0247056); // Normalization of pulse
-	func->SetParameter(2, (event_->max_index-fittingLow)*xAxisMult); // Phase (leading edge of pulse) (adc clock ticks)
+	func->SetParameter(2, (event_->max_index+fittingLow)*xAxisMult); // Phase (leading edge of pulse) (adc clock ticks)
 
 	if(!floatingMode){ // Fix beta and gamma.
 		func->FixParameter(3, beta);
@@ -93,7 +93,7 @@ bool TraceFitter::SetInitialConditions(ChannelEvent *event_){
 	}
 
 	// Set the fitting range.
-	func->SetRange((event_->max_index-fittingLow)*xAxisMult, (event_->max_index+fittingHigh)*xAxisMult);
+	func->SetRange((event_->max_index+fittingLow)*xAxisMult, (event_->max_index+fittingHigh)*xAxisMult);
 
 	return true;
 }
@@ -102,20 +102,28 @@ bool TraceFitter::FitPulse(ChannelEvent *event_, const char *fitOpt/*="QR"*/){
 	if(!event_) return false;
 	
 	// "Convert" the trace into a TGraph for fitting.
-	unsigned short startIndex = event_->max_index-fittingLow;
-	TGraph *graph = new TGraph(fittingLow + fittingHigh);
-	for(size_t graphIndex = 0; graphIndex < (fittingLow + fittingHigh); graphIndex++)
-		graph->SetPoint(graphIndex, startIndex+graphIndex, event_->adcTrace[startIndex+graphIndex]);
+	short startIndex = event_->max_index+fittingLow;
+	short stopIndex = event_->max_index+fittingHigh;
+
+	// Check for negative startIndex.
+	if(startIndex < 0) startIndex = 0;
+
+	// Check for stop index out of range.
+	if(stopIndex >= (short)event_->traceLength) stopIndex = event_->traceLength-1;
+
+	TGraph *graph = new TGraph(stopIndex-startIndex);
+	for(short graphIndex = 0; graphIndex < stopIndex-startIndex; graphIndex++)
+		graph->SetPoint(graphIndex, (startIndex+graphIndex)*xAxisMult, event_->adcTrace[startIndex+graphIndex]);
 
 	// Fit the graph.
 	FitPulse(graph, event_, fitOpt);
 
 	// Update the phase of the trace.
 	//event_->baseline = func->GetParameter(0);
-	event_->phase = func->GetParameter(2);
+	event_->phase = func->GetParameter(2)/4;
 	
 	delete graph;
-	
+
 	return true;
 }
 
