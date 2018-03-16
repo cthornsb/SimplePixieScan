@@ -120,7 +120,7 @@ bool TraceFitter::FitPulse(ChannelEvent *event_, const char *fitOpt/*="QR"*/){
 
 	// Update the phase of the trace.
 	//event_->baseline = func->GetParameter(0);
-	event_->phase = func->GetParameter(2)/4;
+	event_->phase = func->GetParameter(2)/xAxisMult;
 	
 	delete graph;
 
