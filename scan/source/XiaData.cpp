@@ -506,13 +506,18 @@ float ChannelEvent::AnalyzeCFD(const float &F_/*=0.5*/, const size_t &D_/*=1*/, 
 float ChannelEvent::AnalyzePolyCFD(const float &F_/*=0.5*/){
 	if(traceLength == 0 || baseline < 0){ return -9999; }
 
-	float threshold = F_*maximum + baseline;
+	double threshold = F_*maximum + baseline;
 
 	phase = -9999;
 	for(cfdIndex = max_index; cfdIndex > 0; cfdIndex--){
 		if(adcTrace[cfdIndex-1] < threshold && adcTrace[cfdIndex] >= threshold){
+			double crossing = (threshold-adcTrace[cfdIndex-1])/(adcTrace[cfdIndex]-adcTrace[cfdIndex-1]);
+
 			// Fit the rise of the trace to a 2nd order polynomial.
-			calculateP2(cfdIndex-1, &adcTrace[cfdIndex-1], &cfdPar[4]);
+			if(crossing >= 0.5)
+				calculateP2(cfdIndex-1, &adcTrace[cfdIndex-1], &cfdPar[4]);
+			else
+				calculateP2(cfdIndex-2, &adcTrace[cfdIndex-2], &cfdPar[4]);
 			
 			// Calculate the phase of the trace.
 			if(cfdPar[6] != 0)
