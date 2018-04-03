@@ -129,7 +129,7 @@ bool TraceFitter::FitPulse(ChannelEvent *event_, const char *fitOpt/*="QR"*/){
 
 /// Fit a root TGraph.
 bool TraceFitter::FitPulse(TGraph *graph_, ChannelEvent *event_, const char *fitOpt/*="QR"*/){
-	if(!graph_ || !event_) return false;
+	if(!graph_ || !event_ || graph_->GetN() == 0) return false;
 
 	// Set the initial fitting conditions.
 	SetInitialConditions(event_);
