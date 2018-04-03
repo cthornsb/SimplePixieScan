@@ -76,7 +76,7 @@ bool timeAlign::processChildArgs(){
 			timeOffset = strtod(userOpts.at(firstChildOption+2).argument.c_str(), NULL);
 	}
 	if(userOpts.at(firstChildOption+4).active){
-		numPeaks = strtol(userOpts.at(firstChildOption+3).argument.c_str(), NULL, 0);
+		numPeaks = strtol(userOpts.at(firstChildOption+4).argument.c_str(), NULL, 0);
 	}
 
 	return true;
