@@ -12,9 +12,28 @@ double convFactorX = 8E-9;
 double convFactorY = 1;
 std::ofstream ofile;
 
+double sum = 0.0;
+double integral = 0.0;
+double stddev = 0.0;
+double runTime = 0.0;
+unsigned int N = 0;
+
 ///////////////////////////////////////////////////////////////////////////////
 // Helper functions
 ///////////////////////////////////////////////////////////////////////////////
+
+void clear(){
+	sum = 0.0;
+	integral = 0.0;
+	stddev = 0.0;
+	runTime = 0.0;
+	N = 0;
+}
+
+void print(){
+	std::cout << "integral=" << integral << " nC, time=" << runTime << " s, I=" << sum/N << " enA, " << std::sqrt(stddev/(N-1)) << " enA\n";
+	ofile << "total\t" << integral << "\t" << runTime << "\t" << sum/N << "\t" << std::sqrt(stddev/(N-1)) << std::endl;
+}
 
 double setScale(const int &s){
 	convFactorY = std::pow(10, 16-s)/8;
@@ -62,26 +81,38 @@ TGraph *convert(TTree *t, const char *name="g"){
 }
 
 // Return the total integral of a logic signal TGraph.
-double integrate(TGraph *g, double &sum, double &integral, double &stddev, unsigned int &N){
+double integrate(TGraph *g){
 	double x1, y1;
 	double x2, y2;
 	g->GetPoint(0, x1, y1);
-	sum += y1;
+	double localSum = y1;
+	double localStddev = 0.0;
+	double localIntegral = 0.0;
 	for(int i = 1; i < g->GetN(); i++){
 		g->GetPoint(i, x2, y2);
-		sum += y2;
-		integral += 0.5 * (y1 + y2) * (x2 - x1);
+		localSum += y2;
+		localIntegral += 0.5 * (y1 + y2) * (x2 - x1);
 		x1 = x2;
 		y1 = y2;
 	}
-	N += g->GetN();
-	double mean = sum/N;
+	unsigned int localN = g->GetN();
+	double mean = localSum/localN;
 	for(int i = 0; i < g->GetN(); i++){
 		g->GetPoint(i, x2, y2);
-		stddev += (y2-mean)*(y2-mean);
+		localStddev += (y2-mean)*(y2-mean);
 	}
-	std::cout << "mean = " << mean << " enA, stddev = " << std::sqrt(stddev/(g->GetN()-1)) << " enA, integral = " << integral << " nC\n";
-	ofile << "\t" << mean << "\t" << std::sqrt(stddev/(g->GetN()-1)) << "\t" << integral << std::endl;
+	g->GetPoint(g->GetN()-1, x2, y2);
+	double localTime = x2;
+	std::cout << "integral=" << localIntegral << " nC, time=" << localTime << " s, I=" << mean << " enA, " << std::sqrt(localStddev/(localN-1)) << " enA\n";
+	ofile << "\t" << localIntegral << "\t" << localTime << "\t" << mean << "\t" << std::sqrt(localStddev/(localN-1)) << std::endl;
+
+	// Update running totals.
+	sum += localSum;
+	integral += localIntegral;
+	stddev += localStddev;
+	runTime += localTime;
+	N += localN;
+
 	return integral;
 }
 
@@ -101,33 +132,26 @@ double summation(TTree *t){
 	return sum*convFactorX;
 }
 
-TGraph *process(TTree *t, double &sum, double &integral, double &stddev, unsigned int &N){
+TGraph *process(TTree *t){
 	TGraph *g = convert(t);
-	integrate(g, sum, integral, stddev, N);
+	integrate(g);
 	return g;
 }
 
-void process(const char *fname, double &sum, double &integral, double &stddev, unsigned int &N){
+void process(const char *fname){
 	TGraph *graph = NULL;
 	TFile *f = new TFile(fname, "READ");
 	if(!f->IsOpen()) return NULL;
 	TTree *t = (TTree*)f->Get("t");
 	if(t){
 		ofile << std::string(fname);
-		graph = process(t, sum, integral, stddev, N);
+		graph = process(t);
 	}
 
 	f->Close();
 	delete f;
 	delete graph;
 }
-
-void process(const char *fname){
-	double sum=0.0, integral=0.0, stddev=0.0;
-	unsigned int N = 0;
-	process(fname, sum, integral, stddev, N);
-}
-
 
 void help(const std::string &search_=""){
 	// Colored terminal character string.
@@ -143,11 +167,13 @@ void help(const std::string &search_=""){
 	                                        "double", "convFactorY", "Logic signal time-difference conversion"};
 
 	// Defined functions.
-	const std::string definedFunctions[36] = {"void", "conv", "double &x, double &y", "Convert logic signal period to beam current (enA).",
+	const std::string definedFunctions[44] = {"void", "clear", "", "Clear running totals.",
+	                                          "void", "conv", "double &x, double &y", "Convert logic signal period to beam current (enA).",
 	                                          "TGraph*", "convert", "TGraph *g, const char *name=\"g\"", "Convert a logic signal TGraph to a beam current vs. time graph.",
 	                                          "TGraph*", "convert", "TTree *t, const char *name=\"g\"", "Convert instantTime output TTree to beam current vs. time graph.",
 	                                          "double", "integrate", "TGraph *g", "Return the total integral of a logic signal TGraph.",
 	                                          "double", "mean", "TGraph *g", "Determine the mean beam current from a logic signal TGraph.",
+	                                          "void", "print", "", "Print running totals.",
 	                                          "TGraph*", "process", "TTree *t", "Compute total logic signal integral from instantTime TTree output.",
 	                                          "TGraph*", "process", "cnst char *fname", "Compute total logic signal integral from instantTime output file.",
 	                                          "double", "setScale", "const double &s", "Set the integrator scale factor (default=8).",
@@ -167,7 +193,7 @@ void help(const std::string &search_=""){
 			std::cout << "  " << globalVariables[3*i+1] << std::endl;
 
 		std::cout << "\n Defined helper functions:\n";
-		for(int i = 0; i < 9; i++)
+		for(int i = 0; i < 11; i++)
 			std::cout << "  " << definedFunctions[4*i+1] << std::endl;
 			
 		std::cout << std::endl;
@@ -200,7 +226,7 @@ void help(const std::string &search_=""){
 			}
 		}
 	
-		for(int i = 0; i < 9; i++){
+		for(int i = 0; i < 11; i++){
 			fIndex = definedFunctions[4*i+1].find(search_);
 			if(fIndex != std::string::npos){
 				strings[0] = definedFunctions[4*i+1].substr(0, fIndex);
