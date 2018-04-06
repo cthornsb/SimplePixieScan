@@ -62,10 +62,7 @@ TGraph *convert(TTree *t, const char *name="g"){
 }
 
 // Return the total integral of a logic signal TGraph.
-double integrate(TGraph *g){
-	double sum = 0.0;
-	double integral = 0.0;
-	double stddev = 0;
+double integrate(TGraph *g, double &sum, double &integral, double &stddev, unsigned int &N){
 	double x1, y1;
 	double x2, y2;
 	g->GetPoint(0, x1, y1);
@@ -77,14 +74,14 @@ double integrate(TGraph *g){
 		x1 = x2;
 		y1 = y2;
 	}
-	double mean = sum/g->GetN();
+	N += g->GetN();
+	double mean = sum/N;
 	for(int i = 0; i < g->GetN(); i++){
 		g->GetPoint(i, x2, y2);
 		stddev += (y2-mean)*(y2-mean);
 	}
-	stddev = std::sqrt(stddev/(g->GetN()-1));
-	std::cout << "mean = " << mean << " enA, stddev = " << stddev << " enA, integral = " << integral << " nC\n";
-	ofile << "\t" << mean << "\t" << stddev << "\t" << integral << std::endl;
+	std::cout << "mean = " << mean << " enA, stddev = " << std::sqrt(stddev/(g->GetN()-1)) << " enA, integral = " << integral << " nC\n";
+	ofile << "\t" << mean << "\t" << std::sqrt(stddev/(g->GetN()-1)) << "\t" << integral << std::endl;
 	return integral;
 }
 
@@ -104,38 +101,33 @@ double summation(TTree *t){
 	return sum*convFactorX;
 }
 
-TGraph *process(TTree *t){
+TGraph *process(TTree *t, double &sum, double &integral, double &stddev, unsigned int &N){
 	TGraph *g = convert(t);
-	integrate(g);
+	integrate(g, sum, integral, stddev, N);
 	return g;
 }
 
-TH1F *process(const char *fname){
+void process(const char *fname, double &sum, double &integral, double &stddev, unsigned int &N){
 	TGraph *graph = NULL;
 	TFile *f = new TFile(fname, "READ");
 	if(!f->IsOpen()) return NULL;
 	TTree *t = (TTree*)f->Get("t");
 	if(t){
 		ofile << std::string(fname);
-		graph = process(t);
+		graph = process(t, sum, integral, stddev, N);
 	}
 
 	f->Close();
 	delete f;
 	delete graph;
-
-	/*TH1F *h = NULL;	
-	if(graph){
-		double x, y;
-		h = new TH1F("h", "h", 100, 0, 10);
-		for(int i = 0; i < graph->GetN(); i++){
-			graph->GetPoint(i, x, y);
-			h->Fill(y);
-		}
-	}*/
-
-	return NULL;
 }
+
+void process(const char *fname){
+	double sum=0.0, integral=0.0, stddev=0.0;
+	unsigned int N = 0;
+	process(fname, sum, integral, stddev, N);
+}
+
 
 void help(const std::string &search_=""){
 	// Colored terminal character string.
