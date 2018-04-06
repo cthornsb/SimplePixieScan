@@ -10,6 +10,7 @@
 
 double convFactorX = 8E-9;
 double convFactorY = 1;
+std::ofstream ofile;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Helper functions
@@ -64,6 +65,7 @@ TGraph *convert(TTree *t, const char *name="g"){
 double integrate(TGraph *g){
 	double sum = 0.0;
 	double integral = 0.0;
+	double stddev = 0;
 	double x1, y1;
 	double x2, y2;
 	g->GetPoint(0, x1, y1);
@@ -75,7 +77,14 @@ double integrate(TGraph *g){
 		x1 = x2;
 		y1 = y2;
 	}
-	std::cout << "mean = " << sum/g->GetN() << " enA, integral = " << integral << " nC\n";
+	double mean = sum/g->GetN();
+	for(int i = 0; i < g->GetN(); i++){
+		g->GetPoint(i, x2, y2);
+		stddev += (y2-mean)*(y2-mean);
+	}
+	stddev = std::sqrt(stddev/(g->GetN()-1));
+	std::cout << "mean = " << mean << " enA, stddev = " << stddev << " enA, integral = " << integral << " nC\n";
+	ofile << "\t" << mean << "\t" << stddev << "\t" << integral << std::endl;
 	return integral;
 }
 
@@ -101,16 +110,31 @@ TGraph *process(TTree *t){
 	return g;
 }
 
-TGraph *process(const char *fname){
-	TGraph *output = NULL;
+TH1F *process(const char *fname){
+	TGraph *graph = NULL;
 	TFile *f = new TFile(fname, "READ");
 	if(!f->IsOpen()) return NULL;
 	TTree *t = (TTree*)f->Get("t");
-	if(t) output = process(t);
-	
+	if(t){
+		ofile << std::string(fname);
+		graph = process(t);
+	}
+
 	f->Close();
 	delete f;
-	return output;
+	delete graph;
+
+	/*TH1F *h = NULL;	
+	if(graph){
+		double x, y;
+		h = new TH1F("h", "h", 100, 0, 10);
+		for(int i = 0; i < graph->GetN(); i++){
+			graph->GetPoint(i, x, y);
+			h->Fill(y);
+		}
+	}*/
+
+	return NULL;
 }
 
 void help(const std::string &search_=""){
@@ -200,6 +224,7 @@ void help(const std::string &search_=""){
 }
 
 int logic(){
+	ofile.open("logic.out");
 	std::cout << " logic.cpp\n";
 	std::cout << "  NOTE - type 'help()' to display a list of commands.\n";
 	std::cout << "  NOTE - or 'help(string)' to search for a command or variable.\n";
