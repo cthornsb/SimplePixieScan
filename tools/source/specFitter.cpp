@@ -3,6 +3,9 @@
 #include <vector>
 #include <cmath>
 
+#include "TFitResultPtr.h"
+#include "TFitResult.h"
+
 #include "TApplication.h"
 #include "TSpectrum.h"
 #include "TMarker.h"
@@ -528,10 +531,11 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	}
 
 	// Fit the spectrum.
+	TFitResultPtr fitresult;
 	if(!noPeakMode)
-		h_->Fit(func, "QN0R");
+		fitresult = h_->Fit(func, "QN0RS");
 	else
-		graph->Fit(func, "QN0R");
+		fitresult = graph->Fit(func, "QN0RS");
 
 	if(debug){ // Print the fit results.
 		std::cout << " Final:\n";
@@ -629,6 +633,8 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 		delete lilfuncs[i];
 	}
 	delete[] lilfuncs;
+
+	fitresult->Write("fitresult");
 	
 	// Write the final parameters to the output ascii file.
 	outputASCII << binID_;
