@@ -119,6 +119,16 @@ class efficiencyFile{
 		return false;
 	}
 
+	// Approximate the uncertainty in a given efficiency by averaging the two neighboring points.
+	bool getUncertainty(const double &Elow_, const double &efficiency, double &uncertainty){
+		for(int i = 1; i < E.size(); i++){
+			if(E[i-1] > Elow_ && ((efficiency >= eff[i-1] && efficiency < eff[i]) || (efficiency >= eff[i] && efficiency < eff[i-1]))){
+				uncertainty = (deff[i-1]+deff[i])/2;
+			}
+		}
+		return false;
+	}
+
 	// Scale an input function by the intrinsic efficiency of VANDLE at energy E_.
 	double correctEfficiency(const double &E_, const double &funcVal_){
 		double denom = 0;
@@ -522,6 +532,44 @@ bool processSpecOutput(const char *fname, const char *ofname, const char *effnam
 	return true;
 }
 
+bool readEfficiency(const char *fname, const char *effname, const double &Ethresh=0.5){
+	std::ifstream file(fname);
+	if(!file.good()){
+		std::cout << " Error! Failed to load input file \"" << fname << "\".\n";
+		return false;
+	}
+
+	efficiencyFile eff(effname);
+	if(eff.empty()){
+		std::cout << " Error! Failed to open efficiency file \"" << effname << "\".\n";
+		file.close();
+		return false;
+	}
+
+	std::ofstream ofile("efficiency.out");
+	ofile << "(dEff/Eff)\n";
+	std::cout << "energy\teff\t(deff/eff)\n";
+
+	double energy;
+	double efficiency;
+	double uncertainty;
+	while(true){
+		file >> energy >> efficiency;
+		if(file.eof()) break;
+		if(energy > Ethresh)
+			eff.getUncertainty(Ethresh, efficiency, uncertainty);
+		else
+			eff.getUncertainty(0, efficiency, uncertainty);
+		ofile << uncertainty/efficiency << std::endl;
+		std::cout << energy << "\t" << efficiency << "\t" << uncertainty/efficiency << std::endl;
+	}
+
+	file.close();
+	ofile.close();
+
+	return true;
+}
+
 void help(const std::string &search_=""){
 	// Colored terminal character string.
 	const std::string dkred("\033[1;31m");
@@ -539,7 +587,7 @@ void help(const std::string &search_=""){
 	                                        "double", "dt", "Timing resolution of detector, in ns."};
 
 	// Defined functions.
-	const std::string definedFunctions[48] = {"void", "binRatio", "TH1 *h1_, TH1 *h2_", "List the ratio of each bin in two 1-d histograms.",
+	const std::string definedFunctions[52] = {"void", "binRatio", "TH1 *h1_, TH1 *h2_", "List the ratio of each bin in two 1-d histograms.",
 	                                          "double", "calcEnergy", "const double &tof_", "Calculate neutron energy (MeV) given the time-of-flight (in ns).",
 	                                          "double", "calcTOF", "const double &E_", "Calculate neutron time-of-flight (ns) given the energy (in MeV).",
 	                                          "double", "TOFfitFunctions::gaussian", "double *x, double *p", "Standard gaussian (x in ns) scaled by linearly interpolated intrinsic efficiency.",
@@ -550,6 +598,8 @@ void help(const std::string &search_=""){
 	                                          "void", "processMCarlo", "const char *fname, const int &comBins=18, const double &comLow=0, const double &comHigh=90", "Process a VANDMC monte carlo detector test output file.",
 	                                          "void", "processMCarlo", "const char *fname, const char *binfname", "Process a VANDMC monte carlo output file and load CM bins from a file.",
 	                                          "bool", "processSpecOutput", "const char *fname, const char *ofname, const char *effname, bool energy_=false", "Process an output file from specFitter (simpleScan tool).",
+
+	                                          "bool", "readEfficiency", "const char *fname, const char *effname, const double &Ethresh=0.5", "Read efficiency values from an input file and report back the uncertainty.",
 	                                          "double", "summation", "TH1 *h, TF1 *f", "Return the total number of counts under a TF1."};
 
 	if(search_.empty()){
@@ -566,7 +616,7 @@ void help(const std::string &search_=""){
 			std::cout << "  " << globalVariables[3*i+1] << std::endl;
 	
 		std::cout << "\n Defined helper functions:\n";
-		for(int i = 0; i < 12; i++)
+		for(int i = 0; i < 13; i++)
 			std::cout << "  " << definedFunctions[4*i+1] << std::endl;
 			
 		std::cout << std::endl;
@@ -599,7 +649,7 @@ void help(const std::string &search_=""){
 			}
 		}
 	
-		for(int i = 0; i < 12; i++){
+		for(int i = 0; i < 13; i++){
 			fIndex = definedFunctions[4*i+1].find(search_);
 			if(fIndex != std::string::npos){
 				strings[0] = definedFunctions[4*i+1].substr(0, fIndex);
