@@ -375,7 +375,7 @@ bool getTNamed(TFile *f, const std::string &name_, double &val, const std::strin
 }
 
 // Process an output file from specFitter (simpleScan tool).
-bool processSpecOutput(const char *fname, const char *ofname, const char *effname, bool energy_=false, const char *peakname="peak0"){
+bool processSpecOutput(const char *fname, const char *ofname, const char *effname, bool energy_=false, int peak=0){
 	TFile specFile(fname, "READ");
 	if(!specFile.IsOpen()){
 		std::cout << " Error! Failed to open input file \"" << fname << "\".\n";
@@ -411,11 +411,14 @@ bool processSpecOutput(const char *fname, const char *ofname, const char *effnam
 		outFile.close();
 	}
 
-	outFile << "binID\tbinLow\tbinCenter\tbinErr\tchi2\tIbkg\thistCounts\tE\tEerr\tIpeak\tIcor\tIcorErr\tintrinseff\n";
+	outFile << "binID\tbinLow\tbinCenter\tbinErr\tchi2\tIbkg\thistCounts\tE\tEerr\tIpeak\tNdet\tdNdet\tintrinsic\tdintrinsic\n";
 
 	double En;
 	double geomeff;
-	double integral;
+	double Ndet;
+	double dNdet;
+	double intrinsic;
+	double dintrinsic;
 
 	int binID;
 
@@ -433,6 +436,11 @@ bool processSpecOutput(const char *fname, const char *ofname, const char *effnam
 	bool logXaxis = false;
 
 	TF1 *peakfunc;
+	TFitResult *fitresult;
+
+	std::stringstream stream;
+	stream << "peak" << peak;
+	std::string peakname = stream.str();
 
 	std::string functionString;
 	std::string currentDirectory;
@@ -450,13 +458,13 @@ bool processSpecOutput(const char *fname, const char *ofname, const char *effnam
 		currentDirectory += "/";
 
 		// Load the fit function from the file.
-		peakfunc = (TF1*)getObject(&specFile, peakname, currentDirectory);
+		peakfunc = (TF1*)getObject(&specFile, peakname.c_str(), currentDirectory);
 
 		if(!peakfunc){ // Backwards compatibility mode.
-			if(strcmp(peakname, "peak0") == 0) 
+			if(peak == 0) 
 				peakfunc = (TF1*)getObject(&specFile, "peakfunc", currentDirectory);
 			else
-				continue;
+				peakfunc = NULL;
 		}
 
 		if(!peakfunc) continue;
@@ -511,16 +519,36 @@ bool processSpecOutput(const char *fname, const char *ofname, const char *effnam
 			else if(functionType == 3) peakIntrinsic = new TF1("ff", ENfitFunctions::logLandau, 0.1, 10, 3); // logLandau (function==3)
 		}
 
+		// Calculate the number of neutron counts (not efficiency corrected).
+		peakCounts = summation(projhist, peakfunc);
+
 		// Calculate the number of neutrons.
 		peakIntrinsic->SetParameter(0, peakfunc->GetParameter(0));
 		peakIntrinsic->SetParameter(1, peakfunc->GetParameter(1));
 		peakIntrinsic->SetParameter(2, peakfunc->GetParameter(2));
-		integral = summation(projhist, peakIntrinsic);
+		Ndet = summation(projhist, peakIntrinsic);
 
-		// Calculate the number of neutron counts (not efficiency corrected).
-		peakCounts = summation(projhist, peakfunc);
+		// Compute uncertainty in Ndet.
+		int ampPar, sigPar;
+		int NbkgPar = 0;
+		TF1 *bkgfunc = (TF1*)getObject(&specFile, "bkgfunc", currentDirectory);
+		if(bkgfunc) NbkgPar = bkgfunc->GetNpar();
+		
+		ampPar = NbkgPar + 3*peak;
+		sigPar = NbkgPar + 3*peak + 2;
 
-		outFile << peakCounts << "\t" << integral << "\t0\t" << peakCounts/integral << std::endl;
+		TF1 *func = (TF1*)getObject(&specFile, "func", currentDirectory);
+		dNdet = Ndet*std::sqrt(std::pow(func->GetParError(ampPar)/func->GetParameter(ampPar),2)+std::pow(func->GetParError(sigPar)/func->GetParameter(sigPar),2));
+		
+		/*fitresult = (TFitResult*)getObject(&specFile, "fitresult", currentDirectory);
+		if(fitresult)
+			dNdet = Ndet*std::sqrt(std::pow(fitresult->ParError(ampPar)/fitresult->Value(ampPar),2)+std::pow(fitresult->ParError(sigPar)/fitresult->Value(sigPar),2));*/
+
+		// Get the effective intrinsic efficiency and uncertainty at the mean energy.
+		effPtr->getEfficiency(En, intrinsic, dintrinsic);
+
+		// Write output.
+		outFile << peakCounts << "\t" << Ndet << "\t" << dNdet << "\t" << intrinsic << "\t" << dintrinsic << std::endl;
 
 		delete peakIntrinsic;
 		
