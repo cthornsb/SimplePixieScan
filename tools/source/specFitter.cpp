@@ -114,6 +114,7 @@ class specFitter : public simpleHistoFitter {
 	bool waitRun;
 	bool skipNext;
 	bool waitRedo;
+	bool lockBackground;
 
 	size_t markerCount;
 
@@ -139,7 +140,7 @@ class specFitter : public simpleHistoFitter {
 	TGraph *convertHisToGraph(TH1 *h_, const double &xLow, const double &xHigh);
 
   public:
-	specFitter() : simpleHistoFitter(), polyBG{0,0,0}, gausFit(true), woodsSaxon(false), noBackground(false), automaticMode(false), firstRun(true), logXaxis(false), logYaxis(false), noPeakMode(false), strictMode(true), waitRun(true), skipNext(false), waitRedo(true), markerCount(0), nPeaksText("") { 
+	specFitter() : simpleHistoFitter(), polyBG{0,0,0}, gausFit(true), woodsSaxon(false), noBackground(false), automaticMode(false), firstRun(true), logXaxis(false), logYaxis(false), noPeakMode(false), strictMode(true), waitRun(true), skipNext(false), waitRedo(true), lockBackground(false), markerCount(0), nPeaksText("") { 
 		outputASCII.open("specFitter.dat");
 	}
 
@@ -180,6 +181,7 @@ void specFitter::setupControlPanel(){
 	win->AddCheckbox("strict", &strictMode, strictMode);
 	win->AddCheckbox("logx", &logXaxis, logXaxis);
 	win->AddCheckbox("logy", &logYaxis, logYaxis);
+	win->AddCheckbox("lockBG", &lockBackground, lockBackground);
 	win->AddTextEntry("Npeaks", "1", &nPeaksText);
 
 	win->NewGroup("Control");
@@ -434,9 +436,16 @@ bool specFitter::fitSpectrum(TH1 *h_, const int &binID_){
 	TF1 *func = new TF1("func", totalString.c_str(), xlo, xhi);
 
 	if(!noBackground){
-		func->SetParameter(0, p[0]);
-		func->SetParameter(1, p[1]);
-		func->SetParameter(2, p[2]);
+		if(!lockBackground){
+			func->SetParameter(0, p[0]);
+			func->SetParameter(1, p[1]);
+			func->SetParameter(2, p[2]);
+		}
+		else{
+			func->FixParameter(0, p[0]);
+			func->FixParameter(1, p[1]);
+			func->FixParameter(2, p[2]);
+		}
 	}
 
 	if(!noPeakMode){ // Get the initial conditions of the peak.
