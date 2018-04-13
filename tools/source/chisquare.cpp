@@ -28,6 +28,8 @@ class chisquare : public simpleTool {
 	double initialParameter;
 	double fitRangeLow;
 	double fitRangeHigh;
+	double parLimitLow;
+	double parLimitHigh;
 	
 	bool userFitRange;
 	bool userParLimits;
@@ -36,7 +38,7 @@ class chisquare : public simpleTool {
 	std::string gnames[2];
 
   public:
-	chisquare() : simpleTool(), initialParameter(1), fitRangeLow(-1), fitRangeHigh(-1), userFitRange(false), userParLimits(false) { }
+	chisquare() : simpleTool(), initialParameter(1), fitRangeLow(-1), fitRangeHigh(-1), parLimitLow(-1), parLimitHigh(-1), userFitRange(false), userParLimits(false) { }
 
 	~chisquare();
 	
@@ -54,6 +56,8 @@ void chisquare::addOptions(){
 	addOption(optionExt("initial", required_argument, NULL, 0x0, "<initialParameter>", "Initial scaling factor (default=1)."), userOpts, optstr);
 	addOption(optionExt("file-a", required_argument, NULL, 'a', "<fname:gname>", "Specify THEORETICAL filename and graph name."), userOpts, optstr);
 	addOption(optionExt("file-b", required_argument, NULL, 'b', "<fname:gname>", "Specify EXPERIMENTAL filename and graph name."), userOpts, optstr);
+	addOption(optionExt("fit-range", required_argument, NULL, 0x0, "<low:high>", "Specify fitting range to use (default uses bounds of THEORY graph)."), userOpts, optstr);
+	addOption(optionExt("par-limits", required_argument, NULL, 0x0, "<low:high>", "Specify parameter limits for scaling factor A (not used by default)."), userOpts, optstr);
 }
 
 bool chisquare::processArgs(){
@@ -61,12 +65,7 @@ bool chisquare::processArgs(){
 		initialParameter = strtod(userOpts.at(0).argument.c_str(), NULL);
 	}
 	if(userOpts.at(1).active){
-		size_t index = userOpts.at(1).argument.find(':');
-		if(index != std::string::npos){
-			fnames[0] = userOpts.at(1).argument.substr(0, index);
-			gnames[0] = userOpts.at(1).argument.substr(index+1);
-		}
-		else{
+		if(!splitByColon(userOpts.at(1).argument, fnames[0], gnames[0])){
 			fnames[0] = userOpts.at(1).argument;
 			gnames[0] = "graph";
 		}
@@ -76,12 +75,7 @@ bool chisquare::processArgs(){
 		return false;
 	}
 	if(userOpts.at(2).active){
-		size_t index = userOpts.at(2).argument.find(':');
-		if(index != std::string::npos){
-			fnames[1] = userOpts.at(2).argument.substr(0, index);
-			gnames[1] = userOpts.at(2).argument.substr(index+1);
-		}
-		else{
+		if(!splitByColon(userOpts.at(2).argument, fnames[1], gnames[1])){
 			fnames[1] = userOpts.at(2).argument;
 			gnames[1] = "graph";
 		}
@@ -89,6 +83,20 @@ bool chisquare::processArgs(){
 	else{
 		std::cout << " Error: EXPERIMENTAL filename not specified!\n";
 		return false;
+	}
+	if(userOpts.at(3).active){
+		userFitRange = true;
+		if(!splitByColon(userOpts.at(3).argument, fitRangeLow, fitRangeHigh)){
+			std::cout << " Error: Fit range must be specified as \"low:high\"!\n";
+			return false;
+		}
+	}
+	if(userOpts.at(4).active){
+		userParLimits = true;
+		if(!splitByColon(userOpts.at(4).argument, parLimitLow, parLimitHigh)){
+			std::cout << " Error: Fit range must be specified as \"low:high\"!\n";
+			return false;
+		}
 	}
 
 	return true;
@@ -128,7 +136,6 @@ int chisquare::execute(int argc, char *argv[]){
 	Nelements = graphs[0]->GetN();
 
 	std::cout << "THEORETICAL=" << graphs[0]->GetN() << " points, EXPERIMENTAL=" << graphs[1]->GetN() << " points\n";
-	std::cout << " Minimizing: A x gTHEORY = gEXP\n\n";
 
 	/*std::string outputPrefix(argv[4]);
 	TFile *fout = new TFile((outputPrefix+".root").c_str(), "UPDATE");
@@ -148,11 +155,11 @@ int chisquare::execute(int argc, char *argv[]){
 	func->SetParameter(0, initialParameter);
 	
 	if(userParLimits){
-		double parLimitLow;
-		double parLimitHigh;
 		std::cout << " Setting limits on A to [" << parLimitLow << ", " << parLimitHigh << "]\n";
 		func->SetParLimits(0, parLimitLow, parLimitHigh);
 	}
+	
+	std::cout << " Minimizing: (A x gTHEORY) = gEXP\n\n";
 	
 	graphs[1]->Fit(func, "R");
 	double A = func->GetParameter(0);
