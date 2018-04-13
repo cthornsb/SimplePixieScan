@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <time.h>
 #include <cmath>
@@ -106,15 +107,9 @@ int chisquare::execute(int argc, char *argv[]){
 	if(!setup(argc, argv))
 		return 0;
 
-	/*if(!openOutputFile()){
-		std::cout << " Error: Failed to load output file \"" << output_filename << "\".\n";
-		return 2;
-	}*/
-
 	TGraphErrors *ptr = NULL;
 	TGraphErrors *graphs[2] = {NULL, NULL};
 	for(size_t i = 0; i < 2; i++){
-		//std::cout << "debug: getting \"" << 
 		TFile *file = new TFile(fnames[i].c_str(), "READ");
 		if(!file->IsOpen()){
 			std::cout << " Error! Failed to load input file \"" << fnames[i] << "\".\n";
@@ -137,9 +132,15 @@ int chisquare::execute(int argc, char *argv[]){
 
 	std::cout << "THEORETICAL=" << graphs[0]->GetN() << " points, EXPERIMENTAL=" << graphs[1]->GetN() << " points\n";
 
-	/*std::string outputPrefix(argv[4]);
-	TFile *fout = new TFile((outputPrefix+".root").c_str(), "UPDATE");
-	std::ofstream asciiOut((outputPrefix+".dat").c_str(), std::ios_base::app);*/
+	if(graphs[0]->GetN() == 0){
+		std::cout << " Error! THEORETICAL graph is empty!\n";
+		return 4;
+	}
+	
+	if(graphs[1]->GetN() == 0){
+		std::cout << " Error! EXPERIMENTAL graph is empty!\n";
+		return 5;
+	}
 
 	if(!userFitRange){
 		fitRangeLow = std::numeric_limits<double>::max();
@@ -165,28 +166,30 @@ int chisquare::execute(int argc, char *argv[]){
 	double A = func->GetParameter(0);
 
 	std::cout << "\nResults:\n A=" << A << " +/- " << func->GetParError(0) << ", chi2=" << func->GetChisquare()/func->GetNDF() << std::endl;
-	/*asciiOut << energyStr << "\t" << A << "\t" << func->GetParError(0) << "\t" << func->GetChisquare()/func->GetNDF() << std::endl;
+
+	if(!output_filename.empty()){
+		std::string prefix, suffix;
+		if(!splitFilename(output_filename, prefix, suffix))
+			prefix = output_filename;
+
+		TFile *fout = new TFile((prefix+".root").c_str(), "UPDATE");
+		std::ofstream asciiOut((prefix+".dat").c_str(), std::ios_base::app);
+
+		asciiOut << gnames[0] << "\t" << gnames[1] << "\t" << A << "\t" << func->GetParError(0) << "\t" << func->GetChisquare()/func->GetNDF() << std::endl;
 	
-	TGraph *goutput = new TGraph(Nelements);
-	for(size_t i = 0; i < Nelements; i++){
-		goutput->SetPoint(i, xval[i], A*yval[i]);
+		TGraph *goutput = new TGraph(Nelements);
+		for(size_t i = 0; i < Nelements; i++){
+			goutput->SetPoint(i, xval[i], A*yval[i]);
+		}
+	
+		fout->cd();
+		goutput->Write(gnames[0].c_str());
+		fout->Close();
+	
+		delete fout;
+
+		asciiOut.close();
 	}
-	
-	fout->cd();
-	goutput->Write(("g"+energyStr).c_str());
-	fout->Close();
-	
-	f1->Close();
-	f2->Close();
-	
-	delete func;
-	delete fout;
-	delete f1;
-	delete f2;
-
-	asciiOut.close();
-
-	std::cout << "\n\n Done! Wrote " << outtree->GetEntries() << " entries to '" << output_filename << "'.\n";*/
 	
 	delete func;
 			
