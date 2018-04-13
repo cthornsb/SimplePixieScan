@@ -41,6 +41,9 @@ bool splitByColon(const std::string &str, double &left, double &right, const cha
 // Split a string into two pieces based on a delimiter.
 bool splitByColon(const std::string &str, int &left, int &right, const char &delim=':');
 
+// Split a filename into path and extension.
+bool splitFilename(const std::string &str, std::string &left, std::string &right, const char &delim='.');
+
 class interpolator{
   public:
 	interpolator();

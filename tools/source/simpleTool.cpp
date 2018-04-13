@@ -83,6 +83,17 @@ bool splitByColon(const std::string &str, int &left, int &right, const char &del
 	return false;
 }
 
+// Split a filename into path and extension.
+bool splitFilename(const std::string &str, std::string &left, std::string &right, const char &delim/*='.'*/){
+	size_t index = str.find_last_of(delim);
+	if(index != std::string::npos){
+		left = str.substr(0, index);
+		right = str.substr(index);
+		return true;
+	}
+	return false;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // class interpolator
 ///////////////////////////////////////////////////////////////////////////////
@@ -379,10 +390,12 @@ bool simpleTool::setup(int argc, char *argv[]){
 			std::cout << " Error: Final filename index must be greater than or equal to 1, user entered (" << largestFileIndex << ")!\n";
 			return false;
 		}
-		size_t index = input_filename.find_last_of('.');
-
-		std::string prefix = input_filename.substr(0, index);
-		std::string suffix = input_filename.substr(index);
+		
+		std::string prefix, suffix;
+		if(!splitFilename(input_filename, prefix, suffix)){
+			prefix = input_filename;
+			suffix = ".root";
+		}
 		
 		for(int i = 1; i <= largestFileIndex; i++){
 			std::stringstream stream;
