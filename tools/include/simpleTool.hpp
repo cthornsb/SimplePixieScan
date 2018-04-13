@@ -32,6 +32,15 @@ double frand(double low, double high);
 // Convert spherical coordinates to cartesian.
 void sphere2Cart(const double &r_, const double &theta_, const double &phi_, double &x, double &y, double &z);
 
+// Split a string into two pieces based on a delimiter.
+bool splitByColon(const std::string &str, std::string &left, std::string &right, const char &delim=':');
+
+// Split a string into two pieces based on a delimiter.
+bool splitByColon(const std::string &str, double &left, double &right, const char &delim=':');
+
+// Split a string into two pieces based on a delimiter.
+bool splitByColon(const std::string &str, int &left, int &right, const char &delim=':');
+
 class interpolator{
   public:
 	interpolator();

@@ -50,6 +50,39 @@ void sphere2Cart(const double &r_, const double &theta_, const double &phi_, dou
 	z = r_*std::cos(theta_);
 } 
 
+// Split a string into two pieces based on a delimiter.
+bool splitByColon(const std::string &str, std::string &left, std::string &right, const char &delim/*=':'*/){
+	size_t index = str.find(delim);
+	if(index != std::string::npos){
+		left = str.substr(0, index);
+		right = str.substr(index+1);
+		return true;
+	}
+	return false;
+}
+
+// Split a string into two pieces based on a delimiter.
+bool splitByColon(const std::string &str, double &left, double &right, const char &delim/*=':'*/){
+	size_t index = str.find(delim);
+	if(index != std::string::npos){
+		left = strtod(str.substr(0, index).c_str(), NULL);
+		right = strtod(str.substr(index+1).c_str(), NULL);
+		return true;
+	}
+	return false;
+}
+
+// Split a string into two pieces based on a delimiter.
+bool splitByColon(const std::string &str, int &left, int &right, const char &delim/*=':'*/){
+	size_t index = str.find(delim);
+	if(index != std::string::npos){
+		left = strtol(str.substr(0, index).c_str(), NULL, 0);
+		right = strtol(str.substr(index+1).c_str(), NULL, 0);
+		return true;
+	}
+	return false;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // class interpolator
 ///////////////////////////////////////////////////////////////////////////////
@@ -439,19 +472,19 @@ TFile *simpleTool::openOutputFile(){
 
 TCutG *simpleTool::loadTCutG(){
 	if(cut_filename.empty()) return NULL;
-	size_t colonIndex = cut_filename.find(':');
-	if(colonIndex == std::string::npos){
+	std::string fname, cname;
+	if(!splitByColon(cut_filename, fname, cname)){
 		std::cout << " Error: Name of TCutG not specified. Expected <filename:cutname> e.g. myfile.root:cut1.\n";
 		return NULL;
 	}
-	TFile *cutFile = new TFile(cut_filename.substr(0, colonIndex).c_str(), "READ");
+	TFile *cutFile = new TFile(fname.c_str(), "READ");
 	if(!cutFile->IsOpen()){
-		std::cout << " Error: Failed to load cut file \"" << cut_filename.substr(0, colonIndex) << "\".\n";
+		std::cout << " Error: Failed to load cut file \"" << fname << "\".\n";
 		return NULL;
 	}
-	tcutg = (TCutG*)cutFile->Get(cut_filename.substr(colonIndex+1).c_str());
+	tcutg = (TCutG*)cutFile->Get(cname.c_str());
 	if(!tcutg){
-		std::cout << " Error: Failed to load input TCutG \"" << cut_filename.substr(colonIndex+1) << "\".\n";
+		std::cout << " Error: Failed to load input TCutG \"" << cname << "\".\n";
 		cutFile->Close();
 		return NULL;
 	}
@@ -640,12 +673,7 @@ bool simpleHistoFitter::processArgs(){
 	if(userOpts.at(4).active)
 		useProjX = false;
 	if(userOpts.at(5).active){
-		size_t index = userOpts.at(5).argument.find(':');
-		if(index != std::string::npos){ // Range entry.
-			histStartID = strtol(userOpts.at(5).argument.substr(0, index).c_str(), 0, 0);
-			histStopID = strtol(userOpts.at(5).argument.substr(index+1).c_str(), 0, 0);
-		}
-		else{ // Single entry.
+		if(!splitByColon(userOpts.at(5).argument, histStartID, histStopID)){ 
 			histStartID = strtol(userOpts.at(5).argument.c_str(), 0, 0);
 			histStopID = histStartID;
 		}
