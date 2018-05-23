@@ -57,25 +57,22 @@ class StructureFile{
 	std::ofstream hppfile;
 	std::ofstream cppfile;
 	std::ofstream linkfile;
-	
+
+	std::string hpp_filename_nopath;	
 	std::string hpp_filename;
 	std::string cpp_filename;
 	std::string link_filename;
 	
 	bool init;
-  
+ 
+	bool Open();
+ 
   public:
 	StructureFile(){ init = false; }
   
-	StructureFile(const std::string &prefix_){ Open(prefix_); }
-	
 	StructureFile(const std::string &hpp_fname_, const std::string &cpp_fname_, const std::string &link_fname_){ Open(hpp_fname_, cpp_fname_, link_fname_); }
 	
 	~StructureFile(){ Close(); }
-	
-	bool Open();
-
-	bool Open(const std::string &prefix_);
 	
 	bool Open(const std::string &hpp_fname_, const std::string &cpp_fname_, const std::string &link_fname_);
 	

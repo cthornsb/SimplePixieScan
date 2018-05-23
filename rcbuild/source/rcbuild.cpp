@@ -273,7 +273,7 @@ bool StructureFile::Open(){
 	time(&rawtime);
 	timeinfo = localtime (&rawtime);
 
-	hppfile << "/** \\file Structures.hpp\n";
+	hppfile << "/** \\file " << hpp_filename_nopath << "\n";
 	hppfile << " * \\brief Data structures for root output\n";
 	hppfile << " *\n";
 	hppfile << " * Special data types for Root output. Each individual processor which is\n";
@@ -319,7 +319,7 @@ bool StructureFile::Open(){
 	hppfile << "	ClassDef(Trace, 1); // Trace\n";
 	hppfile << "};\n";
 	
-	cppfile << "#include \"Structures.hpp\"\n\n";
+	cppfile << "#include \"" << hpp_filename_nopath << "\"\n\n";
 	cppfile << "Trace::Trace(const std::string &name_/*=\"\"*/){\n";
 	cppfile << "	name = name_;\n";
 	cppfile << "	mult = 0;\n";
@@ -357,22 +357,17 @@ bool StructureFile::Open(){
 	return true;
 }
 
-bool StructureFile::Open(const std::string &prefix_){
-	if(prefix_[prefix_.size()-1] != '/'){
-		hpp_filename = prefix_ + "/include/Structures.hpp";
-		cpp_filename = prefix_ + "/src/Structures.hpp";
-		link_filename = prefix_ + "/dict/LinkDef.h";
-	}
-	else{
-		hpp_filename = prefix_ + "include/Structures.hpp";
-		cpp_filename = prefix_ + "src/Structures.hpp";
-		link_filename = prefix_ + "dict/LinkDef.h";
-	}
-	return Open();
-}
-
 bool StructureFile::Open(const std::string &hpp_fname_, const std::string &cpp_fname_, const std::string &link_fname_){
 	hpp_filename = hpp_fname_;
+
+	size_t index = hpp_filename.find_last_of('/');
+	if(index != std::string::npos){
+		hpp_filename_nopath = hpp_filename.substr(index+1);
+	}
+	else{
+		hpp_filename_nopath = hpp_filename;
+	}
+
 	cpp_filename = cpp_fname_;
 	link_filename = link_fname_;
 	return Open();
@@ -459,6 +454,7 @@ int main(int argc, char *argv[]){
 	optionHandler handler;
 	handler.add(optionExt("input", required_argument, NULL, 'i', "<filename>", "Specify the filename of the input data file"));
 	handler.add(optionExt("dir", required_argument, NULL, 'd', "<path>", "Specify the top-level directory (default=./)"));
+	handler.add(optionExt("prefix", required_argument, NULL, 'P', "<prefix>", "Specify the filename prefix (default=\"Structures\")"));
 	handler.add(optionExt("verbose", no_argument, NULL, 'V', "", "Enable verbose output"));
 
 	if(!handler.setup(argc, argv)){
@@ -466,7 +462,7 @@ int main(int argc, char *argv[]){
 	}
 
 	bool verbose = false;
-	if(handler.getOption(2)->active){
+	if(handler.getOption(3)->active){
 		verbose = true;	
 	}
 
@@ -483,11 +479,16 @@ int main(int argc, char *argv[]){
 	if(handler.getOption(1)->active){
 		dict_dir = handler.getOption(1)->argument;
 	}	
-	
+
+	std::string outputFilenamePrefix = "Structures";	
+	if(handler.getOption(2)->active){
+		outputFilenamePrefix = handler.getOption(2)->argument;
+	}
+
 	if(verbose) std::cout << " " << argv[0] << ": Generating root data structure file... ";
 
 	StructureFile sfile;
-	if(!sfile.Open(dict_dir+"/Structures.hpp", dict_dir+"/Structures.cpp", dict_dir+"/LinkDef.h")){ 
+	if(!sfile.Open(dict_dir+"/"+outputFilenamePrefix+".hpp", dict_dir+"/"+outputFilenamePrefix+".cpp", dict_dir+"/LinkDef.h")){ 
 		if(verbose) std::cout << "failed\n  ERROR: Failed to open output files in directory \"" << dict_dir << "\"!\n";
 		return 3;
 	}
