@@ -3,6 +3,18 @@ add_library(ToolObj OBJECT cmcalc.cpp CalibFile.cpp simpleTool.cpp)
 add_library(ToolStatic STATIC $<TARGET_OBJECTS:ToolObj>)
 target_link_libraries(ToolStatic OptionStatic ScanStatic)
 
+if(${BUILD_SHARED} OR ${BUILD_TOOLS_SPECFITTER})
+	add_library(GuiObj OBJECT simpleGui.cpp)
+	add_library(GuiStatic STATIC $<TARGET_OBJECTS:GuiObj>)
+endif()
+
+# Build shared libs
+if(${BUILD_SHARED})
+	add_library(SimpleTool SHARED $<TARGET_OBJECTS:ToolObj>)
+	add_library(SimpleGui SHARED $<TARGET_OBJECTS:GuiObj>)
+	install(TARGETS SimpleTool SimpleGui DESTINATION lib)
+endif(${BUILD_SHARED})
+
 #SimpleScan tools.
 if(${BUILD_TOOLS_CALIBRATE})
 	add_executable(calibrate calibrate.cpp)
@@ -23,8 +35,6 @@ if(${BUILD_TOOLS_RAWEVENT})
 endif()
 
 if(${BUILD_TOOLS_SPECFITTER})
-	add_library(GuiObj OBJECT simpleGui.cpp)
-	add_library(GuiStatic STATIC $<TARGET_OBJECTS:GuiObj>)
 	add_executable(specFitter specFitter.cpp)
 	target_link_libraries(specFitter ToolStatic GuiStatic ${ROOT_GUI_LIBRARIES} -lFitPanel)
 	install(TARGETS specFitter DESTINATION bin)
