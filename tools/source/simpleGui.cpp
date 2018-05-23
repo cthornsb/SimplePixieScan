@@ -9,7 +9,6 @@
 
 #include "TF1.h"
 #include "TCanvas.h"
-#include "TFitParametersDialog.h"
 
 #define SLEEP_WAIT 1E4 // (in us).
 
@@ -255,8 +254,4 @@ void GuiWindow::IdleTask(){
 	for(std::vector<SimpleButtonGroup*>::iterator iter = groups.begin(); iter != groups.end(); iter++){
 		(*iter)->CheckState();
 	}
-}
-
-TFitParametersDialog *GuiWindow::OpenFitParameters(TF1 *f_, TCanvas *c_){
-	return (new TFitParametersDialog(gClient->GetDefaultRoot(), GetMainFrame(), f_, c_));
 }

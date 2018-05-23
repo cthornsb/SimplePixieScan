@@ -12,7 +12,6 @@ class TGWindow;
 class TGMainFrame;
 class TGLabel;
 
-class TFitParametersDialog;
 class TCanvas;
 class TF1;
 
@@ -153,8 +152,6 @@ class GuiWindow : public TGMainFrame {
 	bool IsQuitting(){ return isQuitting; }
 
 	void PrintValues();
-
-	TFitParametersDialog *OpenFitParameters(TF1 *f_, TCanvas *c_);
 
   private:
   	std::vector<TGLabel*> labels;

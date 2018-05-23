@@ -36,7 +36,7 @@ endif()
 
 if(${BUILD_TOOLS_SPECFITTER})
 	add_executable(specFitter specFitter.cpp)
-	target_link_libraries(specFitter ToolStatic GuiStatic ${ROOT_GUI_LIBRARIES} -lFitPanel)
+	target_link_libraries(specFitter ToolStatic GuiStatic ${ROOT_GUI_LIBRARIES})
 	install(TARGETS specFitter DESTINATION bin)
 endif()
 
