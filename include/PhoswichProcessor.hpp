@@ -3,8 +3,6 @@
 
 #include "Processor.hpp"
 
-#include "Structures.h"
-
 class MapFile;
 
 class PhoswichProcessor : public Processor{

@@ -1,5 +1,4 @@
 #include "LogicProcessor.hpp"
-#include "Structures.h"
 #include "MapFile.hpp"
 
 /// Process all individual events.

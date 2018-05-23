@@ -11,7 +11,7 @@
 // Root libraries
 #include "TTree.h"
 
-#include "Structures.h"
+#include "Structures.hpp"
 
 class ChannelEventPair;
 

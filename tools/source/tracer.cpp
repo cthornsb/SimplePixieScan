@@ -9,7 +9,7 @@
 #include "TH2I.h"
 
 #include "simpleTool.hpp"
-#include "Structures.h"
+#include "Structures.hpp"
 
 #define ADC_CLOCK 4 // ns per ADC clock tick
 

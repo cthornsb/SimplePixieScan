@@ -11,7 +11,7 @@
 
 #include "simpleTool.hpp"
 #include "CalibFile.hpp"
-#include "Structures.h"
+#include "Structures.hpp"
 
 template <typename T>
 void writeTNamed(const char *label_, const T &val_, const int &precision_=-1){

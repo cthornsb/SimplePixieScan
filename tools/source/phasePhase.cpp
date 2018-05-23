@@ -6,7 +6,7 @@
 #include "TBranch.h"
 
 #include "simpleTool.hpp"
-#include "Structures.h"
+#include "Structures.hpp"
 
 class phasePhase : public simpleTool {
   private:

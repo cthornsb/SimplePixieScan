@@ -4,7 +4,7 @@
 #include <algorithm>
 
 #include "Processor.hpp"
-#include "Structures.h"
+#include "Structures.hpp"
 #include "MapFile.hpp"
 
 #include "TTree.h"

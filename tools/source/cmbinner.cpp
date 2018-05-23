@@ -14,7 +14,7 @@
 #include "cmcalc.hpp"
 #include "simpleTool.hpp"
 #include "CalibFile.hpp"
-#include "Structures.h"
+#include "Structures.hpp"
 
 // E_ in MeV, return TQDC in keVee.
 double energy2tqdc(const double &E_){

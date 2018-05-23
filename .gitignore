@@ -22,7 +22,7 @@ install/
 
 # Dictionary files #
 ####################
-Structures.h
+Structures.hpp
 
 # DAMM Files #
 ##############

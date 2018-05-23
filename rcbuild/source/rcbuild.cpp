@@ -273,7 +273,7 @@ bool StructureFile::Open(){
 	time(&rawtime);
 	timeinfo = localtime (&rawtime);
 
-	hppfile << "/** \\file Structures.h\n";
+	hppfile << "/** \\file Structures.hpp\n";
 	hppfile << " * \\brief Data structures for root output\n";
 	hppfile << " *\n";
 	hppfile << " * Special data types for Root output. Each individual processor which is\n";
@@ -319,7 +319,7 @@ bool StructureFile::Open(){
 	hppfile << "	ClassDef(Trace, 1); // Trace\n";
 	hppfile << "};\n";
 	
-	cppfile << "#include \"Structures.h\"\n\n";
+	cppfile << "#include \"Structures.hpp\"\n\n";
 	cppfile << "Trace::Trace(const std::string &name_/*=\"\"*/){\n";
 	cppfile << "	name = name_;\n";
 	cppfile << "	mult = 0;\n";
@@ -359,13 +359,13 @@ bool StructureFile::Open(){
 
 bool StructureFile::Open(const std::string &prefix_){
 	if(prefix_[prefix_.size()-1] != '/'){
-		hpp_filename = prefix_ + "/include/Structures.h";
-		cpp_filename = prefix_ + "/src/Structures.h";
+		hpp_filename = prefix_ + "/include/Structures.hpp";
+		cpp_filename = prefix_ + "/src/Structures.hpp";
 		link_filename = prefix_ + "/dict/LinkDef.h";
 	}
 	else{
-		hpp_filename = prefix_ + "include/Structures.h";
-		cpp_filename = prefix_ + "src/Structures.h";
+		hpp_filename = prefix_ + "include/Structures.hpp";
+		cpp_filename = prefix_ + "src/Structures.hpp";
 		link_filename = prefix_ + "dict/LinkDef.h";
 	}
 	return Open();
@@ -487,7 +487,7 @@ int main(int argc, char *argv[]){
 	if(verbose) std::cout << " " << argv[0] << ": Generating root data structure file... ";
 
 	StructureFile sfile;
-	if(!sfile.Open(dict_dir+"/Structures.h", dict_dir+"/Structures.cpp", dict_dir+"/LinkDef.h")){ 
+	if(!sfile.Open(dict_dir+"/Structures.hpp", dict_dir+"/Structures.cpp", dict_dir+"/LinkDef.h")){ 
 		if(verbose) std::cout << "failed\n  ERROR: Failed to open output files in directory \"" << dict_dir << "\"!\n";
 		return 3;
 	}

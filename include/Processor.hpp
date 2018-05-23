@@ -10,6 +10,8 @@
 #include "TF1.h"
 #include "TFitResultPtr.h"
 
+#include "Structures.hpp"
+
 class MapEntry;
 class MapFile;
 class Plotter;
@@ -17,9 +19,6 @@ class Plotter;
 class TTree;
 class TBranch;
 class TH1;
-
-class Structure;
-class Trace;
 
 extern Structure dummyStructure;
 extern Trace dummyTrace;
