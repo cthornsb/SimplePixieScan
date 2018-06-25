@@ -24,6 +24,15 @@ double comp(double *x, double *p){
 	return -1;
 }
 
+double comp2(double *x, double *p){
+	for(size_t i = 1; i < Nelements; i++){
+		if(xval[i-1] <= x[0] && x[0] < xval[i]){
+			return p[0]*(yval[i-1]+(x[0]-xval[i-1])*(yval[i]-yval[i-1])/(xval[i]-xval[i-1])) + p[1];
+		}
+	}
+	return -1;
+}
+
 class chisquare : public simpleTool {
   private:
 	double initialParameter;
@@ -34,12 +43,13 @@ class chisquare : public simpleTool {
 	
 	bool userFitRange;
 	bool userParLimits;
+	bool addConstTerm;
 	
 	std::string fnames[2];
 	std::string gnames[2];
 
   public:
-	chisquare() : simpleTool(), initialParameter(1), fitRangeLow(-1), fitRangeHigh(-1), parLimitLow(-1), parLimitHigh(-1), userFitRange(false), userParLimits(false) { }
+	chisquare() : simpleTool(), initialParameter(1), fitRangeLow(-1), fitRangeHigh(-1), parLimitLow(-1), parLimitHigh(-1), userFitRange(false), userParLimits(false), addConstTerm(false) { }
 
 	~chisquare();
 	
@@ -54,11 +64,12 @@ chisquare::~chisquare(){
 }
 
 void chisquare::addOptions(){
-	addOption(optionExt("initial", required_argument, NULL, 0x0, "<initialParameter>", "Initial scaling factor (default=1)."), userOpts, optstr);
+	addOption(optionExt("initial", required_argument, NULL, 0x0, "<parameter>", "Initial scaling factor (default=1)."), userOpts, optstr);
 	addOption(optionExt("file-a", required_argument, NULL, 'a', "<fname:gname>", "Specify THEORETICAL filename and graph name."), userOpts, optstr);
 	addOption(optionExt("file-b", required_argument, NULL, 'b', "<fname:gname>", "Specify EXPERIMENTAL filename and graph name."), userOpts, optstr);
 	addOption(optionExt("fit-range", required_argument, NULL, 0x0, "<low:high>", "Specify fitting range to use (default uses bounds of THEORY graph)."), userOpts, optstr);
 	addOption(optionExt("par-limits", required_argument, NULL, 0x0, "<low:high>", "Specify parameter limits for scaling factor A (not used by default)."), userOpts, optstr);
+	addOption(optionExt("add-constant", no_argument, NULL, 0x0, "", "Add an additional constant term to the distribution."), userOpts, optstr);
 }
 
 bool chisquare::processArgs(){
@@ -98,6 +109,9 @@ bool chisquare::processArgs(){
 			std::cout << " Error: Fit range must be specified as \"low:high\"!\n";
 			return false;
 		}
+	}
+	if(userOpts.at(5).active){
+		addConstTerm = true;
 	}
 
 	return true;
@@ -152,7 +166,14 @@ int chisquare::execute(int argc, char *argv[]){
 	}
 	
 	std::cout << " Setting fit range to [" << fitRangeLow << ", " << fitRangeHigh << "]\n";
-	TF1 *func = new TF1("func", comp, fitRangeLow, fitRangeHigh, 1);
+	TF1 *func;
+	if(!addConstTerm)
+		func = new TF1("func", comp, fitRangeLow, fitRangeHigh, 1);
+	else{
+		func = new TF1("func", comp2, fitRangeLow, fitRangeHigh, 2);
+		func->SetParameter(1, 0);
+		func->SetParLimits(1, 0, 100); // Limit the constant term.
+	}
 	func->SetParameter(0, initialParameter);
 	
 	if(userParLimits){
@@ -164,9 +185,15 @@ int chisquare::execute(int argc, char *argv[]){
 	
 	graphs[1]->Fit(func, "R");
 	double A = func->GetParameter(0);
+	double B = (addConstTerm ? func->GetParameter(1) : -1);
 
-	std::cout << "\nResults:\n A=" << A << " +/- " << func->GetParError(0) << ", chi2=" << func->GetChisquare()/func->GetNDF() << std::endl;
+	// Print the results.
+	std::cout << "\nResults:\n A=" << A << " +/- " << func->GetParError(0);
+	if(addConstTerm)
+		std::cout << ", B=" << B << " +/- " << func->GetParError(1);
+	std::cout << ", chi2=" << func->GetChisquare()/func->GetNDF() << std::endl;
 
+	// Append the results to the ascii file.
 	if(!output_filename.empty()){
 		std::string prefix, suffix;
 		if(!splitFilename(output_filename, prefix, suffix))
@@ -175,11 +202,17 @@ int chisquare::execute(int argc, char *argv[]){
 		TFile *fout = new TFile((prefix+".root").c_str(), "UPDATE");
 		std::ofstream asciiOut((prefix+".dat").c_str(), std::ios_base::app);
 
-		asciiOut << gnames[0] << "\t" << gnames[1] << "\t" << A << "\t" << func->GetParError(0) << "\t" << func->GetChisquare()/func->GetNDF() << std::endl;
+		asciiOut << gnames[0] << "\t" << gnames[1] << "\t" << A << "\t" << func->GetParError(0);
+		if(addConstTerm)
+			asciiOut << "\t" << B << "\t" << func->GetParError(1);
+		asciiOut << "\t" << func->GetChisquare()/func->GetNDF() << std::endl;
 	
 		TGraph *goutput = new TGraph(Nelements);
 		for(size_t i = 0; i < Nelements; i++){
-			goutput->SetPoint(i, xval[i], A*yval[i]);
+			if(!addConstTerm)
+				goutput->SetPoint(i, xval[i], A*yval[i]);
+			else
+				goutput->SetPoint(i, xval[i], A*yval[i]+B);
 		}
 	
 		fout->cd();
