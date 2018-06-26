@@ -1,0 +1,59 @@
+#ifndef SIMPLE_CHISQUARE_HPP
+#define SIMPLE_CHISQUARE_HPP
+
+#include "simpleTool.hpp"
+
+// These need to be global.
+extern size_t Nelements;
+extern double *xval, *yval;
+
+double comp(double *x, double *p);
+
+double comp2(double *x, double *p);
+
+class chisquare : public simpleTool {
+  public:
+	chisquare();
+
+	~chisquare();
+
+	double setInitialParameter(const double &initialParameter_){ return (initialParameter=initialParameter_); }
+
+	void setFitRange(const double &low_, const double &high_);
+
+	void setParLimits(const double &low_, const double &high_);
+
+	bool setAddConstTerm(const bool &state_=true){ return (addConstTerm=state_); }
+
+	double getInitialParameter(){ return initialParameter; }
+
+	void getFitRange(double &low_, double &high_);
+
+	void getParLimits(double &low_, double &high_);
+
+	bool getAddConstTerm(){ return addConstTerm; }
+
+	void addOptions();
+	
+	bool processArgs();
+	
+	int execute(int argc, char *argv[]);
+
+	bool compute();
+
+  protected:
+	double initialParameter;
+	double fitRangeLow;
+	double fitRangeHigh;
+	double parLimitLow;
+	double parLimitHigh;
+	
+	bool userFitRange;
+	bool userParLimits;
+	bool addConstTerm;
+	
+	std::string fnames[2];
+	std::string gnames[2];
+};
+
+#endif

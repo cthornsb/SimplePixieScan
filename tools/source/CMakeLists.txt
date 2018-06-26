@@ -53,7 +53,14 @@ if(${BUILD_TOOLS_ANGLEANALYZER})
 endif()
 
 if(${BUILD_TOOLS_CHISQUARE})
-	add_executable(chisquare chisquare.cpp)
+	# Build shared libs
+#	if(${BUILD_SHARED})
+#		add_library(SimpleTool SHARED $<TARGET_OBJECTS:ToolObj>)
+#		add_library(SimpleGui SHARED $<TARGET_OBJECTS:GuiObj>)
+#		install(TARGETS SimpleTool SimpleGui DESTINATION lib)
+#	endif(${BUILD_SHARED})
+
+	add_executable(chisquare simpleChisquare.cpp chisquare.cpp)
 	target_link_libraries(chisquare ToolStatic ${ROOT_LIBRARIES})
 	install(TARGETS chisquare DESTINATION bin)
 endif()
