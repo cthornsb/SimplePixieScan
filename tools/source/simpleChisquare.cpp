@@ -140,13 +140,7 @@ int chisquare::execute(int argc, char *argv[]){
 
 bool chisquare::compute(){
 	if(!gT || !gE) return false;
-
-	xval = gT->GetX();
-	yval = gT->GetY();
-	Nelements = gT->GetN();
-
-	std::cout << "THEORETICAL=" << gT->GetN() << " points, EXPERIMENTAL=" << gE->GetN() << " points\n";
-
+	
 	if(gT->GetN() == 0){
 		std::cout << " Error! THEORETICAL graph is empty!\n";
 		return false;
@@ -156,6 +150,32 @@ bool chisquare::compute(){
 		std::cout << " Error! EXPERIMENTAL graph is empty!\n";
 		return false;
 	}
+
+	// Check for points which have an amplitude of exactly zero.
+	double xchk;
+	double ychk;
+	int count = 0;
+	int remCount = 0;
+	while(true){
+		if(count >= gE->GetN()) break;
+		gE->GetPoint(count, xchk, ychk);
+		if(ychk == 0){
+			gE->RemovePoint(count);
+			remCount++;
+		}
+		else count++;
+	}
+
+	xval = gT->GetX();
+	yval = gT->GetY();
+	Nelements = gT->GetN();
+
+	std::cout << "THEORETICAL=" << gT->GetN() << " points, EXPERIMENTAL=" << gE->GetN() << " points";
+	
+	if(remCount > 0)
+		std::cout << " (removed " << remCount << ")\n";
+
+	std::cout << std::endl;
 
 	if(!userFitRange){
 		fitRangeLow = std::numeric_limits<double>::max();
@@ -181,8 +201,11 @@ bool chisquare::compute(){
 		std::cout << " Setting limits on A to [" << parLimitLow << ", " << parLimitHigh << "]\n";
 		func->SetParLimits(0, parLimitLow, parLimitHigh);
 	}
-	
-	std::cout << " Minimizing: (A x gTHEORY) = gEXP\n\n";
+
+	if(!addConstTerm)	
+		std::cout << " Minimizing: (A x gTHEORY) = gEXP\n\n";
+	else
+		std::cout << " Minimizing: (A x gTHEORY + B) = gEXP\n\n";
 	
 	gE->Fit(func, "R");
 	A = func->GetParameter(0);
