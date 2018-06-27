@@ -11,6 +11,8 @@ double comp(double *x, double *p);
 
 double comp2(double *x, double *p);
 
+class TGraphErrors;
+
 class chisquare : public simpleTool {
   public:
 	chisquare();
@@ -25,6 +27,14 @@ class chisquare : public simpleTool {
 
 	bool setAddConstTerm(const bool &state_=true){ return (addConstTerm=state_); }
 
+	void setTheoreticalFile(const std::string &fname_, const std::string &gname_);
+
+	void setExperimentalFile(const std::string &fname_, const std::string &gname_);
+
+	TGraphErrors *setTheoreticalGraph(TGraphErrors *g_){ return (gT=g_); }
+
+	TGraphErrors *setExperimentalGraph(TGraphErrors *g_){ return (gE=g_); }
+
 	double getInitialParameter(){ return initialParameter; }
 
 	void getFitRange(double &low_, double &high_);
@@ -32,6 +42,12 @@ class chisquare : public simpleTool {
 	void getParLimits(double &low_, double &high_);
 
 	bool getAddConstTerm(){ return addConstTerm; }
+
+	double getA(){ return A; }
+
+	double getB(){ return B; }
+
+	double getChi2(){ return chi2; }
 
 	void addOptions();
 	
@@ -51,9 +67,17 @@ class chisquare : public simpleTool {
 	bool userFitRange;
 	bool userParLimits;
 	bool addConstTerm;
+	bool loadedGraphs;
 	
+	TGraphErrors *gT;
+	TGraphErrors *gE;
+
+	double A, B, chi2;
+
 	std::string fnames[2];
 	std::string gnames[2];
+
+	bool load();
 };
 
 #endif

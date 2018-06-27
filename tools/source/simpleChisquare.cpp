@@ -33,19 +33,35 @@ double comp2(double *x, double *p){
 	return -1;
 }
 
-chisquare::chisquare() : simpleTool(), initialParameter(1), fitRangeLow(-1), fitRangeHigh(-1), parLimitLow(-1), parLimitHigh(-1), userFitRange(false), userParLimits(false), addConstTerm(false) { }
+chisquare::chisquare() : simpleTool(), initialParameter(1), fitRangeLow(-1), fitRangeHigh(-1), parLimitLow(-1), parLimitHigh(-1), userFitRange(false), userParLimits(false), addConstTerm(false), loadedGraphs(false), gT(NULL), gE(NULL), A(-1), B(-1), chi2(-1) { }
 
 chisquare::~chisquare(){
+	if(loadedGraphs){
+		if(gT) delete gT;
+		if(gE) delete gE;
+	}
 }
 
 void chisquare::setFitRange(const double &low_, const double &high_){
 	fitRangeLow = low_;
 	fitRangeHigh = high_;
+	userFitRange = true;
 }
 
 void chisquare::setParLimits(const double &low_, const double &high_){
 	parLimitLow = low_;
 	parLimitHigh = high_;
+	userParLimits = true;
+}
+
+void chisquare::setTheoreticalFile(const std::string &fname_, const std::string &gname_){
+	fnames[0] = fname_;
+	gnames[0] = gname_;
+}
+
+void chisquare::setExperimentalFile(const std::string &fname_, const std::string &gname_){
+	fnames[1] = fname_;
+	gnames[1] = gname_;
 }
 
 void chisquare::getFitRange(double &low_, double &high_){
@@ -116,41 +132,27 @@ int chisquare::execute(int argc, char *argv[]){
 	if(!setup(argc, argv))
 		return 0;
 
+	if(!load())
+		return 1;
+
 	return (this->compute() ? 0 : 1);
 }
 
 bool chisquare::compute(){
-	TGraphErrors *ptr = NULL;
-	TGraphErrors *graphs[2] = {NULL, NULL};
-	for(size_t i = 0; i < 2; i++){
-		TFile *file = new TFile(fnames[i].c_str(), "READ");
-		if(!file->IsOpen()){
-			std::cout << " Error! Failed to load input file \"" << fnames[i] << "\".\n";
-			return false;
-		}
-		file->GetObject(gnames[i].c_str(), ptr);
-		if(!ptr){
-			std::cout << " Error! Failed to load \"" << gnames[i] << "\" from input file \"" << fnames[i] << "\".\n";
-			file->Close();
-			return false;
-		}
-		graphs[i] = (TGraphErrors*)ptr->Clone(gnames[i].c_str());
-		file->Close();
-		delete file;
-	}
+	if(!gT || !gE) return false;
 
-	xval = graphs[0]->GetX();
-	yval = graphs[0]->GetY();
-	Nelements = graphs[0]->GetN();
+	xval = gT->GetX();
+	yval = gT->GetY();
+	Nelements = gT->GetN();
 
-	std::cout << "THEORETICAL=" << graphs[0]->GetN() << " points, EXPERIMENTAL=" << graphs[1]->GetN() << " points\n";
+	std::cout << "THEORETICAL=" << gT->GetN() << " points, EXPERIMENTAL=" << gE->GetN() << " points\n";
 
-	if(graphs[0]->GetN() == 0){
+	if(gT->GetN() == 0){
 		std::cout << " Error! THEORETICAL graph is empty!\n";
 		return false;
 	}
 	
-	if(graphs[1]->GetN() == 0){
+	if(gE->GetN() == 0){
 		std::cout << " Error! EXPERIMENTAL graph is empty!\n";
 		return false;
 	}
@@ -182,15 +184,16 @@ bool chisquare::compute(){
 	
 	std::cout << " Minimizing: (A x gTHEORY) = gEXP\n\n";
 	
-	graphs[1]->Fit(func, "R");
-	double A = func->GetParameter(0);
-	double B = (addConstTerm ? func->GetParameter(1) : -1);
+	gE->Fit(func, "R");
+	A = func->GetParameter(0);
+	B = (addConstTerm ? func->GetParameter(1) : -1);
+	chi2 = func->GetChisquare()/func->GetNDF();
 
 	// Print the results.
 	std::cout << "\nResults:\n A=" << A << " +/- " << func->GetParError(0);
 	if(addConstTerm)
 		std::cout << ", B=" << B << " +/- " << func->GetParError(1);
-	std::cout << ", chi2=" << func->GetChisquare()/func->GetNDF() << std::endl;
+	std::cout << ", chi2=" << chi2 << std::endl;
 
 	// Append the results to the ascii file.
 	if(!output_filename.empty()){
@@ -204,7 +207,7 @@ bool chisquare::compute(){
 		asciiOut << gnames[0] << "\t" << gnames[1] << "\t" << A << "\t" << func->GetParError(0);
 		if(addConstTerm)
 			asciiOut << "\t" << B << "\t" << func->GetParError(1);
-		asciiOut << "\t" << func->GetChisquare()/func->GetNDF() << std::endl;
+		asciiOut << "\t" << chi2 << std::endl;
 	
 		TGraph *goutput = new TGraph(Nelements);
 		for(size_t i = 0; i < Nelements; i++){
@@ -226,4 +229,28 @@ bool chisquare::compute(){
 	delete func;
 			
 	return true;
+}
+
+bool chisquare::load(){
+	TGraphErrors *ptr = NULL;
+	TGraphErrors *graphs[2] = {NULL, NULL};
+	for(size_t i = 0; i < 2; i++){
+		TFile *file = new TFile(fnames[i].c_str(), "READ");
+		if(!file->IsOpen()){
+			std::cout << " Error! Failed to load input file \"" << fnames[i] << "\".\n";
+			return false;
+		}
+		file->GetObject(gnames[i].c_str(), ptr);
+		if(!ptr){
+			std::cout << " Error! Failed to load \"" << gnames[i] << "\" from input file \"" << fnames[i] << "\".\n";
+			file->Close();
+			return false;
+		}
+		graphs[i] = (TGraphErrors*)ptr->Clone(gnames[i].c_str());
+		file->Close();
+		delete file;
+	}
+	gT = graphs[0];
+	gE = graphs[1];
+	return (loadedGraphs=true);
 }
