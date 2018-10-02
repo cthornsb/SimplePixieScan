@@ -12,6 +12,7 @@
 #include "GenericBarProcessor.hpp"
 #include "LogicProcessor.hpp"
 #include "TraceProcessor.hpp"
+#include "PSPmtProcessor.hpp"
 
 #include "MapFile.hpp"
 
@@ -87,6 +88,7 @@ Processor *ProcessorHandler::AddProcessor(std::string type_, MapFile *map_){
 	else if(type_ == "genericbar"){ proc = (Processor*)(new GenericBarProcessor(map_)); }
 	else if(type_ == "logic"){ proc = (Processor*)(new LogicProcessor(map_)); }
 	else if(type_ == "trace"){ proc = (Processor*)(new TraceProcessor(map_)); }
+	else if(type_ == "pspmt"){ proc = (Processor*)(new PSPmtProcessor(map_)); }
 	else{ return NULL; }
 	
 	procs.push_back(ProcessorEntry(proc, type_)); 

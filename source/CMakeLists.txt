@@ -2,7 +2,8 @@
 set(SimpleCoreSources ColorTerm.cpp Plotter.cpp ProcessorHandler.cpp OnlineProcessor.cpp Processor.cpp ConfigFile.cpp MapFile.cpp)
 
 set(ProcessorSources TriggerProcessor.cpp PhoswichProcessor.cpp LiquidProcessor.cpp LiquidBarProcessor.cpp
-    HagridProcessor.cpp GenericProcessor.cpp GenericBarProcessor.cpp LogicProcessor.cpp TraceProcessor.cpp)
+    HagridProcessor.cpp GenericProcessor.cpp GenericBarProcessor.cpp LogicProcessor.cpp TraceProcessor.cpp
+    PSPmtProcessor.cpp)
 
 #Add the sources to the library.
 add_library(SimpleCoreObjects OBJECT ${SimpleCoreSources})

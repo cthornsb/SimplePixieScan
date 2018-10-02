@@ -258,3 +258,28 @@ END_TYPES
 
 # End this class
 END_CLASS
+
+#####################################################################
+# PSPmt
+#####################################################################
+# Class name
+BEGIN_CLASS	PSPmt
+
+# Short class description
+SHORT	Data structure for segmented PSPMT detectors
+
+# Longer class description
+LONG	Structure for detectors of type "pspmt"
+
+# Data types and names
+# type	name	description
+BEGIN_TYPES
+vector:double	tof	The time of flight of the particle detected by the detector.
+vector:float	tqdc	The energy computed from the trace.
+vector:u_short	chan	Channel identifier flags.
+vector:u_short	loc	Detector location (ID).
+u_short	mult	Multiplicity of the generic type events.
+END_TYPES
+
+# End this class
+END_CLASS
