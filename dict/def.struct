@@ -274,8 +274,9 @@ LONG	Structure for detectors of type "pspmt"
 # Data types and names
 # type	name	description
 BEGIN_TYPES
-vector:double	tof	The time of flight of the particle detected by the detector.
-vector:float	tqdc	The energy computed from the trace.
+vector:double	tdiff	The time of flight of the particle detected by the detector.
+vector:float	ltqdc	The long integration region integral computed from the trace.
+vector:float	stqdc	The short integration region integral computed from the trace.
 vector:u_short	chan	Channel identifier flags.
 vector:u_short	loc	Detector location (ID).
 u_short	mult	Multiplicity of the generic type events.

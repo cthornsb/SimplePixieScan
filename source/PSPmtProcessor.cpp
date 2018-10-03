@@ -46,7 +46,7 @@ bool PSPmtProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEv
 	chanIdentifier = ~chanIdentifier;
 
 	// Fill the values into the root tree.
-	structure.Append(tdiff, channel_event->qdc, chanIdentifier, location);
+	structure.Append(tdiff, channel_event->qdc, channel_event->qdc2, chanIdentifier, location);
 
 	// In order to read back the information.
 	/*location_readback =  (chanIdentifier & 0x0F);
@@ -57,7 +57,12 @@ bool PSPmtProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEv
 	return true;
 }
 
-PSPmtProcessor::PSPmtProcessor(MapFile *map_) : Processor("PSPmt", "genericbar", map_){
+PSPmtProcessor::PSPmtProcessor(MapFile *map_) : Processor("PSPmt", "pspmt", map_){
+	fitting_low = -7; // 28 ns
+	fitting_high = 50; // 200 ns
+	fitting_low2 = 7; // -28 ns
+	fitting_high2 = 50; // 200 ns
+
 	root_structure = (Structure*)&structure;
 	root_waveform = &waveform;
 	
