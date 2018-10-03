@@ -128,6 +128,7 @@ if(BUILD_TOOLS)
 	option(BUILD_TOOLS_INSTANTTIME "Build and install logic signal analyzer." OFF)
 	option(BUILD_TOOLS_ANGLEANALYZER "Build and install detector angle analyzer." OFF)
 	option(BUILD_TOOLS_CHISQUARE "Build and install chi-squared minimizer tool." OFF)
+	option(BUILD_TOOLS_PSPMT "Build and install PSPMT detector builder." OFF)
 	add_subdirectory(tools)
 endif()
 

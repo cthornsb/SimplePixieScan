@@ -95,3 +95,10 @@ if(${BUILD_TOOLS_INSTANTTIME})
 	target_link_libraries(instantTime ToolStatic ${DICTIONARY_PREFIX}Static ${ROOT_LIBRARIES})
 	install(TARGETS instantTime DESTINATION bin)
 endif()
+
+if(${BUILD_TOOLS_PSPMT})
+	add_executable(pspmt pspmt.cpp)
+	target_link_libraries(pspmt ToolStatic SimpleScanStatic ${DICTIONARY_PREFIX}Static ${ROOT_LIBRARIES})
+	install(TARGETS pspmt DESTINATION bin)
+endif()
+
