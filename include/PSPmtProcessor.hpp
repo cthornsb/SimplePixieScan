@@ -10,6 +10,10 @@ class PSPmtProcessor : public Processor{
 	PSPmtStructure structure;
 	Trace waveform;
 
+	Plotter *loc_tdiff_2d;
+	Plotter *loc_energy_2d;
+	Plotter *loc_1d;
+
 	// Handle an individual event.
 	virtual bool HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEvtR=NULL);
 	
