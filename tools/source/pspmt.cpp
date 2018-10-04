@@ -1,7 +1,4 @@
 #include <iostream>
-#include <string>
-#include <vector>
-#include <deque>
 #include <time.h>
 #include <cmath>
 
@@ -14,6 +11,7 @@
 #include "simpleTool.hpp"
 #include "CalibFile.hpp"
 #include "Structures.hpp"
+#include "pspmt.hpp"
 
 template <typename T>
 void writeTNamed(const char *label_, const T &val_, const int &precision_=-1){
@@ -28,203 +26,157 @@ void writeTNamed(const char *label_, const T &val_, const int &precision_=-1){
 	named.Write();
 }
 
-class simpleEvent{
-  public:
-	double tdiff;
-	float ltqdc;
-	float stqdc;
-	
-	unsigned short location;
-	unsigned short tqdcIndex;
+///////////////////////////////////////////////////////////////////////////////
+// class simpleEvent
+///////////////////////////////////////////////////////////////////////////////
 
-	bool isBarDet;
-	bool isRightEnd;
+simpleEvent::simpleEvent(PSPmtStructure *ptr, const size_t &index){
+	tdiff = ptr->tdiff.at(index);
+	ltqdc = ptr->ltqdc.at(index);
+	stqdc = ptr->stqdc.at(index);
+	location = ptr->loc.at(index);
+
+	unsigned short chanIdentifier = ptr->chan.at(index);
 	
-	simpleEvent() : tdiff(0), ltqdc(0), stqdc(0), location(0), tqdcIndex(0), isBarDet(0), isRightEnd(0) { }
+	// Decode the channel information.
+	isBarDet   = ((chanIdentifier & 0x0010) != 0);
+	isRightEnd = ((chanIdentifier & 0x0020) != 0);	
+	tqdcIndex  =  (chanIdentifier & 0x00C0) >> 6;
+	//= (chanIdentifier & 0xFF00) >> 8; // Remaining 8 bits. Currently un-used.
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// class fullEvent
+///////////////////////////////////////////////////////////////////////////////
+
+fullEvent::fullEvent(simpleEvent *dynode, simpleEvent *anode_SE, simpleEvent *anode_NE, simpleEvent *anode_NW, simpleEvent *anode_SW){
+	compute(dynode, anode_SE, anode_NE, anode_NW, anode_SW);
+}
+
+void fullEvent::compute(simpleEvent *dynode, simpleEvent *anode_SE, simpleEvent *anode_NE, simpleEvent *anode_NW, simpleEvent *anode_SW){
+	tdiff = dynode->tdiff;
 	
-	simpleEvent(PSPmtStructure *ptr, const size_t &index){
-		tdiff = ptr->tdiff.at(index);
-		ltqdc = ptr->ltqdc.at(index);
-		stqdc = ptr->stqdc.at(index);
-		location = ptr->loc.at(index);
+	ltqdc[0] = anode_SE->ltqdc;
+	ltqdc[1] = anode_NE->ltqdc;
+	ltqdc[2] = anode_NW->ltqdc;
+	ltqdc[3] = anode_SW->ltqdc;
 	
-		unsigned short chanIdentifier = ptr->chan.at(index);
-		
-		// Decode the channel information.
-		isBarDet   = ((chanIdentifier & 0x0010) != 0);
-		isRightEnd = ((chanIdentifier & 0x0020) != 0);	
-		tqdcIndex  =  (chanIdentifier & 0x00C0) >> 6;
-		//= (chanIdentifier & 0xFF00) >> 8; // Remaining 8 bits. Currently un-used.
+	ltqdcSum = ltqdc[0]+ltqdc[1]+ltqdc[2]+ltqdc[3];
+	stqdcSum = stqdc[0]+stqdc[1]+stqdc[2]+stqdc[3];
+	
+	xpos = ((ltqdc[0]+ltqdc[1])-(ltqdc[2]+ltqdc[3]))/ltqdcSum;
+	ypos = ((ltqdc[1]+ltqdc[2])-(ltqdc[0]+ltqdc[3]))/ltqdcSum;
+	
+	loc = dynode->location;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// class fullBarEvent
+///////////////////////////////////////////////////////////////////////////////
+	
+fullBarEvent::fullBarEvent(simpleEvent *dynode_L, simpleEvent *anode_SE_L, simpleEvent *anode_NE_L, simpleEvent *anode_NW_L, simpleEvent *anode_SW_L,
+                           simpleEvent *dynode_R, simpleEvent *anode_SE_R, simpleEvent *anode_NE_R, simpleEvent *anode_NW_R, simpleEvent *anode_SW_R){
+	compute(dynode_L, anode_SE_L, anode_NE_L, anode_NW_L, anode_SW_L, dynode_R, anode_SE_R, anode_NE_R, anode_NW_R, anode_SW_R);
+}
+
+void fullBarEvent::compute(simpleEvent *dynode_L, simpleEvent *anode_SE_L, simpleEvent *anode_NE_L, simpleEvent *anode_NW_L, simpleEvent *anode_SW_L,
+                           simpleEvent *dynode_R, simpleEvent *anode_SE_R, simpleEvent *anode_NE_R, simpleEvent *anode_NW_R, simpleEvent *anode_SW_R){
+	tdiff_L = dynode_L->tdiff;
+	tdiff_R = dynode_R->tdiff;
+	
+	ltqdc_L[0] = anode_SE_L->ltqdc;
+	ltqdc_L[1] = anode_NE_L->ltqdc;
+	ltqdc_L[2] = anode_NW_L->ltqdc;
+	ltqdc_L[3] = anode_SW_L->ltqdc;
+
+	ltqdc_R[0] = anode_SE_R->ltqdc;
+	ltqdc_R[1] = anode_NE_R->ltqdc;
+	ltqdc_R[2] = anode_NW_R->ltqdc;
+	ltqdc_R[3] = anode_SW_R->ltqdc;
+
+	stqdc_L[0] = anode_SE_L->stqdc;
+	stqdc_L[1] = anode_NE_L->stqdc;
+	stqdc_L[2] = anode_NW_L->stqdc;
+	stqdc_L[3] = anode_SW_L->stqdc;
+
+	stqdc_R[0] = anode_SE_R->stqdc;
+	stqdc_R[1] = anode_NE_R->stqdc;
+	stqdc_R[2] = anode_NW_R->stqdc;
+	stqdc_R[3] = anode_SW_R->stqdc;
+	
+	ltqdcSum_L = ltqdc_L[0]+ltqdc_L[1]+ltqdc_L[2]+ltqdc_L[3];
+	ltqdcSum_R = ltqdc_R[0]+ltqdc_R[1]+ltqdc_R[2]+ltqdc_R[3];
+
+	stqdcSum_L = stqdc_L[0]+stqdc_L[1]+stqdc_L[2]+stqdc_L[3];
+	stqdcSum_R = stqdc_R[0]+stqdc_R[1]+stqdc_R[2]+stqdc_R[3];
+
+	xpos_L = ((ltqdc_L[0]+ltqdc_L[1])-(ltqdc_L[2]+ltqdc_L[3]))/ltqdcSum_L;
+	ypos_L = ((ltqdc_L[1]+ltqdc_L[2])-(ltqdc_L[0]+ltqdc_L[3]))/ltqdcSum_L;
+
+	xpos_R = -((ltqdc_R[0]+ltqdc_R[1])-(ltqdc_R[2]+ltqdc_R[3]))/ltqdcSum_R; // Sign is flipped to preserve x-axis of left side.
+	ypos_R = ((ltqdc_R[1]+ltqdc_R[2])-(ltqdc_R[0]+ltqdc_R[3]))/ltqdcSum_R;
+	
+	loc = dynode_L->location;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// class pspmtMapEntry
+///////////////////////////////////////////////////////////////////////////////
+
+pspmtMapEntry::pspmtMapEntry(){
+	for(size_t i = 0; i < 5; i++){
+		mult[i] = 0;
+		ids[i] = 0;
 	}
-};
+}
 
-class fullEvent{
-  public:
-	double tdiff; // Dynode time difference
-	float xpos; // X-position computed from the tqdc
-	float ypos; // Y-position computed from the tqdc
-	unsigned short loc; // Location of the detector
-	
-	float ltqdc[4];
-	float stqdc[4];
-	
-	float ltqdcSum;
-	float stqdcSum;
+pspmtMapEntry::pspmtMapEntry(const std::string &str_){
+	std::vector<std::string> args;
+	split_str(str_, args, ' ');
 
-	fullEvent() : tdiff(0), xpos(0), ypos(0), loc(0){ }
-	
-	fullEvent(simpleEvent *dynode, simpleEvent *anode_SE, simpleEvent *anode_NE, simpleEvent *anode_NW, simpleEvent *anode_SW){
-		compute(dynode, anode_SE, anode_NE, anode_NW, anode_SW);
-	}
-	
-	void compute(simpleEvent *dynode, simpleEvent *anode_SE, simpleEvent *anode_NE, simpleEvent *anode_NW, simpleEvent *anode_SW){
-		tdiff = dynode->tdiff;
-		
-		ltqdc[0] = anode_SE->ltqdc;
-		ltqdc[1] = anode_NE->ltqdc;
-		ltqdc[2] = anode_NW->ltqdc;
-		ltqdc[3] = anode_SW->ltqdc;
-		
-		ltqdcSum = ltqdc[0]+ltqdc[1]+ltqdc[2]+ltqdc[3];
-		stqdcSum = stqdc[0]+stqdc[1]+stqdc[2]+stqdc[3];
-		
-		xpos = ((ltqdc[0]+ltqdc[1])-(ltqdc[2]+ltqdc[3]))/ltqdcSum;
-		ypos = ((ltqdc[1]+ltqdc[2])-(ltqdc[0]+ltqdc[3]))/ltqdcSum;
-		
-		loc = dynode->location;
-	}
-};
-	
-class fullBarEvent{
-  public:
-	double tdiff_L, tdiff_R; // Dynode time difference
-	float xpos_L, xpos_R; // X-position computed from the tqdc
-	float ypos_L, ypos_R; // Y-position computed from the tqdc
-	unsigned short loc; // Location of the detector
-	
-	float ltqdc_L[4];
-	float ltqdc_R[4];
-
-	float stqdc_L[4];
-	float stqdc_R[4];
-
-	float ltqdcSum_L, ltqdcSum_R;
-	float stqdcSum_L, stqdcSum_R;
-	
-	fullBarEvent() : tdiff_L(0), tdiff_R(0), xpos_L(0), xpos_R(0), ypos_L(0), ypos_R(0), loc(0){ }
-	
-	fullBarEvent(simpleEvent *dynode_L, simpleEvent *anode_SE_L, simpleEvent *anode_NE_L, simpleEvent *anode_NW_L, simpleEvent *anode_SW_L,
-	      simpleEvent *dynode_R, simpleEvent *anode_SE_R, simpleEvent *anode_NE_R, simpleEvent *anode_NW_R, simpleEvent *anode_SW_R){
-		compute(dynode_L, anode_SE_L, anode_NE_L, anode_NW_L, anode_SW_L, dynode_R, anode_SE_R, anode_NE_R, anode_NW_R, anode_SW_R);
-	}
-	
-	void compute(simpleEvent *dynode_L, simpleEvent *anode_SE_L, simpleEvent *anode_NE_L, simpleEvent *anode_NW_L, simpleEvent *anode_SW_L,
-	             simpleEvent *dynode_R, simpleEvent *anode_SE_R, simpleEvent *anode_NE_R, simpleEvent *anode_NW_R, simpleEvent *anode_SW_R){
-		tdiff_L = dynode_L->tdiff;
-		tdiff_R = dynode_R->tdiff;
-		
-		ltqdc_L[0] = anode_SE_L->ltqdc;
-		ltqdc_L[1] = anode_NE_L->ltqdc;
-		ltqdc_L[2] = anode_NW_L->ltqdc;
-		ltqdc_L[3] = anode_SW_L->ltqdc;
-
-		ltqdc_R[0] = anode_SE_R->ltqdc;
-		ltqdc_R[1] = anode_NE_R->ltqdc;
-		ltqdc_R[2] = anode_NW_R->ltqdc;
-		ltqdc_R[3] = anode_SW_R->ltqdc;
-
-		stqdc_L[0] = anode_SE_L->stqdc;
-		stqdc_L[1] = anode_NE_L->stqdc;
-		stqdc_L[2] = anode_NW_L->stqdc;
-		stqdc_L[3] = anode_SW_L->stqdc;
-
-		stqdc_R[0] = anode_SE_R->stqdc;
-		stqdc_R[1] = anode_NE_R->stqdc;
-		stqdc_R[2] = anode_NW_R->stqdc;
-		stqdc_R[3] = anode_SW_R->stqdc;
-		
-		ltqdcSum_L = ltqdc_L[0]+ltqdc_L[1]+ltqdc_L[2]+ltqdc_L[3];
-		ltqdcSum_R = ltqdc_R[0]+ltqdc_R[1]+ltqdc_R[2]+ltqdc_R[3];
-	
-		stqdcSum_L = stqdc_L[0]+stqdc_L[1]+stqdc_L[2]+stqdc_L[3];
-		stqdcSum_R = stqdc_R[0]+stqdc_R[1]+stqdc_R[2]+stqdc_R[3];
-	
-		xpos_L = ((ltqdc_L[0]+ltqdc_L[1])-(ltqdc_L[2]+ltqdc_L[3]))/ltqdcSum_L;
-		ypos_L = ((ltqdc_L[1]+ltqdc_L[2])-(ltqdc_L[0]+ltqdc_L[3]))/ltqdcSum_L;
-
-		xpos_R = -((ltqdc_R[0]+ltqdc_R[1])-(ltqdc_R[2]+ltqdc_R[3]))/ltqdcSum_R; // Sign is flipped to preserve x-axis of left side.
-		ypos_R = ((ltqdc_R[1]+ltqdc_R[2])-(ltqdc_R[0]+ltqdc_R[3]))/ltqdcSum_R;
-		
-		loc = dynode_L->location;
-	}
-};
-
-class pspmtMapEntry{
-  private:
-	unsigned short mult[5];
-	unsigned short ids[5];
-	std::deque<simpleEvent*> events[5];
-
-  public:
-	pspmtMapEntry(){
-		for(size_t i = 0; i < 5; i++){
-			mult[i] = 0;
+	for(size_t i = 0; i < 5; i++){
+		mult[i] = 0;
+		if(i >= args.size()){ // Make sure all values are defined.
 			ids[i] = 0;
+			continue;
 		}
+		ids[i] = strtoul(args.at(i).c_str(), NULL, 10);
 	}
-	
-	pspmtMapEntry(const std::string &str_){
-		std::vector<std::string> args;
-		split_str(str_, args, ' ');
+}
 
-		for(size_t i = 0; i < 5; i++){
-			mult[i] = 0;
-			if(i >= args.size()){ // Make sure all values are defined.
-				ids[i] = 0;
-				continue;
-			}
-			ids[i] = strtoul(args.at(i).c_str(), NULL, 10);
-		}
+void pspmtMapEntry::clear(){
+	for(size_t i = 0; i < 5; i++){
+		events[i].clear();
+		mult[i] = 0;
 	}
+}
 
-	unsigned short getDynodeID() const { return ids[0]; }
-	
-	std::deque<simpleEvent*>* getEvents(){ return events; }
+bool pspmtMapEntry::add(simpleEvent *evt){
+	for(size_t i = 0; i < 5; i++){
+		if(evt->location == ids[i]){
+			events[i].push_back(evt);
+			mult[i]++;
+			return true;
+		}
+	}
+	return false;
+}
 
-	void clear(){
-		for(size_t i = 0; i < 5; i++){
-			events[i].clear();
-			mult[i] = 0;
-		}
+bool pspmtMapEntry::check(){
+	for(size_t i = 0; i < 5; i++){
+		if(mult[i] == 0) return false;
 	}
-	
-	bool add(simpleEvent *evt){
-		for(size_t i = 0; i < 5; i++){
-			if(evt->location == ids[i]){
-				events[i].push_back(evt);
-				mult[i]++;
-				return true;
-			}
-		}
-		return false;
-	}
+	return true;
+}
 
-	bool check(){
-		for(size_t i = 0; i < 5; i++){
-			if(mult[i] == 0) return false;
-		}
-		return true;
+fullEvent* pspmtMapEntry::buildEvent(){
+	if(!this->check()) return NULL;
+	fullEvent *evt = new fullEvent(events[0].front(), events[1].front(), events[2].front(), events[3].front(), events[4].front());
+	for(size_t i = 0; i < 5; i++){
+		events[i].pop_front(); // What to do with higher multiplicity? CRT
 	}
-	
-	fullEvent* buildEvent(){
-		if(!this->check()) return NULL;
-		fullEvent *evt = new fullEvent(events[0].front(), events[1].front(), events[2].front(), events[3].front(), events[4].front());
-		for(size_t i = 0; i < 5; i++){
-			events[i].pop_front(); // What to do with higher multiplicity? CRT
-		}
-		return evt;
-	}
-};
+	return evt;
+}
 
 fullBarEvent* buildBarEvent(pspmtMapEntry *entryL_, pspmtMapEntry *entryR_){
 	if(!entryL_->check() || !entryR_->check()) return NULL;
@@ -239,93 +191,83 @@ fullBarEvent* buildBarEvent(pspmtMapEntry *entryL_, pspmtMapEntry *entryR_){
 	return evt;
 }
 
-class pspmtMap{
-  private:
-	std::vector<pspmtMapEntry> entries;
+///////////////////////////////////////////////////////////////////////////////
+// class pspmtMap
+///////////////////////////////////////////////////////////////////////////////
 
-  public:	
-	pspmtMap() { }
+void pspmtMap::addEntry(const std::string &str_){
+	entries.push_back(pspmtMapEntry(str_));
+}
 
-	std::vector<pspmtMapEntry>::iterator getBegin(){ return entries.begin(); }
-
-	std::vector<pspmtMapEntry>::iterator getEnd(){ return entries.end(); }
-
-	size_t getLength(){ return entries.size(); }
-	
-	void addEntry(const std::string &str_){
-		entries.push_back(pspmtMapEntry(str_));
+bool pspmtMap::addEvent(simpleEvent *evt_){
+	for(std::vector<pspmtMapEntry>::iterator iter = entries.begin(); iter != entries.end(); iter++){
+		if(iter->add(evt_)) return true;
 	}
-	
-	bool addEvent(simpleEvent *evt_){
-		for(std::vector<pspmtMapEntry>::iterator iter = entries.begin(); iter != entries.end(); iter++){
-			if(iter->add(evt_)) return true;
-		}
-		return false;
-	}
-	
-	void clear(){
-		for(std::vector<pspmtMapEntry>::iterator iter = entries.begin(); iter != entries.end(); iter++){
-			iter->clear();
-		}
-	}
-	
-	void buildEventList(std::vector<fullEvent*>& vec_){
-		for(std::vector<pspmtMapEntry>::iterator iter = entries.begin(); iter != entries.end(); iter++){
-			if(iter->check()) vec_.push_back(iter->buildEvent());
-			iter->clear();
-		}
-	}
-};
+	return false;
+}
 
-class pspmtBarMap{
-  private:
-	pspmtMap mapL, mapR;
-
-  public:
-	pspmtBarMap() : mapL(), mapR() { }
-
-	void addEntry(const std::string &strL_, const std::string &strR_){
-		mapL.addEntry(strL_);
-		mapR.addEntry(strR_);
+void pspmtMap::clear(){
+	for(std::vector<pspmtMapEntry>::iterator iter = entries.begin(); iter != entries.end(); iter++){
+		iter->clear();
 	}
+}
 
-	void addLeftEntry(const std::string &str_){
-		mapL.addEntry(str_);
+void pspmtMap::buildEventList(std::vector<fullEvent*>& vec_){
+	for(std::vector<pspmtMapEntry>::iterator iter = entries.begin(); iter != entries.end(); iter++){
+		if(iter->check()) vec_.push_back(iter->buildEvent());
+		iter->clear();
 	}
+}
 
-	void addRightEntry(const std::string &str_){
-		mapR.addEntry(str_);
-	}
+///////////////////////////////////////////////////////////////////////////////
+// class pspmtBarMap
+///////////////////////////////////////////////////////////////////////////////
 
-	bool addEvent(simpleEvent *evtL_, simpleEvent *evtR_){
-		return (mapL.addEvent(evtL_) && mapR.addEvent(evtR_));
-	}
+void pspmtBarMap::addEntry(const std::string &strL_, const std::string &strR_){
+	mapL.addEntry(strL_);
+	mapR.addEntry(strR_);
+}
 
-	bool addLeftEvent(simpleEvent *evt_){
-		return mapL.addEvent(evt_);
-	}
+void pspmtBarMap::addLeftEntry(const std::string &str_){
+	mapL.addEntry(str_);
+}
 
-	bool addRightEvent(simpleEvent *evt_){
-		return mapR.addEvent(evt_);
-	}
-	
-	void clear(){
-		mapL.clear();
-		mapR.clear();
-	}
-	
-	void buildEventList(std::vector<fullBarEvent*>& vec_){
-		std::vector<pspmtMapEntry>::iterator iterL = mapL.getBegin();
-		std::vector<pspmtMapEntry>::iterator iterR = mapR.getBegin();
+void pspmtBarMap::addRightEntry(const std::string &str_){
+	mapR.addEntry(str_);
+}
 
-		for(; iterL != mapL.getEnd() && iterR != mapR.getEnd(); iterL++, iterR++){
-			fullBarEvent *evt = buildBarEvent(&(*iterL), &(*iterR));
-			if(evt) vec_.push_back(evt);
-			iterL->clear();
-			iterR->clear();
-		}
+bool pspmtBarMap::addEvent(simpleEvent *evtL_, simpleEvent *evtR_){
+	return (mapL.addEvent(evtL_) && mapR.addEvent(evtR_));
+}
+
+bool pspmtBarMap::addLeftEvent(simpleEvent *evt_){
+	return mapL.addEvent(evt_);
+}
+
+bool pspmtBarMap::addRightEvent(simpleEvent *evt_){
+	return mapR.addEvent(evt_);
+}
+
+void pspmtBarMap::clear(){
+	mapL.clear();
+	mapR.clear();
+}
+
+void pspmtBarMap::buildEventList(std::vector<fullBarEvent*>& vec_){
+	std::vector<pspmtMapEntry>::iterator iterL = mapL.getBegin();
+	std::vector<pspmtMapEntry>::iterator iterR = mapR.getBegin();
+
+	for(; iterL != mapL.getEnd() && iterR != mapR.getEnd(); iterL++, iterR++){
+		fullBarEvent *evt = buildBarEvent(&(*iterL), &(*iterR));
+		if(evt) vec_.push_back(evt);
+		iterL->clear();
+		iterR->clear();
 	}
-};
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// class pspmtHandler
+///////////////////////////////////////////////////////////////////////////////
 
 class pspmtHandler : public simpleTool {
   private:
