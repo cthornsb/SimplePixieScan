@@ -188,6 +188,8 @@ class pspmtMapEntry{
 	}
 
 	unsigned short getDynodeID() const { return ids[0]; }
+	
+	std::deque<simpleEvent*>* getEvents(){ return events; }
 
 	void clear(){
 		for(size_t i = 0; i < 5; i++){
@@ -224,12 +226,31 @@ class pspmtMapEntry{
 	}
 };
 
+fullBarEvent* buildBarEvent(pspmtMapEntry *entryL_, pspmtMapEntry *entryR_){
+	if(!entryL_->check() || !entryR_->check()) return NULL;
+	std::deque<simpleEvent*>* evtArrayL = entryL_->getEvents();
+	std::deque<simpleEvent*>* evtArrayR = entryR_->getEvents();
+        fullBarEvent *evt = new fullBarEvent(evtArrayL[0].front(), evtArrayL[1].front(), evtArrayL[2].front(), evtArrayL[3].front(), evtArrayL[4].front(),
+	                                     evtArrayR[0].front(), evtArrayR[1].front(), evtArrayR[2].front(), evtArrayR[3].front(), evtArrayR[4].front());
+	for(size_t i = 0; i < 5; i++){ // What to do with higher multiplicity? CRT
+		evtArrayL[i].pop_front();
+		evtArrayR[i].pop_front();
+	}
+	return evt;
+}
+
 class pspmtMap{
   private:
 	std::vector<pspmtMapEntry> entries;
 
   public:	
 	pspmtMap() { }
+
+	std::vector<pspmtMapEntry>::iterator getBegin(){ return entries.begin(); }
+
+	std::vector<pspmtMapEntry>::iterator getEnd(){ return entries.end(); }
+
+	size_t getLength(){ return entries.size(); }
 	
 	void addEntry(const std::string &str_){
 		entries.push_back(pspmtMapEntry(str_));
@@ -253,15 +274,56 @@ class pspmtMap{
 			if(iter->check()) vec_.push_back(iter->buildEvent());
 			iter->clear();
 		}
-		
+	}
+};
+
+class pspmtBarMap{
+  private:
+	pspmtMap mapL, mapR;
+
+  public:
+	pspmtBarMap() : mapL(), mapR() { }
+
+	void addEntry(const std::string &strL_, const std::string &strR_){
+		mapL.addEntry(strL_);
+		mapR.addEntry(strR_);
 	}
 
+	void addLeftEntry(const std::string &str_){
+		mapL.addEntry(str_);
+	}
+
+	void addRightEntry(const std::string &str_){
+		mapR.addEntry(str_);
+	}
+
+	bool addEvent(simpleEvent *evtL_, simpleEvent *evtR_){
+		return (mapL.addEvent(evtL_) && mapR.addEvent(evtR_));
+	}
+
+	bool addLeftEvent(simpleEvent *evt_){
+		return mapL.addEvent(evt_);
+	}
+
+	bool addRightEvent(simpleEvent *evt_){
+		return mapR.addEvent(evt_);
+	}
+	
+	void clear(){
+		mapL.clear();
+		mapR.clear();
+	}
+	
 	void buildEventList(std::vector<fullBarEvent*>& vec_){
-		/*for(std::vector<pspmtMapEntry>::iterator iter = entries.begin(); iter != entries.end(); iter++){
-			if(iter->check()) vec_.push_back(iter->buildEvent());
-			iter->clear();
-		}*/
-		
+		std::vector<pspmtMapEntry>::iterator iterL = mapL.getBegin();
+		std::vector<pspmtMapEntry>::iterator iterR = mapR.getBegin();
+
+		for(; iterL != mapL.getEnd() && iterR != mapR.getEnd(); iterL++, iterR++){
+			fullBarEvent *evt = buildBarEvent(&(*iterL), &(*iterR));
+			if(evt) vec_.push_back(evt);
+			iterL->clear();
+			iterR->clear();
+		}
 	}
 };
 
@@ -274,6 +336,7 @@ class pspmtHandler : public simpleTool {
 	CalibFile calib;
 
 	pspmtMap map;
+	pspmtBarMap barmap;
 	
 	PSPmtStructure *ptr;
 
@@ -304,7 +367,7 @@ class pspmtHandler : public simpleTool {
 	void setVariables(fullBarEvent* evt_);
 
   public:
-	pspmtHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), map(), ptr(NULL), singleEndedMode(false), noTimeMode(false), noEnergyMode(false), 
+	pspmtHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), map(), barmap(), ptr(NULL), singleEndedMode(false), noTimeMode(false), noEnergyMode(false), 
 	                 noPositionMode(false), totalCounts(0), totalDataTime(0) { }
 
 	~pspmtHandler();
@@ -449,13 +512,20 @@ void pspmtHandler::handleEvents(){
 	
 	// Next, we use pspmtMap to sort events into 5-channel PSPMT detectors.
 	for(std::vector<simpleEvent>::iterator iter = events.begin(); iter != events.end(); iter++){
-		map.addEvent(&(*iter));
+		if(!singleEndedMode){
+			if(!iter->isRightEnd) // Left end PSPMT
+				barmap.addLeftEvent(&(*iter));
+			else // Right end PSPMT
+				barmap.addRightEvent(&(*iter));
+		}
+		else
+			map.addEvent(&(*iter));
 	}
 	
 	// Now construct fullEvents using the map.
 	if(!singleEndedMode){ // Double-ended
 		std::vector<fullBarEvent*> fullEvents;
-		map.buildEventList(fullEvents);	
+		barmap.buildEventList(fullEvents);	
 
 		// How many PSPMT events did we get? Temporary CRT
 		//std::cout << " built " << fullEvents.size() << " full bar events from " << events.size() << " simple events\n";
@@ -567,14 +637,25 @@ int pspmtHandler::execute(int argc, char *argv[]){
 			noEnergyMode = true;
 	}
 
+	int numLinesRead = 0;
 	std::string line;
 	std::ifstream ifile((setupDir+"pspmt.dat").c_str());
 	while(true){
 		getline(ifile, line);
 		if(ifile.eof()) break;
-		map.addEntry(line);
+		if(!singleEndedMode){
+			if(numLinesRead % 2 == 0) // Even (left)
+				barmap.addLeftEntry(line);
+			else // Odd (right)
+				barmap.addRightEntry(line);
+		}
+		else
+			map.addEntry(line);
+		numLinesRead++;
 	}
 	ifile.close();
+
+	std::cout << " Read " << numLinesRead << " lines from pspmt map file.\n";
 
 	if(!singleEndedMode && !calib.LoadBarCal((setupDir+"bars.cal").c_str())){
 		std::cout << " Error: Failed to load bar calibration file \"" << setupDir << "bars.cal\"!\n";
