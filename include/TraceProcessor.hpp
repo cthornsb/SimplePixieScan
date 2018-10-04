@@ -9,6 +9,13 @@ class TraceProcessor : public Processor{
   private:
 	TraceStructure structure;
 	Trace waveform;
+
+	Plotter *loc_tdiff_2d;
+	Plotter *loc_energy_2d;
+	Plotter *loc_maximum_2d;
+	Plotter *loc_phase_2d;
+	Plotter *loc_baseline_2d;
+	Plotter *loc_1d;
   
 	// Handle an individual event.
 	virtual bool HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEvtR=NULL);
@@ -16,9 +23,9 @@ class TraceProcessor : public Processor{
   public:
 	TraceProcessor(MapFile *map_);
 
-	~TraceProcessor(){ }
+	~TraceProcessor();
 
-	virtual void GetHists(std::vector<Plotter*> &plots_){ }
+	virtual void GetHists(std::vector<Plotter*> &plots_);
 };
 
 #endif
