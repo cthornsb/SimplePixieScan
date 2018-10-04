@@ -5,6 +5,8 @@
 #include <string>
 #include <deque>
 
+#include "CalibFile.hpp"
+
 class PSPmtStructure;
 
 class simpleEvent{
@@ -69,6 +71,26 @@ class fullBarEvent{
 	             simpleEvent *dynode_R, simpleEvent *anode_SE_R, simpleEvent *anode_NE_R, simpleEvent *anode_NW_R, simpleEvent *anode_SW_R);
 };
 
+class pspmtMapFileEntry : public CalType {
+  public:
+	unsigned short an1, an2, an3, an4;
+	
+	pspmtMapFileEntry() : CalType(), an1(0), an2(0), an3(0), an4(0) { }
+	
+	pspmtMapFileEntry(const int &id_) : CalType(id_), an1(0), an2(0), an3(0), an4(0)  { }
+
+	pspmtMapFileEntry(const int &id_, const unsigned short &an1_, const unsigned short &an2_, const unsigned short &an3_, const unsigned short &an4_) : 
+		CalType(id_), an1(an1_), an2(an1_), an3(an1_), an4(an1_) { }
+	
+	pspmtMapFileEntry(const std::vector<std::string> &pars_);
+	
+	virtual std::string Print(bool fancy=true);
+
+	virtual void ReadPars(const std::vector<std::string> &pars_);
+
+	void GetIDs(unsigned short *arr);
+};
+
 class pspmtMapEntry{
   private:
 	unsigned short mult[5];
@@ -78,7 +100,7 @@ class pspmtMapEntry{
   public:
 	pspmtMapEntry();
 	
-	pspmtMapEntry(const std::string &str_);
+	pspmtMapEntry(unsigned short *ptr_);
 
 	unsigned short getDynodeID() const { return ids[0]; }
 	
@@ -108,7 +130,7 @@ class pspmtMap{
 
 	size_t getLength(){ return entries.size(); }
 	
-	void addEntry(const std::string &str_);
+	void addEntry(unsigned short *ptr_);
 	
 	bool addEvent(simpleEvent *evt_);
 	
@@ -124,11 +146,11 @@ class pspmtBarMap{
   public:
 	pspmtBarMap() : mapL(), mapR() { }
 
-	void addEntry(const std::string &strL_, const std::string &strR_);
+	void addEntry(unsigned short *ptrL_, unsigned short *ptrR_);
 
-	void addLeftEntry(const std::string &str_);
+	void addLeftEntry(unsigned short *ptr_);
 
-	void addRightEntry(const std::string &str_);
+	void addRightEntry(unsigned short *ptr_);
 
 	bool addEvent(simpleEvent *evtL_, simpleEvent *evtR_);
 

@@ -9,7 +9,6 @@
 #include "CTerminal.h"
 
 #include "simpleTool.hpp"
-#include "CalibFile.hpp"
 #include "Structures.hpp"
 #include "pspmt.hpp"
 
@@ -24,6 +23,19 @@ void writeTNamed(const char *label_, const T &val_, const int &precision_=-1){
 	}
 	TNamed named(label_, stream.str().c_str());
 	named.Write();
+}
+
+fullBarEvent* buildBarEvent(pspmtMapEntry *entryL_, pspmtMapEntry *entryR_){
+	if(!entryL_->check() || !entryR_->check()) return NULL;
+	std::deque<simpleEvent*>* evtArrayL = entryL_->getEvents();
+	std::deque<simpleEvent*>* evtArrayR = entryR_->getEvents();
+        fullBarEvent *evt = new fullBarEvent(evtArrayL[0].front(), evtArrayL[1].front(), evtArrayL[2].front(), evtArrayL[3].front(), evtArrayL[4].front(),
+	                                     evtArrayR[0].front(), evtArrayR[1].front(), evtArrayR[2].front(), evtArrayR[3].front(), evtArrayR[4].front());
+	for(size_t i = 0; i < 5; i++){ // What to do with higher multiplicity? CRT
+		evtArrayL[i].pop_front();
+		evtArrayR[i].pop_front();
+	}
+	return evt;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -120,6 +132,38 @@ void fullBarEvent::compute(simpleEvent *dynode_L, simpleEvent *anode_SE_L, simpl
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// class pspmtMapFileEntry
+///////////////////////////////////////////////////////////////////////////////
+
+void pspmtMapFileEntry::ReadPars(const std::vector<std::string> &pars_){ 
+	defaultVals = false;
+	int index = 0;
+	for(std::vector<std::string>::const_iterator iter = pars_.begin(); iter != pars_.end(); iter++){
+		if(index == 0) id = strtol(iter->c_str(), NULL, 10);
+		else if(index == 1) an1 = strtoul(iter->c_str(), NULL, 10);
+		else if(index == 2) an2 = strtoul(iter->c_str(), NULL, 10);
+		else if(index == 3) an3 = strtoul(iter->c_str(), NULL, 10);
+		else if(index == 4) an4 = strtoul(iter->c_str(), NULL, 10);
+		index++;
+	}
+}
+
+std::string pspmtMapFileEntry::Print(bool fancy/*=true*/){
+	std::stringstream output;
+	if(fancy) output << " id=" << id << ", an1=" << an1 << ", an2=" << an2 << ", an3=" << an3 << ", an4=" << an4;
+	else output << id << "\t" << an1 << "\t" << an2 << "\t" << an3 << "\t" << an4 << "\n";
+	return output.str();
+}
+
+void pspmtMapFileEntry::GetIDs(unsigned short *arr){
+	arr[0] = id;
+	arr[1] = an1;
+	arr[2] = an2;
+	arr[3] = an3;
+	arr[4] = an4;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // class pspmtMapEntry
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -130,17 +174,10 @@ pspmtMapEntry::pspmtMapEntry(){
 	}
 }
 
-pspmtMapEntry::pspmtMapEntry(const std::string &str_){
-	std::vector<std::string> args;
-	split_str(str_, args, ' ');
-
+pspmtMapEntry::pspmtMapEntry(unsigned short *ptr_){
 	for(size_t i = 0; i < 5; i++){
 		mult[i] = 0;
-		if(i >= args.size()){ // Make sure all values are defined.
-			ids[i] = 0;
-			continue;
-		}
-		ids[i] = strtoul(args.at(i).c_str(), NULL, 10);
+		ids[i] = ptr_[i];
 	}
 }
 
@@ -178,25 +215,12 @@ fullEvent* pspmtMapEntry::buildEvent(){
 	return evt;
 }
 
-fullBarEvent* buildBarEvent(pspmtMapEntry *entryL_, pspmtMapEntry *entryR_){
-	if(!entryL_->check() || !entryR_->check()) return NULL;
-	std::deque<simpleEvent*>* evtArrayL = entryL_->getEvents();
-	std::deque<simpleEvent*>* evtArrayR = entryR_->getEvents();
-        fullBarEvent *evt = new fullBarEvent(evtArrayL[0].front(), evtArrayL[1].front(), evtArrayL[2].front(), evtArrayL[3].front(), evtArrayL[4].front(),
-	                                     evtArrayR[0].front(), evtArrayR[1].front(), evtArrayR[2].front(), evtArrayR[3].front(), evtArrayR[4].front());
-	for(size_t i = 0; i < 5; i++){ // What to do with higher multiplicity? CRT
-		evtArrayL[i].pop_front();
-		evtArrayR[i].pop_front();
-	}
-	return evt;
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 // class pspmtMap
 ///////////////////////////////////////////////////////////////////////////////
 
-void pspmtMap::addEntry(const std::string &str_){
-	entries.push_back(pspmtMapEntry(str_));
+void pspmtMap::addEntry(unsigned short *ptr_){
+	entries.push_back(pspmtMapEntry(ptr_));
 }
 
 bool pspmtMap::addEvent(simpleEvent *evt_){
@@ -223,17 +247,17 @@ void pspmtMap::buildEventList(std::vector<fullEvent*>& vec_){
 // class pspmtBarMap
 ///////////////////////////////////////////////////////////////////////////////
 
-void pspmtBarMap::addEntry(const std::string &strL_, const std::string &strR_){
-	mapL.addEntry(strL_);
-	mapR.addEntry(strR_);
+void pspmtBarMap::addEntry(unsigned short *ptrL_, unsigned short *ptrR_){
+	mapL.addEntry(ptrL_);
+	mapR.addEntry(ptrR_);
 }
 
-void pspmtBarMap::addLeftEntry(const std::string &str_){
-	mapL.addEntry(str_);
+void pspmtBarMap::addLeftEntry(unsigned short *ptr_){
+	mapL.addEntry(ptr_);
 }
 
-void pspmtBarMap::addRightEntry(const std::string &str_){
-	mapR.addEntry(str_);
+void pspmtBarMap::addRightEntry(unsigned short *ptr_){
+	mapR.addEntry(ptr_);
 }
 
 bool pspmtBarMap::addEvent(simpleEvent *evtL_, simpleEvent *evtR_){
@@ -572,47 +596,46 @@ int pspmtHandler::execute(int argc, char *argv[]){
 		return 1;
 	}
 
-	if(!noPositionMode && !calib.LoadPositionCal((setupDir+"position.cal").c_str())) return 2;
-	if(!noTimeMode && !calib.LoadTimeCal((setupDir+"time.cal").c_str())) return 3;
+	int numLinesRead = 0;
+	std::vector<pspmtMapFileEntry> pspmtMapFileEntries;
+	if(!LoadCalibFile((setupDir+"pspmt.dat").c_str(), pspmtMapFileEntries)) return 2;
+	for(size_t i = 0; i < pspmtMapFileEntries.size(); i++){
+		if(pspmtMapFileEntries.at(i).defaultVals) continue;
+		unsigned short array[5];
+		pspmtMapFileEntries.at(i).GetIDs(array);
+		if(!singleEndedMode){
+			if(numLinesRead % 2 == 0) // Even (left)
+				barmap.addLeftEntry(array);
+			else // Odd (right)
+				barmap.addRightEntry(array);
+		}
+		else
+			map.addEntry(array);
+		numLinesRead++;
+	}
+
+	std::cout << " Loaded " << numLinesRead << " PSPMT detectors from pspmt map file.\n";	
+
+	if(!noPositionMode && !calib.LoadPositionCal((setupDir+"position.cal").c_str())) return 3;
+	if(!noTimeMode && !calib.LoadTimeCal((setupDir+"time.cal").c_str())) return 4;
 	if(!noEnergyMode){
 		if(!calib.LoadEnergyCal((setupDir+"energy.cal").c_str()))
 			noEnergyMode = true;
 	}
 
-	int numLinesRead = 0;
-	std::string line;
-	std::ifstream ifile((setupDir+"pspmt.dat").c_str());
-	while(true){
-		getline(ifile, line);
-		if(ifile.eof()) break;
-		if(line.empty() || line.at(0) == '#') continue;
-		if(!singleEndedMode){
-			if(numLinesRead % 2 == 0) // Even (left)
-				barmap.addLeftEntry(line);
-			else // Odd (right)
-				barmap.addRightEntry(line);
-		}
-		else
-			map.addEntry(line);
-		numLinesRead++;
-	}
-	ifile.close();
-
-	std::cout << " Read " << numLinesRead << " lines from pspmt map file.\n";
-
 	if(!singleEndedMode && !calib.LoadBarCal((setupDir+"bars.cal").c_str())){
 		std::cout << " Error: Failed to load bar calibration file \"" << setupDir << "bars.cal\"!\n";
-		return 4;
+		return 5;
 	}
 
 	if(output_filename.empty()){
 		std::cout << " Error: Output filename not specified!\n";
-		return 5;
+		return 6;
 	}
 	
 	if(!openOutputFile()){
 		std::cout << " Error: Failed to load output file \"" << output_filename << "\".\n";
-		return 6;
+		return 7;
 	}
 
 	outtree = new TTree("data", "Processed PSPMT data");
@@ -648,7 +671,7 @@ int pspmtHandler::execute(int argc, char *argv[]){
 
 		if(!branch){
 			std::cout << " Error: Failed to load branch \"pspmt\" from input TTree.\n";
-			return 7;
+			return 8;
 		}
 
 		// Get the data time from the input file.
