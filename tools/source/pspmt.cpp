@@ -89,7 +89,7 @@ class fullEvent{
 		stqdcSum = stqdc[0]+stqdc[1]+stqdc[2]+stqdc[3];
 		
 		xpos = ((ltqdc[0]+ltqdc[1])-(ltqdc[2]+ltqdc[3]))/ltqdcSum;
-		ypos = ((ltqdc[1]+ltqdc[2])-(ltqdc[0]+ltqdc[4]))/ltqdcSum;
+		ypos = ((ltqdc[1]+ltqdc[2])-(ltqdc[0]+ltqdc[3]))/ltqdcSum;
 		
 		loc = dynode->location;
 	}
@@ -150,10 +150,10 @@ class fullBarEvent{
 		stqdcSum_R = stqdc_R[0]+stqdc_R[1]+stqdc_R[2]+stqdc_R[3];
 	
 		xpos_L = ((ltqdc_L[0]+ltqdc_L[1])-(ltqdc_L[2]+ltqdc_L[3]))/ltqdcSum_L;
-		ypos_L = ((ltqdc_L[1]+ltqdc_L[2])-(ltqdc_L[0]+ltqdc_L[4]))/ltqdcSum_L;
+		ypos_L = ((ltqdc_L[1]+ltqdc_L[2])-(ltqdc_L[0]+ltqdc_L[3]))/ltqdcSum_L;
 
-		xpos_R = ((ltqdc_R[0]+ltqdc_R[1])-(ltqdc_R[2]+ltqdc_R[3]))/ltqdcSum_R;
-		ypos_R = ((ltqdc_R[1]+ltqdc_R[2])-(ltqdc_R[0]+ltqdc_R[4]))/ltqdcSum_R;
+		xpos_R = -((ltqdc_R[0]+ltqdc_R[1])-(ltqdc_R[2]+ltqdc_R[3]))/ltqdcSum_R; // Sign is flipped to preserve x-axis of left side.
+		ypos_R = ((ltqdc_R[1]+ltqdc_R[2])-(ltqdc_R[0]+ltqdc_R[3]))/ltqdcSum_R;
 		
 		loc = dynode_L->location;
 	}
@@ -327,7 +327,7 @@ void pspmtHandler::process(){
 
 	TimeCal *time = NULL;
 	if(!noTimeMode && !(time = calib.GetTimeCal(location))) return;
-	
+
 	PositionCal *pos = NULL;
 	if(!noPositionMode){
 		if(!(pos = calib.GetPositionCal(location))) return;
@@ -458,7 +458,7 @@ void pspmtHandler::handleEvents(){
 		map.buildEventList(fullEvents);	
 
 		// How many PSPMT events did we get? Temporary CRT
-		std::cout << " built " << fullEvents.size() << " full bar events from " << events.size() << " simple events\n";
+		//std::cout << " built " << fullEvents.size() << " full bar events from " << events.size() << " simple events\n";
 		
 		// Clean up	
 		for(std::vector<fullBarEvent*>::iterator iter = fullEvents.begin(); iter != fullEvents.end(); iter++){
@@ -474,7 +474,7 @@ void pspmtHandler::handleEvents(){
 		map.buildEventList(fullEvents);		
 
 		// How many PSPMT events did we get? Temporary CRT
-		std::cout << " built " << fullEvents.size() << " full events from " << events.size() << " simple events\n";
+		//std::cout << " built " << fullEvents.size() << " full events from " << events.size() << " simple events\n";
 	
 		// Clean up	
 		for(std::vector<fullEvent*>::iterator iter = fullEvents.begin(); iter != fullEvents.end(); iter++){
