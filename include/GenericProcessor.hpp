@@ -13,7 +13,6 @@ class GenericProcessor : public Processor{
   
 	Plotter *loc_tdiff_2d;
 	Plotter *loc_energy_2d;
-	Plotter *loc_phase_2d;
 	Plotter *loc_1d;
   
 	// Handle an individual event.

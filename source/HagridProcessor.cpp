@@ -46,14 +46,14 @@ void HagridProcessor::GetHists(std::vector<Plotter*> &plots_){
 	int maxloc = mapfile->GetLastOccurance("hagrid");
 
 	if(maxloc-minloc > 1){ // More than one detector. Define 2d plots.
-		loc_tdiff_2d = new Plotter("hagrid_h1", "Hagrid Location vs. Tdiff", "COLZ", "Tdiff (ns)", 200, -100, 100, "Location", maxloc-minloc, minloc, maxloc+1);
-		loc_energy_2d = new Plotter("hagrid_h2", "Hagrid Location vs. Energy", "COLZ", "Energy (a.u.)", 200, 0, 20000, "Location", maxloc-minloc, minloc, maxloc+1);
+		loc_tdiff_2d = new Plotter("hagrid_h1", "Hagrid Location vs. Tdiff", "COLZ", "Tdiff (ns)", 200, -100, 100, "Location", (maxloc+1)-minloc, minloc, maxloc+1);
+		loc_energy_2d = new Plotter("hagrid_h2", "Hagrid Location vs. Energy", "COLZ", "Energy (a.u.)", 200, 0, 20000, "Location", (maxloc+1)-minloc, minloc, maxloc+1);
 	}
 	else{ // Only one detector. Define 1d plots instead.
 		loc_tdiff_2d = new Plotter("hagrid_h1", "Hagrid Tdiff", "", "Tdiff (ns)", 200, -100, 100);
 		loc_energy_2d = new Plotter("hagrid_h2", "Hagrid Energy", "", "Energy (a.u.)", 200, 0, 20000);
 	}
-	loc_1d = new Plotter("hagrid_h3", "Hagrid Location", "", "Location", maxloc-minloc, minloc, maxloc+1);
+	loc_1d = new Plotter("hagrid_h3", "Hagrid Location", "", "Location", (maxloc+1)-minloc, minloc, maxloc+1);
 
 	plots_.push_back(loc_tdiff_2d);
 	plots_.push_back(loc_energy_2d);

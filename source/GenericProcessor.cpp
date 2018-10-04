@@ -22,7 +22,6 @@ bool GenericProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *ch
 		// Fill all diagnostic histograms.
 		loc_tdiff_2d->Fill(tdiff, location);
 		loc_energy_2d->Fill(current_event->qdc, location);
-		loc_phase_2d->Fill(current_event->phase, location);
 		loc_1d->Fill(location);
 	}
 
@@ -45,7 +44,6 @@ GenericProcessor::~GenericProcessor(){
 	if(histsEnabled){
 		delete loc_tdiff_2d;
 		delete loc_energy_2d;
-		delete loc_phase_2d;
 		delete loc_1d;
 	}
 }
@@ -57,20 +55,17 @@ void GenericProcessor::GetHists(std::vector<Plotter*> &plots_){
 	int maxloc = mapfile->GetLastOccurance("generic");
 
 	if(maxloc-minloc > 1){ // More than one detector. Define 2d plots.
-		loc_tdiff_2d = new Plotter("generic_h1", "Generic Location vs. Tdiff", "COLZ", "Tdiff (ns)", 200, -100, 100, "Location", maxloc-minloc, minloc, maxloc+1);
-		loc_energy_2d = new Plotter("generic_h2", "Generic Location vs. Energy", "COLZ", "Energy (a.u.)", 200, 0, 20000, "Location", maxloc-minloc, minloc, maxloc+1);
-		loc_phase_2d = new Plotter("generic_h3", "Generic Location vs. Phase", "COLZ", "Phase (ns)", 100, 0, 100, "Location", maxloc-minloc, minloc, maxloc+1);
+		loc_tdiff_2d = new Plotter("generic_h1", "Generic Location vs. Tdiff", "COLZ", "Tdiff (ns)", 200, -100, 100, "Location", (maxloc+1)-minloc, minloc, maxloc+1);
+		loc_energy_2d = new Plotter("generic_h2", "Generic Location vs. Energy", "COLZ", "Energy (a.u.)", 200, 0, 20000, "Location", (maxloc+1)-minloc, minloc, maxloc+1);
 	}
 	else{ // Only one detector. Define 1d plots instead.
 		loc_tdiff_2d = new Plotter("generic_h1", "Generic Tdiff", "", "Tdiff (ns)", 200, -100, 100);
 		loc_energy_2d = new Plotter("generic_h2", "Generic Energy", "", "Energy (a.u.)", 200, 0, 20000);
-		loc_phase_2d = new Plotter("generic_h3", "Generic Phase", "", "Phase (ns)", 100, 0, 100);
 	}
-	loc_1d = new Plotter("generic_h4", "Generic Location", "", "Location", maxloc-minloc, minloc, maxloc+1);
+	loc_1d = new Plotter("generic_h4", "Generic Location", "", "Location", (maxloc+1)-minloc, minloc, maxloc+1);
 
 	plots_.push_back(loc_tdiff_2d);
 	plots_.push_back(loc_energy_2d);
-	plots_.push_back(loc_phase_2d);
 	plots_.push_back(loc_1d);
 
 	histsEnabled = true;
