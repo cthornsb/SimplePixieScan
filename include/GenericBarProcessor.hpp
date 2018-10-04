@@ -11,6 +11,10 @@ class GenericBarProcessor : public Processor{
 	Trace L_waveform;
 	Trace R_waveform;
 
+	Plotter *loc_tdiff_2d;
+	Plotter *loc_energy_2d;
+	Plotter *loc_1d;
+
 	// Handle an individual event.
 	virtual bool HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEvtR=NULL);
 	
