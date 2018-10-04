@@ -643,6 +643,7 @@ int pspmtHandler::execute(int argc, char *argv[]){
 	while(true){
 		getline(ifile, line);
 		if(ifile.eof()) break;
+		if(line.empty() || line.at(0) == '#') continue;
 		if(!singleEndedMode){
 			if(numLinesRead % 2 == 0) // Even (left)
 				barmap.addLeftEntry(line);
