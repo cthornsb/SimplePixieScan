@@ -58,7 +58,7 @@ void GenericBarProcessor::GetHists(std::vector<Plotter*> &plots_){
 		loc_tdiff_2d = new Plotter("genericbar_h1", "GenericBar Tdiff", "", "Tdiff (ns)", 200, -100, 100);
 		loc_energy_2d = new Plotter("genericbar_h2", "GenericBar Energy", "", "Energy (a.u.)", 200, 0, 20000);
 	}
-	loc_1d = new Plotter("generic_h4", "GenericBar Location", "", "Location", (maxloc+1)-minloc, minloc, maxloc+1);
+	loc_1d = new Plotter("genericbar_h4", "GenericBar Location", "", "Location", (maxloc+1)-minloc, minloc, maxloc+1);
 
 	plots_.push_back(loc_tdiff_2d);
 	plots_.push_back(loc_energy_2d);
