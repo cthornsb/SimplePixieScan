@@ -1,5 +1,16 @@
-#Set the time offset for a given scan channel (16*m + c, where m is the module
-# module and c is the channel) relative to the start detector. The following
-# operation is applied, T = T' - t0 where T is the calibrated time, T' is
-# the uncalibrated time, and t0 is given below (all in ns).
-#id	t0(ns)
+# Example simpleScan time calibration file.
+# Author: Cory R. Thornsberry (Oct. 4, 2018)
+#  - Entries must be delimited with TABS!
+#  - Blank lines and text following a # are ignored.
+#  - It is not necessary to define the "right" (odd) side of a bar-type detector (e.g. VANDLE/SABRE)
+#  - Undefined detectors will take default values.
+# Set the time offset for a given scan channel (16*m + c, where m is the module
+#  module and c is the channel) relative to the start detector. The following
+#  operation is applied, T = T' - T0 where T is the calibrated time, T' is
+#  the uncalibrated time, and T0 is given below (all in ns).
+# Syntax:
+#  ID	T0(ns)
+16	-57.0718                                           # Double-sided detector with a time difference offset of -57.1 ns with respect to the start signal
+18	-56.7709                                           # Double-sided detector with a time difference offset of -56.8 ns with respect to the start signal
+80	0                                                  # Single detector with default offset (this has the same effect as not defining it in this file)
+81	0                                                  # Single detector with default offset (this has the same effect as not defining it in this file)

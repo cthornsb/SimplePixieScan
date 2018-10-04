@@ -1,3 +1,16 @@
-#Set the energy calibration for a given scan channel (16*m + c, where m is the module
-# module and c is the channel) using the nth order polynomial p0 + p1*x + ... + pn*x^n.
-#id	p0	p1	...	pn
+# Example simpleScan energy calibration file.
+# Author: Cory R. Thornsberry (Oct. 4, 2018)
+#  - Entries must be delimited with TABS!
+#  - Blank lines and text following a # are ignored.
+#  - It is not necessary to define the "right" (odd) side of a bar-type detector (e.g. VANDLE/SABRE)
+#  - Undefined detectors will take default values.
+# Set the energy calibration for a given scan channel (16*m + c, where m is the module
+#  module and c is the channel) using the nth order polynomial P0 + P1*x + ... + Pn*x^n.
+# Syntax:
+#  ID	P0	P1	...	Pn
+16	-6.20245	0.0652974                          # Double-sided detector with a first order polynomial calibration
+18	-7.372	0.0664531                                  # Double-sided detector with a first order polynomial calibration
+80	2.65147	0.0527944	0.000000131                # Single detector with a second order polynomial calibration
+81	1.74281	0.0548306	0.000000132                # Single detector with a second order polynomial calibration
+82	0	1                                          # Single detector with default energy calibration (this has the same effect as not defining it in this file)
+83	0	1                                          # Single detector with default energy calibration (this has the same effect as not defining it in this file)

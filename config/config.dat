@@ -1,2 +1,11 @@
+# Example simpleScan configuration file.
+# Author: Cory R. Thornsberry (Oct. 4, 2018)
+#  - Entries must be delimited with SPACES!
+#  - Blank lines and text following a # are ignored.
+#  - Undefined variables will take default values.
+# Syntax:
+#  NAME VALUE
 configVersion 1.1	# Version of this file
-eventWidth 0.504	# Maximum event width in us
+eventWidth 0.504	# Maximum raw event window width in us
+eventDelay -0.25	# Delay of raw event window in us
+buildMethod 2		# Raw event builder method

@@ -1,5 +1,27 @@
-0 0 trigger::start          # Start detector
-#0 1 trigger::               # Detector in coincidence
-#0 2:15 ignore::             # Empty channels
-#1 0:15e vandle:left:  # Vandle left
-#1 0:15o vandle:right: # Vandle right
+# Example simpleScan detector map file.
+# Author: Cory R. Thornsberry (Oct. 4, 2018)
+#  - Entries must be delimited with SPACES!
+#  - Blank lines and text following a # are ignored.
+#  - Empty channels DO NOT need to be defined here.
+# Syntax:
+#  MOD CHAN TYPE:SUBTYPE:TAG(S)
+#0 0 hagrid::start                     # This line is commented and will be ignored
+0 0 trigger::start                     # Detector TAG "start" indicates that this is the global start detector
+0 1 trigger::start                     # Multiple starts are allowed (e.g. double-sided beta starts etc.)
+0 14 logic::untriggered                # Logic signal, does not require coincidence with start detector due to "untriggered" TAG 
+1 0:15 genericbar::                    # Generic bar type detectors (e.g. VANDLE) defined for channels 0-15 in module 1
+2 0:9 liquidbar::                      # Generic liquid bar type detectors (e.g. SABRE) defined for channels 0-9 in module 2
+# Double-sided PSPMT bar definition follows
+#  TAG="" denotes the DYNODE, TAG=inter-cardinal direction denotes ANODE (e.g. SE, NE, NW, SW)
+#  SUBTYPE="left" denotes the LEFT side PSPMT, SUBTYPE="right" denotes the RIGHT side
+#  SUBTYPE="" denotes SINGLE-ENDED detector
+3 0 pspmt:left:                        # Left dynode of a PSPMT bar 
+3 1 pspmt:right:                       # Right dynode of a PSPMT bar
+3 2 pspmt:left:SE                      # Left PSPMT bottom right corner
+3 3 pspmt:right:SW                     # Left PSPMT top right corner
+3 4 pspmt:left:NE                      # Left PSPMT top left corner
+3 5 pspmt:right:NW                     # Left PSPMT bottom left corner
+3 6 pspmt:left:NW                      # Right PSPMT bottom right corner
+3 7 pspmt:right:NE                     # Right PSPMT top right corner
+3 8 pspmt:left:SW                      # Right PSPMT top right corner
+3 9 pspmt:right:SE                     # Right PSPMT bottom right corner
