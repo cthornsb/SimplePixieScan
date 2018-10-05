@@ -20,9 +20,9 @@ class PSPmtProcessor : public Processor{
   public:
 	PSPmtProcessor(MapFile *map_);
 
-	~PSPmtProcessor();
+	~PSPmtProcessor(){ }
 	
-	virtual void GetHists(std::vector<Plotter*> &plots_);
+	virtual void GetHists(OnlineProcessor *online_);
 };
 
 #endif

@@ -25,9 +25,9 @@ class LiquidProcessor : public Processor{
   public:
 	LiquidProcessor(MapFile *map_);
 	
-	~LiquidProcessor();
-
-	virtual void GetHists(std::vector<Plotter*> &plots_);
+	~LiquidProcessor(){ }
+	
+	virtual void GetHists(OnlineProcessor *online_);
 };
 
 #endif

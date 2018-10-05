@@ -21,9 +21,9 @@ class HagridProcessor : public Processor{
   public:
 	HagridProcessor(MapFile *map_);
 
-	~HagridProcessor();
-
-	virtual void GetHists(std::vector<Plotter*> &plots_);
+	~HagridProcessor(){ }
+	
+	virtual void GetHists(OnlineProcessor *online_);
 };
 
 #endif

@@ -21,9 +21,9 @@ class GenericBarProcessor : public Processor{
   public:
 	GenericBarProcessor(MapFile *map_);
 
-	~GenericBarProcessor();
+	~GenericBarProcessor(){ }
 	
-	virtual void GetHists(std::vector<Plotter*> &plots_);
+	virtual void GetHists(OnlineProcessor *online_);
 };
 
 #endif

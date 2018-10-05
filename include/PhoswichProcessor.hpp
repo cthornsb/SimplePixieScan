@@ -42,9 +42,9 @@ class PhoswichProcessor : public Processor{
   public:
 	PhoswichProcessor(MapFile *map_);
 	
-	~PhoswichProcessor();
-
-	virtual void GetHists(std::vector<Plotter*> &plots_);
+	~PhoswichProcessor(){ }
+	
+	virtual void GetHists(OnlineProcessor *online_);
 };
 
 #endif

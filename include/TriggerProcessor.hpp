@@ -20,9 +20,9 @@ class TriggerProcessor : public Processor{
   public:
 	TriggerProcessor(MapFile *map_);
 
-	~TriggerProcessor();
+	~TriggerProcessor(){ }
 	
-	virtual void GetHists(std::vector<Plotter*> &plots_);
+	virtual void GetHists(OnlineProcessor *online_);
 };
 
 #endif

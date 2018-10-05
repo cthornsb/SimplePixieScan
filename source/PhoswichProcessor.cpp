@@ -87,27 +87,13 @@ PhoswichProcessor::PhoswichProcessor(MapFile *map_) : Processor("Phoswich", "pho
 	root_waveform = &waveform;
 }
 
-PhoswichProcessor::~PhoswichProcessor(){ 
-	if(histsEnabled){
-		delete fast_energy_1d;
-		delete slow_energy_1d;
-		delete energy_2d;
-		delete phase_1d;
-	}
-}
-
-void PhoswichProcessor::GetHists(std::vector<Plotter*> &plots_){
+void PhoswichProcessor::GetHists(OnlineProcessor *online_){
 	if(histsEnabled) return;
 
-	fast_energy_1d = new Plotter("phoswich_h1", "Phoswich Fast LR", "", "Light Response (a.u.)", 200, 0, 20000);
-	slow_energy_1d = new Plotter("phoswich_h2", "Phoswich Slow LR", "", "Light Response (a.u.)", 200, 0, 20000);
-	energy_2d = new Plotter("phoswich_h3", "Phoswich Fast LR vs. Slow", "COLZ", "Slow Light Response (a.u.)", 200, 0, 20000, "Fast Light Response (a.u.)", 200, 0, 20000);
-	phase_1d = new Plotter("phoswich_h4", "Phoswich Phase", "", "MPV (ns)", 100, 0, 100);
-
-	plots_.push_back(fast_energy_1d);
-	plots_.push_back(slow_energy_1d);
-	plots_.push_back(energy_2d);
-	plots_.push_back(phase_1d);
+	online_->GenerateHist(fast_energy_1d);
+	online_->GenerateHist(slow_energy_1d);
+	online_->GenerateHist(energy_2d);
+	online_->GenerateHist(phase_1d);
 
 	histsEnabled = true;
 }

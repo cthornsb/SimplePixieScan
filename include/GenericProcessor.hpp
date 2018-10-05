@@ -21,9 +21,9 @@ class GenericProcessor : public Processor{
   public:
 	GenericProcessor(MapFile *map_);
 
-	~GenericProcessor();
-
-	virtual void GetHists(std::vector<Plotter*> &plots_);
+	~GenericProcessor(){ }
+	
+	virtual void GetHists(OnlineProcessor *online_);
 };
 
 #endif

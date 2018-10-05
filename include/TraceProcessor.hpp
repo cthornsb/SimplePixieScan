@@ -23,9 +23,9 @@ class TraceProcessor : public Processor{
   public:
 	TraceProcessor(MapFile *map_);
 
-	~TraceProcessor();
-
-	virtual void GetHists(std::vector<Plotter*> &plots_);
+	~TraceProcessor(){ }
+	
+	virtual void GetHists(OnlineProcessor *online_);
 };
 
 #endif

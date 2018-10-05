@@ -1,0 +1,54 @@
+# Example simpleScan diagnostic histogram definition file.
+# Author: Cory R. Thornsberry (Oct. 5, 2018)
+#  - Entries must be delimited with COLONS!
+#     * This allows tabs and spaces to exist in axis titles.
+#  - Blank lines and those starting with a # are ignored.
+#  - Histograms of a given type are read sequentially each
+#    time OnlineProcessor::GenerateHist is called from
+#    within your processor class.
+#     * Adding a new entry to this file will do nothing unless
+#       your processor calls GenerateHist from inside its own
+#       GetHists method e.g. "online_->GenerateHist(loc_tdiff_2d)"
+#       where loc_tdiff_2d is a pointer to a Plotter object.
+#     * Removing entries from this list may cause segmentation-faults.
+# Syntax:
+#  TYPE:DRAW_OPTION:XAXIS_TITLE:XAXIS_UNITS:XBINS:XLOW:XHIGH
+###############################################################################
+genericbar:COLZ:Tdiff:ns:200:100:100
+genericbar:COLZ:Energy:a.u.:200:0:20000
+###############################################################################
+generic:COLZ:Tdiff:ns:200:-100:100
+generic:COLZ:Energy:a.u.:200:0:20000
+###############################################################################
+hagrid:COLZ:Tdiff:ns:200:-100:100
+hagrid:COLZ:Energy:a.u.:200:0:20000
+###############################################################################
+liquidbar:COLZ:Tdiff:ns:200:-100:100
+liquidbar:COLZ:S:a.u.:200:0:20000
+liquidbar:COLZ:L:a.u.:200:0:20000
+liquidbar:COLZ:PSD:S/L:200:0:1
+###############################################################################
+liquid:COLZ:Tdiff:ns:200:-100:100
+liquid:COLZ:S:a.u.:200:0:20000
+liquid:COLZ:L:a.u.:200:0:20000
+liquid:COLZ:PSD:S/L:200:0:1
+###############################################################################
+phoswich:COLZ:Light Response:a.u.:200:0:20000
+phoswich:COLZ:Light Response:a.u.:200:0:20000
+phoswich:COLZ:Slow Light Response:a.u.:200:0:20000:Fast Light Response:a.u.:200:0:20000
+phoswich:COLZ:MPV:ns:100:0:100
+###############################################################################
+pspmt:COLZ:Tdiff:ns:200:-100:100
+pspmt:COLZ:Energy:a.u.:200:0:20000
+###############################################################################
+trace:COLZ:Tdiff:ns:200:-100:100
+trace:COLZ:Energy:a.u.:200:0:20000
+trace:COLZ:Maximum:ADC:200:0:5000
+trace:COLZ:Phase:ns:200:0:1000
+trace:COLZ:Baseline:ADC:200:0:1000
+###############################################################################
+trigger:COLZ:Energy:a.u.:200:0:20000
+trigger:COLZ:Phase:ns:100:0:100
+###############################################################################
+# Histograms for user defined detector types will go below this line
+###############################################################################

@@ -23,12 +23,12 @@ class Plotter{
 	std::string opt;	
 
   public:
-	Plotter(const std::string &name_, const std::string &title_, const std::string &draw_opt_,
-	        const std::string &xtitle_, const int &xbins_, const double &xmin_, const double &xmax_);
+	Plotter(const std::string &name_, const std::string &title_, const std::string &draw_opt_, const std::string &xtitle_, 
+	        const std::string &xunits_, const int &xbins_, const double &xmin_, const double &xmax_);
 	
-	Plotter(const std::string &name_, const std::string &title_, const std::string &draw_opt_,
-	        const std::string &xtitle_, const int &xbins_, const double &xmin_, const double &xmax_,
-	        const std::string &ytitle_, const int &ybins_, const double &ymin_, const double &ymax_);
+	Plotter(const std::string &name_, const std::string &title_, const std::string &draw_opt_, const std::string &xtitle_,
+	        const std::string &xunits_, const int &xbins_, const double &xmin_, const double &xmax_, const std::string &ytitle_,
+	        const std::string &yunits_, const int &ybins_, const double &ymin_, const double &ymax_);
 	
 	~Plotter();
 	

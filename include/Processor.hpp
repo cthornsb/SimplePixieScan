@@ -6,6 +6,7 @@
 
 #include "XiaData.hpp"
 #include "TraceFitter.hpp"
+#include "OnlineProcessor.hpp"
 
 #include "TF1.h"
 #include "TFitResultPtr.h"
@@ -151,7 +152,7 @@ class Processor{
 	
 	virtual ~Processor();
 
-	virtual void GetHists(std::vector<Plotter*> &plots_){ }
+	virtual void GetHists(OnlineProcessor *online_){ }
 
 	std::string GetType(){ return type; }
 	
@@ -167,6 +168,8 @@ class Processor{
 	
 	bool ToggleTraces(){ return (write_waveform = !write_waveform); }
 	
+	void DisablePlotting(){ histsEnabled = false; }
+
 	void SetFitting(){ analyzer = FIT; }
 
 	void SetTraditionalCFD(){ analyzer = CFD; }

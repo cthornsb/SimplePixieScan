@@ -608,31 +608,13 @@ bool simpleScanner::Initialize(std::string prefix_){
 	if(init){ return false; }
 
 	// Setup a 2d histogram for tracking all channel counts.
-	chanCounts = new Plotter("chanCounts", "Recorded Counts for Module vs. Channel", "COLZ", "Channel", 16, 0, 16, "Module", 6, 0, 6);
+	chanCounts = new Plotter("chanCounts", "Recorded Counts for Module vs. Channel", "COLZ", "Channel", "", 16, 0, 16, "Module", "", 6, 0, 6);
 
 	// Setup a 2d histogram for tracking channel energies.
-	chanMaxADC = new Plotter("chanMaxADC", "Channel vs. Max ADC", "COLZ", "Max ADC Channel", 16384, 0, 16384, "Channel", 96, 0, 96);
+	chanMaxADC = new Plotter("chanMaxADC", "Channel vs. Max ADC", "COLZ", "Max ADC Channel", "", 16384, 0, 16384, "Channel", "", 96, 0, 96);
 
 	// Setup a 2d histogram for tracking channel energies.
-	chanEnergy = new Plotter("chanEnergy", "Channel vs. Filter Energy", "COLZ", "Filter Energy", 32768, 0, 32768, "Channel", 96, 0, 96);
-
-	if(online_mode){
-		// Initialize the online data processor.
-		online = new OnlineProcessor();
-
-		online->SetDisplayMode();
-	
-		// Add the raw histograms to the online processor.
-		online->AddHist(chanCounts);
-		online->AddHist(chanMaxADC);
-		online->AddHist(chanEnergy);
-	
-		// Set the first and second histograms to channel count histogram and energy histogram.
-		online->ChangeHist(0, 0);
-		online->ChangeHist(1, 1);
-		online->ChangeHist(2, 2);
-		online->Refresh();
-	}
+	chanEnergy = new Plotter("chanEnergy", "Channel vs. Filter Energy", "COLZ", "Filter Energy", "a.u.", 32768, 0, 32768, "Channel", "", 96, 0, 96);
 
 	std::string setupDirectory = this->GetSetupFilename();
 	if(setupDirectory.empty()) setupDirectory = "./setup/";
@@ -647,6 +629,33 @@ bool simpleScanner::Initialize(std::string prefix_){
 		std::cout << prefix_ << "Failed to read map file '" << setupDirectory << "'.\n";
 		delete mapfile;
 		return false;
+	}
+
+	if(online_mode){
+		// Initialize the online data processor.
+		online = new OnlineProcessor();
+
+		// Read the histogram map.
+		currentFile = setupDirectory + "hist.dat";
+		std::cout << prefix_ << "Reading histogram map file " << currentFile << "\n";
+		if(!online->ReadHistMap(currentFile.c_str())){
+			errStr << prefix_ << "ERROR! Failed to read histogram map file '" << currentFile << "'.\n";
+			return false;
+		}
+
+		online->SetDisplayMode();
+		online->SetMapFile(mapfile);
+	
+		// Add the raw histograms to the online processor.
+		online->AddHist(chanCounts);
+		online->AddHist(chanMaxADC);
+		online->AddHist(chanEnergy);
+	
+		// Set the first and second histograms to channel count histogram and energy histogram.
+		online->ChangeHist(0, 0);
+		online->ChangeHist(1, 1);
+		online->ChangeHist(2, 2);
+		online->Refresh();
 	}
 
 	for(int i = 0; i <= mapfile->GetMaxModule(); i++){
@@ -714,8 +723,13 @@ bool simpleScanner::Initialize(std::string prefix_){
 			if(proc){
 				std::cout << prefix_ << "Added " << *iter << " processor to the processor list.\n"; 
 			
-				if(online_mode) // Initialize all online diagnostic plots.
-					online->AddHists(proc);
+				if(online_mode){ // Initialize all online diagnostic plots.
+					online->StartAddHists(proc);
+					if(online->HadHistError()){
+						std::cout << prefix_ << "Disabling plotting for detectors of type " << proc->GetType() << ".\n";
+						proc->DisablePlotting();
+					}
+				}
 
 				if(defaultCFDparameter > 0)
 					proc->SetDefaultCfdParameters(defaultCFDparameter);
