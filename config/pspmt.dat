@@ -1,0 +1,9 @@
+# Example PSPMT detector setup file.
+# Author: Cory R. Thornsberry (Oct. 5, 2018)
+#  - Entries must be delimited with TABS!
+#  - Blank lines and text following a # are ignored.
+#  - The "location" of the PSPMT will be the dynode channel.
+# Syntax:
+#  DYNODE	SE	NE	NW	SW
+4	6	8	10	14
+5	15	11	9	7
