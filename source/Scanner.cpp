@@ -626,7 +626,7 @@ bool simpleScanner::Initialize(std::string prefix_){
 	std::cout << prefix_ << "Reading map file " << currentFile << "\n";
 	mapfile = new MapFile(currentFile.c_str());
 	if(!mapfile->IsInit()){ // Failed to read map file.
-		std::cout << prefix_ << "Failed to read map file '" << setupDirectory << "'.\n";
+		errStr << prefix_ << "Failed to read map file '" << currentFile << "'.\n";
 		delete mapfile;
 		return false;
 	}
@@ -687,7 +687,7 @@ bool simpleScanner::Initialize(std::string prefix_){
 	std::cout << prefix_ << "Reading config file " << currentFile << "\n";
 	configfile = new ConfigFile(currentFile.c_str());
 	if(!configfile->IsInit()){ // Failed to read config file.
-		std::cout << prefix_ << "Failed to read configuration file '" << setupDirectory << "'.\n";
+		errStr << prefix_ << "Failed to read configuration file '" << setupDirectory << "'.\n";
 		delete mapfile;
 		delete configfile;
 		return false;
@@ -726,8 +726,9 @@ bool simpleScanner::Initialize(std::string prefix_){
 				if(online_mode){ // Initialize all online diagnostic plots.
 					online->StartAddHists(proc);
 					if(online->HadHistError()){
-						std::cout << prefix_ << "Disabling plotting for detectors of type " << proc->GetType() << ".\n";
+						warnStr << prefix_ << "Disabling plotting for detectors of type " << proc->GetType() << ".\n";
 						proc->DisablePlotting();
+						hadErrors = true;
 					}
 				}
 
@@ -736,7 +737,7 @@ bool simpleScanner::Initialize(std::string prefix_){
 			}
 			else{
 				 
-				std::cout << prefix_ << "Failed to add " << *iter << " processor to the processor list!\n"; 
+				warnStr << prefix_ << "Failed to add " << *iter << " processor to the processor list!\n"; 
 				hadErrors = true;			
 			}
 		}
@@ -745,7 +746,7 @@ bool simpleScanner::Initialize(std::string prefix_){
 	if(hadErrors){
 		std::string userInput;
 		while(true){
-			std::cout << prefix_ << "Encountered errors during initialization. Continue? (y,n) ";
+			warnStr << prefix_ << "Encountered errors during initialization. Continue? (y,n) ";
 			std::cin >> userInput;
 			if(userInput == "y" || userInput == "Y") break;
 			else if(userInput == "n" || userInput == "N") return false; // Hard abort.
@@ -772,7 +773,7 @@ bool simpleScanner::Initialize(std::string prefix_){
 
 	// Check that the root file is open.
 	if(!root_file->IsOpen()){
-		std::cout << prefix_ << "Failed to open output root file '" << ofname << "'!\n";
+		errStr << prefix_ << "Failed to open output root file '" << ofname << "'!\n";
 		root_file->Close();
 		delete root_file;
 		root_file = NULL;
