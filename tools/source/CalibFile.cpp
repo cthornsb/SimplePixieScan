@@ -16,16 +16,17 @@ const double rad2deg = 57.295779579;
 
 CalibEntry dummyCalib(NULL, NULL, NULL, NULL);
 
-void PositionCal::ReadPars(const std::vector<std::string> &pars_){ 
+unsigned int PositionCal::ReadPars(const std::vector<std::string> &pars_){ 
 	defaultVals = false;
 	int index = 0;
 	for(std::vector<std::string>::const_iterator iter = pars_.begin(); iter != pars_.end(); iter++){
-		if(index == 0) id = strtol(iter->c_str(), NULL, 0);
+		if(index == 0) id = GetPixieID(*iter);
 		else if(index == 1) r0 = strtod(iter->c_str(), NULL);
 		else if(index == 2) theta = strtod(iter->c_str(), NULL)*deg2rad;
 		else if(index == 3) phi = strtod(iter->c_str(), NULL)*deg2rad;
 		index++;
 	}
+	return id;
 }
 
 std::string PositionCal::Print(bool fancy/*=true*/){
@@ -35,14 +36,15 @@ std::string PositionCal::Print(bool fancy/*=true*/){
 	return output.str();
 }
 
-void TimeCal::ReadPars(const std::vector<std::string> &pars_){ 
+unsigned int TimeCal::ReadPars(const std::vector<std::string> &pars_){ 
 	defaultVals = false;
 	int index = 0;
 	for(std::vector<std::string>::const_iterator iter = pars_.begin(); iter != pars_.end(); iter++){
-		if(index == 0) id = strtol(iter->c_str(), NULL, 0);
+		if(index == 0) id = GetPixieID(*iter);
 		else if(index == 1) t0 = strtod(iter->c_str(), NULL);
 		index++;
 	}
+	return id;
 }
 
 bool TimeCal::GetCalTime(double &T){
@@ -61,14 +63,15 @@ std::string TimeCal::Print(bool fancy/*=true*/){
 	return output.str();
 }
 
-void EnergyCal::ReadPars(const std::vector<std::string> &pars_){ 
+unsigned int EnergyCal::ReadPars(const std::vector<std::string> &pars_){ 
 	defaultVals = false;
 	int index = 0;
 	for(std::vector<std::string>::const_iterator iter = pars_.begin(); iter != pars_.end(); iter++){
-		if(index == 0) id = strtol(iter->c_str(), NULL, 0);
+		if(index == 0) id = GetPixieID(*iter);
 		else vals.push_back(strtod(iter->c_str(), NULL));
 		index++;
 	}
+	return id;
 }
 
 bool EnergyCal::GetCalEnergy(const double &adc_, double &E){
@@ -109,11 +112,11 @@ std::string BarCal::Print(bool fancy/*=true*/){
 	return output.str();
 }
 
-void BarCal::ReadPars(const std::vector<std::string> &pars_){
+unsigned int BarCal::ReadPars(const std::vector<std::string> &pars_){
 	defaultVals = false;
 	int index = 0;
 	for(std::vector<std::string>::const_iterator iter = pars_.begin(); iter != pars_.end(); iter++){
-		if(index == 0) id = strtol(iter->c_str(), NULL, 0);
+		if(index == 0) id = GetPixieID(*iter);
 		else if(index == 1) t0 = strtod(iter->c_str(), NULL);
 		else if(index == 2) beta = strtod(iter->c_str(), NULL);
 		else if(index == 3) cbar = strtod(iter->c_str(), NULL);
@@ -121,6 +124,7 @@ void BarCal::ReadPars(const std::vector<std::string> &pars_){
 		else if(index == 5) width = strtod(iter->c_str(), NULL);
 		index++;
 	}
+	return id;
 }
 
 CalibFile::CalibFile(const char *timeFilename_, const char *energyFilename_, const char *positionFilename_){ 
@@ -265,4 +269,13 @@ bool CalibFile::Write(TFile *f_){
 	f_->cd();
 
 	return true;
+}
+
+unsigned int GetPixieID(const std::string &str_){
+	size_t commaIndex = str_.find(',');
+	if(commaIndex == std::string::npos)
+		return strtoul(str_.c_str(), NULL, 10);
+	unsigned int pixieMod = strtol(str_.substr(0, commaIndex).c_str(), NULL, 10);
+	unsigned int pixieChan = strtol(str_.substr(commaIndex+1).c_str(), NULL, 10);
+	return (pixieMod*16 + pixieChan);
 }

@@ -86,7 +86,7 @@ class pspmtMapFileEntry : public CalType {
 	
 	virtual std::string Print(bool fancy=true);
 
-	virtual void ReadPars(const std::vector<std::string> &pars_);
+	virtual unsigned int ReadPars(const std::vector<std::string> &pars_);
 
 	void GetIDs(unsigned short *arr);
 };

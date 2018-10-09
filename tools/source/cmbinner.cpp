@@ -161,7 +161,7 @@ class threshCal : public CalType {
 
 	virtual std::string Print(bool fancy=true);
 
-	virtual void ReadPars(const std::vector<std::string> &pars_);
+	virtual unsigned int ReadPars(const std::vector<std::string> &pars_);
 };
 
 std::string threshCal::Print(bool fancy/*=true*/){
@@ -171,14 +171,15 @@ std::string threshCal::Print(bool fancy/*=true*/){
 	return output.str();
 }
 
-void threshCal::ReadPars(const std::vector<std::string> &pars_){
+unsigned int threshCal::ReadPars(const std::vector<std::string> &pars_){
 	defaultVals = false;
 	int index = 0;
 	for(std::vector<std::string>::const_iterator iter = pars_.begin(); iter != pars_.end(); iter++){
-		if(index == 0) id = strtol(iter->c_str(), NULL, 0);
+		if(index == 0) id = GetPixieID(*iter);
 		else if(index == 1) thresh = strtod(iter->c_str(), NULL);
 		index++;
 	}
+	return id;
 }
 
 class simpleComCalculator : public simpleTool {

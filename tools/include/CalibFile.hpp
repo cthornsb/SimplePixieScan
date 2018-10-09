@@ -25,7 +25,7 @@ class CalType{
 	
 	virtual std::string Print(bool fancy=true){ return ""; }
 
-	virtual void ReadPars(const std::vector<std::string> &pars_) { }
+	virtual unsigned int ReadPars(const std::vector<std::string> &pars_) { return 0; }
 };
 
 class PositionCal : public CalType {
@@ -45,7 +45,7 @@ class PositionCal : public CalType {
 	
 	virtual std::string Print(bool fancy=true);
 
-	virtual void ReadPars(const std::vector<std::string> &pars_);
+	virtual unsigned int ReadPars(const std::vector<std::string> &pars_);
 };
 
 class TimeCal : public CalType {
@@ -67,7 +67,7 @@ class TimeCal : public CalType {
 	
 	virtual std::string Print(bool fancy=true);
 
-	virtual void ReadPars(const std::vector<std::string> &pars_);
+	virtual unsigned int ReadPars(const std::vector<std::string> &pars_);
 };
 
 class EnergyCal : public CalType {
@@ -86,7 +86,7 @@ class EnergyCal : public CalType {
 
 	virtual std::string Print(bool fancy=true);
 
-	virtual void ReadPars(const std::vector<std::string> &pars_);
+	virtual unsigned int ReadPars(const std::vector<std::string> &pars_);
 
   private:
 	std::vector<double> vals;
@@ -104,7 +104,7 @@ class BarCal : public CalType {
 
 	virtual std::string Print(bool fancy=true);
 
-	virtual void ReadPars(const std::vector<std::string> &pars_);
+	virtual unsigned int ReadPars(const std::vector<std::string> &pars_);
 };
 
 class CalibEntry{
@@ -184,6 +184,8 @@ class CalibFile{
 
 extern CalibEntry dummyCalib;
 
+unsigned int GetPixieID(const std::string &str_);
+
 template<class T>
 bool LoadCalibFile(const char *filename_, std::vector<T> &vec){
 	std::ifstream calibfile(filename_);
@@ -209,11 +211,12 @@ bool LoadCalibFile(const char *filename_, std::vector<T> &vec){
 		
 		if(values.empty())
 			continue;
-		
-		readID = (int)strtol(values[0].c_str(), NULL, 0);
+
+		T tempCalEntry;
+		readID = tempCalEntry.ReadPars(values);
 		
 		if(readID < 0 || readID <= prevID){
-			warnStr << "LoadCalibFile: WARNING! On line " << line_num++ << " of calibration file, invalid id number (" << readID << ").\n";
+			warnStr << "LoadCalibFile: WARNING! On line " << line_num++ << " of calibration file, invalid id number (id=" << readID << ", prev=" << prevID << ").\n";
 			continue;
 		}
 		else if(readID > prevID+1){
@@ -226,8 +229,6 @@ bool LoadCalibFile(const char *filename_, std::vector<T> &vec){
 		
 		prevID = readID;
 		line_num++;
-		T tempCalEntry;
-		tempCalEntry.ReadPars(values);
 		vec.push_back(tempCalEntry);
 	}
 	

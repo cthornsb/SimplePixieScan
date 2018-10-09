@@ -135,17 +135,23 @@ void fullBarEvent::compute(simpleEvent *dynode_L, simpleEvent *anode_SE_L, simpl
 // class pspmtMapFileEntry
 ///////////////////////////////////////////////////////////////////////////////
 
-void pspmtMapFileEntry::ReadPars(const std::vector<std::string> &pars_){ 
+unsigned int pspmtMapFileEntry::ReadPars(const std::vector<std::string> &pars_){ 
 	defaultVals = false;
 	int index = 0;
 	for(std::vector<std::string>::const_iterator iter = pars_.begin(); iter != pars_.end(); iter++){
-		if(index == 0) id = strtol(iter->c_str(), NULL, 10);
-		else if(index == 1) an1 = strtoul(iter->c_str(), NULL, 10);
-		else if(index == 2) an2 = strtoul(iter->c_str(), NULL, 10);
-		else if(index == 3) an3 = strtoul(iter->c_str(), NULL, 10);
-		else if(index == 4) an4 = strtoul(iter->c_str(), NULL, 10);
+		if(index == 0)
+			id = GetPixieID(*iter);
+		else if(index == 1)
+			an1 = GetPixieID(*iter);
+		else if(index == 2)
+			an2 = GetPixieID(*iter);
+		else if(index == 3)
+			an3 = GetPixieID(*iter);
+		else if(index == 4)
+			an4 = GetPixieID(*iter);
 		index++;
 	}
+	return id;
 }
 
 std::string pspmtMapFileEntry::Print(bool fancy/*=true*/){
