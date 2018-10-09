@@ -279,24 +279,37 @@ bool OnlineProcessor::GenerateHist(Plotter* &hist_){
 		return false;
 	}
 
-	// Get the name of this histogram.
 	std::stringstream stream;
 	stream << type << "_h" << histID++;
+	if(retval < 12){ // Get the name of this histogram.
+		int bins = strtoul(args.at(4).c_str(), NULL, 10);
+		double xlow = strtod(args.at(5).c_str(), NULL);
+		double xhigh = strtod(args.at(6).c_str(), NULL);
 
-	int bins = strtoul(args.at(4).c_str(), NULL, 10);
-	double xlow = strtod(args.at(5).c_str(), NULL);
-	double xhigh = strtod(args.at(6).c_str(), NULL);
+		// Get the title of this histogram.
+		if(maxloc-minloc > 1){ // More than one detector. Define a 2d plot.
+			std::stringstream stream2; stream2 << name << " Location vs. " << args.at(2);
+			hist_ = new Plotter(stream.str(), stream2.str(), args.at(1), args.at(2), args.at(3), bins, xlow, xhigh, "Location", "", (maxloc+1)-minloc, minloc, maxloc+1);
+		}
+		else{ // Only one detector. Define a 1d plot instead.
+			std::stringstream stream2; stream2 << name << " " << args.at(2);
+			hist_ = new Plotter(stream.str(), stream2.str(), args.at(1), args.at(2), args.at(3), bins, xlow, xhigh);
+		}
+		plottable_hists.push_back(hist_);
+	}
+	else{
+		int xbins = strtoul(args.at(4).c_str(), NULL, 10);
+		double xlow = strtod(args.at(5).c_str(), NULL);
+		double xhigh = strtod(args.at(6).c_str(), NULL);
 
-	// Get the title of this histogram.
-	if(maxloc-minloc > 1){ // More than one detector. Define a 2d plot.
-		std::stringstream stream2; stream2 << name << " Location vs. " << args.at(2);
-		hist_ = new Plotter(stream.str(), stream2.str(), args.at(1), args.at(2), args.at(3), bins, xlow, xhigh, "Location", "", (maxloc+1)-minloc, minloc, maxloc+1);
+		int ybins = strtoul(args.at(9).c_str(), NULL, 10);
+		double ylow = strtod(args.at(10).c_str(), NULL);
+		double yhigh = strtod(args.at(11).c_str(), NULL);
+
+		std::stringstream stream2; stream2 << name << " " << args.at(2) << " vs. " << args.at(7);
+		hist_ = new Plotter(stream.str(), stream2.str(), args.at(1), args.at(2), args.at(3), xbins, xlow, xhigh, args.at(7), args.at(8), ybins, ylow, yhigh);
+		plottable_hists.push_back(hist_);
 	}
-	else{ // Only one detector. Define a 1d plot instead.
-		std::stringstream stream2; stream2 << name << " " << args.at(2);
-		hist_ = new Plotter(stream.str(), stream2.str(), args.at(1), args.at(2), args.at(3), bins, xlow, xhigh);
-	}
-	plottable_hists.push_back(hist_);
 
 	return true;
 }
