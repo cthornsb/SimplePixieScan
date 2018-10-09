@@ -192,6 +192,9 @@ simpleTool::simpleTool(){
 	output_objname = "";
 	cut_filename = "";
 
+	debug = false;	
+	filledFromTree = false;
+
 	start_entry = 0;
 	entries_to_process = 0;
 	max_entries_to_process = -1;
@@ -536,15 +539,12 @@ simpleHistoFitter::simpleHistoFitter() : simpleTool() {
 	draw_string = "";
 	expr_string = "";
 	
-	debug = false;
 	useProjX = true;
 
 	firstChildOption = 0;
 	
 	histStartID = 0;
 	histStopID = -1;
-	
-	filledFromTree = false;
 }
 
 bool simpleHistoFitter::getProjectionX(TH1 *h1_, TH2 *h2_, const int &binY_){

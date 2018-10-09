@@ -113,6 +113,7 @@ class simpleTool{
 	std::string work_dir;
 	std::string home_dir;
 
+	bool debug;
 	bool filledFromTree;
 
 	long long start_entry;
@@ -192,7 +193,6 @@ class simpleHistoFitter : public simpleTool {
 	std::string draw_string;
 	std::string expr_string;
 
-	bool debug;
 	bool useProjX;
 
 	bool getProjectionX(TH1 *h1_, TH2 *h2_, const int &binY_);

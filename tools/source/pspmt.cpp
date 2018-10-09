@@ -324,6 +324,9 @@ class pspmtHandler : public simpleTool {
 	float tqdc_L, tqdc_R;
 	float stqdc_L, stqdc_R;	
 
+	float allTQDC_L[4];
+	float allTQDC_R[4];
+
 	void process();
 
 	void handleEvents();
@@ -531,6 +534,10 @@ void pspmtHandler::setVariables(fullEvent *evt_){
 
 	xdetL = evt_->xpos;
 	ydetL = evt_->ypos;
+
+	if(debug){
+		for(size_t i = 0; i < 4; i++) allTQDC_L[i] = evt_->ltqdc[i];
+	}
 }
 
 void pspmtHandler::setVariables(fullBarEvent *evt_){
@@ -546,6 +553,13 @@ void pspmtHandler::setVariables(fullBarEvent *evt_){
 	ydetL = evt_->ypos_L;
 	xdetR = evt_->xpos_R;
 	ydetR = evt_->ypos_R;
+
+	if(debug){
+		for(size_t i = 0; i < 4; i++){
+			allTQDC_L[i] = evt_->ltqdc_L[i];
+			allTQDC_R[i] = evt_->ltqdc_R[i];
+		}
+	}
 }
 
 pspmtHandler::~pspmtHandler(){
@@ -554,6 +568,7 @@ pspmtHandler::~pspmtHandler(){
 void pspmtHandler::addOptions(){
 	addOption(optionExt("config", required_argument, NULL, 'c', "<fname>", "Read bar speed-of-light from an input cal file."), userOpts, optstr);
 	addOption(optionExt("single", no_argument, NULL, 0x0, "", "Single-ended PSPMT detector mode."), userOpts, optstr);
+	addOption(optionExt("debug", no_argument, NULL, 0x0, "", "Enable debug output."), userOpts, optstr);
 	/*addOption(optionExt("no-energy", no_argument, NULL, 0x0, "", "Do not use energy calibration."), userOpts, optstr);
 	addOption(optionExt("no-time", no_argument, NULL, 0x0, "", "Do not use time calibration."), userOpts, optstr);
 	addOption(optionExt("no-position", no_argument, NULL, 0x0, "", "Do not use position calibration."), userOpts, optstr);*/
@@ -566,6 +581,9 @@ bool pspmtHandler::processArgs(){
 	}
 	if(userOpts.at(1).active){ // Single-ended PSPMT
 		singleEndedMode = true;
+	}
+	if(userOpts.at(2).active){ // Debug output
+		debug = true;
 	}
 	/*if(userOpts.at(5).active){
 		noEnergyMode = true;
@@ -651,10 +669,21 @@ int pspmtHandler::execute(int argc, char *argv[]){
 	outtree->Branch("x", &x);
 	outtree->Branch("y", &y);
 	outtree->Branch("z", &z);
-	outtree->Branch("xdetL", &xdetL);
-	outtree->Branch("ydetL", &ydetL);
-	outtree->Branch("xdetR", &xdetR);
-	outtree->Branch("ydetR", &ydetR);
+	if(!singleEndedMode){
+		outtree->Branch("xdetL", &xdetL);
+		outtree->Branch("ydetL", &ydetL);
+		outtree->Branch("xdetR", &xdetR);
+		outtree->Branch("ydetR", &ydetR);
+		if(debug){
+			outtree->Branch("anodeL[4]", allTQDC_L);
+			outtree->Branch("anodeR[4]", allTQDC_R);
+		}
+	}
+	else{
+		outtree->Branch("xdet", &xdetL);
+		outtree->Branch("ydet", &ydetL);
+		if(debug) outtree->Branch("anode[4]", allTQDC_L);
+	}
 	outtree->Branch("loc", &location);
 
 	int file_counter = 1;
