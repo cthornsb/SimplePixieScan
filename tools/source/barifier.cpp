@@ -322,24 +322,17 @@ int barHandler::execute(int argc, char *argv[]){
 
 	if(!noPositionMode && !calib.LoadPositionCal((setupDir+"position.cal").c_str())) return 2;
 	if(!noTimeMode && !calib.LoadTimeCal((setupDir+"time.cal").c_str())) return 3;
-	if(!noEnergyMode){
-		if(!calib.LoadEnergyCal((setupDir+"energy.cal").c_str()))
-			noEnergyMode = true;
-	}
-
-	if(!singleEndedMode && !calib.LoadBarCal((setupDir+"bars.cal").c_str())){
-		std::cout << " Error: Failed to load bar calibration file \"" << setupDir << "bars.cal\"!\n";
-		return 4;
-	}
+	if(!noEnergyMode && !calib.LoadEnergyCal((setupDir+"energy.cal").c_str())) return 4;
+	if(!singleEndedMode && !calib.LoadBarCal((setupDir+"bars.cal").c_str())) return 5;
 
 	if(output_filename.empty()){
 		std::cout << " Error: Output filename not specified!\n";
-		return 5;
+		return 6;
 	}
 	
 	if(!openOutputFile()){
 		std::cout << " Error: Failed to load output file \"" << output_filename << "\".\n";
-		return 6;
+		return 7;
 	}
 
 	outtree = new TTree("data", "Barified data");
@@ -395,7 +388,7 @@ int barHandler::execute(int argc, char *argv[]){
 			else // HAGRiD
 				std::cout << "hagrid";
 			std::cout << "\" from input TTree.\n";
-			return 7;
+			return 8;
 		}
 
 		TNamed *named;

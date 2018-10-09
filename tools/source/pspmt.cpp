@@ -575,9 +575,9 @@ void pspmtHandler::addOptions(){
 	addOption(optionExt("config", required_argument, NULL, 'c', "<fname>", "Read bar speed-of-light from an input cal file."), userOpts, optstr);
 	addOption(optionExt("single", no_argument, NULL, 0x0, "", "Single-ended PSPMT detector mode."), userOpts, optstr);
 	addOption(optionExt("debug", no_argument, NULL, 0x0, "", "Enable debug output."), userOpts, optstr);
-	/*addOption(optionExt("no-energy", no_argument, NULL, 0x0, "", "Do not use energy calibration."), userOpts, optstr);
+	addOption(optionExt("no-energy", no_argument, NULL, 0x0, "", "Do not use energy calibration."), userOpts, optstr);
 	addOption(optionExt("no-time", no_argument, NULL, 0x0, "", "Do not use time calibration."), userOpts, optstr);
-	addOption(optionExt("no-position", no_argument, NULL, 0x0, "", "Do not use position calibration."), userOpts, optstr);*/
+	addOption(optionExt("no-position", no_argument, NULL, 0x0, "", "Do not use position calibration."), userOpts, optstr);
 }
 
 bool pspmtHandler::processArgs(){
@@ -591,19 +591,15 @@ bool pspmtHandler::processArgs(){
 	if(userOpts.at(2).active){ // Debug output
 		debug = true;
 	}
-	/*if(userOpts.at(5).active){
+	if(userOpts.at(3).active){
 		noEnergyMode = true;
 	}
-	if(userOpts.at(6).active){
+	if(userOpts.at(4).active){
 		noTimeMode = true;
 	}
-	if(userOpts.at(7).active){
+	if(userOpts.at(5).active){
 		noPositionMode = true;
-	}*/
-
-	noEnergyMode = true;
-	noTimeMode = true;
-	noPositionMode = true;
+	}
 
 	return true;
 }
@@ -642,24 +638,17 @@ int pspmtHandler::execute(int argc, char *argv[]){
 
 	if(!noPositionMode && !calib.LoadPositionCal((setupDir+"position.cal").c_str())) return 3;
 	if(!noTimeMode && !calib.LoadTimeCal((setupDir+"time.cal").c_str())) return 4;
-	if(!noEnergyMode){
-		if(!calib.LoadEnergyCal((setupDir+"energy.cal").c_str()))
-			noEnergyMode = true;
-	}
-
-	if(!singleEndedMode && !calib.LoadBarCal((setupDir+"bars.cal").c_str())){
-		std::cout << " Error: Failed to load bar calibration file \"" << setupDir << "bars.cal\"!\n";
-		return 5;
-	}
+	if(!noEnergyMode && !calib.LoadEnergyCal((setupDir+"energy.cal").c_str())) return 5;
+	if(!singleEndedMode && !calib.LoadBarCal((setupDir+"bars.cal").c_str())) return 6;
 
 	if(output_filename.empty()){
 		std::cout << " Error: Output filename not specified!\n";
-		return 6;
+		return 7;
 	}
 	
 	if(!openOutputFile()){
 		std::cout << " Error: Failed to load output file \"" << output_filename << "\".\n";
-		return 7;
+		return 8;
 	}
 
 	outtree = new TTree("data", "Processed PSPMT data");
@@ -709,7 +698,7 @@ int pspmtHandler::execute(int argc, char *argv[]){
 
 		if(!branch){
 			std::cout << " Error: Failed to load branch \"pspmt\" from input TTree.\n";
-			return 8;
+			return 9;
 		}
 
 		// Get the data time from the input file.
