@@ -345,17 +345,20 @@ int barHandler::execute(int argc, char *argv[]){
 	outtree = new TTree("data", "Barified data");
 
 	outtree->Branch("ctof", &ctof);
-	outtree->Branch("energy", &energy);
+	if(!noPositionMode)
+		outtree->Branch("energy", &energy);
 	outtree->Branch("tqdc", &tqdc);
 	if(liquidDetMode)
 		outtree->Branch("stqdc", &stqdc);
 	if(!noEnergyMode)
 		outtree->Branch("ctqdc", &ctqdc);
-	outtree->Branch("r", &r);
-	outtree->Branch("theta", &theta);
-	outtree->Branch("x", &x);
-	outtree->Branch("y", &y);
-	outtree->Branch("z", &z);
+	if(!noPositionMode){
+		outtree->Branch("r", &r);
+		outtree->Branch("theta", &theta);
+		outtree->Branch("x", &x);
+		outtree->Branch("y", &y);
+		outtree->Branch("z", &z);
+	}
 	outtree->Branch("loc", &location);
 
 	int file_counter = 1;
