@@ -197,6 +197,8 @@ class Processor{
 	
 	void Zero();
 
+	virtual void Reset(){ }
+
 	void RemoveByTag(const std::string &tag_, const bool &withTag_=true);
 };
 

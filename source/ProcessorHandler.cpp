@@ -186,6 +186,7 @@ void ProcessorHandler::ZeroAll(){
 	for(std::vector<ProcessorEntry>::iterator iter = procs.begin(); iter != procs.end(); iter++){
 		iter->proc->WrapUp();
 		iter->proc->Zero();
+		iter->proc->Reset();
 	}
 
 	untrigChannel = false;
