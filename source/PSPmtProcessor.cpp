@@ -27,14 +27,26 @@ bool PSPmtProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEv
 		
 	// Check for anode tags
 	if(!chEvt->entry->tag.empty()){
-		if(chEvt->entry->tag == "SE")
-			tqdcIndex = 1;
-		else if(chEvt->entry->tag == "NE")
-			tqdcIndex = 2;
-		else if(chEvt->entry->tag == "NW")
-			tqdcIndex = 3;
-		else if(chEvt->entry->tag == "SW")
-			tqdcIndex = 4;
+		if(chEvt->entry->tag.at(0) != 'V'){
+			if(chEvt->entry->tag == "SE")
+				tqdcIndex = 1;
+			else if(chEvt->entry->tag == "NE")
+				tqdcIndex = 2;
+			else if(chEvt->entry->tag == "NW")
+				tqdcIndex = 3;
+			else if(chEvt->entry->tag == "SW")
+				tqdcIndex = 4;
+		}
+		else{
+			if(chEvt->entry->tag == "V1")
+				tqdcIndex = 1;
+			else if(chEvt->entry->tag == "V2")
+				tqdcIndex = 2;
+			else if(chEvt->entry->tag == "V3")
+				tqdcIndex = 3;
+			else if(chEvt->entry->tag == "V4")
+				tqdcIndex = 4;
+		}
 	}
 	
 	// Build up the channel identifier.
