@@ -1,5 +1,5 @@
 # Example simpleScan diagnostic histogram definition file.
-# Author: Cory R. Thornsberry (Oct. 5, 2018)
+# Author: Cory R. Thornsberry (updated: Oct. 10, 2018)
 #  - Entries must be delimited with COLONS!
 #     * This allows tabs and spaces to exist in axis titles.
 #  - Blank lines and those starting with a # are ignored.
@@ -11,8 +11,10 @@
 #       GetHists method e.g. "online_->GenerateHist(loc_tdiff_2d)"
 #       where loc_tdiff_2d is a pointer to a Plotter object.
 #     * Removing entries from this list may cause segmentation-faults.
+#     * Including 4 extra entries (i.e. YBINS, YUNITS, YLOW, and YHIGH)
+#       will define a two dimensional histogram.
 # Syntax:
-#  TYPE:DRAW_OPTION:XAXIS_TITLE:XAXIS_UNITS:XBINS:XLOW:XHIGH
+#  TYPE:DRAW_OPTION:XAXIS_TITLE:XAXIS_UNITS:XBINS:XLOW:XHIGH[:YBINS:YUNITS:YLOW:YHIGH]
 ###############################################################################
 genericbar:COLZ:Tdiff:ns:200:100:100
 genericbar:COLZ:Energy:a.u.:200:0:20000
@@ -40,6 +42,9 @@ phoswich:COLZ:MPV:ns:100:0:100
 ###############################################################################
 pspmt:COLZ:Tdiff:ns:200:-100:100
 pspmt:COLZ:Energy:a.u.:200:0:20000
+pspmt:COLZ:X Position:a.u.:200:-1:1
+pspmt:COLZ:Y Position:a.u.:200:-1:1
+pspmt:COLZ:X Position:a.u.:200:-1:1:Y Position:a.u.:200:-1:1
 ###############################################################################
 trace:COLZ:Tdiff:ns:200:-100:100
 trace:COLZ:Energy:a.u.:200:0:20000
