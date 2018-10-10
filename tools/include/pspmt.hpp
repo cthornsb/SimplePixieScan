@@ -17,11 +17,12 @@ class simpleEvent{
 	
 	unsigned short location;
 	unsigned short tqdcIndex;
+	unsigned short energy;
 
 	bool isBarDet;
 	bool isRightEnd;
 	
-	simpleEvent() : tdiff(0), ltqdc(0), stqdc(0), location(0), tqdcIndex(0), isBarDet(0), isRightEnd(0) { }
+	simpleEvent() : tdiff(0), ltqdc(0), stqdc(0), location(0), tqdcIndex(0), energy(0), isBarDet(0), isRightEnd(0) { }
 	
 	simpleEvent(PSPmtStructure *ptr, const size_t &index);
 };

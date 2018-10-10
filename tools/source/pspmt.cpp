@@ -12,6 +12,9 @@
 #include "Structures.hpp"
 #include "pspmt.hpp"
 
+// This is global to save a lot of headaches passing it around everywhere.
+bool useFilterEnergy=false;
+
 template <typename T>
 void writeTNamed(const char *label_, const T &val_, const int &precision_=-1){
 	std::stringstream stream; 
@@ -46,6 +49,7 @@ simpleEvent::simpleEvent(PSPmtStructure *ptr, const size_t &index){
 	tdiff = ptr->tdiff.at(index);
 	ltqdc = ptr->ltqdc.at(index);
 	stqdc = ptr->stqdc.at(index);
+	energy = ptr->energy.at(index);
 	location = ptr->loc.at(index);
 
 	unsigned short chanIdentifier = ptr->chan.at(index);
@@ -67,11 +71,19 @@ fullEvent::fullEvent(simpleEvent *dynode, simpleEvent *anode_SE, simpleEvent *an
 
 void fullEvent::compute(simpleEvent *dynode, simpleEvent *anode_SE, simpleEvent *anode_NE, simpleEvent *anode_NW, simpleEvent *anode_SW){
 	tdiff = dynode->tdiff;
-	
-	ltqdc[0] = anode_SE->ltqdc;
-	ltqdc[1] = anode_NE->ltqdc;
-	ltqdc[2] = anode_NW->ltqdc;
-	ltqdc[3] = anode_SW->ltqdc;
+
+	if(!useFilterEnergy){	
+		ltqdc[0] = anode_SE->ltqdc;
+		ltqdc[1] = anode_NE->ltqdc;
+		ltqdc[2] = anode_NW->ltqdc;
+		ltqdc[3] = anode_SW->ltqdc;
+	}
+	else{
+		ltqdc[0] = (float)anode_SE->energy;
+		ltqdc[1] = (float)anode_NE->energy;
+		ltqdc[2] = (float)anode_NW->energy;
+		ltqdc[3] = (float)anode_SW->energy;
+	}
 	
 	ltqdcSum = ltqdc[0]+ltqdc[1]+ltqdc[2]+ltqdc[3];
 	stqdcSum = stqdc[0]+stqdc[1]+stqdc[2]+stqdc[3];
@@ -95,16 +107,29 @@ void fullBarEvent::compute(simpleEvent *dynode_L, simpleEvent *anode_SE_L, simpl
                            simpleEvent *dynode_R, simpleEvent *anode_SE_R, simpleEvent *anode_NE_R, simpleEvent *anode_NW_R, simpleEvent *anode_SW_R){
 	tdiff_L = dynode_L->tdiff;
 	tdiff_R = dynode_R->tdiff;
-	
-	ltqdc_L[0] = anode_SE_L->ltqdc;
-	ltqdc_L[1] = anode_NE_L->ltqdc;
-	ltqdc_L[2] = anode_NW_L->ltqdc;
-	ltqdc_L[3] = anode_SW_L->ltqdc;
 
-	ltqdc_R[0] = anode_SE_R->ltqdc;
-	ltqdc_R[1] = anode_NE_R->ltqdc;
-	ltqdc_R[2] = anode_NW_R->ltqdc;
-	ltqdc_R[3] = anode_SW_R->ltqdc;
+	if(!useFilterEnergy){	
+		ltqdc_L[0] = anode_SE_L->ltqdc;
+		ltqdc_L[1] = anode_NE_L->ltqdc;
+		ltqdc_L[2] = anode_NW_L->ltqdc;
+		ltqdc_L[3] = anode_SW_L->ltqdc;
+
+		ltqdc_R[0] = anode_SE_R->ltqdc;
+		ltqdc_R[1] = anode_NE_R->ltqdc;
+		ltqdc_R[2] = anode_NW_R->ltqdc;
+		ltqdc_R[3] = anode_SW_R->ltqdc;
+	}
+	else{
+		ltqdc_L[0] = (float)anode_SE_L->energy;
+		ltqdc_L[1] = (float)anode_NE_L->energy;
+		ltqdc_L[2] = (float)anode_NW_L->energy;
+		ltqdc_L[3] = (float)anode_SW_L->energy;
+
+		ltqdc_R[0] = (float)anode_SE_R->energy;
+		ltqdc_R[1] = (float)anode_NE_R->energy;
+		ltqdc_R[2] = (float)anode_NW_R->energy;
+		ltqdc_R[3] = (float)anode_SW_R->energy;
+	}
 
 	stqdc_L[0] = anode_SE_L->stqdc;
 	stqdc_L[1] = anode_NE_L->stqdc;
@@ -578,6 +603,7 @@ void pspmtHandler::addOptions(){
 	addOption(optionExt("no-energy", no_argument, NULL, 0x0, "", "Do not use energy calibration."), userOpts, optstr);
 	addOption(optionExt("no-time", no_argument, NULL, 0x0, "", "Do not use time calibration."), userOpts, optstr);
 	addOption(optionExt("no-position", no_argument, NULL, 0x0, "", "Do not use position calibration."), userOpts, optstr);
+	addOption(optionExt("filter-energy", no_argument, NULL, 0x0, "", "Use Pixie filter energy instead of TQDC."), userOpts, optstr);
 }
 
 bool pspmtHandler::processArgs(){
@@ -599,6 +625,9 @@ bool pspmtHandler::processArgs(){
 	}
 	if(userOpts.at(5).active){
 		noPositionMode = true;
+	}
+	if(userOpts.at(6).active){
+		useFilterEnergy = true;
 	}
 
 	return true;

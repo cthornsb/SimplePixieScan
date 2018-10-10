@@ -277,6 +277,7 @@ BEGIN_TYPES
 vector:double	tdiff	The time of flight of the particle detected by the detector.
 vector:float	ltqdc	The long integration region integral computed from the trace.
 vector:float	stqdc	The short integration region integral computed from the trace.
+vector:u_short	energy	The 15-bit trapezoidal filter energy from onboard.
 vector:u_short	chan	Channel identifier flags.
 vector:u_short	loc	Detector location (ID).
 u_short	mult	Multiplicity of the generic type events.
