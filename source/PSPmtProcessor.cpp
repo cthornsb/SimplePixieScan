@@ -4,6 +4,27 @@
 #include "MapFile.hpp"
 #include "Plotter.hpp"
 
+void PSPmtEvent::reset(){
+	for(size_t i = 0; i < 4; i++) 
+		channels[i] = false;
+}
+
+bool PSPmtEvent::addAnode(const float &anode, const size_t &index){
+	if(anode > 0){
+		anodes[index] = anode;
+		channels[index] = true;
+	}
+	return allValuesSet();
+}
+
+bool PSPmtEvent::allValuesSet(){
+	for(size_t i = 0; i < 4; i++)
+		if(!channels[i]) return false;
+	xpos = ((anodes[0]+anodes[1])-(anodes[2]+anodes[3]))/(anodes[0]+anodes[1]+anodes[2]+anodes[3]);
+	ypos = ((anodes[1]+anodes[2])-(anodes[0]+anodes[3]))/(anodes[0]+anodes[1]+anodes[2]+anodes[3]);
+	return true;
+}
+
 bool PSPmtProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEvtR/*=NULL*/){
 	ChanEvent *channel_event = chEvt->channelEvent;
 	
@@ -60,8 +81,25 @@ bool PSPmtProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEv
 	if(histsEnabled){ // Fill all diagnostic histograms.
 		if(tqdcIndex == 0) // Only dynodes get added to the tdiff spectrum
 			loc_tdiff_2d->Fill(tdiff, location);
-		else // Only anodes get added to the tqdc spectrum
+		else{ // Only anodes get added to the tqdc spectrum. Determine which histogram to fill
 			loc_energy_2d->Fill(channel_event->qdc, location);
+			if(!isRightEnd){ // Left side
+				if(pspmtEventL.addAnode((float)channel_event->energy, tqdcIndex-1)){
+					loc_xpos_2d->Fill(pspmtEventL.xpos, location);
+					loc_ypos_2d->Fill(pspmtEventL.ypos, location);
+					ypos_xpos_2d->Fill(pspmtEventL.xpos, pspmtEventL.ypos);
+					pspmtEventL.reset();
+				}
+			}
+			else{ // Right side
+				if(pspmtEventR.addAnode((float)channel_event->energy, tqdcIndex-1)){
+					loc_xpos_2d->Fill(pspmtEventR.xpos, location);
+					loc_ypos_2d->Fill(pspmtEventR.ypos, location);
+					ypos_xpos_2d->Fill(pspmtEventR.xpos, pspmtEventR.ypos);
+					pspmtEventR.reset();
+				}
+			}
+		}
 		loc_1d->Fill(location);
 	}
 
@@ -92,7 +130,15 @@ void PSPmtProcessor::GetHists(OnlineProcessor *online_){
 
 	online_->GenerateHist(loc_tdiff_2d);
 	online_->GenerateHist(loc_energy_2d);
+	online_->GenerateHist(loc_xpos_2d);
+	online_->GenerateHist(loc_ypos_2d);
+	online_->GenerateHist(ypos_xpos_2d);
 	online_->GenerateLocationHist(loc_1d);
 
 	histsEnabled = true;
+}
+
+void PSPmtProcessor::Reset(){
+	pspmtEventL.reset();
+	pspmtEventR.reset();
 }
