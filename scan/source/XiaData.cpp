@@ -437,7 +437,8 @@ float ChannelEvent::ComputeBaseline(){
 	return baseline;
 }
 
-float ChannelEvent::IntegratePulse(const size_t &start_/*=0*/, const size_t &stop_/*=0*/, bool calcQdc2/*=false*/){
+/// Integrate the baseline corrected trace for QDC in the range [start_, stop_] and return the result.
+float ChannelEvent::IntegratePulse(const size_t &start_/*=0*/, const size_t &stop_/*=0*/){
 	if(traceLength == 0 || baseline < 0.0){ return -9999; }
 	
 	size_t stop = (stop_ == 0?traceLength:stop_);
@@ -448,20 +449,32 @@ float ChannelEvent::IntegratePulse(const size_t &start_/*=0*/, const size_t &sto
 	// Check for start index greater than stop index.
 	if(start_+1 >= stop) return -9999;
 
-	if(calcQdc2){
-		qdc2 = 0.0;
-		for(size_t i = start_+1; i < stop; i++){ // Integrate using trapezoidal rule.
-			qdc2 += 0.5*(adcTrace[i-1] + adcTrace[i]) - baseline;
-		}
-		return qdc2;
-	}
-
 	qdc = 0.0;
 	for(size_t i = start_+1; i < stop; i++){ // Integrate using trapezoidal rule.
 		qdc += 0.5*(adcTrace[i-1] + adcTrace[i]) - baseline;
 	}
 
 	return qdc;
+}
+
+/// Integrate the baseline corrected trace for QDC2 in the range [start_, stop_] and return the result.
+float ChannelEvent::IntegratePulse2(const size_t &start_/*=0*/, const size_t &stop_/*=0*/){
+	if(traceLength == 0 || baseline < 0.0){ return -9999; }
+	
+	size_t stop = (stop_ == 0?traceLength:stop_);
+
+	// Check for out of bounds of trace.
+	if(stop >= traceLength) return -9999;
+	
+	// Check for start index greater than stop index.
+	if(start_+1 >= stop) return -9999;
+
+	qdc2 = 0.0;
+	for(size_t i = start_+1; i < stop; i++){ // Integrate using trapezoidal rule.
+		qdc2 += 0.5*(adcTrace[i-1] + adcTrace[i]) - baseline;
+	}
+
+	return qdc2;
 }
 
 /// Perform traditional CFD analysis on the waveform.

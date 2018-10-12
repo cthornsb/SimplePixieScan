@@ -178,8 +178,11 @@ class ChannelEvent : public XiaData {
 	/// Calculate the trace baseline, baseline standard deviation, and find the pulse maximum.
 	float ComputeBaseline();
 	
-	/// Integrate the baseline corrected trace in the range [start_, stop_] and return the result.
-	float IntegratePulse(const size_t &start_=0, const size_t &stop_=0, bool calcQdc2=false);
+	/// Integrate the baseline corrected trace for QDC in the range [start_, stop_] and return the result.
+	float IntegratePulse(const size_t &start_=0, const size_t &stop_=0);
+
+	/// Integrate the baseline corrected trace for QDC2 in the range [start_, stop_] and return the result.
+	float IntegratePulse2(const size_t &start_=0, const size_t &stop_=0);
 
 	/// Perform traditional CFD analysis on the waveform.
 	float AnalyzeCFD(const float &F_=0.5, const size_t &D_=1, const size_t &L_=1);
