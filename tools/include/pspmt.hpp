@@ -36,9 +36,11 @@ class fullEvent{
 	
 	float ltqdc[4];
 	float stqdc[4];
-	
+	float energy[4];	
+
 	float ltqdcSum;
 	float stqdcSum;
+	float energySum;
 
 	fullEvent() : tdiff(0), xpos(0), ypos(0), loc(0) { }
 	
@@ -55,13 +57,16 @@ class fullBarEvent{
 	unsigned short loc; // Location of the detector
 	
 	float ltqdc_L[4];
-	float ltqdc_R[4];
-
 	float stqdc_L[4];
+	float energy_L[4];
+	
+	float ltqdc_R[4];
 	float stqdc_R[4];
+	float energy_R[4];
 
 	float ltqdcSum_L, ltqdcSum_R;
 	float stqdcSum_L, stqdcSum_R;
+	float energySum_L, energySum_R;
 	
 	fullBarEvent() : tdiff_L(0), tdiff_R(0), xpos_L(0), xpos_R(0), ypos_L(0), ypos_R(0), loc(0) { }
 	

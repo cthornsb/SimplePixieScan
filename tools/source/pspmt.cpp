@@ -72,25 +72,29 @@ fullEvent::fullEvent(simpleEvent *dynode, simpleEvent *anode_SE, simpleEvent *an
 void fullEvent::compute(simpleEvent *dynode, simpleEvent *anode_SE, simpleEvent *anode_NE, simpleEvent *anode_NW, simpleEvent *anode_SW){
 	tdiff = dynode->tdiff;
 
-	if(!useFilterEnergy){	
-		ltqdc[0] = anode_SE->ltqdc;
-		ltqdc[1] = anode_NE->ltqdc;
-		ltqdc[2] = anode_NW->ltqdc;
-		ltqdc[3] = anode_SW->ltqdc;
-	}
-	else{
-		ltqdc[0] = (float)anode_SE->energy;
-		ltqdc[1] = (float)anode_NE->energy;
-		ltqdc[2] = (float)anode_NW->energy;
-		ltqdc[3] = (float)anode_SW->energy;
-	}
+	ltqdc[0] = anode_SE->ltqdc;
+	ltqdc[1] = anode_NE->ltqdc;
+	ltqdc[2] = anode_NW->ltqdc;
+	ltqdc[3] = anode_SW->ltqdc;
+
+	energy[0] = (float)anode_SE->energy;
+	energy[1] = (float)anode_NE->energy;
+	energy[2] = (float)anode_NW->energy;
+	energy[3] = (float)anode_SW->energy;
 	
 	ltqdcSum = ltqdc[0]+ltqdc[1]+ltqdc[2]+ltqdc[3];
 	stqdcSum = stqdc[0]+stqdc[1]+stqdc[2]+stqdc[3];
-	
-	xpos = ((ltqdc[0]+ltqdc[1])-(ltqdc[2]+ltqdc[3]))/ltqdcSum;
-	ypos = ((ltqdc[1]+ltqdc[2])-(ltqdc[0]+ltqdc[3]))/ltqdcSum;
-	
+	energySum = energy[0]+energy[1]+energy[2]+energy[3];
+
+	if(!useFilterEnergy){
+		xpos = ((ltqdc[0]+ltqdc[1])-(ltqdc[2]+ltqdc[3]))/ltqdcSum;
+		ypos = ((ltqdc[1]+ltqdc[2])-(ltqdc[0]+ltqdc[3]))/ltqdcSum;
+	}	
+	else{
+		xpos = ((energy[0]+energy[1])-(energy[2]+energy[3]))/energySum;
+		ypos = ((energy[1]+energy[2])-(energy[0]+energy[3]))/energySum;
+	}
+
 	loc = dynode->location;
 }
 
@@ -107,29 +111,26 @@ void fullBarEvent::compute(simpleEvent *dynode_L, simpleEvent *anode_SE_L, simpl
                            simpleEvent *dynode_R, simpleEvent *anode_SE_R, simpleEvent *anode_NE_R, simpleEvent *anode_NW_R, simpleEvent *anode_SW_R){
 	tdiff_L = dynode_L->tdiff;
 	tdiff_R = dynode_R->tdiff;
+	
+	ltqdc_L[0] = anode_SE_L->ltqdc;
+	ltqdc_L[1] = anode_NE_L->ltqdc;
+	ltqdc_L[2] = anode_NW_L->ltqdc;
+	ltqdc_L[3] = anode_SW_L->ltqdc;
 
-	if(!useFilterEnergy){	
-		ltqdc_L[0] = anode_SE_L->ltqdc;
-		ltqdc_L[1] = anode_NE_L->ltqdc;
-		ltqdc_L[2] = anode_NW_L->ltqdc;
-		ltqdc_L[3] = anode_SW_L->ltqdc;
+	ltqdc_R[0] = anode_SE_R->ltqdc;
+	ltqdc_R[1] = anode_NE_R->ltqdc;
+	ltqdc_R[2] = anode_NW_R->ltqdc;
+	ltqdc_R[3] = anode_SW_R->ltqdc;
 
-		ltqdc_R[0] = anode_SE_R->ltqdc;
-		ltqdc_R[1] = anode_NE_R->ltqdc;
-		ltqdc_R[2] = anode_NW_R->ltqdc;
-		ltqdc_R[3] = anode_SW_R->ltqdc;
-	}
-	else{
-		ltqdc_L[0] = (float)anode_SE_L->energy;
-		ltqdc_L[1] = (float)anode_NE_L->energy;
-		ltqdc_L[2] = (float)anode_NW_L->energy;
-		ltqdc_L[3] = (float)anode_SW_L->energy;
+	energy_L[0] = (float)anode_SE_L->energy;
+	energy_L[1] = (float)anode_NE_L->energy;
+	energy_L[2] = (float)anode_NW_L->energy;
+	energy_L[3] = (float)anode_SW_L->energy;
 
-		ltqdc_R[0] = (float)anode_SE_R->energy;
-		ltqdc_R[1] = (float)anode_NE_R->energy;
-		ltqdc_R[2] = (float)anode_NW_R->energy;
-		ltqdc_R[3] = (float)anode_SW_R->energy;
-	}
+	energy_R[0] = (float)anode_SE_R->energy;
+	energy_R[1] = (float)anode_NE_R->energy;
+	energy_R[2] = (float)anode_NW_R->energy;
+	energy_R[3] = (float)anode_SW_R->energy;
 
 	stqdc_L[0] = anode_SE_L->stqdc;
 	stqdc_L[1] = anode_NE_L->stqdc;
@@ -147,12 +148,21 @@ void fullBarEvent::compute(simpleEvent *dynode_L, simpleEvent *anode_SE_L, simpl
 	stqdcSum_L = stqdc_L[0]+stqdc_L[1]+stqdc_L[2]+stqdc_L[3];
 	stqdcSum_R = stqdc_R[0]+stqdc_R[1]+stqdc_R[2]+stqdc_R[3];
 
-	xpos_L = ((ltqdc_L[0]+ltqdc_L[1])-(ltqdc_L[2]+ltqdc_L[3]))/ltqdcSum_L;
-	ypos_L = ((ltqdc_L[1]+ltqdc_L[2])-(ltqdc_L[0]+ltqdc_L[3]))/ltqdcSum_L;
+	if(!useFilterEnergy){
+		xpos_L = ((ltqdc_L[0]+ltqdc_L[1])-(ltqdc_L[2]+ltqdc_L[3]))/ltqdcSum_L;
+		ypos_L = ((ltqdc_L[1]+ltqdc_L[2])-(ltqdc_L[0]+ltqdc_L[3]))/ltqdcSum_L;
 
-	xpos_R = -((ltqdc_R[0]+ltqdc_R[1])-(ltqdc_R[2]+ltqdc_R[3]))/ltqdcSum_R; // Sign is flipped to preserve x-axis of left side.
-	ypos_R = ((ltqdc_R[1]+ltqdc_R[2])-(ltqdc_R[0]+ltqdc_R[3]))/ltqdcSum_R;
-	
+		xpos_R = -((ltqdc_R[0]+ltqdc_R[1])-(ltqdc_R[2]+ltqdc_R[3]))/ltqdcSum_R; // Sign is flipped to preserve x-axis of left side.
+		ypos_R = ((ltqdc_R[1]+ltqdc_R[2])-(ltqdc_R[0]+ltqdc_R[3]))/ltqdcSum_R;
+	}
+	else{
+		xpos_L = ((energy_L[0]+energy_L[1])-(energy_L[2]+energy_L[3]))/energySum_L;
+		ypos_L = ((energy_L[1]+energy_L[2])-(energy_L[0]+energy_L[3]))/energySum_L;
+
+		xpos_R = -((energy_R[0]+energy_R[1])-(energy_R[2]+energy_R[3]))/energySum_R; // Sign is flipped to preserve x-axis of left side.
+		ypos_R = ((energy_R[1]+energy_R[2])-(energy_R[0]+energy_R[3]))/energySum_R;	
+	}	
+
 	loc = dynode_L->location;
 }
 
