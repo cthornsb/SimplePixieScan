@@ -104,7 +104,7 @@ bool PSPmtProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEv
 	}
 
 	// Fill the values into the root tree.
-	structure.Append(tdiff, channel_event->qdc, channel_event->qdc2, channel_event->energy, chanIdentifier, location);
+	structure.Append(tdiff, channel_event->qdc2, channel_event->qdc, channel_event->energy, chanIdentifier, location);
 
 	// In order to read back the information.
 	/*location_readback =  (chanIdentifier & 0x0F);
