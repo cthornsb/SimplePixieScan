@@ -700,6 +700,8 @@ int pspmtHandler::execute(int argc, char *argv[]){
 		outtree->Branch("y", &y);
 		outtree->Branch("z", &z);
 	}
+	else if(!singleEndedMode)
+		outtree->Branch("y", &y);
 	if(!singleEndedMode){
 		outtree->Branch("xdetL", &xdetL);
 		outtree->Branch("ydetL", &ydetL);
