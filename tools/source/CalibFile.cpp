@@ -29,6 +29,7 @@ unsigned int PositionCal::ReadPars(const std::vector<std::string> &pars_){
 		else if(index == 6) rotPsi = strtod(iter->c_str(), NULL)*deg2rad;
 		index++;
 	}
+	rotMatrix.SetRotationMatrix(rotTheta, rotPhi, rotPsi);
 	return id;
 }
 

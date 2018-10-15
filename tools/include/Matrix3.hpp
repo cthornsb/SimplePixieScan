@@ -48,9 +48,9 @@ class Matrix3{
 
 	void SetRow3(double p1, double p2, double p3);
 
-	void SetRotationMatrixSphere(double theta_, double phi_, double psi_=0.0);
+	void SetRotationMatrix(double theta_, double phi_, double psi_=0.0);
 
-	void SetRotationMatrixSphere(const Vector3 &vector_);
+	void SetRotationMatrix(const Vector3 &vector_);
 
 	void Transform(Vector3 &vector_);
 

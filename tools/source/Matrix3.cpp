@@ -16,12 +16,12 @@ Matrix3::Matrix3(){ _initialize(); }
 
 Matrix3::Matrix3(double theta_, double phi_, double psi_/*=0.0*/){
 	_initialize();
-	SetRotationMatrixSphere(theta_, phi_, psi_);
+	SetRotationMatrix(theta_, phi_, psi_);
 }
 
 Matrix3::Matrix3(const Vector3 &vector_){
 	_initialize();
-	SetRotationMatrixSphere(vector_);
+	SetRotationMatrix(vector_);
 }
 
 Matrix3::Matrix3(const double a00, const double a10, const double a20,
@@ -108,7 +108,7 @@ void Matrix3::SetRow3(double p1, double p2, double p3){
 	components[2][0] = p1; components[2][1] = p2; components[2][2] = p3; 
 }
 
-void Matrix3::SetRotationMatrixSphere(double theta_, double phi_, double psi_/*=0.0*/){
+void Matrix3::SetRotationMatrix(double theta_, double phi_, double psi_/*=0.0*/){
 	double sin_theta = std::sin(theta_), cos_theta = std::cos(theta_);
 	double sin_phi = std::sin(phi_), cos_phi = std::cos(phi_);
 	double sin_psi = std::sin(psi_), cos_psi = std::cos(psi_);
@@ -130,8 +130,8 @@ void Matrix3::SetRotationMatrixSphere(double theta_, double phi_, double psi_/*=
 	(*this) = psiM*(phiM*thetaM);
 }
 
-void Matrix3::SetRotationMatrixSphere(const Vector3 &vector_){
-	SetRotationMatrixSphere(vector_.axis[1], vector_.axis[2]);
+void Matrix3::SetRotationMatrix(const Vector3 &vector_){
+	SetRotationMatrix(vector_.axis[1], vector_.axis[2]);
 }
 
 // Transform an input vector by this matrix

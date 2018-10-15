@@ -7,6 +7,8 @@
 #include "CTerminal.h"
 #include "ColorTerm.hpp"
 
+#include "Matrix3.hpp"
+
 extern const double deg2rad;
 extern const double rad2deg;
 
@@ -37,6 +39,8 @@ class PositionCal : public CalType {
 	double rotPhi;
 	double rotPsi;
 	
+	Matrix3 rotMatrix;
+
 	PositionCal() : CalType(0), r0(0.0), theta(0.0), phi(0.0), rotTheta(0.0), rotPhi(0.0), rotPsi(0.0) { }
 	
 	PositionCal(const int &id_) : CalType(id_), r0(0.0), theta(0.0), phi(0.0), rotTheta(0.0), rotPhi(0.0), rotPsi(0.0) { }
