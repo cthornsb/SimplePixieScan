@@ -81,6 +81,11 @@ void fullEvent::compute(simpleEvent *dynode, simpleEvent *anode_SE, simpleEvent 
 	energy[1] = (float)anode_NE->energy;
 	energy[2] = (float)anode_NW->energy;
 	energy[3] = (float)anode_SW->energy;
+
+	stqdc[0] = anode_SE->stqdc;
+	stqdc[1] = anode_NE->stqdc;
+	stqdc[2] = anode_NW->stqdc;
+	stqdc[3] = anode_SW->stqdc;
 	
 	ltqdcSum = ltqdc[0]+ltqdc[1]+ltqdc[2]+ltqdc[3];
 	stqdcSum = stqdc[0]+stqdc[1]+stqdc[2]+stqdc[3];
