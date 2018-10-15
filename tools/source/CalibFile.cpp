@@ -24,6 +24,9 @@ unsigned int PositionCal::ReadPars(const std::vector<std::string> &pars_){
 		else if(index == 1) r0 = strtod(iter->c_str(), NULL);
 		else if(index == 2) theta = strtod(iter->c_str(), NULL)*deg2rad;
 		else if(index == 3) phi = strtod(iter->c_str(), NULL)*deg2rad;
+		else if(index == 4) rotTheta = strtod(iter->c_str(), NULL)*deg2rad;
+		else if(index == 5) rotPhi = strtod(iter->c_str(), NULL)*deg2rad;
+		else if(index == 6) rotPsi = strtod(iter->c_str(), NULL)*deg2rad;
 		index++;
 	}
 	return id;
@@ -31,8 +34,8 @@ unsigned int PositionCal::ReadPars(const std::vector<std::string> &pars_){
 
 std::string PositionCal::Print(bool fancy/*=true*/){
 	std::stringstream output;
-	if(fancy) output << " id=" << id << ", r0=" << r0 << ", theta=" << theta << ", phi=" << phi;
-	else output << id << "\t" << r0 << "\t" << theta;
+	if(fancy) output << " id=" << id << ", r0=" << r0 << ", theta=" << theta << ", phi=" << phi << ", rotation=(" << rotTheta << ", " << rotPhi << ", " << rotPsi << ")";
+	else output << id << "\t" << r0 << "\t" << theta << "\t" << rotTheta << "\t" << rotPhi << "\t" << rotPsi;
 	return output.str();
 }
 

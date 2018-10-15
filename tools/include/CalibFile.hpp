@@ -33,13 +33,16 @@ class PositionCal : public CalType {
 	double r0;
 	double theta;
 	double phi;
+	double rotTheta;
+	double rotPhi;
+	double rotPsi;
 	
-	PositionCal() : CalType(0), r0(0.0), theta(0.0), phi(0.0) { }
+	PositionCal() : CalType(0), r0(0.0), theta(0.0), phi(0.0), rotTheta(0.0), rotPhi(0.0), rotPsi(0.0) { }
 	
-	PositionCal(const int &id_) : CalType(id_), r0(0.0), theta(0.0), phi(0.0) { }
+	PositionCal(const int &id_) : CalType(id_), r0(0.0), theta(0.0), phi(0.0), rotTheta(0.0), rotPhi(0.0), rotPsi(0.0) { }
 	
-	PositionCal(const int &id_, const double &r0_, const double &theta_, const double &phi_) : 
-		CalType(id_), r0(r0_), theta(theta_), phi(phi_) { }
+	PositionCal(const int &id_, const double &r0_, const double &theta_, const double &phi_, const double &rotTheta_, const double &rotPhi_, const double &rotPsi_) : 
+		CalType(id_), r0(r0_), theta(theta_), phi(phi_), rotTheta(rotTheta_), rotPhi(rotPhi_), rotPsi(rotPsi_) { }
 		
 	PositionCal(const std::vector<std::string> &pars_);
 	
