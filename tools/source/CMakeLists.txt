@@ -1,5 +1,5 @@
 
-add_library(ToolObj OBJECT cmcalc.cpp CalibFile.cpp simpleTool.cpp)
+add_library(ToolObj OBJECT cmcalc.cpp CalibFile.cpp Vector3.cpp Matrix3.cpp simpleTool.cpp)
 add_library(ToolStatic STATIC $<TARGET_OBJECTS:ToolObj>)
 target_link_libraries(ToolStatic OptionStatic ScanStatic)
 
