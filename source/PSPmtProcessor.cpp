@@ -85,7 +85,7 @@ bool PSPmtProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEv
 	if(histsEnabled){ // Fill all diagnostic histograms.
 		if(tqdcIndex == 0){ // This is a dynode.
 			loc_tdiff_2d->Fill(tdiff, location); // Only dynodes get added to the tdiff spectrum
-			//sl_l_2d->Fill(channel_event->qdc, channel_event->qdc2/channel_event->qdc);
+			sltqdc_ltqdc_2d->Fill(channel_event->qdc, channel_event->qdc2/channel_event->qdc);
 		}
 		else{ // Only anodes get added to the tqdc spectrum. Determine which histogram to fill
 			loc_energy_2d->Fill(channel_event->qdc, location);
@@ -137,6 +137,7 @@ void PSPmtProcessor::GetHists(OnlineProcessor *online_){
 	online_->GenerateHist(loc_xpos_2d);
 	online_->GenerateHist(loc_ypos_2d);
 	online_->GenerateHist(ypos_xpos_2d);
+	online_->GenerateHist(sltqdc_ltqdc_2d);
 	online_->GenerateLocationHist(loc_1d);
 
 	histsEnabled = true;

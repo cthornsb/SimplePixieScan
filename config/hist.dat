@@ -45,6 +45,7 @@ pspmt:COLZ:Energy:a.u.:200:0:20000
 pspmt:COLZ:X Position:a.u.:200:-1:1
 pspmt:COLZ:Y Position:a.u.:200:-1:1
 pspmt:COLZ:X Position:a.u.:200:-1:1:Y Position:a.u.:200:-1:1
+pspmt:COLZ:L:a.u.:250:0:300000:S/L:a.u.:250:-1:1
 ###############################################################################
 trace:COLZ:Tdiff:ns:200:-100:100
 trace:COLZ:Energy:a.u.:200:0:20000

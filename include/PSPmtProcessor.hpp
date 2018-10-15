@@ -34,6 +34,7 @@ class PSPmtProcessor : public Processor{
 	Plotter *loc_xpos_2d;
 	Plotter *loc_ypos_2d;
 	Plotter *ypos_xpos_2d;
+	Plotter *sltqdc_ltqdc_2d;
 	Plotter *loc_1d;
 
 	// Handle an individual event.
