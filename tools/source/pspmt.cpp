@@ -115,8 +115,8 @@ void fullBarEvent::compute(simpleEvent *dynode_L, simpleEvent *anode_SE_L, simpl
 	tdiff_R = dynode_R->tdiff;
 
 	ltqdc_L = dynode_L->ltqdc;
-	ltqdc_R = dynode_L->ltqdc;
-	stqdc_L = dynode_R->stqdc;
+	ltqdc_R = dynode_R->ltqdc;
+	stqdc_L = dynode_L->stqdc;
 	stqdc_R = dynode_R->stqdc;
 	
 	tqdc_L[0] = anode_SE_L->ltqdc;
