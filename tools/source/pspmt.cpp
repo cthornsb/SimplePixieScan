@@ -72,28 +72,25 @@ fullEvent::fullEvent(simpleEvent *dynode, simpleEvent *anode_SE, simpleEvent *an
 void fullEvent::compute(simpleEvent *dynode, simpleEvent *anode_SE, simpleEvent *anode_NE, simpleEvent *anode_NW, simpleEvent *anode_SW){
 	tdiff = dynode->tdiff;
 
-	ltqdc[0] = anode_SE->ltqdc;
-	ltqdc[1] = anode_NE->ltqdc;
-	ltqdc[2] = anode_NW->ltqdc;
-	ltqdc[3] = anode_SW->ltqdc;
+	ltqdc = dynode->ltqdc;
+	stqdc = dynode->stqdc;
+
+	tqdc[0] = anode_SE->ltqdc;
+	tqdc[1] = anode_NE->ltqdc;
+	tqdc[2] = anode_NW->ltqdc;
+	tqdc[3] = anode_SW->ltqdc;
 
 	energy[0] = (float)anode_SE->energy;
 	energy[1] = (float)anode_NE->energy;
 	energy[2] = (float)anode_NW->energy;
 	energy[3] = (float)anode_SW->energy;
 
-	stqdc[0] = anode_SE->stqdc;
-	stqdc[1] = anode_NE->stqdc;
-	stqdc[2] = anode_NW->stqdc;
-	stqdc[3] = anode_SW->stqdc;
-	
-	ltqdcSum = ltqdc[0]+ltqdc[1]+ltqdc[2]+ltqdc[3];
-	stqdcSum = stqdc[0]+stqdc[1]+stqdc[2]+stqdc[3];
+	tqdcSum = tqdc[0]+tqdc[1]+tqdc[2]+tqdc[3];
 	energySum = energy[0]+energy[1]+energy[2]+energy[3];
 
 	if(!useFilterEnergy){
-		xpos = ((ltqdc[0]+ltqdc[1])-(ltqdc[2]+ltqdc[3]))/ltqdcSum;
-		ypos = ((ltqdc[1]+ltqdc[2])-(ltqdc[0]+ltqdc[3]))/ltqdcSum;
+		xpos = ((tqdc[0]+tqdc[1])-(tqdc[2]+tqdc[3]))/tqdcSum;
+		ypos = ((tqdc[1]+tqdc[2])-(tqdc[0]+tqdc[3]))/tqdcSum;
 	}	
 	else{
 		xpos = ((energy[0]+energy[1])-(energy[2]+energy[3]))/energySum;
@@ -116,16 +113,21 @@ void fullBarEvent::compute(simpleEvent *dynode_L, simpleEvent *anode_SE_L, simpl
                            simpleEvent *dynode_R, simpleEvent *anode_SE_R, simpleEvent *anode_NE_R, simpleEvent *anode_NW_R, simpleEvent *anode_SW_R){
 	tdiff_L = dynode_L->tdiff;
 	tdiff_R = dynode_R->tdiff;
-	
-	ltqdc_L[0] = anode_SE_L->ltqdc;
-	ltqdc_L[1] = anode_NE_L->ltqdc;
-	ltqdc_L[2] = anode_NW_L->ltqdc;
-	ltqdc_L[3] = anode_SW_L->ltqdc;
 
-	ltqdc_R[0] = anode_SE_R->ltqdc;
-	ltqdc_R[1] = anode_NE_R->ltqdc;
-	ltqdc_R[2] = anode_NW_R->ltqdc;
-	ltqdc_R[3] = anode_SW_R->ltqdc;
+	ltqdc_L = dynode_L->ltqdc;
+	ltqdc_R = dynode_L->ltqdc;
+	stqdc_L = dynode_R->stqdc;
+	stqdc_R = dynode_R->stqdc;
+	
+	tqdc_L[0] = anode_SE_L->ltqdc;
+	tqdc_L[1] = anode_NE_L->ltqdc;
+	tqdc_L[2] = anode_NW_L->ltqdc;
+	tqdc_L[3] = anode_SW_L->ltqdc;
+
+	tqdc_R[0] = anode_SE_R->ltqdc;
+	tqdc_R[1] = anode_NE_R->ltqdc;
+	tqdc_R[2] = anode_NW_R->ltqdc;
+	tqdc_R[3] = anode_SW_R->ltqdc;
 
 	energy_L[0] = (float)anode_SE_L->energy;
 	energy_L[1] = (float)anode_NE_L->energy;
@@ -137,28 +139,15 @@ void fullBarEvent::compute(simpleEvent *dynode_L, simpleEvent *anode_SE_L, simpl
 	energy_R[2] = (float)anode_NW_R->energy;
 	energy_R[3] = (float)anode_SW_R->energy;
 
-	stqdc_L[0] = anode_SE_L->stqdc;
-	stqdc_L[1] = anode_NE_L->stqdc;
-	stqdc_L[2] = anode_NW_L->stqdc;
-	stqdc_L[3] = anode_SW_L->stqdc;
-
-	stqdc_R[0] = anode_SE_R->stqdc;
-	stqdc_R[1] = anode_NE_R->stqdc;
-	stqdc_R[2] = anode_NW_R->stqdc;
-	stqdc_R[3] = anode_SW_R->stqdc;
-	
-	ltqdcSum_L = ltqdc_L[0]+ltqdc_L[1]+ltqdc_L[2]+ltqdc_L[3];
-	ltqdcSum_R = ltqdc_R[0]+ltqdc_R[1]+ltqdc_R[2]+ltqdc_R[3];
-
-	stqdcSum_L = stqdc_L[0]+stqdc_L[1]+stqdc_L[2]+stqdc_L[3];
-	stqdcSum_R = stqdc_R[0]+stqdc_R[1]+stqdc_R[2]+stqdc_R[3];
+	tqdcSum_L = tqdc_L[0]+tqdc_L[1]+tqdc_L[2]+tqdc_L[3];
+	tqdcSum_R = tqdc_R[0]+tqdc_R[1]+tqdc_R[2]+tqdc_R[3];
 
 	if(!useFilterEnergy){
-		xpos_L = ((ltqdc_L[0]+ltqdc_L[1])-(ltqdc_L[2]+ltqdc_L[3]))/ltqdcSum_L;
-		ypos_L = ((ltqdc_L[1]+ltqdc_L[2])-(ltqdc_L[0]+ltqdc_L[3]))/ltqdcSum_L;
+		xpos_L = ((tqdc_L[0]+tqdc_L[1])-(tqdc_L[2]+tqdc_L[3]))/tqdcSum_L;
+		ypos_L = ((tqdc_L[1]+tqdc_L[2])-(tqdc_L[0]+tqdc_L[3]))/tqdcSum_L;
 
-		xpos_R = -((ltqdc_R[0]+ltqdc_R[1])-(ltqdc_R[2]+ltqdc_R[3]))/ltqdcSum_R; // Sign is flipped to preserve x-axis of left side.
-		ypos_R = ((ltqdc_R[1]+ltqdc_R[2])-(ltqdc_R[0]+ltqdc_R[3]))/ltqdcSum_R;
+		xpos_R = -((tqdc_R[0]+tqdc_R[1])-(tqdc_R[2]+tqdc_R[3]))/tqdcSum_R; // Sign is flipped to preserve x-axis of left side.
+		ypos_R = ((tqdc_R[1]+tqdc_R[2])-(tqdc_R[0]+tqdc_R[3]))/tqdcSum_R;
 	}
 	else{
 		xpos_L = ((energy_L[0]+energy_L[1])-(energy_L[2]+energy_L[3]))/energySum_L;
@@ -574,25 +563,25 @@ void pspmtHandler::handleEvents(){
 
 void pspmtHandler::setVariables(fullEvent *evt_){
 	tdiff_L = evt_->tdiff;
-	tqdc_L = evt_->ltqdcSum;
-	stqdc_L = evt_->stqdcSum;
+	tqdc_L = evt_->ltqdc;
+	stqdc_L = evt_->stqdc;
 	location = evt_->loc;
 
 	xdetL = evt_->xpos;
 	ydetL = evt_->ypos;
 
 	if(debug){
-		for(size_t i = 0; i < 4; i++) allTQDC_L[i] = evt_->ltqdc[i];
+		for(size_t i = 0; i < 4; i++) allTQDC_L[i] = evt_->tqdc[i];
 	}
 }
 
 void pspmtHandler::setVariables(fullBarEvent *evt_){
 	tdiff_L = evt_->tdiff_L;
 	tdiff_R = evt_->tdiff_R;
-	tqdc_L = evt_->ltqdcSum_L;
-	tqdc_R = evt_->ltqdcSum_R;
-	stqdc_L = evt_->stqdcSum_L;
-	stqdc_R = evt_->stqdcSum_R;
+	tqdc_L = evt_->ltqdc_L;
+	tqdc_R = evt_->ltqdc_R;
+	stqdc_L = evt_->stqdc_L;
+	stqdc_R = evt_->stqdc_R;
 	location = evt_->loc;
 
 	xdetL = evt_->xpos_L;
@@ -602,8 +591,8 @@ void pspmtHandler::setVariables(fullBarEvent *evt_){
 
 	if(debug){
 		for(size_t i = 0; i < 4; i++){
-			allTQDC_L[i] = evt_->ltqdc_L[i];
-			allTQDC_R[i] = evt_->ltqdc_R[i];
+			allTQDC_L[i] = evt_->tqdc_L[i];
+			allTQDC_R[i] = evt_->tqdc_R[i];
 		}
 	}
 }

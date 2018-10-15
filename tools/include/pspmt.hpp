@@ -32,17 +32,17 @@ class fullEvent{
 	double tdiff; // Dynode time difference
 	float xpos; // X-position computed from the tqdc
 	float ypos; // Y-position computed from the tqdc
+	float stqdc; // Short integral from the dynode signal.
+	float ltqdc; // Long integral from the dynode signal.
 	unsigned short loc; // Location of the detector
 	
-	float ltqdc[4];
-	float stqdc[4];
+	float tqdc[4];
 	float energy[4];	
 
-	float ltqdcSum;
-	float stqdcSum;
+	float tqdcSum;
 	float energySum;
 
-	fullEvent() : tdiff(0), xpos(0), ypos(0), loc(0) { }
+	fullEvent() : tdiff(0), xpos(0), ypos(0), stqdc(0), ltqdc(0), loc(0) { }
 	
 	fullEvent(simpleEvent *dynode, simpleEvent *anode_SE, simpleEvent *anode_NE, simpleEvent *anode_NW, simpleEvent *anode_SW);
 	
@@ -54,21 +54,20 @@ class fullBarEvent{
 	double tdiff_L, tdiff_R; // Dynode time difference
 	float xpos_L, xpos_R; // X-position computed from the tqdc
 	float ypos_L, ypos_R; // Y-position computed from the tqdc
+	float stqdc_L, stqdc_R; // Short integral from the dynode signal.
+	float ltqdc_L, ltqdc_R; // Long integral from the dynode signal.
 	unsigned short loc; // Location of the detector
 	
-	float ltqdc_L[4];
-	float stqdc_L[4];
+	float tqdc_L[4];
 	float energy_L[4];
 	
-	float ltqdc_R[4];
-	float stqdc_R[4];
+	float tqdc_R[4];
 	float energy_R[4];
 
-	float ltqdcSum_L, ltqdcSum_R;
-	float stqdcSum_L, stqdcSum_R;
+	float tqdcSum_L, tqdcSum_R;
 	float energySum_L, energySum_R;
 	
-	fullBarEvent() : tdiff_L(0), tdiff_R(0), xpos_L(0), xpos_R(0), ypos_L(0), ypos_R(0), loc(0) { }
+	fullBarEvent() : tdiff_L(0), tdiff_R(0), xpos_L(0), xpos_R(0), ypos_L(0), ypos_R(0), stqdc_L(0), stqdc_R(0), ltqdc_L(0), ltqdc_R(0) ,loc(0) { }
 	
 	fullBarEvent(simpleEvent *dynode_L, simpleEvent *anode_SE_L, simpleEvent *anode_NE_L, simpleEvent *anode_NW_L, simpleEvent *anode_SW_L,
 	      simpleEvent *dynode_R, simpleEvent *anode_SE_R, simpleEvent *anode_NE_R, simpleEvent *anode_NW_R, simpleEvent *anode_SW_R);
