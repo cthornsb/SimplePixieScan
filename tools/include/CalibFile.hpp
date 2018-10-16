@@ -39,6 +39,7 @@ class PositionCal : public CalType {
 	double rotPhi;
 	double rotPsi;
 	
+	Vector3 position; // Position vector in cartesian coordinates.
 	Matrix3 rotMatrix;
 
 	PositionCal() : CalType(0), r0(0.0), theta(0.0), phi(0.0), rotTheta(0.0), rotPhi(0.0), rotPsi(0.0) { }
@@ -49,7 +50,13 @@ class PositionCal : public CalType {
 		CalType(id_), r0(r0_), theta(theta_), phi(phi_), rotTheta(rotTheta_), rotPhi(rotPhi_), rotPsi(rotPsi_) { }
 		
 	PositionCal(const std::vector<std::string> &pars_);
+
+	Vector3 *GetPosition(){ return &position; }
 	
+	Matrix3 *GetRotationMatrix(){ return &rotMatrix; }
+	
+	void Transform(Vector3 &vec);
+
 	virtual std::string Print(bool fancy=true);
 
 	virtual unsigned int ReadPars(const std::vector<std::string> &pars_);

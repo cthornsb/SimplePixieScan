@@ -16,6 +16,10 @@ const double rad2deg = 57.295779579;
 
 CalibEntry dummyCalib(NULL, NULL, NULL, NULL);
 
+void PositionCal::Transform(Vector3 &vec){
+	rotMatrix.Transform(vec);
+}
+
 unsigned int PositionCal::ReadPars(const std::vector<std::string> &pars_){ 
 	defaultVals = false;
 	int index = 0;
@@ -29,7 +33,9 @@ unsigned int PositionCal::ReadPars(const std::vector<std::string> &pars_){
 		else if(index == 6) rotPsi = strtod(iter->c_str(), NULL)*deg2rad;
 		index++;
 	}
+	Sphere2Cart(Vector3(r0, theta, phi), position);
 	rotMatrix.SetRotationMatrix(rotTheta, rotPhi, rotPsi);
+	std::cout << rotMatrix.Dump() << std::endl;
 	return id;
 }
 
