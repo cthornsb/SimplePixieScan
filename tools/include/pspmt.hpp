@@ -9,6 +9,15 @@
 
 class PSPmtStructure;
 
+class gPar{
+  public:
+	double p0, p1, p2;
+  
+	gPar(){ }
+	
+	gPar(const double &A, const double &mean, const double &sigma) : p0(A), p1(mean), p2(sigma) { }
+};
+
 class simpleEvent{
   public:
 	double tdiff;
@@ -165,11 +174,5 @@ class pspmtBarMap{
 	
 	void buildEventList(std::vector<fullBarEvent*>& vec_);
 };
-
-fullBarEvent* buildBarEvent(pspmtMapEntry *entryL_, pspmtMapEntry *entryR_);
-
-short getXcell(const double &xpos);
-
-short getYcell(const double &ypos);
 
 #endif

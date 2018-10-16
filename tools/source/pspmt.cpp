@@ -5,6 +5,13 @@
 #include "TFile.h"
 #include "TTree.h"
 #include "TBranch.h"
+#include "TCanvas.h"
+#include "TF1.h"
+#include "TGraph.h"
+#include "TSpectrum.h"
+#include "TH1.h"
+#include "TH2.h"
+#include "TLine.h"
 
 #include "CTerminal.h"
 
@@ -23,6 +30,8 @@ const double ySpacing=height/4;
 
 // This is global to save a lot of headaches passing it around everywhere.
 bool useFilterEnergy=false;
+
+bool compare(const gPar &l, const gPar &r){ return (l.p1 < r.p1); }
 
 template <typename T>
 void writeTNamed(const char *label_, const T &val_, const int &precision_=-1){
@@ -48,6 +57,34 @@ fullBarEvent* buildBarEvent(pspmtMapEntry *entryL_, pspmtMapEntry *entryR_){
 		evtArrayR[i].pop_front();
 	}
 	return evt;
+}
+
+std::string getFuncStr(int nPeak){
+	std::stringstream retval;
+	retval << "gaus";
+	for(int i = 1; i < nPeak; i++)
+		retval << "+gaus(" << 3*i << ")";
+	return retval.str();
+}
+
+std::string getDrawStr(TF1 *f, int nPeak, const std::string &var){
+	std::stringstream retval;
+	retval << f->GetParameter(0);
+	for(int i = 1; i < nPeak; i++){
+		if(f->GetParameter(i) >= 0) retval << "+";
+		retval << f->GetParameter(i) << "*" << var;
+		if(i > 1) retval << "^" << i;
+	}
+	return retval.str();
+}
+
+void setInitPars(TF1 *f, TSpectrum *spec, int nPeak, double sigma=0.05){
+	for(int i = 0; i < nPeak; i++){
+		f->SetParameter(3*i, spec->GetPositionY()[i]);
+		f->SetParameter(3*i+1, spec->GetPositionX()[i]);
+		f->SetParameter(3*i+2, sigma);
+		//f->SetParLimits(3*i+2, 0.025, 0.075);
+	}
 }
 
 short getXcell(const double &xpos){
@@ -362,10 +399,13 @@ class pspmtHandler : public simpleTool {
 	
 	PSPmtStructure *ptr;
 
+	TH2F *calHist;
+
 	bool singleEndedMode;
 	bool noTimeMode;
 	bool noEnergyMode;
 	bool noPositionMode;
+	bool calibrationMode;
 
 	std::string countsString;
 	unsigned long long totalCounts;
@@ -385,6 +425,8 @@ class pspmtHandler : public simpleTool {
 
 	void process();
 
+	void handleCalibration();
+
 	void handleEvents();
 
 	void setVariables(fullEvent* evt_);
@@ -392,8 +434,8 @@ class pspmtHandler : public simpleTool {
 	void setVariables(fullBarEvent* evt_);
 
   public:
-	pspmtHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), map(), barmap(), ptr(NULL), singleEndedMode(false), noTimeMode(false), noEnergyMode(false), 
-	                 noPositionMode(false), totalCounts(0), totalDataTime(0) { }
+	pspmtHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), map(), barmap(), ptr(NULL), calHist(NULL), singleEndedMode(false), 
+	                 noTimeMode(false), noEnergyMode(false), noPositionMode(false), calibrationMode(false), totalCounts(0), totalDataTime(0) { }
 
 	~pspmtHandler();
 	
@@ -529,6 +571,117 @@ void pspmtHandler::process(){
 	outtree->Fill();
 }
 
+void pspmtHandler::handleCalibration(){
+	TSpectrum yspec(4);
+	TSpectrum xspec(8);
+	
+	TF1 *fy = new TF1("fy", getFuncStr(4).c_str(), -1, 1);
+	TF1 *fx = new TF1("fx", getFuncStr(8).c_str(), -1, 1);
+
+	TH1D *hx = calHist->ProjectionX("hx");
+	TH1D *hy = calHist->ProjectionY("hy");
+
+	yspec.Search(hy);
+	xspec.Search(hx);
+
+	setInitPars(fy, &yspec, 4);
+	setInitPars(fx, &xspec, 8);
+	
+	hy->Fit(fy, "Q");
+	hx->Fit(fx, "Q");
+
+	std::vector<gPar> ypars;
+	std::vector<gPar> xpars;
+
+	for(int i = 0; i < 4; i++){
+		ypars.push_back(gPar(fy->GetParameter(3*i), fy->GetParameter(3*i+1), fy->GetParameter(3*i+2)));
+	}
+	for(int i = 0; i < 8; i++){
+		xpars.push_back(gPar(fx->GetParameter(3*i), fx->GetParameter(3*i+1), fx->GetParameter(3*i+2)));
+	}
+	
+	// Sort by mean.
+	std::sort(ypars.begin(), ypars.end(), compare);
+	std::sort(xpars.begin(), xpars.end(), compare);
+
+	double ypos[5];
+	double xpos[9];
+	
+	for(int i = 1; i < 4; i++){
+		ypos[i] = (ypars[i].p1 - ypars[i-1].p1)/2 + ypars[i-1].p1;
+	}
+	ypos[0] = ypars[0].p1 - (ypos[1]-ypars[0].p1);
+	ypos[4] = ypars[3].p1 + (ypars[3].p1-ypos[3]);
+	for(int i = 1; i < 8; i++){
+		xpos[i] = (xpars[i].p1 - xpars[i-1].p1)/2 + xpars[i-1].p1;
+	}
+	xpos[0] = xpars[0].p1 - (xpos[1]-xpars[0].p1);
+	xpos[8] = xpars[7].p1 + (xpars[7].p1-xpos[7]);
+	
+	TLine *ylines[5];
+	TLine *xlines[9];
+
+	TGraph *ypoints = new TGraph(5);
+	TGraph *xpoints = new TGraph(9);
+
+	xpoints->SetMarkerStyle(21);
+	ypoints->SetMarkerStyle(21);
+
+	// Horizontal lines
+	for(int i = 0; i <= 4; i++){
+		ypoints->SetPoint(i, ypos[i], -(height/2)+(height/4)*i);
+		if(debug) ylines[i] = new TLine(xpos[0], ypos[i], xpos[8], ypos[i]);
+	}
+	// Vertical lines
+	for(int i = 0; i <= 8; i++){
+		xpoints->SetPoint(i, xpos[i], -(width/2)+(width/8)*i);
+		if(debug) xlines[i] = new TLine(xpos[i], ypos[0], xpos[i], ypos[4]);
+	}
+
+	TF1 *xCalFit = new TF1("xCalFit", "pol3", -1, 1);
+	TF1 *yCalFit = new TF1("yCalFit", "pol1", -1, 1);
+	
+	xCalFit->SetParameters(0, 3, 0, 0);
+	yCalFit->SetParameters(0, 3);
+
+	xpoints->Fit(xCalFit, "Q");
+	ypoints->Fit(yCalFit, "Q");
+
+	std::cout << " PSPMT position calibration data:\n";
+	std::cout << "  X: " << xCalFit->GetParameter(0) << "\t" << xCalFit->GetParameter(1) << "\t" << xCalFit->GetParameter(2) << "\t" << xCalFit->GetParameter(3) << std::endl;
+	std::cout << "  Y: " << yCalFit->GetParameter(0) << "\t" << xCalFit->GetParameter(1) << std::endl;
+
+	if(debug){ // Draw debug histograms to the screen.
+		initRootGraphics();
+
+		openCanvas1();
+
+		can1->cd();
+		calHist->Draw("COLZ");
+		for(int i = 0; i <= 4; i++){
+			ylines[i]->Draw("SAME");
+		}
+		for(int i = 0; i <= 8; i++){
+			xlines[i]->Draw("SAME");
+		}
+
+		openCanvas2()->Divide(2, 2);
+
+		can2->cd(1);
+		hx->Draw();
+		can2->cd(2);
+		hy->Draw();
+
+		can2->cd(3);
+		xpoints->Draw("AP");
+		can2->cd(4);
+		ypoints->Draw("AP");
+		
+		// Wait for the user to finish before closing the application.
+		wait();
+	}
+}
+
 void pspmtHandler::handleEvents(){
 	std::vector<simpleEvent> events;
 	
@@ -560,7 +713,10 @@ void pspmtHandler::handleEvents(){
 		// Clean up	
 		for(std::vector<fullBarEvent*>::iterator iter = fullEvents.begin(); iter != fullEvents.end(); iter++){
 			setVariables((*iter));
-			process();
+			if(!calibrationMode)
+				process();
+			else
+				calHist->Fill(xdetL, ydetL);
 			delete (*iter);
 		}
 		fullEvents.clear();
@@ -576,12 +732,17 @@ void pspmtHandler::handleEvents(){
 		// Clean up	
 		for(std::vector<fullEvent*>::iterator iter = fullEvents.begin(); iter != fullEvents.end(); iter++){
 			setVariables((*iter));
-			process();
+			if(!calibrationMode)
+				process();
+			else
+				calHist->Fill(xdetL, ydetL);
 			delete (*iter);
 		}
 		fullEvents.clear();
 		events.clear();
 	}
+	
+	if(calibrationMode) handleCalibration();
 }
 
 void pspmtHandler::setVariables(fullEvent *evt_){
@@ -631,6 +792,7 @@ void pspmtHandler::addOptions(){
 	addOption(optionExt("no-time", no_argument, NULL, 0x0, "", "Do not use time calibration."), userOpts, optstr);
 	addOption(optionExt("no-position", no_argument, NULL, 0x0, "", "Do not use position calibration."), userOpts, optstr);
 	addOption(optionExt("filter-energy", no_argument, NULL, 0x0, "", "Use Pixie filter energy instead of TQDC."), userOpts, optstr);
+	addOption(optionExt("calibrate", no_argument, NULL, 0x0, "", "Calibrate the PSPMT X-Y position."), userOpts, optstr);
 }
 
 bool pspmtHandler::processArgs(){
@@ -656,6 +818,10 @@ bool pspmtHandler::processArgs(){
 	if(userOpts.at(6).active){
 		useFilterEnergy = true;
 	}
+	if(userOpts.at(7).active){
+		calibrationMode = true;
+		calHist = new TH2F("calHist", "pspmt calibration hist", 250, -1, 1, 250, -1, 1);
+	}
 
 	return true;
 }
@@ -663,9 +829,6 @@ bool pspmtHandler::processArgs(){
 int pspmtHandler::execute(int argc, char *argv[]){
 	if(!setup(argc, argv))
 		return 0;
-
-	// Seed the random number generator.
-	srand(time(NULL));
 
 	if(input_filename.empty()){
 		std::cout << " Error: Input filename not specified!\n";
@@ -692,56 +855,58 @@ int pspmtHandler::execute(int argc, char *argv[]){
 
 	std::cout << " Loaded " << numLinesRead << " PSPMT detectors from pspmt map file.\n";	
 
-	if(!noPositionMode && !calib.LoadPositionCal((setupDir+"position.cal").c_str())) return 3;
-	if(!noTimeMode && !calib.LoadTimeCal((setupDir+"time.cal").c_str())) return 4;
-	if(!noEnergyMode && !calib.LoadEnergyCal((setupDir+"energy.cal").c_str())) return 5;
-	if(!singleEndedMode && !calib.LoadBarCal((setupDir+"bars.cal").c_str())) return 6;
+	if(!calibrationMode){
+		if(!noPositionMode && !calib.LoadPositionCal((setupDir+"position.cal").c_str())) return 3;
+		if(!noTimeMode && !calib.LoadTimeCal((setupDir+"time.cal").c_str())) return 4;
+		if(!noEnergyMode && !calib.LoadEnergyCal((setupDir+"energy.cal").c_str())) return 5;
+		if(!singleEndedMode && !calib.LoadBarCal((setupDir+"bars.cal").c_str())) return 6;
 
-	if(output_filename.empty()){
-		std::cout << " Error: Output filename not specified!\n";
-		return 7;
-	}
-	
-	if(!openOutputFile()){
-		std::cout << " Error: Failed to load output file \"" << output_filename << "\".\n";
-		return 8;
-	}
-
-	outtree = new TTree("data", "Processed PSPMT data");
-
-	outtree->Branch("ctof", &ctof);
-	if(!noPositionMode)
-		outtree->Branch("energy", &energy);
-	outtree->Branch("tqdc", &tqdc);
-	outtree->Branch("stqdc", &stqdc);
-	if(!noEnergyMode)
-		outtree->Branch("ctqdc", &ctqdc);
-	if(!noPositionMode){
-		outtree->Branch("r", &r);
-		outtree->Branch("theta", &theta);
-		outtree->Branch("phi", &phi);
-		outtree->Branch("x", &x);
-		outtree->Branch("y", &y);
-		outtree->Branch("z", &z);
-	}
-	else if(!singleEndedMode)
-		outtree->Branch("y", &y);
-	if(!singleEndedMode){
-		outtree->Branch("xdetL", &xdetL);
-		outtree->Branch("ydetL", &ydetL);
-		outtree->Branch("xdetR", &xdetR);
-		outtree->Branch("ydetR", &ydetR);
-		if(debug){
-			outtree->Branch("anodeL[4]", allTQDC_L);
-			outtree->Branch("anodeR[4]", allTQDC_R);
+		if(output_filename.empty()){
+			std::cout << " Error: Output filename not specified!\n";
+			return 7;
 		}
+	
+		if(!openOutputFile()){
+			std::cout << " Error: Failed to load output file \"" << output_filename << "\".\n";
+			return 8;
+		}
+
+		outtree = new TTree("data", "Processed PSPMT data");
+
+		outtree->Branch("ctof", &ctof);
+		if(!noPositionMode)
+			outtree->Branch("energy", &energy);
+		outtree->Branch("tqdc", &tqdc);
+		outtree->Branch("stqdc", &stqdc);
+		if(!noEnergyMode)
+			outtree->Branch("ctqdc", &ctqdc);
+		if(!noPositionMode){
+			outtree->Branch("r", &r);
+			outtree->Branch("theta", &theta);
+			outtree->Branch("phi", &phi);
+			outtree->Branch("x", &x);
+			outtree->Branch("y", &y);
+			outtree->Branch("z", &z);
+		}
+		else if(!singleEndedMode)
+			outtree->Branch("y", &y);
+		if(!singleEndedMode){
+			outtree->Branch("xdetL", &xdetL);
+			outtree->Branch("ydetL", &ydetL);
+			outtree->Branch("xdetR", &xdetR);
+			outtree->Branch("ydetR", &ydetR);
+			if(debug){
+				outtree->Branch("anodeL[4]", allTQDC_L);
+				outtree->Branch("anodeR[4]", allTQDC_R);
+			}
+		}
+		else{
+			outtree->Branch("xdet", &xdetL);
+			outtree->Branch("ydet", &ydetL);
+			if(debug) outtree->Branch("anode[4]", allTQDC_L);
+		}
+		outtree->Branch("loc", &location);
 	}
-	else{
-		outtree->Branch("xdet", &xdetL);
-		outtree->Branch("ydet", &ydetL);
-		if(debug) outtree->Branch("anode[4]", allTQDC_L);
-	}
-	outtree->Branch("loc", &location);
 
 	int file_counter = 1;
 	while(openInputFile()){
@@ -760,40 +925,44 @@ int pspmtHandler::execute(int argc, char *argv[]){
 			return 9;
 		}
 
-		// Get the data time from the input file.
-		TNamed *named;
-		infile->GetObject("head/file01/Data time", named);
-		if(named){
-			double fileDataTime = strtod(named->GetTitle(), NULL);
-			if(fileDataTime > 0)
-				totalDataTime += fileDataTime;
-			else
-				std::cout << " Warning: Encountered negative data time (" << fileDataTime << " s)\n";
+		if(!calibrationMode){
+			// Get the data time from the input file.
+			TNamed *named;
+			infile->GetObject("head/file01/Data time", named);
+			if(named){
+				double fileDataTime = strtod(named->GetTitle(), NULL);
+				if(fileDataTime > 0)
+					totalDataTime += fileDataTime;
+				else
+					std::cout << " Warning: Encountered negative data time (" << fileDataTime << " s)\n";
+			}
+			else 
+				std::cout << " Warning: Failed to find pixie data time in input file!\n";
 		}
-		else 
-			std::cout << " Warning: Failed to find pixie data time in input file!\n";
 
 		// Handle all events.
 		while(getNextEntry())
 			handleEvents();
 	}
 
-	// Write output tree to file.
-	outfile->cd();
-	outtree->Write();
+	if(!calibrationMode){
+		// Write output tree to file.
+		outfile->cd();
+		outtree->Write();
 
-	// Write calibration information to output file.
-	calib.Write(outfile);
+		// Write calibration information to output file.
+		calib.Write(outfile);
 
-	// Write the total number of logic counts, if enabled.
-	outfile->cd();
-	if(totalCounts > 0) 
-		writeTNamed(countsString.c_str(), totalCounts);
+		// Write the total number of logic counts, if enabled.
+		outfile->cd();
+		if(totalCounts > 0) 
+			writeTNamed(countsString.c_str(), totalCounts);
 
-	// Write the total data time.
-	writeTNamed("time", totalDataTime, 1);
+		// Write the total data time.
+		writeTNamed("time", totalDataTime, 1);
 
-	std::cout << "\n\n Done! Wrote " << outtree->GetEntries() << " entries to '" << output_filename << "'.\n";
+		std::cout << "\n\n Done! Wrote " << outtree->GetEntries() << " entries to '" << output_filename << "'.\n";
+	}
 			
 	return 0;
 }
