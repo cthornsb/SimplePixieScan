@@ -14,7 +14,7 @@ void Matrix3::_initialize(){
 
 Matrix3::Matrix3(){ _initialize(); }
 
-Matrix3::Matrix3(double theta_, double phi_, double psi_/*=0.0*/){
+Matrix3::Matrix3(const double &theta_, const double &phi_, const double &psi_/*=0.0*/){
 	_initialize();
 	SetRotationMatrix(theta_, phi_, psi_);
 }
@@ -24,9 +24,9 @@ Matrix3::Matrix3(const Vector3 &vector_){
 	SetRotationMatrix(vector_);
 }
 
-Matrix3::Matrix3(const double a00, const double a10, const double a20,
-	             const double a01, const double a11, const double a21,
-	             const double a02, const double a12, const double a22){
+Matrix3::Matrix3(const double &a00, const double &a10, const double &a20,
+	         const double &a01, const double &a11, const double &a21,
+	         const double &a02, const double &a12, const double &a22){
 	components[0][0] = a00; components[1][0] = a10; components[2][0] = a20; 
 	components[0][1] = a01; components[1][1] = a11; components[2][1] = a21; 
 	components[0][2] = a02; components[1][2] = a12; components[2][2] = a22; 
@@ -96,19 +96,19 @@ void Matrix3::SetUnitZ(const Vector3 &vector_){
 	components[0][2] = vector_.axis[0]; components[1][2] = vector_.axis[1]; components[2][2] = vector_.axis[2]; 
 }
 
-void Matrix3::SetRow1(double p1, double p2, double p3){ 
+void Matrix3::SetRow1(const double &p1, const double &p2, const double &p3){ 
 	components[0][0] = p1; components[0][1] = p2; components[0][2] = p3; 
 }
 
-void Matrix3::SetRow2(double p1, double p2, double p3){ 
+void Matrix3::SetRow2(const double &p1, const double &p2, const double &p3){ 
 	components[1][0] = p1; components[1][1] = p2; components[1][2] = p3; 
 }
 
-void Matrix3::SetRow3(double p1, double p2, double p3){ 
+void Matrix3::SetRow3(const double &p1, const double &p2, const double &p3){ 
 	components[2][0] = p1; components[2][1] = p2; components[2][2] = p3; 
 }
 
-void Matrix3::SetRotationMatrix(double theta_, double phi_, double psi_/*=0.0*/){
+void Matrix3::SetRotationMatrix(const double &theta_, const double &phi_, const double &psi_/*=0.0*/){
 	double sin_theta = std::sin(theta_), cos_theta = std::cos(theta_);
 	double sin_phi = std::sin(phi_), cos_phi = std::cos(phi_);
 	double sin_psi = std::sin(psi_), cos_psi = std::cos(psi_);

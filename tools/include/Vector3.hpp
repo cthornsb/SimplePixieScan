@@ -10,9 +10,13 @@ class Vector3{
 
 	Vector3(){ axis[0] = 0.0; axis[1] = 0.0; axis[2] = 0.0; }
 
-	Vector3(double x, double y){ axis[0] = x; axis[1] = y; axis[2] = 0.0; }
+	Vector3(const double &x, const double &y){ axis[0] = x; axis[1] = y; axis[2] = 0.0; }
 
-	Vector3(double x, double y, double z){ axis[0] = x; axis[1] = y; axis[2] = z; }
+	Vector3(const double &x, const double &y, const double &z){ axis[0] = x; axis[1] = y; axis[2] = z; }
+
+	void Set(const double &x, const double &y, const double &z){ axis[0] = x; axis[1] = y; axis[2] = z; }
+
+	void Get(double &x, double &y, double &z){ x = axis[0]; y = axis[1]; z = axis[2]; }
 
 	const Vector3& operator = (const Vector3&);
 
@@ -45,23 +49,23 @@ class Vector3{
 	std::string Dump() const ;
 };
 
-void Cart2Sphere(double, double, double, double&, double&, double&);
+void Cart2Sphere(const double &x, const double &y, const double &z, double &r, double &theta, double &phi);
 
-void Cart2Sphere(double, double, double, Vector3&);
+void Cart2Sphere(const double &x, const double &y, const double &z, Vector3 &sphere);
 
-void Cart2Sphere(const Vector3&, double&, double&, double&);
+void Cart2Sphere(const Vector3 &cart, double &r, double &theta, double &phi);
 
-void Cart2Sphere(const Vector3&, Vector3&);
+void Cart2Sphere(const Vector3 &cart, Vector3 &sphere);
 
 void Cart2Sphere(Vector3&);
 
-void Sphere2Cart(double, double, double, double&, double&, double&);
+void Sphere2Cart(const double &r, const double &theta, const double &phi, double &x, double &y, double &z);
 
-void Sphere2Cart(double, double, double, Vector3&);
+void Sphere2Cart(const double &r, const double &theta, const double &phi, Vector3 &cart);
 
-void Sphere2Cart(const Vector3&, double&, double&, double&);
+void Sphere2Cart(const Vector3 &sphere, double &x, double &y, double &z);
 
-void Sphere2Cart(const Vector3&, Vector3&);
+void Sphere2Cart(const Vector3 &sphere, Vector3 &cart);
 
 void Sphere2Cart(Vector3&);
 
