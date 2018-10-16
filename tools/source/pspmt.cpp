@@ -141,6 +141,8 @@ void fullBarEvent::compute(simpleEvent *dynode_L, simpleEvent *anode_SE_L, simpl
 
 	tqdcSum_L = tqdc_L[0]+tqdc_L[1]+tqdc_L[2]+tqdc_L[3];
 	tqdcSum_R = tqdc_R[0]+tqdc_R[1]+tqdc_R[2]+tqdc_R[3];
+	energySum_L = energy_L[0]+energy_L[1]+energy_L[2]+energy_L[3];
+	energySum_R = energy_R[0]+energy_R[1]+energy_R[2]+energy_R[3];
 
 	if(!useFilterEnergy){
 		xpos_L = ((tqdc_L[0]+tqdc_L[1])-(tqdc_L[2]+tqdc_L[3]))/tqdcSum_L;
