@@ -12,6 +12,15 @@
 #include "Structures.hpp"
 #include "pspmt.hpp"
 
+const double height=0.0508; // m
+const double width=0.0508; // m
+
+const double halfHeight=height/2;
+const double halfWidth=width/2;
+
+const double xSpacing=width/8;
+const double ySpacing=height/4;
+
 // This is global to save a lot of headaches passing it around everywhere.
 bool useFilterEnergy=false;
 
@@ -39,6 +48,16 @@ fullBarEvent* buildBarEvent(pspmtMapEntry *entryL_, pspmtMapEntry *entryR_){
 		evtArrayR[i].pop_front();
 	}
 	return evt;
+}
+
+short getXcell(const double &xpos){
+	if(xpos < -halfWidth || xpos > halfWidth) return -1;
+	return (short)((xpos+halfWidth)/xSpacing);
+}
+
+short getYcell(const double &ypos){
+	if(ypos < -halfHeight || ypos > halfHeight) return -1;
+	return (short)((ypos+halfHeight)/ySpacing);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -352,7 +371,7 @@ class pspmtHandler : public simpleTool {
 	unsigned long long totalCounts;
 	double totalDataTime;
 
-	double x, y, z, r, theta;
+	double x, y, z, r, theta, phi;
 	double ctof, tqdc, stqdc, ctqdc, energy;
 	double xdetL, xdetR, ydetL, ydetR;
 	unsigned short location;
@@ -386,7 +405,8 @@ class pspmtHandler : public simpleTool {
 };
 
 void pspmtHandler::process(){
-	double ctdiff, cylTheta, dW, alpha, rprime;
+	double ctdiff;
+	//double cylTheta, dW, alpha;
 
 	// Check for invalid TQDC.
 	if(tqdc_L <= 0 || (!singleEndedMode && tqdc_R <= 0)) return;
@@ -398,29 +418,7 @@ void pspmtHandler::process(){
 	if(!noTimeMode && !(time = calib.GetTimeCal(location))) return;
 
 	PositionCal *pos = NULL;
-	if(!noPositionMode){
-		if(!(pos = calib.GetPositionCal(location))) return;
-
-		// Angle of center of bar in cylindrical coordinates.
-		cylTheta = pos->theta;
-
-		// Take the width of the bar into consideration.
-		if(!singleEndedMode){
-			dW = frand(-bar->width/200, bar->width/200);
-			rprime = std::sqrt(pos->r0*pos->r0 + dW*dW);
-			alpha = std::atan2(dW, pos->r0);
-			addAngles(cylTheta, alpha);
-		}
-		else rprime = pos->r0;
-
-		// Calculate the x and z position of the event.
-		x = rprime*std::sin(cylTheta); // m
-		z = rprime*std::cos(cylTheta); // m
-	}
-	else{
-		x = 0;
-		z = 0;
-	}
+	if(!noPositionMode && !(pos = calib.GetPositionCal(location))) return;
 
 	// Compute the corrected time difference
 	if(!singleEndedMode){
@@ -432,16 +430,39 @@ void pspmtHandler::process(){
 	}
 	else y = 0; // m
 
-	// Calculate the spherical polar angle.
+	// Compute the 3d position of the detection event
 	if(!noPositionMode){
-		r = std::sqrt(x*x + y*y + z*z);
-		theta = std::acos(z/r)*180/pi;
-		//phi = std::acos(y/std::sqrt(x*x + y*y); }
-		//if(x < 0) phi = 2*pi - phi; 
+		// Get the calibrated X and Y positions.
+		double cxdet = xdetL; //xcal->Eval(xdetL);
+		double cydet = ydetL; //ycal->Eval(ydetL);
+
+		// Get the X and Y pixel hit locations.
+		short xcell = getXcell(cxdet);
+		short ycell = getYcell(cydet);
+
+		// Check for events out of the detector.
+		if(xcell < 0 || ycell < 0){
+			// Vector from the center to the interaction point.
+			Vector3 p(cxdet, cydet, y); 
+		
+			// Rotate to the frame of the bar.
+			pos->Transform(p);
+		
+			// Calculate the vector from the origin of the lab frame.
+			Vector3 r0 = (*pos->GetPosition()) + p;
+			x = r0.axis[0]; // m
+			z = r0.axis[2]; // m
+	
+			// Convert the event vector to spherical.
+			Cart2Sphere(r0, r, theta, phi);
+		}
 	}
 	else{
 		r = 0;
 		theta = 0;
+		phi = 0;
+		x = 0;
+		z = 0;
 	}
 
 	if(!singleEndedMode){
@@ -698,6 +719,7 @@ int pspmtHandler::execute(int argc, char *argv[]){
 	if(!noPositionMode){
 		outtree->Branch("r", &r);
 		outtree->Branch("theta", &theta);
+		outtree->Branch("phi", &phi);
 		outtree->Branch("x", &x);
 		outtree->Branch("y", &y);
 		outtree->Branch("z", &z);

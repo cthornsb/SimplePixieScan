@@ -120,8 +120,6 @@ class pspmtMapEntry{
 	fullEvent* buildEvent();
 };
 
-fullBarEvent* buildBarEvent(pspmtMapEntry *entryL_, pspmtMapEntry *entryR_);
-
 class pspmtMap{
   private:
 	std::vector<pspmtMapEntry> entries;
@@ -167,5 +165,11 @@ class pspmtBarMap{
 	
 	void buildEventList(std::vector<fullBarEvent*>& vec_);
 };
+
+fullBarEvent* buildBarEvent(pspmtMapEntry *entryL_, pspmtMapEntry *entryR_);
+
+short getXcell(const double &xpos);
+
+short getYcell(const double &ypos);
 
 #endif
