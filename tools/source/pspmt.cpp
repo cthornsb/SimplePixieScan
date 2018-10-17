@@ -454,7 +454,7 @@ class pspmtHandler : public simpleTool {
 	std::vector<pspmtPosCal> pspmtcal;
 
 	double x, y, z, r, theta, phi;
-	double ctof, tqdc, stqdc, ctqdc, energy;
+	double ctof, tqdc, stqdc, lbal, ctqdc, energy;
 	double xdetL, xdetR, ydetL, ydetR;
 	unsigned short location;
 
@@ -513,11 +513,17 @@ void pspmtHandler::process(){
 
 	// Compute the corrected time difference
 	if(!singleEndedMode){
-		ctdiff = tdiff_R - tdiff_L - bar->t0;
+		/*ctdiff = tdiff_R - tdiff_L - bar->t0;
 		y = bar->cbar*ctdiff/200; // m
 
 		// Check for invalid radius.
-		if(y < -bar->length/30.0 || y > bar->length/30.0) return;
+		if(y < -bar->length/30.0 || y > bar->length/30.0) return;*/
+
+		// Calculate the light balance.
+		lbal = (tqdc_L-tqdc_R)/(tqdc_L+tqdc_R) - bar->t0;
+
+		// Use light balance to compute position in detector.
+		y = lbal*((bar->length/100)/bar->beta);
 	}
 	else y = 0; // m
 
@@ -931,6 +937,7 @@ int pspmtHandler::execute(int argc, char *argv[]){
 			outtree->Branch("energy", &energy);
 		outtree->Branch("tqdc", &tqdc);
 		outtree->Branch("stqdc", &stqdc);
+		outtree->Branch("lbal", &lbal);
 		if(!noEnergyMode)
 			outtree->Branch("ctqdc", &ctqdc);
 		if(!noPositionMode){
