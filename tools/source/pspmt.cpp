@@ -651,6 +651,11 @@ void pspmtHandler::handleCalibration(){
 	std::cout << "  X: " << xCalFit->GetParameter(0) << "\t" << xCalFit->GetParameter(1) << "\t" << xCalFit->GetParameter(2) << "\t" << xCalFit->GetParameter(3) << std::endl;
 	std::cout << "  Y: " << yCalFit->GetParameter(0) << "\t" << xCalFit->GetParameter(1) << std::endl;
 
+	std::ofstream ofile("pspmtpos.cal");
+	ofile << xCalFit->GetParameter(0) << "\t" << xCalFit->GetParameter(1) << "\t" << xCalFit->GetParameter(2) << "\t" << xCalFit->GetParameter(3) << std::endl;
+	ofile << yCalFit->GetParameter(0) << "\t" << yCalFit->GetParameter(1) << std::endl;
+	ofile.close();
+
 	if(debug){ // Draw debug histograms to the screen.
 		initRootGraphics();
 
@@ -941,10 +946,10 @@ int pspmtHandler::execute(int argc, char *argv[]){
 		// Handle all events.
 		while(getNextEntry())
 			handleEvents();
-
-		// Perform position calibration if needed.
-		if(calibrationMode) handleCalibration();
 	}
+
+	// Perform position calibration if needed.
+	if(calibrationMode) handleCalibration();
 
 	if(!calibrationMode){
 		// Write output tree to file.
