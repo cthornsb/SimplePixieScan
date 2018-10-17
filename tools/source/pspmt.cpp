@@ -741,8 +741,6 @@ void pspmtHandler::handleEvents(){
 		fullEvents.clear();
 		events.clear();
 	}
-	
-	if(calibrationMode) handleCalibration();
 }
 
 void pspmtHandler::setVariables(fullEvent *evt_){
@@ -943,6 +941,9 @@ int pspmtHandler::execute(int argc, char *argv[]){
 		// Handle all events.
 		while(getNextEntry())
 			handleEvents();
+
+		// Perform position calibration if needed.
+		if(calibrationMode) handleCalibration();
 	}
 
 	if(!calibrationMode){
