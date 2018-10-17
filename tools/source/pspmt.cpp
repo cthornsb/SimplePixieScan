@@ -25,8 +25,11 @@ const double width=0.0508; // m
 const double halfHeight=height/2;
 const double halfWidth=width/2;
 
-const double xSpacing=width/8;
-const double ySpacing=height/4;
+const int NcellsX=8;
+const int NcellsY=4;
+
+const double xSpacing=width/NcellsX;
+const double ySpacing=height/NcellsY;
 
 // This is global to save a lot of headaches passing it around everywhere.
 bool useFilterEnergy=false;
@@ -88,13 +91,50 @@ void setInitPars(TF1 *f, TSpectrum *spec, int nPeak, double sigma=0.05){
 }
 
 short getXcell(const double &xpos){
-	if(xpos < -halfWidth || xpos > halfWidth) return -1;
 	return (short)((xpos+halfWidth)/xSpacing);
 }
 
 short getYcell(const double &ypos){
-	if(ypos < -halfHeight || ypos > halfHeight) return -1;
 	return (short)((ypos+halfHeight)/ySpacing);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// class pspmtPosCal
+///////////////////////////////////////////////////////////////////////////////
+
+double pspmtPosCal::calX(const double &x0_){
+	return (xp[0] + xp[1]*x0_ + xp[2]*x0_*x0_ + xp[3]*x0_*x0_*x0_);
+}
+
+double pspmtPosCal::calY(const double &y0_){
+	return (yp[0] + yp[1]*y0_ + yp[2]*y0_*y0_ + yp[3]*y0_*y0_*y0_);
+}
+
+std::string pspmtPosCal::Print(bool fancy/*=true*/){
+	std::stringstream output;
+	if(fancy){
+		output << " id=" << id << ", x=(" << xp[0] << ", " << xp[1] << ", " << xp[2] << ", " << xp[3] << ")";
+		output << ", y=(" << yp[0] << ", " << yp[1] << ", " << yp[2] << ", " << yp[3] << ")";
+	}
+	else{
+		output << id << "\t" << xp[0] << "\t" << xp[1] << "\t" << xp[2] << "\t" << xp[3];
+		output << "\t" << yp[0] << "\t" << yp[1] << "\t" << yp[2] << "\t" << yp[3];
+	}
+	return output.str();
+}
+
+unsigned int pspmtPosCal::ReadPars(const std::vector<std::string> &pars_){
+	defaultVals = false;
+	int index = 0;
+	for(std::vector<std::string>::const_iterator iter = pars_.begin(); iter != pars_.end(); iter++){
+		if(index == 0) id = GetPixieID(*iter);
+		else if(index <= 4) // x parameters
+			xp[index-1] = strtod(iter->c_str(), NULL);
+		else if(index <= 8) // y parameters
+			yp[index-5] = strtod(iter->c_str(), NULL);
+		index++;
+	}
+	return id;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -411,10 +451,15 @@ class pspmtHandler : public simpleTool {
 	unsigned long long totalCounts;
 	double totalDataTime;
 
+	std::vector<pspmtPosCal> pspmtcal;
+
 	double x, y, z, r, theta, phi;
 	double ctof, tqdc, stqdc, ctqdc, energy;
 	double xdetL, xdetR, ydetL, ydetR;
 	unsigned short location;
+
+	double cxdet, cydet;
+	short xcell, ycell;
 
 	double tdiff_L, tdiff_R;
 	float tqdc_L, tqdc_R;
@@ -460,7 +505,11 @@ void pspmtHandler::process(){
 	if(!noTimeMode && !(time = calib.GetTimeCal(location))) return;
 
 	PositionCal *pos = NULL;
-	if(!noPositionMode && !(pos = calib.GetPositionCal(location))) return;
+	pspmtPosCal *pspmtpos = NULL;
+	if(!noPositionMode){
+		if(!(pos = calib.GetPositionCal(location)) || location >= pspmtcal.size()) return;
+		pspmtpos = &pspmtcal.at(location);
+	}
 
 	// Compute the corrected time difference
 	if(!singleEndedMode){
@@ -475,29 +524,27 @@ void pspmtHandler::process(){
 	// Compute the 3d position of the detection event
 	if(!noPositionMode){
 		// Get the calibrated X and Y positions.
-		double cxdet = xdetL; //xcal->Eval(xdetL);
-		double cydet = ydetL; //ycal->Eval(ydetL);
+		cxdet = pspmtpos->calX(xdetL);
+		cydet = pspmtpos->calY(ydetL);
 
 		// Get the X and Y pixel hit locations.
-		short xcell = getXcell(cxdet);
-		short ycell = getYcell(cydet);
+		xcell = getXcell(cxdet);
+		ycell = getYcell(cydet);
 
-		// Check for events out of the detector.
-		if(xcell < 0 || ycell < 0){
-			// Vector from the center to the interaction point.
-			Vector3 p(cxdet, cydet, y); 
-		
-			// Rotate to the frame of the bar.
-			pos->Transform(p);
-		
-			// Calculate the vector from the origin of the lab frame.
-			Vector3 r0 = (*pos->GetPosition()) + p;
-			x = r0.axis[0]; // m
-			z = r0.axis[2]; // m
+		// Vector from the center to the interaction point.
+		Vector3 p(cxdet, cydet, y); 
 	
-			// Convert the event vector to spherical.
-			Cart2Sphere(r0, r, theta, phi);
-		}
+		// Rotate to the frame of the bar.
+		pos->Transform(p);
+	
+		// Calculate the vector from the origin of the lab frame.
+		Vector3 r0 = (*pos->GetPosition()) + p;
+		x = r0.axis[0]; // m
+		y = r0.axis[1]; // m
+		z = r0.axis[2]; // m
+
+		// Convert the event vector to spherical.
+		Cart2Sphere(r0, r, theta, phi);
 	}
 	else{
 		r = 0;
@@ -647,16 +694,16 @@ void pspmtHandler::handleCalibration(){
 	xpoints->Fit(xCalFit, "Q");
 	ypoints->Fit(yCalFit, "Q");
 
-	std::cout << " PSPMT position calibration data:\n";
-	std::cout << "  X: " << xCalFit->GetParameter(0) << "\t" << xCalFit->GetParameter(1) << "\t" << xCalFit->GetParameter(2) << "\t" << xCalFit->GetParameter(3) << std::endl;
-	std::cout << "  Y: " << yCalFit->GetParameter(0) << "\t" << xCalFit->GetParameter(1) << std::endl;
-
 	std::ofstream ofile("pspmtpos.cal");
-	ofile << xCalFit->GetParameter(0) << "\t" << xCalFit->GetParameter(1) << "\t" << xCalFit->GetParameter(2) << "\t" << xCalFit->GetParameter(3) << std::endl;
-	ofile << yCalFit->GetParameter(0) << "\t" << yCalFit->GetParameter(1) << std::endl;
+	ofile << xCalFit->GetParameter(0) << "\t" << xCalFit->GetParameter(1) << "\t" << xCalFit->GetParameter(2) << "\t" << xCalFit->GetParameter(3);
+	ofile << "\t" << yCalFit->GetParameter(0) << "\t" << yCalFit->GetParameter(1) << std::endl;
 	ofile.close();
 
 	if(debug){ // Draw debug histograms to the screen.
+		std::cout << " PSPMT position calibration data:\n";
+		std::cout << "  X: " << xCalFit->GetParameter(0) << "\t" << xCalFit->GetParameter(1) << "\t" << xCalFit->GetParameter(2) << "\t" << xCalFit->GetParameter(3) << std::endl;
+		std::cout << "  Y: " << yCalFit->GetParameter(0) << "\t" << xCalFit->GetParameter(1) << std::endl;
+
 		initRootGraphics();
 
 		openCanvas1();
@@ -859,7 +906,10 @@ int pspmtHandler::execute(int argc, char *argv[]){
 	std::cout << " Loaded " << numLinesRead << " PSPMT detectors from pspmt map file.\n";	
 
 	if(!calibrationMode){
-		if(!noPositionMode && !calib.LoadPositionCal((setupDir+"position.cal").c_str())) return 3;
+		if(!noPositionMode){
+			if(!calib.LoadPositionCal((setupDir+"position.cal").c_str())) return 3;
+			else if(!LoadCalibFile((setupDir+"pspmtpos.cal").c_str(), pspmtcal)) return 3;
+		}
 		if(!noTimeMode && !calib.LoadTimeCal((setupDir+"time.cal").c_str())) return 4;
 		if(!noEnergyMode && !calib.LoadEnergyCal((setupDir+"energy.cal").c_str())) return 5;
 		if(!singleEndedMode && !calib.LoadBarCal((setupDir+"bars.cal").c_str())) return 6;
@@ -890,14 +940,18 @@ int pspmtHandler::execute(int argc, char *argv[]){
 			outtree->Branch("x", &x);
 			outtree->Branch("y", &y);
 			outtree->Branch("z", &z);
+			outtree->Branch("cxdet", &cxdet);
+			outtree->Branch("cydet", &cydet);
+			outtree->Branch("xcell", &xcell);
+			outtree->Branch("ycell", &ycell);
 		}
 		else if(!singleEndedMode)
 			outtree->Branch("y", &y);
 		if(!singleEndedMode){
-			outtree->Branch("xdetL", &xdetL);
+			/*outtree->Branch("xdetL", &xdetL);
 			outtree->Branch("ydetL", &ydetL);
 			outtree->Branch("xdetR", &xdetR);
-			outtree->Branch("ydetR", &ydetR);
+			outtree->Branch("ydetR", &ydetR);*/
 			if(debug){
 				outtree->Branch("anodeL[4]", allTQDC_L);
 				outtree->Branch("anodeR[4]", allTQDC_R);

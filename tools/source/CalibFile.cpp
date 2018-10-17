@@ -35,7 +35,6 @@ unsigned int PositionCal::ReadPars(const std::vector<std::string> &pars_){
 	}
 	Sphere2Cart(Vector3(r0, theta, phi), position);
 	rotMatrix.SetRotationMatrix(rotTheta, rotPhi, rotPsi);
-	std::cout << rotMatrix.Dump() << std::endl;
 	return id;
 }
 

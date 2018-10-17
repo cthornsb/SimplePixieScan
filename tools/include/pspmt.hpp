@@ -18,6 +18,27 @@ class gPar{
 	gPar(const double &A, const double &mean, const double &sigma) : p0(A), p1(mean), p2(sigma) { }
 };
 
+class pspmtPosCal : public CalType {
+  public:
+	double xp[4];
+	double yp[4];
+
+	pspmtPosCal() : CalType(0) { 
+		for(size_t i = 0; i < 4; i++){
+			xp[i] = (i != 1 ? 0 : 1);
+			yp[i] = (i != 1 ? 0 : 1);
+		}
+	}
+
+	double calX(const double &x0_);
+
+	double calY(const double &y0_);
+
+	virtual std::string Print(bool fancy=true);
+
+	virtual unsigned int ReadPars(const std::vector<std::string> &pars_);
+};
+
 class simpleEvent{
   public:
 	double tdiff;
