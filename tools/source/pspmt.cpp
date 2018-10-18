@@ -454,7 +454,7 @@ class pspmtHandler : public simpleTool {
 	std::vector<pspmtPosCal> pspmtcal;
 
 	double x, y, z, r, theta, phi;
-	double ctof, tqdc, stqdc, lbal, ctqdc, energy;
+	double tdiff, tof, ctof, tqdc, stqdc, lbal, ctqdc, energy;
 	double xdetL, xdetR, ydetL, ydetR;
 	unsigned short location;
 
@@ -492,8 +492,7 @@ class pspmtHandler : public simpleTool {
 };
 
 void pspmtHandler::process(){
-	double ctdiff;
-	//double cylTheta, dW, alpha;
+	//double ctdiff;
 
 	// Check for invalid TQDC.
 	if(tqdc_L <= 0 || (!singleEndedMode && tqdc_R <= 0)) return;
@@ -562,31 +561,34 @@ void pspmtHandler::process(){
 
 	if(!singleEndedMode){
 		// Calculate the corrected TOF.
+		tdiff = (tdiff_R - tdiff_L);
+		tof = (tdiff_R + tdiff_L)/2;
 		if(!noPositionMode){
 			if(!noTimeMode)
-				ctof = (pos->r0/r)*((tdiff_R + tdiff_L)/2 - time->t0) + 100*pos->r0/cvac;
+				ctof = (pos->r0/r)*(tof - time->t0) + 100*pos->r0/cvac;
 			else
-				ctof = (pos->r0/r)*((tdiff_R + tdiff_L)/2) + 100*pos->r0/cvac;
+				ctof = (pos->r0/r)*tof + 100*pos->r0/cvac;
 		}
 		else if(!noTimeMode)
-			ctof = (tdiff_R + tdiff_L)/2 - time->t0;
+			ctof = tof - time->t0;
 		else
-			ctof = (tdiff_R + tdiff_L)/2;
+			ctof = tof;
 
 		// Calculate the TQDC.
 		tqdc = std::sqrt(tqdc_R*tqdc_L);
 	}
 	else{
+		tof = tdiff_L;
 		if(!noPositionMode){
 			if(!noTimeMode)
-				ctof = tdiff_L - time->t0 + 100*pos->r0/cvac;
+				ctof = tof - time->t0 + 100*pos->r0/cvac;
 			else
-				ctof = tdiff_L + 100*pos->r0/cvac;
+				ctof = tof + 100*pos->r0/cvac;
 		}
 		else if(!noTimeMode)
-			ctof = tdiff_L - time->t0;
+			ctof = tof - time->t0;
 		else
-			ctof = tdiff_L;
+			ctof = tof;
 		tqdc = tqdc_L;
 	}
 
@@ -937,7 +939,6 @@ int pspmtHandler::execute(int argc, char *argv[]){
 			outtree->Branch("energy", &energy);
 		outtree->Branch("tqdc", &tqdc);
 		outtree->Branch("stqdc", &stqdc);
-		outtree->Branch("lbal", &lbal);
 		if(!noEnergyMode)
 			outtree->Branch("ctqdc", &ctqdc);
 		if(!noPositionMode){
@@ -947,27 +948,32 @@ int pspmtHandler::execute(int argc, char *argv[]){
 			outtree->Branch("x", &x);
 			outtree->Branch("y", &y);
 			outtree->Branch("z", &z);
+		}
+		else if(!singleEndedMode)
+			outtree->Branch("y", &y);
+		if(debug){ // Diagnostic branches
+			outtree->Branch("tof", &tof);
+			outtree->Branch("lbal", &lbal);
+			if(!singleEndedMode){
+				outtree->Branch("tdiff", &tdiff);
+				outtree->Branch("xdetL", &xdetL);
+				outtree->Branch("ydetL", &ydetL);
+				outtree->Branch("xdetR", &xdetR);
+				outtree->Branch("ydetR", &ydetR);
+			}
+			else{
+				outtree->Branch("xdet", &xdetL);
+				outtree->Branch("ydet", &ydetL);
+			}
 			outtree->Branch("cxdet", &cxdet);
 			outtree->Branch("cydet", &cydet);
 			outtree->Branch("xcell", &xcell);
 			outtree->Branch("ycell", &ycell);
-		}
-		else if(!singleEndedMode)
-			outtree->Branch("y", &y);
-		if(!singleEndedMode){
-			/*outtree->Branch("xdetL", &xdetL);
-			outtree->Branch("ydetL", &ydetL);
-			outtree->Branch("xdetR", &xdetR);
-			outtree->Branch("ydetR", &ydetR);*/
-			if(debug){
+			if(!singleEndedMode){
 				outtree->Branch("anodeL[4]", allTQDC_L);
 				outtree->Branch("anodeR[4]", allTQDC_R);
 			}
-		}
-		else{
-			outtree->Branch("xdet", &xdetL);
-			outtree->Branch("ydet", &ydetL);
-			if(debug) outtree->Branch("anode[4]", allTQDC_L);
+			else outtree->Branch("anode[4]", allTQDC_L);
 		}
 		outtree->Branch("loc", &location);
 	}
