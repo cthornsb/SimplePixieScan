@@ -685,12 +685,18 @@ void pspmtHandler::handleCalibration(){
 	// Horizontal lines
 	for(int i = 0; i <= 4; i++){
 		ypoints->SetPoint(i, ypos[i], -(height/2)+(height/4)*i);
-		if(debug) ylines[i] = new TLine(xpos[0], ypos[i], xpos[8], ypos[i]);
+		if(debug){
+			ylines[i] = new TLine(xpos[0], ypos[i], xpos[8], ypos[i]);
+			ylines[i]->SetLineWidth(2);
+		}
 	}
 	// Vertical lines
 	for(int i = 0; i <= 8; i++){
 		xpoints->SetPoint(i, xpos[i], -(width/2)+(width/8)*i);
-		if(debug) xlines[i] = new TLine(xpos[i], ypos[0], xpos[i], ypos[4]);
+		if(debug){
+			xlines[i] = new TLine(xpos[i], ypos[0], xpos[i], ypos[4]);
+			xlines[i]->SetLineWidth(2);
+		}
 	}
 
 	TF1 *xCalFit = new TF1("xCalFit", "pol3", -1, 1);
@@ -717,6 +723,7 @@ void pspmtHandler::handleCalibration(){
 		openCanvas1();
 
 		can1->cd();
+		calHist->SetStats(0);
 		calHist->Draw("COLZ");
 		for(int i = 0; i <= 4; i++){
 			ylines[i]->Draw("SAME");
