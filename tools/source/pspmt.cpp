@@ -529,8 +529,14 @@ void pspmtHandler::process(){
 	// Compute the 3d position of the detection event
 	if(!noPositionMode){
 		// Get the calibrated X and Y positions.
-		cxdet = pspmtpos->calX(xdetL);
-		cydet = pspmtpos->calY(ydetL);
+		if(!singleEndedMode){
+			cxdet = pspmtpos->calX((xdetL+xdetR)/2);
+			cydet = pspmtpos->calY((ydetL+ydetR)/2);
+		}
+		else{
+			cxdet = pspmtpos->calX(xdetL);
+			cydet = pspmtpos->calY(ydetL);
+		}
 
 		// Get the X and Y pixel hit locations.
 		xcell = getXcell(cxdet);
@@ -783,7 +789,7 @@ void pspmtHandler::handleEvents(){
 			if(!calibrationMode)
 				process();
 			else
-				calHist->Fill(xdetL, ydetL);
+				calHist->Fill((xdetL+xdetR)/2, (ydetL+ydetR)/2);
 			delete (*iter);
 		}
 		fullEvents.clear();
