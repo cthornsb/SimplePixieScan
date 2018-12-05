@@ -46,13 +46,15 @@ class barHandler : public simpleTool {
 	bool noTimeMode;
 	bool noEnergyMode;
 	bool noPositionMode;
+	bool useLightBalance;
 
 	std::string countsString;
 	unsigned long long totalCounts;
 	double totalDataTime;
 
-	double x, y, z, r, theta;
-	double ctof, tqdc, stqdc, ctqdc, energy;
+	double x, y, z, r, theta, phi;
+	double tdiff, tof, ctof, tqdc, stqdc, lbal, ctqdc, energy;
+	double centerE;
 	unsigned short location;
 
 	double tdiff_L, tdiff_R;
@@ -64,7 +66,7 @@ class barHandler : public simpleTool {
 	void handleEvents();
 
   public:
-	barHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), gbptr(NULL), gptr(NULL), lbptr(NULL), lptr(NULL), hptr(NULL), detectorType(0), singleEndedMode(false), liquidDetMode(false), noTimeMode(false), noEnergyMode(false), noPositionMode(false), countsString(""), totalCounts(0), totalDataTime(0) { }
+	barHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), gbptr(NULL), gptr(NULL), lbptr(NULL), lptr(NULL), hptr(NULL), detectorType(0), singleEndedMode(false), liquidDetMode(false), noTimeMode(false), noEnergyMode(false), noPositionMode(false), useLightBalance(false), countsString(""), totalCounts(0), totalDataTime(0) { }
 
 	~barHandler();
 	
@@ -121,7 +123,6 @@ bool barHandler::getNextEvent(){
 
 void barHandler::handleEvents(){
 	index = 0;
-	double ctdiff, cylTheta, dW, alpha, rprime;
 	while(getNextEvent()){
 		// Check for invalid TQDC.
 		if(tqdc_L <= 0 || (!singleEndedMode && tqdc_R <= 0)) continue;
@@ -131,81 +132,88 @@ void barHandler::handleEvents(){
 
 		TimeCal *time = NULL;
 		if(!noTimeMode && !(time = calib.GetTimeCal(location))) continue;
-		
+
 		PositionCal *pos = NULL;
 		if(!noPositionMode){
 			if(!(pos = calib.GetPositionCal(location))) continue;
-	
-			// Angle of center of bar in cylindrical coordinates.
-			cylTheta = pos->theta;
-
-			// Take the width of the bar into consideration.
-			if(!singleEndedMode){
-				dW = frand(-bar->width/200, bar->width/200);
-				rprime = std::sqrt(pos->r0*pos->r0 + dW*dW);
-				alpha = std::atan2(dW, pos->r0);
-				addAngles(cylTheta, alpha);
-			}
-			else rprime = pos->r0;
-
-			// Calculate the x and z position of the event.
-			x = rprime*std::sin(cylTheta); // m
-			z = rprime*std::cos(cylTheta); // m
-		}
-		else{
-			x = 0;
-			z = 0;
 		}
 
 		// Compute the corrected time difference
 		if(!singleEndedMode){
-			ctdiff = tdiff_R - tdiff_L - bar->t0;
-			y = bar->cbar*ctdiff/200; // m
+			if(!useLightBalance){
+				double ctdiff = tdiff_R - tdiff_L - bar->t0;
+				y = bar->cbar*ctdiff/200; // m
+			}
+			else{
+				// Calculate the light balance.
+				lbal = (tqdc_L-tqdc_R)/(tqdc_L+tqdc_R) - bar->t0;
 
-			// Check for invalid radius.
-			if(y < -bar->length/30.0 || y > bar->length/30.0) continue;
+				// Use light balance to compute position in detector.
+				y = lbal*((bar->length/100)/bar->beta);
+			}
 		}
 		else y = 0; // m
-
-		// Calculate the spherical polar angle.
+		
 		if(!noPositionMode){
-			r = std::sqrt(x*x + y*y + z*z);
-			theta = std::acos(z/r)*180/pi;
-			//phi = std::acos(y/std::sqrt(x*x + y*y); }
-			//if(x < 0) phi = 2*pi - phi; 
+			// Take the width and thickness of the bar into consideration.
+			// Select a random point inside the bar.
+			double xdetRan = frand(-bar->width/200, bar->width/200);
+			double ydetRan = frand(-bar->width/200, bar->width/200);
+
+			// Vector from the center to the interaction point.
+			Vector3 p(xdetRan, ydetRan, y);
+	
+			// Rotate to the frame of the bar.
+			pos->Transform(p);
+	
+			// Calculate the vector from the origin of the lab frame.
+			Vector3 r0 = (*pos->GetPosition()) + p;
+			x = r0.axis[0]; // m
+			y = r0.axis[1]; // m
+			z = r0.axis[2]; // m		
+			
+			// Convert the event vector to spherical.
+			Cart2Sphere(r0, r, theta, phi);	
 		}
 		else{
 			r = 0;
 			theta = 0;
+			phi = 0;
+			x = 0;
+			z = 0;
 		}
 
 		if(!singleEndedMode){
 			// Calculate the corrected TOF.
-			if(!noPositionMode){
-				if(!noTimeMode)
-					ctof = (pos->r0/r)*((tdiff_R + tdiff_L)/2 - time->t0) + 100*pos->r0/cvac;
-				else
-					ctof = (pos->r0/r)*((tdiff_R + tdiff_L)/2) + 100*pos->r0/cvac;
+			tdiff = (tdiff_R - tdiff_L);
+			tof = (tdiff_R + tdiff_L)/2;
+			if(!noTimeMode){ // Correct timing offset.
+				tof = tof - time->t0;
 			}
-			else if(!noTimeMode)
-				ctof = (tdiff_R + tdiff_L)/2 - time->t0;
+			if(!noPositionMode){
+				ctof = (pos->r0/r)*tof;
+				tof += 100*pos->r0/cvac;
+				ctof += 100*pos->r0/cvac;
+			}
 			else
-				ctof = (tdiff_R + tdiff_L)/2;
+				ctof = tof;
 
 			// Calculate the TQDC.
 			tqdc = std::sqrt(tqdc_R*tqdc_L);
 		}
 		else{
+			tof = tdiff_L;
+			if(!noTimeMode){ // Correct timing offset.
+				tof = tof - time->t0;
+			}		
 			if(!noPositionMode){
-				if(!noTimeMode)
-					ctof = tdiff_L - time->t0 + 100*pos->r0/cvac;
-				else
-					ctof = tdiff_L + 100*pos->r0/cvac;
+				tof += 100*pos->r0/cvac;
+				ctof = tof;
 			}
-			else if(!noTimeMode)
-				ctof = tdiff_L - time->t0;
 			else
-				ctof = tdiff_L;
+				ctof = tof;
+		
+			// Calculate the TQDC.
 			tqdc = tqdc_L;
 		}
 
@@ -237,8 +245,8 @@ void barHandler::handleEvents(){
 			}
 		}
 
-                // Calculate the neutron energy.
-		if(!noPositionMode) energy = tof2energy(ctof, pos->r0);
+		// Calculate the neutron energy.
+		if(!noPositionMode) energy = tof2energy(tof, r);
 
 		// Fill the tree with the event.
 		outtree->Fill();
@@ -251,9 +259,11 @@ barHandler::~barHandler(){
 void barHandler::addOptions(){
 	addOption(optionExt("config", required_argument, NULL, 'c', "<fname>", "Read bar speed-of-light from an input cal file."), userOpts, optstr);
 	addOption(optionExt("single", no_argument, NULL, 0x0, "", "Single-ended detector mode."), userOpts, optstr);
+	addOption(optionExt("debug", no_argument, NULL, 0x0, "", "Enable debug output."), userOpts, optstr);
 	addOption(optionExt("liquid", no_argument, NULL, 0x0, "", "Liquid detector mode."), userOpts, optstr);
 	addOption(optionExt("hagrid", no_argument, NULL, 0x0, "", "HAGRiD detector mode."), userOpts, optstr);
 	addOption(optionExt("counts", required_argument, NULL, 0x0, "<path>", "Sum counts from the input root files (not used by default)."), userOpts, optstr);
+	addOption(optionExt("light", no_argument, NULL, 0x0, "", "Do not use position calibration."), userOpts, optstr);	
 	addOption(optionExt("no-energy", no_argument, NULL, 0x0, "", "Do not use energy calibration."), userOpts, optstr);
 	addOption(optionExt("no-time", no_argument, NULL, 0x0, "", "Do not use time calibration."), userOpts, optstr);
 	addOption(optionExt("no-position", no_argument, NULL, 0x0, "", "Do not use position calibration."), userOpts, optstr);
@@ -270,22 +280,28 @@ bool barHandler::processArgs(){
 	if(userOpts.at(1).active){ // Single-ended
 		single = true;
 	}
-	if(userOpts.at(2).active){ // Liquid detector
+	if(userOpts.at(2).active){ // Debug output
+		debug = true;
+	}	
+	if(userOpts.at(3).active){ // Liquid detector
 		liquid = true;
 	}
-	if(userOpts.at(3).active){ // HAGRiD detector
+	if(userOpts.at(4).active){ // HAGRiD detector
 		hagrid = true;
 	}
-	if(userOpts.at(4).active){
-		countsString = userOpts.at(2).argument;
-	}
 	if(userOpts.at(5).active){
-		noEnergyMode = true;
+		countsString = userOpts.at(5).argument;
 	}
 	if(userOpts.at(6).active){
+		useLightBalance = true;
+	}
+	if(userOpts.at(7).active){	
+		noEnergyMode = true;
+	}
+	if(userOpts.at(8).active){
 		noTimeMode = true;
 	}
-	if(userOpts.at(7).active){
+	if(userOpts.at(9).active){
 		noPositionMode = true;
 	}
 
@@ -348,9 +364,21 @@ int barHandler::execute(int argc, char *argv[]){
 	if(!noPositionMode){
 		outtree->Branch("r", &r);
 		outtree->Branch("theta", &theta);
+		outtree->Branch("phi", &phi);
 		outtree->Branch("x", &x);
 		outtree->Branch("y", &y);
 		outtree->Branch("z", &z);
+	}
+	else if(!singleEndedMode)
+		outtree->Branch("y", &y);
+	if(debug){ // Diagnostic branches
+		outtree->Branch("tof", &tof);
+		if(useLightBalance)
+			outtree->Branch("lbal", &lbal);
+		outtree->Branch("cenE", &centerE);
+		if(!singleEndedMode){
+			outtree->Branch("tdiff", &tdiff);
+		}
 	}
 	outtree->Branch("loc", &location);
 
