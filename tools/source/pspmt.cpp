@@ -455,7 +455,7 @@ class pspmtHandler : public simpleTool {
 
 	double x, y, z, r, theta, phi;
 	double tdiff, tof, ctof, tqdc, stqdc, lbal, ctqdc, energy;
-	double xdetL, xdetR, ydetL, ydetR;
+	double centerE, barifierE, xdetL, xdetR, ydetL, ydetR;
 	unsigned short location;
 
 	double cxdet, cydet;
@@ -569,14 +569,14 @@ void pspmtHandler::process(){
 		// Calculate the corrected TOF.
 		tdiff = (tdiff_R - tdiff_L);
 		tof = (tdiff_R + tdiff_L)/2;
-		if(!noPositionMode){
-			if(!noTimeMode)
-				ctof = (pos->r0/r)*(tof - time->t0) + 100*pos->r0/cvac;
-			else
-				ctof = (pos->r0/r)*tof + 100*pos->r0/cvac;
+		if(!noTimeMode){ // Correct timing offset.
+			tof = tof - time->t0;
 		}
-		else if(!noTimeMode)
-			ctof = tof - time->t0;
+		if(!noPositionMode){
+			ctof = (pos->r0/r)*tof;
+			tof += 100*pos->r0/cvac;
+			ctof += 100*pos->r0/cvac;
+		}
 		else
 			ctof = tof;
 
@@ -585,16 +585,17 @@ void pspmtHandler::process(){
 	}
 	else{
 		tof = tdiff_L;
+		if(!noTimeMode){ // Correct timing offset.
+			tof = tof - time->t0;
+		}		
 		if(!noPositionMode){
-			if(!noTimeMode)
-				ctof = tof - time->t0 + 100*pos->r0/cvac;
-			else
-				ctof = tof + 100*pos->r0/cvac;
+			tof += 100*pos->r0/cvac;
+			ctof = tof;
 		}
-		else if(!noTimeMode)
-			ctof = tof - time->t0;
 		else
 			ctof = tof;
+		
+		// Calculate the TQDC.
 		tqdc = tqdc_L;
 	}
 
@@ -625,9 +626,32 @@ void pspmtHandler::process(){
 		}
 	}
 
-            // Calculate the neutron energy.
-	if(!noPositionMode) energy = tof2energy(ctof, pos->r0);
+	// Calculate the neutron energy.
+	if(!noPositionMode){
+		energy = tof2energy(tof, r);
+		
+		// Compute the energy to the center of the bar (i.e. no segmentation, equivalent to barifier).
+		if(debug){ 
+			// Select a random point inside the bar.
+			double xdetRan = frand(-bar->width/200, bar->width/200);
+			double ydetRan = frand(-bar->width/200, bar->width/200);
 
+			// Compute the "non-segmented" random position in the bar.			
+			Vector3 p(xdetRan, ydetRan, y);
+			pos->Transform(p);
+			Vector3 r0 = (*pos->GetPosition()) + p;
+			
+			// Compute the energy.
+			barifierE = tof2energy(tof, r0.Length());
+			
+			p = Vector3(0, 0, y);
+			pos->Transform(p);
+			r0 = (*pos->GetPosition()) + p;
+			
+			centerE = tof2energy(tof, r0.Length());
+		}
+	}
+	
 	// Fill the tree with the event.
 	outtree->Fill();
 }
@@ -967,6 +991,8 @@ int pspmtHandler::execute(int argc, char *argv[]){
 		if(debug){ // Diagnostic branches
 			outtree->Branch("tof", &tof);
 			outtree->Branch("lbal", &lbal);
+			outtree->Branch("cenE", &centerE);
+			outtree->Branch("barE", &barifierE);
 			if(!singleEndedMode){
 				outtree->Branch("tdiff", &tdiff);
 				outtree->Branch("xdetL", &xdetL);
@@ -980,8 +1006,10 @@ int pspmtHandler::execute(int argc, char *argv[]){
 			}
 			outtree->Branch("cxdet", &cxdet);
 			outtree->Branch("cydet", &cydet);
-			outtree->Branch("xcell", &xcell);
-			outtree->Branch("ycell", &ycell);
+		}
+		outtree->Branch("xcell", &xcell);
+		outtree->Branch("ycell", &ycell);
+		if(debug){
 			if(!singleEndedMode){
 				outtree->Branch("anodeL[4]", allTQDC_L);
 				outtree->Branch("anodeR[4]", allTQDC_R);
