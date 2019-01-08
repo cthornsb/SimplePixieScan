@@ -672,8 +672,8 @@ void pspmtHandler::handleCalibration(){
 	setInitPars(fy, &yspec, 4);
 	setInitPars(fx, &xspec, 8);
 	
-	hy->Fit(fy, "Q");
-	hx->Fit(fx, "Q");
+	hy->Fit(fy, "QR");
+	hx->Fit(fx, "QR");
 
 	std::vector<gPar> ypars;
 	std::vector<gPar> xpars;
@@ -735,8 +735,8 @@ void pspmtHandler::handleCalibration(){
 	xCalFit->SetParameters(0, 3, 0, 0);
 	yCalFit->SetParameters(0, 3);
 
-	xpoints->Fit(xCalFit, "Q");
-	ypoints->Fit(yCalFit, "Q");
+	xpoints->Fit(xCalFit, "QR");
+	ypoints->Fit(yCalFit, "QR");
 
 	std::ofstream ofile("pspmtpos.cal");
 	ofile << xCalFit->GetParameter(0) << "\t" << xCalFit->GetParameter(1) << "\t" << xCalFit->GetParameter(2) << "\t" << xCalFit->GetParameter(3);
