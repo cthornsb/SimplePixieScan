@@ -34,19 +34,37 @@ double doubleWoodsSaxon(double *x, double *p){
 	return (p[0]/(1+std::exp((x[0]-0.5*p[1]-p[2])/p[4])));
 }
 
+double integrateHistogram(TH1 *h, const double &start, const double &stop){
+	double sum = 0;
+	for(int i = 1; i <= h->GetNbinsX(); i++){
+		sum += h->GetBinContent(i);
+	}
+	
+	double sum2 = 0;
+	int startBin = h->FindBin(start);
+	int stopBin = h->FindBin(stop);
+	std::cout << " start=" << startBin << ", stop=" << stopBin << std::endl;
+	for(int i = startBin; i <= stopBin; i++){
+		sum2 += h->GetBinContent(i);
+	}
+
+	return sum2/sum;
+}
+
 class timeAlign : public simpleHistoFitter {
   private:
 	double fitRangeMult; /// Range of fit in multiples of beta (FWHM) of distribution.
 	double detectorLength; /// Total length of detector (in cm).
 	double detectorWidth; /// Total width of the detector (in cm).
 	double timeOffset; /// Desired time offset of gaussian peak after alignment (in ns).
+	double betaFrac; /// Fraction of the distribution height to use for beta.
 
 	int numPeaks; /// Specify the number of peaks to search for using the peak finder.
 
 	bool classicMode;
 
   public:
-	timeAlign() : simpleHistoFitter(), fitRangeMult(1.5), detectorLength(60), detectorWidth(3), timeOffset(0), numPeaks(1), classicMode(false) { }
+	timeAlign() : simpleHistoFitter(), fitRangeMult(1.5), detectorLength(60), detectorWidth(3), timeOffset(0), betaFrac(0.5), numPeaks(1), classicMode(false) { }
 
 	void addChildOptions();
 
@@ -61,6 +79,7 @@ void timeAlign::addChildOptions(){
 	addOption(optionExt("width", required_argument, NULL, 0, "<width>", "Specify the width of the detectors (in cm, default = 3)."), userOpts, optstr);
 	addOption(optionExt("classic", optional_argument, NULL, 0, "[offset=0ns]", "Enable \"classic\" mode for simple gaussian fitting of TOF spectra."), userOpts, optstr);
 	addOption(optionExt("num-peaks", required_argument, NULL, 0, "<Npeaks>", "Specify the number of peaks to search for using the peak finder."), userOpts, optstr);
+	addOption(optionExt("fraction", required_argument, NULL, 0, "<F>", "Specify the height of the distribution to use for beta (default = 0.5)."), userOpts, optstr);
 }
 
 bool timeAlign::processChildArgs(){
@@ -75,9 +94,10 @@ bool timeAlign::processChildArgs(){
 		if(!userOpts.at(firstChildOption+2).argument.empty())
 			timeOffset = strtod(userOpts.at(firstChildOption+2).argument.c_str(), NULL);
 	}
-	if(userOpts.at(firstChildOption+4).active){
+	if(userOpts.at(firstChildOption+4).active)
 		numPeaks = strtol(userOpts.at(firstChildOption+4).argument.c_str(), NULL, 0);
-	}
+	if(userOpts.at(firstChildOption+5).active)
+		betaFrac = strtod(userOpts.at(firstChildOption+5).argument.c_str(), NULL);
 
 	return true;
 }
@@ -233,14 +253,22 @@ bool timeAlign::process(){
 
 			// Output the fit results.
 			if(!classicMode){
+				double xLo = f1->GetX(betaFrac*f1->GetParameter(0), xmin, 0);
+				double xHi = f1->GetX(betaFrac*f1->GetParameter(0), 0, xmax);
+				double beta = xHi-xLo;
+				if(debug){
+					std::cout << " Using beta fraction of " << betaFrac << ": xLow=" << xLo << " ns, xHigh=" << xHi << " ns, FWHM=" << beta << " ns, I=" << 100*integrateHistogram(h1, xLo, xHi) << "%\n";
+				}
+				
 				// Calculate bar speed-of-light.
-				cbar = 2*detectorLength/f1->GetParameter(1);
+				cbar = 2*detectorLength/beta;
 
 				std::cout << "  Fit: chi^2 = " << f1->GetChisquare()/f1->GetNDF() << ", t0 = " << f1->GetParameter(2) << " ns, cbar  = " << cbar << " cm/ns\n";
+				std::cout << "  T0=" << detectorLength/(2*cbar) << " ns is the corresponding detector length time offset.\n";
 				ofile1 << stream.str();
 				for(int j = 0; j < 5; j++) ofile1 << "\t" << f1->GetParameter(j);
 				ofile1 << "\t" << f1->GetChisquare()/f1->GetNDF() << std::endl;
-				ofile2 << stream.str() << "\t" << f1->GetParameter(2) << "\t" << f1->GetParameter(1) << "\t" << cbar << "\t" << detectorLength << "\t" << detectorWidth << std::endl;
+				ofile2 << stream.str() << "\t" << f1->GetParameter(2) << "\t" << beta << "\t" << cbar << "\t" << detectorLength << "\t" << detectorWidth << std::endl;
 			}
 			else{
 				std::cout << "  Fit: chi^2 = " << f1->GetChisquare()/f1->GetNDF() << ", t0 = " << f1->GetParameter(1) << " ns\n";
