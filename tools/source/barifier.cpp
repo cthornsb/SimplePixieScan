@@ -167,13 +167,13 @@ void barHandler::handleEvents(){
 			pos->Transform(p);
 	
 			// Calculate the vector from the origin of the lab frame.
-			Vector3 r0 = (*pos->GetPosition()) + p;
-			x = r0.axis[0]; // m
-			y = r0.axis[1]; // m
-			z = r0.axis[2]; // m		
+			Vector3 rEvent = (*pos->GetPosition()) + p;
+			x = rEvent.axis[0]; // m
+			y = rEvent.axis[1]; // m
+			z = rEvent.axis[2]; // m		
 			
 			// Convert the event vector to spherical.
-			Cart2Sphere(r0, r, theta, phi);	
+			Cart2Sphere(rEvent, r, theta, phi);	
 		}
 		else{
 			r = 0;
@@ -184,38 +184,25 @@ void barHandler::handleEvents(){
 		}
 
 		if(!singleEndedMode){
-			// Calculate the corrected TOF.
 			tdiff = (tdiff_R - tdiff_L);
 			tof = (tdiff_R + tdiff_L)/2;
-			if(!noTimeMode){ // Correct timing offset.
-				tof = tof - time->t0;
-			}
-			if(!noPositionMode){
-				ctof = (pos->r0/r)*tof;
-				tof += 100*pos->r0/cvac;
-				ctof += 100*pos->r0/cvac;
-			}
-			else
-				ctof = tof;
 
 			// Calculate the TQDC.
 			tqdc = std::sqrt(tqdc_R*tqdc_L);
 		}
 		else{
 			tof = tdiff_L;
-			if(!noTimeMode){ // Correct timing offset.
-				tof = tof - time->t0;
-			}		
-			if(!noPositionMode){
-				tof += 100*pos->r0/cvac;
-				ctof = tof;
-			}
-			else
-				ctof = tof;
 		
 			// Calculate the TQDC.
 			tqdc = tqdc_L;
 		}
+		
+		// Calculate the corrected TOF.
+		ctof = tof;
+		if(!noTimeMode) // Correct timing offset. This should place the gamma-flash at t=0 ns.
+			ctof = ctof - time->t0;
+		if(!noPositionMode) // Correct the gamma-flash offset for distance from source.
+			ctof += 100*pos->r0/cvac;
 
 		if(liquidDetMode){ // Calculate the short integral for PSD.
 			if(!singleEndedMode)
@@ -224,7 +211,7 @@ void barHandler::handleEvents(){
 				stqdc = stqdc_L;
 		}
 
-		if(!noEnergyMode){// Calibrate the TQDC.
+		if(!noEnergyMode){ // Calibrate the TQDC.
 			if(!singleEndedMode){
 				EnergyCal *ecalLeft = calib.GetEnergyCal(location);
 				EnergyCal *ecalRight = calib.GetEnergyCal(location+1);
@@ -246,7 +233,20 @@ void barHandler::handleEvents(){
 		}
 
 		// Calculate the neutron energy.
-		if(!noPositionMode) energy = tof2energy(tof, r);
+		if(!noPositionMode){
+			energy = tof2energy(ctof, r);
+			if(debug){ // Compute the energy at the central axis.
+				// Vector from the center to the interaction point.
+				Vector3 p(0, 0, y);
+	
+				// Rotate to the frame of the bar.
+				pos->Transform(p);
+	
+				// Calculate the vector from the origin of the lab frame.
+				Vector3 rEvent = (*pos->GetPosition()) + p;
+				centerE = tof2energy(ctof, rEvent.Length());
+			}
+		}
 
 		// Fill the tree with the event.
 		outtree->Fill();

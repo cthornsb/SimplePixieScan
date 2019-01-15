@@ -566,38 +566,25 @@ void pspmtHandler::process(){
 	}
 
 	if(!singleEndedMode){
-		// Calculate the corrected TOF.
 		tdiff = (tdiff_R - tdiff_L);
 		tof = (tdiff_R + tdiff_L)/2;
-		if(!noTimeMode){ // Correct timing offset.
-			tof = tof - time->t0;
-		}
-		if(!noPositionMode){
-			ctof = (pos->r0/r)*tof;
-			tof += 100*pos->r0/cvac;
-			ctof += 100*pos->r0/cvac;
-		}
-		else
-			ctof = tof;
 
 		// Calculate the TQDC.
 		tqdc = std::sqrt(tqdc_R*tqdc_L);
 	}
 	else{
 		tof = tdiff_L;
-		if(!noTimeMode){ // Correct timing offset.
-			tof = tof - time->t0;
-		}		
-		if(!noPositionMode){
-			tof += 100*pos->r0/cvac;
-			ctof = tof;
-		}
-		else
-			ctof = tof;
-		
+	
 		// Calculate the TQDC.
 		tqdc = tqdc_L;
 	}
+	
+	// Calculate the corrected TOF.
+	ctof = tof;
+	if(!noTimeMode) // Correct timing offset. This should place the gamma-flash at t=0 ns.
+		ctof = ctof - time->t0;
+	if(!noPositionMode) // Correct the gamma-flash offset for distance from source.
+		ctof += 100*pos->r0/cvac;
 
 	// Calculate the short integral for PSD.
 	if(!singleEndedMode)
@@ -628,7 +615,7 @@ void pspmtHandler::process(){
 
 	// Calculate the neutron energy.
 	if(!noPositionMode){
-		energy = tof2energy(tof, r);
+		energy = tof2energy(ctof, r);
 		
 		// Compute the energy to the center of the bar (i.e. no segmentation, equivalent to barifier).
 		if(debug){ 
@@ -642,13 +629,13 @@ void pspmtHandler::process(){
 			Vector3 r0 = (*pos->GetPosition()) + p;
 			
 			// Compute the energy.
-			barifierE = tof2energy(tof, r0.Length());
+			barifierE = tof2energy(ctof, r0.Length());
 			
 			p = Vector3(0, 0, y);
 			pos->Transform(p);
 			r0 = (*pos->GetPosition()) + p;
 			
-			centerE = tof2energy(tof, r0.Length());
+			centerE = tof2energy(ctof, r0.Length());
 		}
 	}
 	
