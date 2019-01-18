@@ -113,8 +113,9 @@ class BarCal : public CalType {
 	double cbar;
 	double length;
 	double width;
+	double height;
 
-	BarCal() : CalType(0), t0(0), beta(0), cbar(0), length(0), width(0) { }
+	BarCal() : CalType(0), t0(0), beta(0), cbar(0), length(0), width(0), height(0) { }
 
 	virtual std::string Print(bool fancy=true);
 

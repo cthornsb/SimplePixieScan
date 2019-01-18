@@ -130,7 +130,11 @@ unsigned int BarCal::ReadPars(const std::vector<std::string> &pars_){
 		else if(index == 2) beta = strtod(iter->c_str(), NULL);
 		else if(index == 3) cbar = strtod(iter->c_str(), NULL);
 		else if(index == 4) length = strtod(iter->c_str(), NULL);
-		else if(index == 5) width = strtod(iter->c_str(), NULL);
+		else if(index == 5){
+			width = strtod(iter->c_str(), NULL);
+			height = width; // Default value.
+		}
+		else if(index == 6) height = strtod(iter->c_str(), NULL);
 		index++;
 	}
 	return id;

@@ -621,7 +621,7 @@ void pspmtHandler::process(){
 		if(debug){ 
 			// Select a random point inside the bar.
 			double xdetRan = frand(-bar->width/200, bar->width/200);
-			double ydetRan = frand(-bar->width/200, bar->width/200);
+			double ydetRan = frand(-bar->height/200, bar->height/200);
 
 			// Compute the "non-segmented" random position in the bar.			
 			Vector3 p(xdetRan, ydetRan, y);

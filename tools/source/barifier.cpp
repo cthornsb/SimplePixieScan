@@ -158,7 +158,7 @@ void barHandler::handleEvents(){
 			// Take the width and thickness of the bar into consideration.
 			// Select a random point inside the bar.
 			double xdetRan = frand(-bar->width/200, bar->width/200);
-			double ydetRan = frand(-bar->width/200, bar->width/200);
+			double ydetRan = frand(-bar->height/200, bar->height/200);
 
 			// Vector from the center to the interaction point.
 			Vector3 p(xdetRan, ydetRan, y);
