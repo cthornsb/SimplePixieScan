@@ -8,17 +8,10 @@
 #include "ConfigFile.hpp"
 #include "ColorTerm.hpp"
 
-ConfigFile::ConfigFile(){ 
-	eventWidth = 0.5; // Default value of 500 ns
-	eventDelay = 0.0; // Default value of 0 ns
-	buildMethod = 0;
-	init = false;	
+ConfigFile::ConfigFile() : adcClock(4E-9), sysClock(8E-9), eventWidth(0.5), eventDelay(0.0), buildMethod(0), init(false) { 
 }
 
-ConfigFile::ConfigFile(const char *filename_){ 
-	eventWidth = 0.5; // Default value of 500 ns
-	eventDelay = 0.0; // Default value of 0 ns
-	buildMethod = 0;
+ConfigFile::ConfigFile(const char *filename_) : adcClock(4E-9), sysClock(8E-9), eventWidth(0.5), eventDelay(0.0), buildMethod(0), init(false) { 
 	Load(filename_); 
 }
 
@@ -59,9 +52,11 @@ bool ConfigFile::Load(const char *filename_){
 			values[current_value] += line[index];
 		}
 		
-		if(values[0] == "eventWidth"){ eventWidth = atof(values[1].c_str()); }
-		else if(values[0] == "eventDelay"){ eventDelay = atof(values[1].c_str()); }
-		else if(values[0] == "buildMethod"){ buildMethod = atoi(values[1].c_str()); }
+		if(values[0] == "adcClock"){ adcClock = strtod(values[1].c_str(), NULL); }
+		else if(values[0] == "sysClock"){ sysClock = strtod(values[1].c_str(), NULL); }
+		else if(values[0] == "eventWidth"){ eventWidth = strtod(values[1].c_str(), NULL); }
+		else if(values[0] == "eventDelay"){ eventDelay = strtod(values[1].c_str(), NULL); }
+		else if(values[0] == "buildMethod"){ buildMethod = strtol(values[1].c_str(), NULL, 0); }
 	}
 	
 	return true;
@@ -74,16 +69,18 @@ bool ConfigFile::Write(TFile *f_){
 	f_->mkdir("config");
 	f_->cd("config");
 
-	std::stringstream stream1, stream2, stream3;
-	stream1 << "eventWidth " << eventWidth << " us";
-	stream2 << "eventDelay " << eventDelay << " us";
-	stream3 << "buildMethod " << buildMethod;
-	TObjString str1(stream1.str().c_str());
-	TObjString str2(stream2.str().c_str());
-	TObjString str3(stream3.str().c_str());
-	str1.Write();
-	str2.Write();
-	str3.Write();
+	std::stringstream stream[5];
+	stream[0] << "adcClock " << adcClock << " s";
+	stream[1] << "sysClock " << sysClock << " s";
+	stream[2] << "eventWidth " << eventWidth << " us";
+	stream[3] << "eventDelay " << eventDelay << " us";
+	stream[4] << "buildMethod " << buildMethod;
 	
+	TObjString strings[5];
+	for(size_t i = 0; i < 5; i++){
+		TObjString str(stream[i].str().c_str());
+		str.Write();
+	}
+
 	return true;
 }

@@ -5,7 +5,9 @@
 #  - Undefined variables will take default values.
 # Syntax:
 #  NAME VALUE
-configVersion 1.1	# Version of this file
-eventWidth 0.504	# Maximum raw event window width in us
-eventDelay -0.25	# Delay of raw event window in us
-buildMethod 2		# Raw event builder method
+configVersion 1.2       # Version of this file
+adcClock 4E-9           # Module ADC clock in seconds
+sysClock 8E-9           # Module system clock in seconds
+eventWidth 0.500        # Maximum event width in us
+eventDelay -0.250       # Delay of raw event window in us
+buildMethod 2           # Raw event builder method

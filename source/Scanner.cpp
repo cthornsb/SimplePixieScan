@@ -694,8 +694,8 @@ bool simpleScanner::Initialize(std::string prefix_){
 	}
 	
 	bool hadErrors = false;
-	GetCore()->SetEventWidth(configfile->eventWidth * 125); // = eventWidth * 1E-6(s/us) / 8E-9(s/tick)
-	GetCore()->SetEventDelay(configfile->eventDelay * 125); // = eventDelay * 1E-6(s/us) / 8E-9(s/tick)
+	GetCore()->SetEventWidth(configfile->eventWidth * (1E-6 / configfile->sysClock)); // = eventWidth * 1E-6(s/us) / SYSCLOCK(s/tick)
+	GetCore()->SetEventDelay(configfile->eventDelay * (1E-6 / configfile->sysClock)); // = eventDelay * 1E-6(s/us) / SYSCLOCK(s/tick)
 
 	if(untriggered_mode && configfile->buildMethod >= 2){
 		warnStr << msgHeader << "Warning! Raw event build method (" << configfile->buildMethod << ") is invalid for untriggered mode.\n";
@@ -734,6 +734,10 @@ bool simpleScanner::Initialize(std::string prefix_){
 
 				if(defaultCFDparameter > 0)
 					proc->SetDefaultCfdParameters(defaultCFDparameter);
+				
+				// Set the module clock cycles.
+				proc->SetAdcClockInSeconds(configfile->adcClock);
+				proc->SetSystemClockInSeconds(configfile->sysClock);
 			}
 			else{
 				 
@@ -742,6 +746,9 @@ bool simpleScanner::Initialize(std::string prefix_){
 			}
 		}
 	}
+
+	std::cout << prefix_ << "Set module ADC clock to " << configfile->adcClock << " seconds/tick.\n";
+	std::cout << prefix_ << "Set module system clock to " << configfile->sysClock << " seconds/tick.\n";
 
 	if(hadErrors){
 		std::string userInput;

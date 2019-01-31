@@ -75,9 +75,8 @@ class Processor{
 	TBranch *local_branch;
 	TBranch *trace_branch;
 
-	double clockInSeconds; /// One pixie clock is 8 ns
 	double adcClockInSeconds; /// One ADC clock is 4 ns
-	double filterClockInSeconds; /// One filter clock is 8 ns
+	double systemClockInSeconds; /// One filter clock is 8 ns
 
 	TimingAnalyzer analyzer; /// Specifies which type of high-resolution timing is to be used.
 
@@ -179,6 +178,10 @@ class Processor{
 	void SetTraceAnalyzer(TimingAnalyzer mode_){ analyzer = mode_; }
 
 	void SetDefaultCfdParameters(const float &F_, const float &D_=1, const float &L_=1){ defaultCFD[0] = F_; defaultCFD[1] = D_; defaultCFD[2] = L_; }
+
+	void SetAdcClockInSeconds(const double &adcClock_){ adcClockInSeconds = adcClock_; }
+	
+	void SetSystemClockInSeconds(const double &sysClock_){ systemClockInSeconds = sysClock_; }
 	
 	bool Initialize(TTree *tree_);
 	

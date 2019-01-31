@@ -10,8 +10,10 @@ class ConfigFile{
 	void parse_string(const std::string &input_, std::string &name, std::string &value);
 
   public:
-	float eventWidth;
-	float eventDelay;
+	double adcClock;
+	double sysClock;
+	double eventWidth;
+	double eventDelay;
 	int buildMethod;
   
 	ConfigFile();
