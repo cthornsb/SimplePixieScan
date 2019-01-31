@@ -147,7 +147,7 @@ simpleEvent::simpleEvent(PSPmtStructure *ptr, const size_t &index){
 	stqdc = ptr->stqdc.at(index);
 	energy = ptr->energy.at(index);
 	location = ptr->loc.at(index);
-
+	
 	unsigned short chanIdentifier = ptr->chan.at(index);
 	
 	// Decode the channel information.
@@ -438,6 +438,7 @@ class pspmtHandler : public simpleTool {
 	pspmtBarMap barmap;
 	
 	PSPmtStructure *ptr;
+	TriggerStructure *sptr;
 
 	TH2F *calHist;
 
@@ -464,6 +465,7 @@ class pspmtHandler : public simpleTool {
 	double tdiff_L, tdiff_R;
 	float tqdc_L, tqdc_R;
 	float stqdc_L, stqdc_R;	
+	float startqdc;
 
 	float allTQDC_L[4];
 	float allTQDC_R[4];
@@ -479,7 +481,7 @@ class pspmtHandler : public simpleTool {
 	void setVariables(fullBarEvent* evt_);
 
   public:
-	pspmtHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), map(), barmap(), ptr(NULL), calHist(NULL), singleEndedMode(false), 
+	pspmtHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), map(), barmap(), ptr(NULL), sptr(NULL), calHist(NULL), singleEndedMode(false), 
 	                 noTimeMode(false), noEnergyMode(false), noPositionMode(false), calibrationMode(false), totalCounts(0), totalDataTime(0) { }
 
 	~pspmtHandler();
@@ -612,6 +614,12 @@ void pspmtHandler::process(){
 			if(ecal) ctqdc = ecal->GetCalEnergy(tqdc);
 		}
 	}
+
+	// Get the TQDC from the start detector.
+	if(sptr && sptr->mult > 0)
+		startqdc = sptr->tqdc.at(0);
+	else
+		startqdc = 0;
 
 	// Calculate the neutron energy.
 	if(!noPositionMode){
@@ -961,7 +969,7 @@ int pspmtHandler::execute(int argc, char *argv[]){
 		outtree->Branch("ctof", &ctof);
 		if(!noPositionMode)
 			outtree->Branch("energy", &energy);
-		outtree->Branch("tqdc", &tqdc);
+		outtree->Branch("ltqdc", &tqdc);
 		outtree->Branch("stqdc", &stqdc);
 		if(!noEnergyMode)
 			outtree->Branch("ctqdc", &ctqdc);
@@ -980,6 +988,7 @@ int pspmtHandler::execute(int argc, char *argv[]){
 			outtree->Branch("lbal", &lbal);
 			outtree->Branch("cenE", &centerE);
 			outtree->Branch("barE", &barifierE);
+			outtree->Branch("startqdc", &startqdc);
 			if(!singleEndedMode){
 				outtree->Branch("tdiff", &tdiff);
 				outtree->Branch("xdetL", &xdetL);
@@ -1015,12 +1024,16 @@ int pspmtHandler::execute(int argc, char *argv[]){
 			continue;
 		}
 
-		TBranch *branch = NULL;
+		TBranch *branch = NULL, *sbranch = NULL;
 		intree->SetBranchAddress("pspmt", &ptr, &branch);
+		intree->SetBranchAddress("trigger", &sptr, &sbranch);
 
 		if(!branch){
 			std::cout << " Error: Failed to load branch \"pspmt\" from input TTree.\n";
 			return 9;
+		}
+		if(!sbranch){ // Not a fatal error.
+			std::cout << " Warning! Failed to load branch \"trigger\" from input TTree.\n";
 		}
 
 		if(!calibrationMode){
