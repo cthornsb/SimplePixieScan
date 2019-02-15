@@ -206,11 +206,10 @@ bool MapFile::Load(const char *filename_){
 	while(true){
 		std::getline(mapfile, line);
 		if(mapfile.eof() || !mapfile.good()){ break; }
-		if(line[0] == '#'){ 
-			line_num++;
-			continue; 
-		}
+
 		line_num++;
+		if(line.empty() || line[0] == '#') // Check for empty lines and comments.
+			continue; 
 		
 		values.clear();
 		argument = "";
