@@ -127,6 +127,10 @@ PSPmtProcessor::PSPmtProcessor(MapFile *map_) : Processor("PSPmt", "pspmt", map_
 
 	root_structure = (Structure*)&structure;
 	root_waveform = &waveform;
+
+	// Do not force the use of a trace. By setting this flag to false,
+	// this processor WILL NOT reject events which do not have an ADC trace.
+	use_trace = false;
 }
 
 void PSPmtProcessor::GetHists(OnlineProcessor *online_){
