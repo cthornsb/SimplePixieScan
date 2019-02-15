@@ -97,13 +97,26 @@ class fullBarEvent{
 	float tqdcSum_L, tqdcSum_R;
 	float energySum_L, energySum_R;
 	
-	fullBarEvent() : tdiff_L(0), tdiff_R(0), xpos_L(0), xpos_R(0), ypos_L(0), ypos_R(0), stqdc_L(0), stqdc_R(0), ltqdc_L(0), ltqdc_R(0) ,loc(0) { }
-	
+	bool valid_L, valid_R;
+
+	fullBarEvent(){ this->clear(); }
+
+	fullBarEvent(std::deque<simpleEvent*> *left, std::deque<simpleEvent*> *right);
+
 	fullBarEvent(simpleEvent *dynode_L, simpleEvent *anode_SE_L, simpleEvent *anode_NE_L, simpleEvent *anode_NW_L, simpleEvent *anode_SW_L,
-	      simpleEvent *dynode_R, simpleEvent *anode_SE_R, simpleEvent *anode_NE_R, simpleEvent *anode_NW_R, simpleEvent *anode_SW_R);
-	
-	void compute(simpleEvent *dynode_L, simpleEvent *anode_SE_L, simpleEvent *anode_NE_L, simpleEvent *anode_NW_L, simpleEvent *anode_SW_L,
 	             simpleEvent *dynode_R, simpleEvent *anode_SE_R, simpleEvent *anode_NE_R, simpleEvent *anode_NW_R, simpleEvent *anode_SW_R);
+
+	bool readDynodes(simpleEvent *dynode_L, simpleEvent *dynode_R);
+
+	bool readLeftAnodes(simpleEvent *anode_SE, simpleEvent *anode_NE, simpleEvent *anode_NW, simpleEvent *anode_SW);
+	
+	bool readRightAnodes(simpleEvent *anode_SE, simpleEvent *anode_NE, simpleEvent *anode_NW, simpleEvent *anode_SW);
+
+	bool readAnode(float &tqdc, float &energy, simpleEvent *anode);
+
+	void compute();
+
+	void clear();
 };
 
 class pspmtMapFileEntry : public CalType {
@@ -146,6 +159,8 @@ class pspmtMapEntry{
 	bool add(simpleEvent *evt);
 
 	bool check();
+
+	bool checkDynode();
 	
 	fullEvent* buildEvent();
 };

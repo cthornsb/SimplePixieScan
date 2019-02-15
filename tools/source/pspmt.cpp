@@ -50,15 +50,20 @@ void writeTNamed(const char *label_, const T &val_, const int &precision_=-1){
 }
 
 fullBarEvent* buildBarEvent(pspmtMapEntry *entryL_, pspmtMapEntry *entryR_){
-	if(!entryL_->check() || !entryR_->check()) return NULL;
+	if(!entryL_->check() && !entryR_->check()) return NULL;
+	if(!entryL_->checkDynode() || !entryR_->checkDynode()) return NULL;
 	std::deque<simpleEvent*>* evtArrayL = entryL_->getEvents();
 	std::deque<simpleEvent*>* evtArrayR = entryR_->getEvents();
-        fullBarEvent *evt = new fullBarEvent(evtArrayL[0].front(), evtArrayL[1].front(), evtArrayL[2].front(), evtArrayL[3].front(), evtArrayL[4].front(),
-	                                     evtArrayR[0].front(), evtArrayR[1].front(), evtArrayR[2].front(), evtArrayR[3].front(), evtArrayR[4].front());
-	for(size_t i = 0; i < 5; i++){ // What to do with higher multiplicity? CRT
+	/*for(size_t i = 0; i < 5; i++){
+		std::cout << i << "\t" << evtArrayL[i].size() << "\t" << evtArrayR[i].size() << std::endl;
+	}*/
+	fullBarEvent *evt = new fullBarEvent(evtArrayL, evtArrayR);
+        //fullBarEvent *evt = new fullBarEvent(evtArrayL[0].front(), evtArrayL[1].front(), evtArrayL[2].front(), evtArrayL[3].front(), evtArrayL[4].front(),
+	//                                     evtArrayR[0].front(), evtArrayR[1].front(), evtArrayR[2].front(), evtArrayR[3].front(), evtArrayR[4].front());
+	/*for(size_t i = 0; i < 5; i++){ // What to do with higher multiplicity? CRT
 		evtArrayL[i].pop_front();
 		evtArrayR[i].pop_front();
-	}
+	}*/
 	return evt;
 }
 
@@ -199,14 +204,37 @@ void fullEvent::compute(simpleEvent *dynode, simpleEvent *anode_SE, simpleEvent 
 ///////////////////////////////////////////////////////////////////////////////
 // class fullBarEvent
 ///////////////////////////////////////////////////////////////////////////////
-	
-fullBarEvent::fullBarEvent(simpleEvent *dynode_L, simpleEvent *anode_SE_L, simpleEvent *anode_NE_L, simpleEvent *anode_NW_L, simpleEvent *anode_SW_L,
-                           simpleEvent *dynode_R, simpleEvent *anode_SE_R, simpleEvent *anode_NE_R, simpleEvent *anode_NW_R, simpleEvent *anode_SW_R){
-	compute(dynode_L, anode_SE_L, anode_NE_L, anode_NW_L, anode_SW_L, dynode_R, anode_SE_R, anode_NE_R, anode_NW_R, anode_SW_R);
+
+fullBarEvent::fullBarEvent(std::deque<simpleEvent*> *left, std::deque<simpleEvent*> *right){
+	clear();
+
+	// Read the dynode signals.
+	if(!left[0].empty() && !right[0].empty())
+		readDynodes(left[0].front(), right[0].front());
+
+	// Read the left anode signals.
+	if(!left[1].empty() && !left[2].empty() && !left[3].empty() && !left[4].empty())
+		readLeftAnodes(left[1].front(), left[2].front(), left[3].front(), left[4].front());
+
+	// Read the right anode signals.
+	if(!right[1].empty() && !right[2].empty() && !right[3].empty() && !right[4].empty())
+		readRightAnodes(right[1].front(), right[2].front(), right[3].front(), right[4].front());
+
+	compute();
 }
 
-void fullBarEvent::compute(simpleEvent *dynode_L, simpleEvent *anode_SE_L, simpleEvent *anode_NE_L, simpleEvent *anode_NW_L, simpleEvent *anode_SW_L,
+fullBarEvent::fullBarEvent(simpleEvent *dynode_L, simpleEvent *anode_SE_L, simpleEvent *anode_NE_L, simpleEvent *anode_NW_L, simpleEvent *anode_SW_L,
                            simpleEvent *dynode_R, simpleEvent *anode_SE_R, simpleEvent *anode_NE_R, simpleEvent *anode_NW_R, simpleEvent *anode_SW_R){
+	clear();
+	readDynodes(dynode_L, dynode_R);
+	readLeftAnodes(anode_SE_L, anode_NE_L, anode_NW_L, anode_SW_L);
+	readRightAnodes(anode_SE_R, anode_NE_R, anode_NW_R, anode_SW_R);
+	compute();
+}
+
+bool fullBarEvent::readDynodes(simpleEvent *dynode_L, simpleEvent *dynode_R){
+	if(!dynode_L || !dynode_R) return false;
+
 	tdiff_L = dynode_L->tdiff;
 	tdiff_R = dynode_R->tdiff;
 
@@ -214,27 +242,42 @@ void fullBarEvent::compute(simpleEvent *dynode_L, simpleEvent *anode_SE_L, simpl
 	ltqdc_R = dynode_R->ltqdc;
 	stqdc_L = dynode_L->stqdc;
 	stqdc_R = dynode_R->stqdc;
-	
-	tqdc_L[0] = anode_SE_L->ltqdc;
-	tqdc_L[1] = anode_NE_L->ltqdc;
-	tqdc_L[2] = anode_NW_L->ltqdc;
-	tqdc_L[3] = anode_SW_L->ltqdc;
 
-	tqdc_R[0] = anode_SE_R->ltqdc;
-	tqdc_R[1] = anode_NE_R->ltqdc;
-	tqdc_R[2] = anode_NW_R->ltqdc;
-	tqdc_R[3] = anode_SW_R->ltqdc;
+	loc = dynode_L->location;
 
-	energy_L[0] = (float)anode_SE_L->energy;
-	energy_L[1] = (float)anode_NE_L->energy;
-	energy_L[2] = (float)anode_NW_L->energy;
-	energy_L[3] = (float)anode_SW_L->energy;
+	return true;
+}
 
-	energy_R[0] = (float)anode_SE_R->energy;
-	energy_R[1] = (float)anode_NE_R->energy;
-	energy_R[2] = (float)anode_NW_R->energy;
-	energy_R[3] = (float)anode_SW_R->energy;
+bool fullBarEvent::readLeftAnodes(simpleEvent *anode_SE, simpleEvent *anode_NE, simpleEvent *anode_NW, simpleEvent *anode_SW){
+	valid_L = true;	
+	valid_L &= readAnode(tqdc_L[0], energy_L[0], anode_SE);
+	valid_L &= readAnode(tqdc_L[1], energy_L[1], anode_NE);
+	valid_L &= readAnode(tqdc_L[2], energy_L[2], anode_NW);
+	valid_L &= readAnode(tqdc_L[3], energy_L[3], anode_SW);
+	return valid_L;
+}
 
+bool fullBarEvent::readRightAnodes(simpleEvent *anode_SE, simpleEvent *anode_NE, simpleEvent *anode_NW, simpleEvent *anode_SW){
+	valid_R = true;	
+	valid_R &= readAnode(tqdc_R[0], energy_R[0], anode_SE);
+	valid_R &= readAnode(tqdc_R[1], energy_R[1], anode_NE);
+	valid_R &= readAnode(tqdc_R[2], energy_R[2], anode_NW);
+	valid_R &= readAnode(tqdc_R[3], energy_R[3], anode_SW);
+	return valid_R;
+}
+
+bool fullBarEvent::readAnode(float &tqdc, float &energy, simpleEvent *anode){
+	if(anode){
+		tqdc = anode->ltqdc;
+		energy = anode->energy;
+		return true;
+	}
+	tqdc = 0;
+	energy = 0;
+	return false;
+}
+
+void fullBarEvent::compute(){
 	tqdcSum_L = tqdc_L[0]+tqdc_L[1]+tqdc_L[2]+tqdc_L[3];
 	tqdcSum_R = tqdc_R[0]+tqdc_R[1]+tqdc_R[2]+tqdc_R[3];
 	energySum_L = energy_L[0]+energy_L[1]+energy_L[2]+energy_L[3];
@@ -254,8 +297,35 @@ void fullBarEvent::compute(simpleEvent *dynode_L, simpleEvent *anode_SE_L, simpl
 		xpos_R = -((energy_R[0]+energy_R[1])-(energy_R[2]+energy_R[3]))/energySum_R; // Sign is flipped to preserve x-axis of left side.
 		ypos_R = ((energy_R[1]+energy_R[2])-(energy_R[0]+energy_R[3]))/energySum_R;	
 	}	
+}
 
-	loc = dynode_L->location;
+void fullBarEvent::clear(){
+	tdiff_L = 0;
+	tdiff_R = 0;
+	xpos_L = 0;
+	xpos_R = 0;
+	ypos_L = 0;
+	ypos_R = 0;
+	stqdc_L = 0;
+	stqdc_R = 0;
+	ltqdc_L = 0;
+	ltqdc_R = 0;
+	loc = 0;
+
+	for(size_t i = 0; i < 4; i++){
+		tqdc_L[i] = 0;
+		tqdc_R[i] = 0;
+		energy_L[i] = 0;
+		energy_R[i] = 0;
+	}
+	
+	tqdcSum_L = 0;
+	tqdcSum_R = 0;
+	energySum_L = 0;
+	energySum_R = 0;
+
+	valid_L = false;
+	valid_R = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -336,6 +406,11 @@ bool pspmtMapEntry::check(){
 	for(size_t i = 0; i < 5; i++){
 		if(mult[i] == 0) return false;
 	}
+	return true;
+}
+
+bool pspmtMapEntry::checkDynode(){
+	if(mult[0] == 0) return false;
 	return true;
 }
 
@@ -858,10 +933,25 @@ void pspmtHandler::setVariables(fullBarEvent *evt_){
 	stqdc_R = evt_->stqdc_R;
 	location = evt_->loc;
 
-	xdetL = evt_->xpos_L;
-	ydetL = evt_->ypos_L;
-	xdetR = evt_->xpos_R;
-	ydetR = evt_->ypos_R;
+	if(evt_->valid_L && evt_->valid_R){
+		xdetL = evt_->xpos_L;
+		ydetL = evt_->ypos_L;
+		xdetR = evt_->xpos_R;
+		ydetR = evt_->ypos_R;
+	}
+	else if(evt_->valid_L){
+		xdetL = evt_->xpos_L;
+		ydetL = evt_->ypos_L;
+		xdetR = xdetL;
+		ydetR = ydetL;
+	}
+	else if(evt_->valid_R){
+		xdetR = evt_->xpos_R;
+		ydetR = evt_->ypos_R;
+		xdetL = xdetR;
+		ydetL = ydetR;
+	}
+	else{ std::cout << "HERE!\n"; } // This should never happen.
 
 	if(debug){
 		for(size_t i = 0; i < 4; i++){
