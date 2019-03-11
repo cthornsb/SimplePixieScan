@@ -64,7 +64,7 @@ class timeAlign : public simpleHistoFitter {
 	bool classicMode;
 
   public:
-	timeAlign() : simpleHistoFitter(), fitRangeMult(1.5), detectorLength(60), detectorWidth(3), timeOffset(0), betaFrac(0.5), numPeaks(1), classicMode(false) { }
+	timeAlign() : simpleHistoFitter(), fitRangeMult(2), detectorLength(60), detectorWidth(3), timeOffset(0), betaFrac(0.5), numPeaks(1), classicMode(false) { }
 
 	void addChildOptions();
 
@@ -74,7 +74,7 @@ class timeAlign : public simpleHistoFitter {
 };
 
 void timeAlign::addChildOptions(){
-	addOption(optionExt("fit-range", required_argument, NULL, 0, "<multiplier>", "Specify FWHM multiplier for range of fit of distribution (default = 1.5)."), userOpts, optstr);
+	addOption(optionExt("fit-range", required_argument, NULL, 0, "<multiplier>", "Specify FWHM multiplier for range of fit of distribution (default = 2)."), userOpts, optstr);
 	addOption(optionExt("length", required_argument, NULL, 0, "<length>", "Specify the length of the detectors (in cm, default = 60)."), userOpts, optstr);
 	addOption(optionExt("width", required_argument, NULL, 0, "<width>", "Specify the width of the detectors (in cm, default = 3)."), userOpts, optstr);
 	addOption(optionExt("classic", optional_argument, NULL, 0, "[offset=0ns]", "Enable \"classic\" mode for simple gaussian fitting of TOF spectra."), userOpts, optstr);
@@ -133,6 +133,7 @@ bool timeAlign::process(){
 	else{
 		can2->cd()->SetLogy();
 		std::cout << "Using \"classic\" mode with time offset of " << timeOffset << " ns.\n";
+		std::cout << "Using fitting range of " << fitRangeMult << " units.\n"; 
 		f1 = new TF1("f1", "gaus", 0, 1);
 
 		ofile1 << "id\tA\tmean\tsigma\tchi2\n";	
@@ -236,8 +237,8 @@ bool timeAlign::process(){
 				f1->SetParameters(xmean, ymean, 1);
 
 				// Calculate the fitting range.
-				xmin = xmean - 1;
-				xmax = xmean + 1;
+				xmin = xmean - fitRangeMult/2;
+				xmax = xmean + fitRangeMult/2;
 			}
 			
 			std::cout << "  Range: " << xmin << ", " << xmax << std::endl;
