@@ -19,6 +19,14 @@ const short colors[6] = {kBlue+2, kRed, kGreen+2, kOrange+7, kMagenta+2, kCyan+2
 // Helper functions
 ///////////////////////////////////////////////////////////////////////////////
 
+double tof2energy(const double &tof, const double &dist){
+	return 0.5*Mn*dist*dist/(tof*tof);
+}
+
+double energy2tof(const double &energy, const double &dist){
+	return dist*std::sqrt(Mn/(2*energy));
+}
+
 // Return the range of bins containing an upper and lower point, rounded to the nearest bins.
 void findBins(TH1 *h, const double &xstart_, const double &xstop_, int &lowBin, int &highBin){
 	if(xstart_ <= h->GetXaxis()->GetXmin()) lowBin = 1;
@@ -223,6 +231,21 @@ void setMarker(TAttMarker *ptr_, const short &color_=602, const short &style_=21
 	ptr_->SetMarkerColor(color_);
 	ptr_->SetMarkerStyle(style_);
 	ptr_->SetMarkerSize(size_);
+}
+
+void normalize(TH1 *h1, TH1 *h2){
+	double max1 = h1->GetMaximum();
+	double max2 = h2->GetMaximum();
+	if(max1 >= max2){
+		multiply(h2, max1/max2);
+	}
+	else{
+		multiply(h1, max2/max1);
+	}
+}
+
+void normalize(TH1 *h){
+	multiply(h, 1/h->GetMaximum());
 }
 
 void help(const std::string &search_=""){
