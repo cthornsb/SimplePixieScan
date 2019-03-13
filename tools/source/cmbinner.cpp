@@ -22,12 +22,6 @@ double energy2tqdc(const double &E_){
 	return 1000*(a*E_-b*(1-std::exp(-c*std::pow(E_, d))));
 }
 
-// E_ in MeV and d in m, return TOF in ns.
-double energy2tof(const double &E_, const double &d){
-	const double coeff = 72.2982541205; // 
-	return coeff*d/std::sqrt(E_);
-}
-
 double getBinWidth(const double &E_){
 	const double p0 = 0.0186821;
 	const double p1 = 0.0516979;
@@ -38,7 +32,6 @@ double getBinWidth(const double &E_){
 double calcWidth(const double &E, const double &l){
 	const double dl = 0.03;//0.05; // m
 	const double dt = 1;//2; // ns
-	const double Mn = 10454.0750977429; // MeV
 	return (2*E/l)*std::sqrt(dl*dl+(2*E/Mn)*dt*dt);
 }
 

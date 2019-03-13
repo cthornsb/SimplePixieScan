@@ -19,9 +19,13 @@ class TCutG;
 
 extern const double pi;
 extern const double cvac;
+extern const double Mn;
 
 // Return the neutron TOF for an energy in MeV.
 double tof2energy(const double &tof_, const double &d_);
+
+// Return the neutron energy for a TOF in ns.
+double energy2tof(const double &E_, const double &d_);
 
 // Add dtheta_ to theta and wrap between 0 and 2pi.
 void addAngles(double &theta, const double &dtheta_);

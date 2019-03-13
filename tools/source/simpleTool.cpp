@@ -24,11 +24,16 @@
 
 const double pi = 3.1415926536;
 const double cvac = 29.9792458; // cm/ns
+const double Mn = 10454.0750977429; // MeV
 
 // Return the neutron TOF for an energy in MeV.
 double tof2energy(const double &tof_, const double &d_){
-	const double Mn = 10454.0750977429; // MeV
 	return (0.5*Mn*d_*d_/(tof_*tof_));
+}
+
+// Return the neutron energy for a TOF in ns.
+double energy2tof(const double &E_, const double &d_){
+	return (d_*std::sqrt(Mn/(2*E_)));
 }
 
 // Add dtheta_ to theta and wrap between 0 and 2pi.
