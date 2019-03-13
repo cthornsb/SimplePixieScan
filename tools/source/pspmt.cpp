@@ -12,6 +12,7 @@
 #include "TH1.h"
 #include "TH2.h"
 #include "TLine.h"
+#include "TCutG.h"
 
 #include "CTerminal.h"
 
@@ -72,6 +73,7 @@ std::string getFuncStr(int nPeak){
 	retval << "gaus";
 	for(int i = 1; i < nPeak; i++)
 		retval << "+gaus(" << 3*i << ")";
+	retval << "+pol0(" << 3*nPeak << ")";
 	return retval.str();
 }
 
@@ -93,6 +95,7 @@ void setInitPars(TF1 *f, TSpectrum *spec, int nPeak, double sigma=0.05){
 		f->SetParameter(3*i+2, sigma);
 		//f->SetParLimits(3*i+2, 0.025, 0.075);
 	}
+	f->SetParameter(3*nPeak, 20);
 }
 
 short getXcell(const double &xpos){
@@ -107,19 +110,34 @@ short getYcell(const double &ypos){
 // class pspmtPosCal
 ///////////////////////////////////////////////////////////////////////////////
 
-double pspmtPosCal::calX(const double &x0_){
-	return (xp[0] + xp[1]*x0_ + xp[2]*x0_*x0_ + xp[3]*x0_*x0_*x0_);
+double pspmtPosCal::calX(const double &x0_, double *par_){
+	return (par_[0] + par_[1]*x0_ + par_[2]*x0_*x0_ + par_[3]*x0_*x0_*x0_);
 }
 
 double pspmtPosCal::calY(const double &y0_){
 	return (yp[0] + yp[1]*y0_ + yp[2]*y0_*y0_ + yp[3]*y0_*y0_*y0_);
 }
 
+void pspmtPosCal::calibrate(const double &x0_, const double &y0_, double &x1, double &y1){
+	y1 = this->calY(y0_);
+	//if(y0_ <= ymin[0])
+		x1 = this->calX(x0_, xp[0]);
+	/*else if(y0_ <= ymin[1])
+		x1 = this->calX(x0_, xp[1]);
+	else if(y0_ <= ymin[2])
+		x1 = this->calX(x0_, xp[2]);
+	else
+		x1 = this->calX(x0_, xp[3]);*/
+}
+
 std::string pspmtPosCal::Print(bool fancy/*=true*/){
 	std::stringstream output;
 	if(fancy){
-		output << " id=" << id << ", x=(" << xp[0] << ", " << xp[1] << ", " << xp[2] << ", " << xp[3] << ")";
-		output << ", y=(" << yp[0] << ", " << yp[1] << ", " << yp[2] << ", " << yp[3] << ")";
+		output << " id=" << id << ", yMin0=" << ymin[0] << ", yMin1=" << ymin[1] << ", yMin2=" << ymin[2] << std::endl;
+		for(int i = 0; i < 4; i++){
+			output << "  x" << i << "=(" << xp[i][0] << ", " << xp[i][1] << ", " << xp[i][2] << ", " << xp[i][3] << ")\n";
+		}
+		output << "  y=(" << yp[0] << ", " << yp[1] << ", " << yp[2] << ", " << yp[3] << ")\n";
 	}
 	else{
 		output << id << "\t" << xp[0] << "\t" << xp[1] << "\t" << xp[2] << "\t" << xp[3];
@@ -131,12 +149,21 @@ std::string pspmtPosCal::Print(bool fancy/*=true*/){
 unsigned int pspmtPosCal::ReadPars(const std::vector<std::string> &pars_){
 	defaultVals = false;
 	int index = 0;
+	std::cout << "debug: size=" << pars_.size() << std::endl;
 	for(std::vector<std::string>::const_iterator iter = pars_.begin(); iter != pars_.end(); iter++){
 		if(index == 0) id = GetPixieID(*iter);
-		else if(index <= 4) // x parameters
-			xp[index-1] = strtod(iter->c_str(), NULL);
-		else if(index <= 8) // y parameters
-			yp[index-5] = strtod(iter->c_str(), NULL);
+		else if(index <= 3) // Y-axis minima
+			ymin[index-1] = strtod(iter->c_str(), NULL);
+		else if(index <= 7) // x parameters
+			xp[0][index-4] = strtod(iter->c_str(), NULL);
+		else if(index <= 11) // x parameters
+			xp[1][index-8] = strtod(iter->c_str(), NULL);
+		else if(index <= 15) // x parameters
+			xp[2][index-12] = strtod(iter->c_str(), NULL);
+		else if(index <= 19) // x parameters
+			xp[3][index-16] = strtod(iter->c_str(), NULL);
+		else if(index <= 23) // y parameters
+			yp[index-20] = strtod(iter->c_str(), NULL);
 		index++;
 	}
 	return id;
@@ -515,19 +542,20 @@ class pspmtHandler : public simpleTool {
 	PSPmtStructure *ptr;
 	TriggerStructure *sptr;
 
-	TH2F *calHist;
-
 	bool singleEndedMode;
 	bool noTimeMode;
 	bool noEnergyMode;
 	bool noPositionMode;
 	bool calibrationMode;
+	bool useLightBalance;
 
 	std::string countsString;
 	unsigned long long totalCounts;
 	double totalDataTime;
+	double userEnergyOffset;
 
 	std::vector<pspmtPosCal> pspmtcal;
+	std::vector<double> posCalX, posCalY;
 
 	double x, y, z, r, theta, phi;
 	double tdiff, tof, ctof, tqdc, stqdc, lbal, ctqdc, energy;
@@ -556,8 +584,8 @@ class pspmtHandler : public simpleTool {
 	void setVariables(fullBarEvent* evt_);
 
   public:
-	pspmtHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), map(), barmap(), ptr(NULL), sptr(NULL), calHist(NULL), singleEndedMode(false), 
-	                 noTimeMode(false), noEnergyMode(false), noPositionMode(false), calibrationMode(false), totalCounts(0), totalDataTime(0) { }
+	pspmtHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), map(), barmap(), ptr(NULL), sptr(NULL), singleEndedMode(false), noTimeMode(false), 
+	                 noEnergyMode(false), noPositionMode(false), calibrationMode(false), useLightBalance(false), totalCounts(0), totalDataTime(0), userEnergyOffset(0) { }
 
 	~pspmtHandler();
 	
@@ -569,8 +597,6 @@ class pspmtHandler : public simpleTool {
 };
 
 void pspmtHandler::process(){
-	//double ctdiff;
-
 	// Check for invalid TQDC.
 	if(tqdc_L <= 0 || (!singleEndedMode && tqdc_R <= 0)) return;
 
@@ -578,7 +604,16 @@ void pspmtHandler::process(){
 	if(!singleEndedMode && !(bar = calib.GetBarCal(location))) return;
 
 	TimeCal *time = NULL;
-	if(!noTimeMode && !(time = calib.GetTimeCal(location))) return;
+	double tDiffOffset_L = 0;
+	double tDiffOffset_R = 0;
+	if(!noTimeMode){
+		if(!(time = calib.GetTimeCal(location))) return;
+		tDiffOffset_L = time->t0;
+	}
+	if(!singleEndedMode){
+		TimeCal *time_R = calib.GetTimeCal(location+1);
+		if(time_R) tDiffOffset_R = time_R->t0;
+	}
 
 	PositionCal *pos = NULL;
 	pspmtPosCal *pspmtpos = NULL;
@@ -589,31 +624,26 @@ void pspmtHandler::process(){
 
 	// Compute the corrected time difference
 	if(!singleEndedMode){
-		/*ctdiff = tdiff_R - tdiff_L - bar->t0;
-		y = bar->cbar*ctdiff/200; // m
-
-		// Check for invalid radius.
-		if(y < -bar->length/30.0 || y > bar->length/30.0) return;*/
-
-		// Calculate the light balance.
-		lbal = (tqdc_L-tqdc_R)/(tqdc_L+tqdc_R) - bar->t0;
-
-		// Use light balance to compute position in detector.
-		y = lbal*((bar->length/100)/bar->beta);
+		tdiff = (tdiff_R - tdiff_L);
+		lbal = (tqdc_L-tqdc_R)/(tqdc_L+tqdc_R);
+		if(!useLightBalance){
+			tdiff = tdiff - bar->t0;
+			y = bar->cbar*tdiff/200; // m
+		}
+		else{ // Use light balance to compute position in detector.
+			lbal = lbal - bar->t0;
+			y = lbal*((bar->length/100)/bar->beta);
+		}
 	}
 	else y = 0; // m
 
 	// Compute the 3d position of the detection event
 	if(!noPositionMode){
 		// Get the calibrated X and Y positions.
-		if(!singleEndedMode){
-			cxdet = pspmtpos->calX((xdetL+xdetR)/2);
-			cydet = pspmtpos->calY((ydetL+ydetR)/2);
-		}
-		else{
-			cxdet = pspmtpos->calX(xdetL);
-			cydet = pspmtpos->calY(ydetL);
-		}
+		if(!singleEndedMode)
+			pspmtpos->calibrate((xdetL+xdetR)/2, (ydetL+ydetR)/2, cxdet, cydet);
+		else
+			pspmtpos->calibrate(xdetL, ydetL, cxdet, cydet);
 
 		// Get the X and Y pixel hit locations.
 		xcell = getXcell(cxdet);
@@ -642,32 +672,20 @@ void pspmtHandler::process(){
 		z = 0;
 	}
 
-	if(!singleEndedMode){
-		tdiff = (tdiff_R - tdiff_L);
-		tof = (tdiff_R + tdiff_L)/2;
-
-		// Calculate the TQDC.
-		tqdc = std::sqrt(tqdc_R*tqdc_L);
-	}
-	else{
+	if(!singleEndedMode)
+		tof = (tdiff_R - tDiffOffset_R + tdiff_L - tDiffOffset_L)/2;
+	else
 		tof = tdiff_L;
-	
-		// Calculate the TQDC.
-		tqdc = tqdc_L;
-	}
-	
+
+	if(userEnergyOffset > 0)
+		tof += energy2tof(userEnergyOffset, pos->r0) - 100*pos->r0/cvac;
+
 	// Calculate the corrected TOF.
 	ctof = tof;
-	if(!noTimeMode) // Correct timing offset. This should place the gamma-flash at t=0 ns.
-		ctof = ctof - time->t0;
+	//if(!noTimeMode) // Correct timing offset. This should place the gamma-flash at t=0 ns.
+	//	ctof = ctof - time->t0;
 	if(!noPositionMode) // Correct the gamma-flash offset for distance from source.
 		ctof += 100*pos->r0/cvac;
-
-	// Calculate the short integral for PSD.
-	if(!singleEndedMode)
-		stqdc = std::sqrt(stqdc_R*stqdc_L);
-	else
-		stqdc = stqdc_L;
 
 	if(!noEnergyMode){// Calibrate the TQDC.
 		if(!singleEndedMode){
@@ -727,125 +745,139 @@ void pspmtHandler::process(){
 }
 
 void pspmtHandler::handleCalibration(){
+	if(posCalX.empty() || posCalY.empty()) return; 
+
+	TH2F *calHist2d = new TH2F("calHist2d", "pspmt calibration hist", 200, -0.8, 0.8, 250, -0.8, 0.8);
+	TH1F *calHistY = new TH1F("calHistY", "pspmt calibration hist for y-axis", 200, -0.8, 0.8);
+	TH1F *calHistX[4];
+	for(size_t i = 0; i < 4; i++){
+		std::stringstream stream;
+		stream << "calHistX" << i;
+		calHistX[i] = new TH1F(stream.str().c_str(), "pspmt calibration hist for x-axis", 200, -0.8, 0.8);
+	}
+
+	std::vector<double>::iterator iterX;
+	std::vector<double>::iterator iterY;
+	for(iterX = posCalX.begin(), iterY = posCalY.begin(); iterX != posCalX.end() && iterY != posCalY.end(); iterX++, iterY++){
+		calHist2d->Fill(*iterX, *iterY);
+		calHistY->Fill(*iterY);
+	}
+
 	TSpectrum yspec(4);
 	TSpectrum xspec(8);
 	
-	TF1 *fy = new TF1("fy", getFuncStr(4).c_str(), -1, 1);
-	TF1 *fx = new TF1("fx", getFuncStr(8).c_str(), -1, 1);
+	TF1 *fy = new TF1("fy", getFuncStr(4).c_str(), -0.8, 0.8);
+	TF1 *fx = new TF1("fx", getFuncStr(8).c_str(), -0.8, 0.8);
 
-	TH1D *hx = calHist->ProjectionX("hx");
-	TH1D *hy = calHist->ProjectionY("hy");
-
-	yspec.Search(hy);
-	xspec.Search(hx);
-
-	setInitPars(fy, &yspec, 4);
-	setInitPars(fx, &xspec, 8);
-	
-	hy->Fit(fy, "QR");
-	hx->Fit(fx, "QR");
+	yspec.Search(calHistY);
+	setInitPars(fy, &yspec, 4, 0.03);
+	calHistY->Fit(fy, "QR");
 
 	std::vector<gPar> ypars;
-	std::vector<gPar> xpars;
+	std::vector<gPar> xpars[4];
 
 	for(int i = 0; i < 4; i++){
 		ypars.push_back(gPar(fy->GetParameter(3*i), fy->GetParameter(3*i+1), fy->GetParameter(3*i+2)));
+		std::cout << " debug: sigma=" << fy->GetParameter(3*i+2) << std::endl;
 	}
-	for(int i = 0; i < 8; i++){
-		xpars.push_back(gPar(fx->GetParameter(3*i), fx->GetParameter(3*i+1), fx->GetParameter(3*i+2)));
-	}
+	std::cout << " debug: offset=" << fy->GetParameter(12) << std::endl;
 	
-	// Sort by mean.
+	// Sort by mean. The fitter doesn't necessarily put them in ascending order.
 	std::sort(ypars.begin(), ypars.end(), compare);
-	std::sort(xpars.begin(), xpars.end(), compare);
 
-	double ypos[5];
-	double xpos[9];
+	// Open output calibration file.
+	std::ofstream ofile("pspmtpos.cal");
+
+	double yMinima[5] = {-0.8, 0, 0, 0, 0.8};
 	
 	for(int i = 1; i < 4; i++){
-		ypos[i] = (ypars[i].p1 - ypars[i-1].p1)/2 + ypars[i-1].p1;
+		yMinima[i] = fy->GetMinimumX(ypars[i-1].p1, ypars[i].p1);
+		std::cout << " debug: y[" << i-1 << "] = " << yMinima[i] << std::endl;
 	}
-	ypos[0] = ypars[0].p1 - (ypos[1]-ypars[0].p1);
-	ypos[4] = ypars[3].p1 + (ypars[3].p1-ypos[3]);
-	for(int i = 1; i < 8; i++){
-		xpos[i] = (xpars[i].p1 - xpars[i-1].p1)/2 + xpars[i-1].p1;
+	ofile << yMinima[1] << "\t" << yMinima[2] << "\t" << yMinima[3];
+
+	// Fill the x-position histograms.
+	for(int i = 1; i <= 4; i++){
+		for(iterX = posCalX.begin(), iterY = posCalY.begin(); iterX != posCalX.end() && iterY != posCalY.end(); iterX++, iterY++){
+			if(*iterY > yMinima[i-1] && *iterY <= yMinima[i])
+				calHistX[i-1]->Fill(*iterX);
+		}
+		xspec.Search(calHistX[i-1]);
+		setInitPars(fx, &xspec, 8, 0.03);
+		calHistX[i-1]->Fit(fx, "QR");
+		for(int j = 0; j < 8; j++){
+			xpars[i-1].push_back(gPar(fx->GetParameter(3*j), fx->GetParameter(3*j+1), fx->GetParameter(3*j+2)));
+		}
+		// Sort by mean.
+		std::sort(xpars[i-1].begin(), xpars[i-1].end(), compare);
 	}
-	xpos[0] = xpars[0].p1 - (xpos[1]-xpars[0].p1);
-	xpos[8] = xpars[7].p1 + (xpars[7].p1-xpos[7]);
 	
-	TLine *ylines[5];
-	TLine *xlines[9];
+	std::vector<TGraph*> xpoints;
+	TGraph *ypoints = new TGraph(4);
+	TGraph *allPoints = new TGraph(32);
 
-	TGraph *ypoints = new TGraph(5);
-	TGraph *xpoints = new TGraph(9);
-
-	xpoints->SetMarkerStyle(21);
 	ypoints->SetMarkerStyle(21);
+	allPoints->SetMarkerStyle(21);
 
 	// Horizontal lines
-	for(int i = 0; i <= 4; i++){
-		ypoints->SetPoint(i, ypos[i], -(height/2)+(height/4)*i);
-		if(debug){
-			ylines[i] = new TLine(xpos[0], ypos[i], xpos[8], ypos[i]);
-			ylines[i]->SetLineWidth(2);
-		}
-	}
-	// Vertical lines
-	for(int i = 0; i <= 8; i++){
-		xpoints->SetPoint(i, xpos[i], -(width/2)+(width/8)*i);
-		if(debug){
-			xlines[i] = new TLine(xpos[i], ypos[0], xpos[i], ypos[4]);
-			xlines[i]->SetLineWidth(2);
-		}
+	for(int i = 0; i < 4; i++){
+		ypoints->SetPoint(i, ypars[i].p1, -halfHeight+ySpacing*(0.5+i));
 	}
 
-	TF1 *xCalFit = new TF1("xCalFit", "pol3", -1, 1);
-	TF1 *yCalFit = new TF1("yCalFit", "pol1", -1, 1);
+	std::vector<TF1*> xCalFit;
+	TF1 *yCalFit = new TF1("yCalFit", "pol1", -0.8, 0.8);
 	
-	xCalFit->SetParameters(0, 3, 0, 0);
-	yCalFit->SetParameters(0, 3);
-
-	xpoints->Fit(xCalFit, "QR");
+	// Fit the y-position spectrum.
+	yCalFit->SetParameters(0, 0.3);
 	ypoints->Fit(yCalFit, "QR");
 
-	std::ofstream ofile("pspmtpos.cal");
-	ofile << xCalFit->GetParameter(0) << "\t" << xCalFit->GetParameter(1) << "\t" << xCalFit->GetParameter(2) << "\t" << xCalFit->GetParameter(3);
+	for(int i = 0; i < 4; i++){ // Fit the x-position spectra.
+		xpoints.push_back(new TGraph(8));
+		xCalFit.push_back(new TF1("xCalFit", "pol3", -0.8, 0.8));
+		for(int j = 0; j < 8; j++){
+			xpoints.back()->SetPoint(j, xpars[i][j].p1, -halfWidth+xSpacing*(0.5+j));
+			allPoints->SetPoint(i*8+j, xpars[i][j].p1, ypars[i].p1);
+		}
+		xCalFit.back()->SetParameters(0, 0.1, 0, 0);
+		xpoints.back()->Fit(xCalFit.back(), "QR");
+		ofile << "\t" << xCalFit.back()->GetParameter(0) << "\t" << xCalFit.back()->GetParameter(1) << "\t" << xCalFit.back()->GetParameter(2) << "\t" << xCalFit.back()->GetParameter(3);
+	}
+
 	ofile << "\t" << yCalFit->GetParameter(0) << "\t" << yCalFit->GetParameter(1) << std::endl;
 	ofile.close();
 
 	if(debug){ // Draw debug histograms to the screen.
-		std::cout << " PSPMT position calibration data:\n";
-		std::cout << "  X: " << xCalFit->GetParameter(0) << "\t" << xCalFit->GetParameter(1) << "\t" << xCalFit->GetParameter(2) << "\t" << xCalFit->GetParameter(3) << std::endl;
-		std::cout << "  Y: " << yCalFit->GetParameter(0) << "\t" << xCalFit->GetParameter(1) << std::endl;
-
 		initRootGraphics();
 
-		openCanvas1();
+		openCanvas1()->Divide(2, 2);
 
-		can1->cd();
-		calHist->SetStats(0);
-		calHist->Draw("COLZ");
-		for(int i = 0; i <= 4; i++){
-			ylines[i]->Draw("SAME");
+		for(int i = 0; i < 4; i++){
+			can1->cd(i+1);
+			xpoints.at(i)->SetMarkerStyle(21);
+			xpoints.at(i)->Draw("AP");
+			xCalFit.at(i)->Draw("SAME");
 		}
-		for(int i = 0; i <= 8; i++){
-			xlines[i]->Draw("SAME");
-		}
+
+		/*can1->cd();
+		calHist2d->SetStats(0);
+		calHist2d->Draw("COLZ");
+		allPoints->Draw("PSAME");*/
 
 		openCanvas2()->Divide(2, 2);
 
-		can2->cd(1);
-		hx->Draw();
-		can2->cd(2);
-		hy->Draw();
-
-		can2->cd(3);
-		xpoints->Draw("AP");
-		can2->cd(4);
-		ypoints->Draw("AP");
+		for(int i = 0; i < 4; i++){
+			can2->cd(i+1);
+			calHistX[i]->Draw();
+		}
 		
 		// Wait for the user to finish before closing the application.
 		wait();
+	}
+
+	delete calHist2d;
+	delete calHistY;
+	for(int i = 0; i < 4; i++){
+		delete calHistX[i];
 	}
 }
 
@@ -880,10 +912,16 @@ void pspmtHandler::handleEvents(){
 		// Clean up	
 		for(std::vector<fullBarEvent*>::iterator iter = fullEvents.begin(); iter != fullEvents.end(); iter++){
 			setVariables((*iter));
+
+			// Check the PSD (if available).
+			if(tcutg && !tcutg->IsInside(tqdc, stqdc/tqdc)) continue;
+
 			if(!calibrationMode)
 				process();
-			else
-				calHist->Fill((xdetL+xdetR)/2, (ydetL+ydetR)/2);
+			else{
+				posCalX.push_back((xdetL+xdetR)/2);
+				posCalY.push_back((ydetL+ydetR)/2);
+			}
 			delete (*iter);
 		}
 		fullEvents.clear();
@@ -899,10 +937,16 @@ void pspmtHandler::handleEvents(){
 		// Clean up	
 		for(std::vector<fullEvent*>::iterator iter = fullEvents.begin(); iter != fullEvents.end(); iter++){
 			setVariables((*iter));
+
+			// Check the PSD (if available).
+			if(tcutg && !tcutg->IsInside(tqdc, stqdc/tqdc)) continue;
+
 			if(!calibrationMode)
 				process();
-			else
-				calHist->Fill(xdetL, ydetL);
+			else{
+				posCalX.push_back(xdetL);
+				posCalY.push_back(ydetL);
+			}
 			delete (*iter);
 		}
 		fullEvents.clear();
@@ -918,6 +962,11 @@ void pspmtHandler::setVariables(fullEvent *evt_){
 
 	xdetL = evt_->xpos;
 	ydetL = evt_->ypos;
+
+	// Calculate the long and short integrals for PSD.
+	stqdc = stqdc_L;
+	tqdc = tqdc_L;
+
 
 	if(debug){
 		for(size_t i = 0; i < 4; i++) allTQDC_L[i] = evt_->tqdc[i];
@@ -953,6 +1002,10 @@ void pspmtHandler::setVariables(fullBarEvent *evt_){
 	}
 	else{ std::cout << "HERE!\n"; } // This should never happen.
 
+	// Calculate the long and short integrals for PSD.
+	stqdc = std::sqrt(stqdc_R*stqdc_L);
+	tqdc = std::sqrt(tqdc_R*tqdc_L);
+
 	if(debug){
 		for(size_t i = 0; i < 4; i++){
 			allTQDC_L[i] = evt_->tqdc_L[i];
@@ -968,11 +1021,13 @@ void pspmtHandler::addOptions(){
 	addOption(optionExt("config", required_argument, NULL, 'c', "<fname>", "Read bar speed-of-light from an input cal file."), userOpts, optstr);
 	addOption(optionExt("single", no_argument, NULL, 0x0, "", "Single-ended PSPMT detector mode."), userOpts, optstr);
 	addOption(optionExt("debug", no_argument, NULL, 0x0, "", "Enable debug output."), userOpts, optstr);
+	addOption(optionExt("light", no_argument, NULL, 0x0, "", "Use TQDC light-balance to compute Y instead of PMT tdiff."), userOpts, optstr);	
 	addOption(optionExt("no-energy", no_argument, NULL, 0x0, "", "Do not use energy calibration."), userOpts, optstr);
 	addOption(optionExt("no-time", no_argument, NULL, 0x0, "", "Do not use time calibration."), userOpts, optstr);
 	addOption(optionExt("no-position", no_argument, NULL, 0x0, "", "Do not use position calibration."), userOpts, optstr);
 	addOption(optionExt("filter-energy", no_argument, NULL, 0x0, "", "Use Pixie filter energy instead of TQDC."), userOpts, optstr);
 	addOption(optionExt("calibrate", no_argument, NULL, 0x0, "", "Calibrate the PSPMT X-Y position."), userOpts, optstr);
+	addOption(optionExt("energy-offset", required_argument, NULL, 0x0, "<energy>", "Set the neutron energy offset for data with no reference time."), userOpts, optstr);
 }
 
 bool pspmtHandler::processArgs(){
@@ -987,20 +1042,26 @@ bool pspmtHandler::processArgs(){
 		debug = true;
 	}
 	if(userOpts.at(3).active){
-		noEnergyMode = true;
+		useLightBalance = true;
 	}
 	if(userOpts.at(4).active){
-		noTimeMode = true;
+		noEnergyMode = true;
 	}
 	if(userOpts.at(5).active){
-		noPositionMode = true;
+		noTimeMode = true;
 	}
 	if(userOpts.at(6).active){
-		useFilterEnergy = true;
+		noPositionMode = true;
 	}
 	if(userOpts.at(7).active){
+		useFilterEnergy = true;
+	}
+	if(userOpts.at(8).active){
 		calibrationMode = true;
-		calHist = new TH2F("calHist", "pspmt calibration hist", 250, -1, 1, 250, -1, 1);
+	}
+	if(userOpts.at(9).active){
+		userEnergyOffset = strtod(userOpts.at(9).argument.c_str(), NULL);
+		std::cout << " Setting neutron energy offset to " << userEnergyOffset << " MeV.\n";
 	}
 
 	return true;
@@ -1014,6 +1075,9 @@ int pspmtHandler::execute(int argc, char *argv[]){
 		std::cout << " Error: Input filename not specified!\n";
 		return 1;
 	}
+
+	if(!cut_filename.empty() && !loadTCutG())
+		return 1;
 
 	int numLinesRead = 0;
 	std::vector<pspmtMapFileEntry> pspmtMapFileEntries;
@@ -1039,6 +1103,8 @@ int pspmtHandler::execute(int argc, char *argv[]){
 		if(!noPositionMode){
 			if(!calib.LoadPositionCal((setupDir+"position.cal").c_str())) return 3;
 			else if(!LoadCalibFile((setupDir+"pspmtpos.cal").c_str(), pspmtcal)) return 3;
+			for(size_t i = 0; i < pspmtcal.size(); i++)
+				std::cout << pspmtcal.at(i).Print(true);
 		}
 		if(!noTimeMode && !calib.LoadTimeCal((setupDir+"time.cal").c_str())) return 4;
 		if(!noEnergyMode && !calib.LoadEnergyCal((setupDir+"energy.cal").c_str())) return 5;

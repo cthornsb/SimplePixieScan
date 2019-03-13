@@ -20,19 +20,24 @@ class gPar{
 
 class pspmtPosCal : public CalType {
   public:
-	double xp[4];
+	double xp[4][4];
 	double yp[4];
+	double ymin[3];
 
 	pspmtPosCal() : CalType(0) { 
 		for(size_t i = 0; i < 4; i++){
-			xp[i] = (i != 1 ? 0 : 1);
+			for(size_t j = 0; j < 4; j++)
+				xp[i][j] = (j != 1 ? 0 : 1);
 			yp[i] = (i != 1 ? 0 : 1);
+			if(i < 3) ymin[i] = 0;
 		}
 	}
 
-	double calX(const double &x0_);
+	double calX(const double &x0_, double *par_);
 
 	double calY(const double &y0_);
+
+	void calibrate(const double &x0_, const double &y0_, double &x1, double &y1);
 
 	virtual std::string Print(bool fancy=true);
 
