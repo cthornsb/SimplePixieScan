@@ -13,6 +13,7 @@
 #include "TH2.h"
 #include "TLine.h"
 #include "TCutG.h"
+#include "TMarker.h"
 
 #include "CTerminal.h"
 
@@ -547,6 +548,7 @@ class pspmtHandler : public simpleTool {
 	bool noEnergyMode;
 	bool noPositionMode;
 	bool calibrationMode;
+	bool manualCalMode;
 	bool useLightBalance;
 
 	std::string countsString;
@@ -585,7 +587,7 @@ class pspmtHandler : public simpleTool {
 
   public:
 	pspmtHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), map(), barmap(), ptr(NULL), sptr(NULL), singleEndedMode(false), noTimeMode(false), 
-	                 noEnergyMode(false), noPositionMode(false), calibrationMode(false), useLightBalance(false), totalCounts(0), totalDataTime(0), userEnergyOffset(0) { }
+	                 noEnergyMode(false), noPositionMode(false), calibrationMode(false), manualCalMode(false), useLightBalance(false), totalCounts(0), totalDataTime(0), userEnergyOffset(0) { }
 
 	~pspmtHandler();
 	
@@ -802,14 +804,29 @@ void pspmtHandler::handleCalibration(){
 			if(*iterY > yMinima[i-1] && *iterY <= yMinima[i])
 				calHistX[i-1]->Fill(*iterX);
 		}
-		xspec.Search(calHistX[i-1]);
-		setInitPars(fx, &xspec, 8, 0.03);
-		calHistX[i-1]->Fit(fx, "QR");
-		for(int j = 0; j < 8; j++){
-			xpars[i-1].push_back(gPar(fx->GetParameter(3*j), fx->GetParameter(3*j+1), fx->GetParameter(3*j+2)));
+		if(!manualCalMode){
+			xspec.Search(calHistX[i-1]);
+			setInitPars(fx, &xspec, 8, 0.03);
+			calHistX[i-1]->Fit(fx, "QR");
+			for(int j = 0; j < 8; j++){
+				xpars[i-1].push_back(gPar(fx->GetParameter(3*j), fx->GetParameter(3*j+1), fx->GetParameter(3*j+2)));
+			}
+			// Sort by mean.
+			std::sort(xpars[i-1].begin(), xpars[i-1].end(), compare);
 		}
-		// Sort by mean.
-		std::sort(xpars[i-1].begin(), xpars[i-1].end(), compare);
+		else{
+			initRootGraphics();
+			openCanvas1()->cd();
+			std::cout << " Click peak locations from left to right:\n";
+			for(int j = 0; j < 8; j++){
+				calHistX[i-1]->Draw();
+				can1->Update();
+				std::cout << "  Click peak id=" << i << std::endl;
+				TMarker *marker = (TMarker*)gPad->WaitPrimitive("TMarker");
+				std::cout << "   x=" << marker->GetX() << ", y=" << marker->GetY() << std::endl;
+				xpars[i-1].push_back(gPar(marker->GetY(), marker->GetX(), 0.03));
+			}
+		}
 	}
 	
 	std::vector<TGraph*> xpoints;
@@ -1027,6 +1044,7 @@ void pspmtHandler::addOptions(){
 	addOption(optionExt("no-position", no_argument, NULL, 0x0, "", "Do not use position calibration."), userOpts, optstr);
 	addOption(optionExt("filter-energy", no_argument, NULL, 0x0, "", "Use Pixie filter energy instead of TQDC."), userOpts, optstr);
 	addOption(optionExt("calibrate", no_argument, NULL, 0x0, "", "Calibrate the PSPMT X-Y position."), userOpts, optstr);
+	addOption(optionExt("manual-mode", no_argument, NULL, 0x0, "", "Manually set position calibration points by hand."), userOpts, optstr);
 	addOption(optionExt("energy-offset", required_argument, NULL, 0x0, "<energy>", "Set the neutron energy offset for data with no reference time."), userOpts, optstr);
 }
 
@@ -1060,7 +1078,10 @@ bool pspmtHandler::processArgs(){
 		calibrationMode = true;
 	}
 	if(userOpts.at(9).active){
-		userEnergyOffset = strtod(userOpts.at(9).argument.c_str(), NULL);
+		manualCalMode = true;
+	}
+	if(userOpts.at(10).active){
+		userEnergyOffset = strtod(userOpts.at(10).argument.c_str(), NULL);
 		std::cout << " Setting neutron energy offset to " << userEnergyOffset << " MeV.\n";
 	}
 
