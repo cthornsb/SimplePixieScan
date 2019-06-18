@@ -29,7 +29,7 @@ class StructureEntry{
 	
 	std::vector<DataType*> structure_types;
 	std::vector<DataType*> waveform_types;
-	
+
   public:
 	StructureEntry();
 	
@@ -43,9 +43,9 @@ class StructureEntry{
 	
 	void SetDescription(const std::string &descrip_){ longer = descrip_; }
 	
-	void WriteHeader(std::ofstream *file_);
+	void WriteHeader(std::ofstream *file_, const bool &newOutputMode, const std::string &date="");
 
-	void WriteSource(std::ofstream *file_);
+	void WriteSource(std::ofstream *file_, const bool &newOutputMode);
 
 	void WriteLinkDef(std::ofstream *file_);
 	
@@ -54,6 +54,10 @@ class StructureEntry{
 
 class StructureFile{
   private:
+	bool init;
+ 	bool newOutputMode;
+ 	
+ 	std::string date;
 	std::ofstream hppfile;
 	std::ofstream cppfile;
 	std::ofstream linkfile;
@@ -62,17 +66,19 @@ class StructureFile{
 	std::string hpp_filename;
 	std::string cpp_filename;
 	std::string link_filename;
-	
-	bool init;
- 
+
 	bool Open();
  
   public:
-	StructureFile(){ init = false; }
+	StructureFile() : init(false), newOutputMode(false), date("") { }
   
 	StructureFile(const std::string &hpp_fname_, const std::string &cpp_fname_, const std::string &link_fname_){ Open(hpp_fname_, cpp_fname_, link_fname_); }
 	
 	~StructureFile(){ Close(); }
+
+	void SetNewOutputMode(const bool &enabled){ newOutputMode = enabled; }
+	
+	void SetDate(const std::string &date_){ date = date_; }
 	
 	bool Open(const std::string &hpp_fname_, const std::string &cpp_fname_, const std::string &link_fname_);
 	
