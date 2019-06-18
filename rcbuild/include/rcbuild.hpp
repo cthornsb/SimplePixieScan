@@ -11,6 +11,7 @@ struct DataType{
 	bool trace_value;
 	bool mult_value;
 	bool is_vector;
+	bool is_array;
 	
 	DataType(const std::string &type_, const std::string &name_, const std::string &description_);
 	

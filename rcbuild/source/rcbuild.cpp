@@ -12,8 +12,8 @@
 #include "rcbuild.hpp"
 #include "optionHandler.hpp"
 
-#define VERSION "1.0.6"
-#define UPDATED "June 11, 2019"
+#define VERSION "1.0.7"
+#define UPDATED "June 12, 2019"
 
 bool SplitStr(const std::string &input_, std::string &out1, std::string &out2){
 	out1 = "";
@@ -32,6 +32,9 @@ bool SplitStr(const std::string &input_, std::string &out1, std::string &out2){
 }
 
 DataType::DataType(const std::string &type_, const std::string &name_, const std::string &description_){
+	is_vector = false;
+	is_array = false;
+
 	SetType(type_);
 	name = name_; 
 	descrip = description_;
@@ -42,7 +45,8 @@ DataType::DataType(const std::string &type_, const std::string &name_, const std
 	if(name.find("mult") != std::string::npos){ mult_value = true; }
 	else{ mult_value = false; }
 	
-	is_vector = false;
+	if(name.find("[") != std::string::npos){ is_array = true; }
+	else{ is_array = false; }
 }
 
 DataType::DataType(const std::string &entry_, const char &delimiter){
@@ -67,6 +71,9 @@ DataType::DataType(const std::string &entry_, const char &delimiter){
 	
 	if(name.find("mult") != std::string::npos){ mult_value = true; }
 	else{ mult_value = false; }
+
+	if(name.find("[") != std::string::npos){ is_array = true; }
+	else{ is_array = false; }
 	
 	SetType(v1);
 }
@@ -142,8 +149,10 @@ void StructureEntry::WriteHeader(std::ofstream *file_, const bool &newOutputMode
 	(*file_) << "\n" << simpleDoxyDefinition("Default constructor") << "\n";
 	(*file_) << "\t" << name << suffix << "();\n\n";
 
-	(*file_) << simpleDoxyDefinition("Copy constructor") << "\n";
-	(*file_) << "\t" << name << suffix << "(const " << name << suffix << " &other_);\n\n";
+	if(!newOutputMode){
+		(*file_) << simpleDoxyDefinition("Copy constructor") << "\n";
+		(*file_) << "\t" << name << suffix << "(const " << name << suffix << " &other_);\n\n";
+	}
 
 	(*file_) << simpleDoxyDefinition("Destructor") << "\n";
 	(*file_) << "\t~" << name << suffix << "(){}\n\n";
@@ -152,7 +161,7 @@ void StructureEntry::WriteHeader(std::ofstream *file_, const bool &newOutputMode
 	if(newOutputMode){
 		(*file_) << "\t/** Set single entry data fields\n";
 		for(std::vector<DataType*>::iterator iter = structure_types.begin(); iter != structure_types.end(); iter++){
-			if((*iter)->trace_value || (*iter)->mult_value || (*iter)->is_vector){ continue; }
+			if((*iter)->trace_value || (*iter)->mult_value || (*iter)->is_array || (*iter)->is_vector){ continue; }
 			(*file_) << "\t  * @param " << (*iter)->name << "_ " << (*iter)->descrip << "\n";
 		}
 		(*file_) << "\t  */\n";
@@ -160,7 +169,7 @@ void StructureEntry::WriteHeader(std::ofstream *file_, const bool &newOutputMode
 		// Write the structure variables
 		count = 0;
 		for(std::vector<DataType*>::iterator iter = structure_types.begin(); iter != structure_types.end(); iter++){
-			if((*iter)->trace_value || (*iter)->mult_value || (*iter)->is_vector){ continue; }
+			if((*iter)->trace_value || (*iter)->mult_value || (*iter)->is_array || (*iter)->is_vector){ continue; }
 			if(count++ != 0) (*file_) << ", ";
 			(*file_) << "const " << (*iter)->type << " &" << (*iter)->name << "_";
 				
@@ -170,7 +179,7 @@ void StructureEntry::WriteHeader(std::ofstream *file_, const bool &newOutputMode
 
 	(*file_) << "\t/** Push back with data\n";
 	for(std::vector<DataType*>::iterator iter = structure_types.begin(); iter != structure_types.end(); iter++){
-		if((*iter)->trace_value || (*iter)->mult_value || (newOutputMode && !(*iter)->is_vector)){ continue; }
+		if((*iter)->trace_value || (*iter)->mult_value || (*iter)->is_array || (newOutputMode && !(*iter)->is_vector)){ continue; }
 		(*file_) << "\t  * @param " << (*iter)->name << "_ " << (*iter)->descrip << "\n";
 	}
 	(*file_) << "\t  */\n";
@@ -178,7 +187,7 @@ void StructureEntry::WriteHeader(std::ofstream *file_, const bool &newOutputMode
 	// Write the structure variables
 	count = 0;
 	for(std::vector<DataType*>::iterator iter = structure_types.begin(); iter != structure_types.end(); iter++){
-		if((*iter)->trace_value || (*iter)->mult_value || (newOutputMode && !(*iter)->is_vector)){ continue; }
+		if((*iter)->trace_value || (*iter)->mult_value || (*iter)->is_array || (newOutputMode && !(*iter)->is_vector)){ continue; }
 		if(count++ != 0) (*file_) << ", ";
 		(*file_) << "const " << (*iter)->type << " &" << (*iter)->name << "_";
 	}
@@ -187,16 +196,20 @@ void StructureEntry::WriteHeader(std::ofstream *file_, const bool &newOutputMode
 	(*file_) << simpleDoxyDefinition("Zero all variables") << "\n";
 	(*file_) << "\tvoid Zero();\n\n";
 
-	(*file_) << simpleDoxyDefinition("Assignment operator") << "\n";
-	(*file_) << "\t" << name << suffix << " &operator = (const " << name << suffix << " &other_);\n\n";
+	if(!newOutputMode){
+		(*file_) << simpleDoxyDefinition("Assignment operator") << "\n";
+		(*file_) << "\t" << name << suffix << " &operator = (const " << name << suffix << " &other_);\n\n";
 
-	(*file_) << simpleDoxyDefinition("Set all values using another object") << "\n";
-	(*file_) << "\t" << name << suffix << " &Set(const " << name << suffix << " &other_);\n\n";
+		(*file_) << simpleDoxyDefinition("Set all values using another object") << "\n";
+		(*file_) << "\t" << name << suffix << " &Set(const " << name << suffix << " &other_);\n\n";
 
-	(*file_) << simpleDoxyDefinition("Set all values using pointer to another object") << "\n";
-	(*file_) << "\t" << name << suffix << " &Set(" << name << suffix << " *other_);\n\n";
+		(*file_) << simpleDoxyDefinition("Set all values using pointer to another object") << "\n";
+		(*file_) << "\t" << name << suffix << " &Set(" << name << suffix << " *other_);\n\n";
+	}
 
+	(*file_) << "\t/// @cond DUMMY\n";
 	(*file_) << "\tClassDef(" << name << suffix << ", 1); // " << name << "\n";
+	(*file_) << "\t/// @endcond\n";
 	(*file_) << "};\n";
 }
 
@@ -211,15 +224,18 @@ void StructureEntry::WriteSource(std::ofstream *file_, const bool &newOutputMode
 
 	// Default constructor
 	(*file_) << name << suffix << "::" << name << suffix << "() : " << suffix << "(\"" << name << suffix << "\") {\n";
-		for(std::vector<DataType*>::iterator iter = structure_types.begin(); iter != structure_types.end(); iter++){
-			if(!(*iter)->is_vector){ (*file_) << "\t" << (*iter)->name << " = 0;\n"; }
-		}
+	for(std::vector<DataType*>::iterator iter = structure_types.begin(); iter != structure_types.end(); iter++){
+		if((*iter)->is_array || (*iter)->is_vector) continue;
+		(*file_) << "\t" << (*iter)->name << " = 0;\n";
+	}
 	(*file_) << "}\n\n";
 
-	// Copy constructor
-	(*file_) << name << suffix << "::" << name << suffix << "(const " << name << suffix << " &other_) : " << suffix << "(\"" << name << suffix << "\") {\n";
-	(*file_) << "\tSet(other_);\n";
-	(*file_) << "}\n\n";
+	if(!newOutputMode){
+		// Copy constructor
+		(*file_) << name << suffix << "::" << name << suffix << "(const " << name << suffix << " &other_) : " << suffix << "(\"" << name << suffix << "\") {\n";
+		(*file_) << "\tSet(other_);\n";
+		(*file_) << "}\n\n";
+	}
 
 	// SetValues
 	int count;
@@ -227,14 +243,14 @@ void StructureEntry::WriteSource(std::ofstream *file_, const bool &newOutputMode
 		(*file_) << "void " << name << suffix << "::SetValues(";
 		count = 0;
 		for(std::vector<DataType*>::iterator iter = structure_types.begin(); iter != structure_types.end(); iter++){
-			if((*iter)->trace_value || (*iter)->mult_value || (*iter)->is_vector){ continue; }
+			if((*iter)->trace_value || (*iter)->mult_value || (*iter)->is_array || (*iter)->is_vector){ continue; }
 			if(count++ != 0) (*file_) << ", ";
 			(*file_) << "const " << (*iter)->type << " &" << (*iter)->name << "_";
 		}
 		(*file_) << "){\n";
 		count = 0;
 		for(std::vector<DataType*>::iterator iter = structure_types.begin(); iter != structure_types.end(); iter++){
-			if((*iter)->trace_value || (*iter)->mult_value || (*iter)->is_vector){ continue; }
+			if((*iter)->trace_value || (*iter)->mult_value || (*iter)->is_array || (*iter)->is_vector){ continue; }
 			(*file_) << "\t" << (*iter)->name << " = " << (*iter)->name << "_;\n";
 		}
 		(*file_) << "}\n\n";
@@ -244,14 +260,14 @@ void StructureEntry::WriteSource(std::ofstream *file_, const bool &newOutputMode
 	(*file_) << "void " << name << suffix << "::Append(";
 	count = 0;
 	for(std::vector<DataType*>::iterator iter = structure_types.begin(); iter != structure_types.end(); iter++){
-		if((*iter)->trace_value || (*iter)->mult_value || (newOutputMode && !(*iter)->is_vector)){ continue; }
+		if((*iter)->trace_value || (*iter)->mult_value || (*iter)->is_array || (newOutputMode && !(*iter)->is_vector)){ continue; }
 		if(count++ != 0) (*file_) << ", ";
 		(*file_) << "const " << (*iter)->type << " &" << (*iter)->name << "_";
 	}
 	(*file_) << "){\n";
 	count = 0;
 	for(std::vector<DataType*>::iterator iter = structure_types.begin(); iter != structure_types.end(); iter++){
-		if((*iter)->trace_value || (newOutputMode && !((*iter)->is_vector || (*iter)->mult_value))){ continue; }
+		if((*iter)->trace_value || (*iter)->is_array || (newOutputMode && !((*iter)->is_vector || (*iter)->mult_value))){ continue; }
 		(*file_) << "\t" << (*iter)->name;
 		if((*iter)->is_vector){ (*file_) << ".push_back(" << (*iter)->name << "_);\n"; }
 		else if(!(*iter)->mult_value){ (*file_) << " = " << (*iter)->name << "_;\n"; }
@@ -264,35 +280,38 @@ void StructureEntry::WriteSource(std::ofstream *file_, const bool &newOutputMode
 	for(std::vector<DataType*>::iterator iter = structure_types.begin(); iter != structure_types.end(); iter++){
 		if((*iter)->mult_value){ 
 			(*file_) << "\tif(" << (*iter)->name << " == 0){ return; } // " << suffix << " is already empty\n";
-			continue;
+			break;
 		}
 	}
 	for(std::vector<DataType*>::iterator iter = structure_types.begin(); iter != structure_types.end(); iter++){
+		if((*iter)->is_array) continue;
 		if((*iter)->is_vector){ (*file_) << "\t" << (*iter)->name << ".clear();\n"; }
 		else{ (*file_) << "\t" << (*iter)->name << " = 0;\n"; }
 	}
 	(*file_) << "}\n\n";
 
-	// Assignment operator
-	(*file_) << name << suffix << " &" << name << suffix << "::operator = (const " << name << suffix << " &other_){\n";
-	(*file_) << "\treturn Set(other_);\n";
-	(*file_) << "}\n\n";
+	if(!newOutputMode){
+		// Assignment operator
+		(*file_) << name << suffix << " &" << name << suffix << "::operator = (const " << name << suffix << " &other_){\n";
+		(*file_) << "\treturn Set(other_);\n";
+		(*file_) << "}\n\n";
 
-	// Set (const reference)
-	(*file_) << name << suffix << " &" << name << suffix << "::Set(const " << name << suffix << " &other_){\n";
-	for(std::vector<DataType*>::iterator iter = structure_types.begin(); iter != structure_types.end(); iter++){
-		(*file_) << "\t" << (*iter)->name << " = other_." << (*iter)->name << ";\n";
-	}
-	(*file_) << "\treturn *this;\n";
-	(*file_) << "}\n\n";
+		// Set (const reference)
+		(*file_) << name << suffix << " &" << name << suffix << "::Set(const " << name << suffix << " &other_){\n";
+		for(std::vector<DataType*>::iterator iter = structure_types.begin(); iter != structure_types.end(); iter++){
+			(*file_) << "\t" << (*iter)->name << " = other_." << (*iter)->name << ";\n";
+		}
+		(*file_) << "\treturn *this;\n";
+		(*file_) << "}\n\n";
 
-	// Set (pointer)
-	(*file_) << name << suffix << " &" << name << suffix << "::Set(" << name << suffix << " *other_){\n";
-	for(std::vector<DataType*>::iterator iter = structure_types.begin(); iter != structure_types.end(); iter++){
-		(*file_) << "\t" << (*iter)->name << " = other_->" << (*iter)->name << ";\n";
+		// Set (pointer)
+		(*file_) << name << suffix << " &" << name << suffix << "::Set(" << name << suffix << " *other_){\n";
+		for(std::vector<DataType*>::iterator iter = structure_types.begin(); iter != structure_types.end(); iter++){
+			(*file_) << "\t" << (*iter)->name << " = other_->" << (*iter)->name << ";\n";
+		}
+		(*file_) << "\treturn *this;\n";
+		(*file_) << "}\n";
 	}
-	(*file_) << "\treturn *this;\n";
-	(*file_) << "}\n";
 }
 
 void StructureEntry::WriteLinkDef(std::ofstream *file_){
@@ -360,17 +379,15 @@ bool StructureFile::Open(){
 	hppfile << "	  * @param name_ The name of this data structure\n";
 	hppfile << "	  */\n";
 	hppfile << "	Structure(const std::string &name_=\"\"){ name = name_; }\n\n";
-	hppfile << simpleDoxyDefinition("Destructor") << "\n";
-	hppfile << "	virtual ~Structure(){}\n\n";
-	hppfile << simpleDoxyDefinition("Zero all variables") << "\n";
-	hppfile << "	virtual void Zero(){}\n\n";
-	hppfile << simpleDoxyDefinition("Copy constructor") << "\n";
-	hppfile << "	virtual Structure &operator = (const Structure &other_){ return Set(other_); }\n\n";
-	hppfile << simpleDoxyDefinition("Set all values using another object") << "\n";
-	hppfile << "	virtual Structure &Set(const Structure &other_){ return *this; }\n\n";
-	hppfile << simpleDoxyDefinition("Set all values using pointer to another object") << "\n";
-	hppfile << "	virtual Structure &Set(Structure *other_){ return *this; }\n\n";
+	if(!newOutputMode){
+		hppfile << simpleDoxyDefinition("Destructor") << "\n";
+		hppfile << "	virtual ~Structure(){}\n\n";
+		hppfile << simpleDoxyDefinition("Zero all variables") << "\n";
+		hppfile << "	virtual void Zero(){}\n\n";
+	}
+	hppfile << "	/// @cond DUMMY\n";
 	hppfile << "	ClassDef(Structure, 1); // Structure\n";
+	hppfile << "	/// @endcond\n";
 	hppfile << "};\n\n";
 	
 	// Write the class description
@@ -394,8 +411,6 @@ bool StructureFile::Open(){
 	hppfile << "	~Trace(){}\n\n";
 	hppfile << simpleDoxyDefinition("Zero all variables") << "\n";
 	hppfile << "	void Zero();\n\n";
-	hppfile << simpleDoxyDefinition("Copy constructor") << "\n";
-	hppfile << "	Trace &operator = (const Trace &other_){ return Set(other_); }\n\n";
 	hppfile << simpleDoxyDefinition("Set all values using another object") << "\n";
 	hppfile << "	Trace &Set(const Trace &other_);\n\n";
 	hppfile << simpleDoxyDefinition("Set all values using pointer to another object") << "\n";
@@ -404,8 +419,10 @@ bool StructureFile::Open(){
 	hppfile << "	  * @param arr_ Array containing trace values\n";
 	hppfile << "      * @param size_ The number of values to copy from the input array\n";
 	hppfile << "	  */\n";
-	hppfile << "	void Append(unsigned short *arr_, const size_t &size_);\n\n";	
+	hppfile << "	void Append(unsigned short *arr_, const size_t &size_);\n\n";
+	hppfile << "	/// @cond DUMMY\n";
 	hppfile << "	ClassDef(Trace, 1); // Trace\n";
+	hppfile << "	/// @endcond\n";
 	hppfile << "};\n";
 	
 	cppfile << "#include \"" << hpp_filename_nopath << "\"\n\n";
