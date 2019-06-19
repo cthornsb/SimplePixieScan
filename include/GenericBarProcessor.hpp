@@ -13,6 +13,8 @@ class GenericBarProcessor : public Processor{
 
 	Plotter *loc_tdiff_2d;
 	Plotter *loc_energy_2d;
+	Plotter *tqdc_tdiff_2d;
+	Plotter *maxADC_tdiff_2d;
 	Plotter *loc_1d;
 
 	// Handle an individual event.

@@ -16,9 +16,14 @@ bool GenericBarProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair 
 	int location = chEvt->entry->location;
 
 	if(histsEnabled){
+		double tqdc = std::sqrt(channel_event_L->qdc*channel_event_R->qdc);
+		double maxADC = std::sqrt(channel_event_L->max_ADC*channel_event_R->max_ADC);
+		double tdiff = (tdiff_L+tdiff_R)/2;
 		// Fill all diagnostic histograms.
-		loc_tdiff_2d->Fill((tdiff_L+tdiff_R)/2, location);
-		loc_energy_2d->Fill(std::sqrt(channel_event_L->qdc*channel_event_R->qdc), location);
+		loc_tdiff_2d->Fill(tdiff, location);
+		loc_energy_2d->Fill(tqdc, location);
+		tqdc_tdiff_2d->Fill(tdiff, tqdc);
+		maxADC_tdiff_2d->Fill(tdiff, maxADC);
 		loc_1d->Fill(location);		
 	}
 
@@ -41,6 +46,8 @@ void GenericBarProcessor::GetHists(OnlineProcessor *online_){
 
 	online_->GenerateHist(loc_tdiff_2d);
 	online_->GenerateHist(loc_energy_2d);
+	online_->GenerateHist(tqdc_tdiff_2d);
+	online_->GenerateHist(maxADC_tdiff_2d);	
 	online_->GenerateLocationHist(loc_1d);
 
 	histsEnabled = true;
