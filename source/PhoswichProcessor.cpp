@@ -60,11 +60,14 @@ bool PhoswichProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *c
 	ChanEvent *current_event = chEvt->channelEvent;
 
 	if(histsEnabled){
+		// Get the location of this detector.
+		int location = chEvt->entry->location;
+
 		// Fill all diagnostic histograms.
-		fast_energy_1d->Fill(fast_qdc);
-		slow_energy_1d->Fill(slow_qdc);
-		energy_2d->Fill(slow_qdc, fast_qdc);
-		phase_1d->Fill(current_event->phase); 
+		fast_energy_1d->Fill(location, fast_qdc);
+		slow_energy_1d->Fill(location, slow_qdc);
+		energy_2d->Fill2d(location, slow_qdc, fast_qdc);
+		phase_1d->Fill(location, current_event->phase); 
 	}
 	
 	// Fill the values into the root tree.

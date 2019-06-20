@@ -6,9 +6,12 @@ bool TriggerProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *ch
 	ChanEvent *current_event = chEvt->channelEvent;
 
 	if(histsEnabled){
+		// Get the location of this detector.
+		int location = chEvt->entry->location;
+
 		// Fill all diagnostic histograms.
-		energy_1d->Fill(current_event->qdc);
-		phase_1d->Fill(current_event->phase);
+		energy_1d->Fill(location, current_event->qdc);
+		phase_1d->Fill(location, current_event->phase);
 	}
 
 	// Fill the values into the root tree.

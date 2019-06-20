@@ -12,8 +12,8 @@ bool HagridProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 	int location = chEvt->entry->location;
 
 	if(histsEnabled){ // Fill all diagnostic histograms.
-		loc_tdiff_2d->Fill(tdiff, location);
-		loc_energy_2d->Fill(current_event->qdc, location);
+		loc_tdiff_2d->Fill(location, tdiff);
+		loc_energy_2d->Fill(location, current_event->qdc);
 		loc_1d->Fill(location);
 	}
 

@@ -20,11 +20,11 @@ bool GenericBarProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair 
 		double maxADC = std::sqrt(channel_event_L->max_ADC*channel_event_R->max_ADC);
 		double tdiff = (tdiff_L+tdiff_R)/2;
 		// Fill all diagnostic histograms.
-		loc_tdiff_2d->Fill(tdiff, location);
-		loc_energy_2d->Fill(tqdc, location);
-		tqdc_tdiff_2d->Fill(tdiff, tqdc);
-		maxADC_tdiff_2d->Fill(tdiff, maxADC);
-		loc_1d->Fill(location);		
+		loc_tdiff_2d->Fill(location, tdiff);
+		loc_energy_2d->Fill(location, tqdc);
+		tqdc_tdiff_2d->Fill2d(location, tdiff, tqdc);
+		maxADC_tdiff_2d->Fill2d(location, tdiff, maxADC);
+		loc_1d->Fill(location);	
 	}
 
 	// Fill the values into the root tree.

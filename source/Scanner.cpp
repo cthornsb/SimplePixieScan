@@ -302,7 +302,7 @@ bool simpleScanner::ExtraCommands(const std::string &cmd_, std::vector<std::stri
 	if(online_mode){
 		if(cmd_ == "refresh"){
 			if(args_.size() >= 1){
-				int frequency = atoi(args_.at(0).c_str());
+				int frequency = strtol(args_.at(0).c_str(), NULL, 10);
 				if(frequency > 0){ 
 					std::cout << msgHeader << "Set canvas update frequency to " << frequency << " events.\n"; 
 					events_between_updates = frequency;
@@ -316,85 +316,92 @@ bool simpleScanner::ExtraCommands(const std::string &cmd_, std::vector<std::stri
 		}
 		else if(cmd_ == "set"){
 			if(args_.size() >= 2){
-				int index1 = atoi(args_.at(0).c_str());
-				int index2 = atoi(args_.at(1).c_str());
-				if(online->ChangeHist(index1, args_.at(1))){ std::cout << msgHeader << "Set TPad " << index1 << " to histogram '" << args_.at(1) << "'.\n"; }
+				int index1 = strtol(args_.at(0).c_str(), NULL, 10);
+				int index2 = strtol(args_.at(1).c_str(), NULL, 10);
+				if(args_.size() >= 3){
+					int detID = strtol(args_.at(2).c_str(), NULL, 10);
+					if(online->ChangeHist(index1, index2, detID))
+						std::cout << msgHeader << "Set TPad " << index1 << " to histogram '" << index2 << "', detID=" << detID << ".\n";
+					else
+						std::cout << msgHeader << "Failed to set TPad " << index1 << " to histogram '" << index2 << "', detID=" << detID << "!\n";
+				}
+				else if(online->ChangeHist(index1, args_.at(1))){ std::cout << msgHeader << "Set TPad " << index1 << " to histogram '" << args_.at(1) << "'.\n"; }
 				else if(online->ChangeHist(index1, index2)){ std::cout << msgHeader << "Set TPad " << index1 << " to histogram ID " << index2 << ".\n"; }
 				else{ std::cout << msgHeader << "Failed to set TPad " << index1 << " to histogram '" << args_.at(1) << "'!\n"; }
 			}
 			else{
 				std::cout << msgHeader << "Invalid number of parameters to 'set'\n";
-				std::cout << msgHeader << " -SYNTAX- set [index] [hist]\n";
+				std::cout << msgHeader << " -SYNTAX- set <index> <hist> [detector]\n";
 			}
 		}
 		else if(cmd_ == "xlog"){
 			if(args_.size() >= 1){
-				int index = atoi(args_.at(0).c_str());
+				int index = strtol(args_.at(0).c_str(), NULL, 10);
 				if(online->ToggleLogX(index)){ std::cout << msgHeader << "Successfully toggled x-axis log scale for TPad " << index << ".\n"; }
 				else{ std::cout << msgHeader << "Failed to toggle x-axis log scale for TPad " << index << ".\n"; }
 			}
 			else{
 				std::cout << msgHeader << "Invalid number of parameters to 'xlog'\n";
-				std::cout << msgHeader << " -SYNTAX- xlog [index]\n";
+				std::cout << msgHeader << " -SYNTAX- xlog <index>\n";
 			}
 		}
 		else if(cmd_ == "ylog"){
 			if(args_.size() >= 1){
-				int index = atoi(args_.at(0).c_str());
+				int index = strtol(args_.at(0).c_str(), NULL, 10);
 				if(online->ToggleLogY(index)){ std::cout << msgHeader << "Successfully toggled y-axis log scale for TPad " << index << ".\n"; }
 				else{ std::cout << msgHeader << "Failed to toggle y-axis log scale for TPad " << index << ".\n"; }
 			}
 			else{
 				std::cout << msgHeader << "Invalid number of parameters to 'ylog'\n";
-				std::cout << msgHeader << " -SYNTAX- ylog [index]\n";
+				std::cout << msgHeader << " -SYNTAX- ylog <index>\n";
 			}
 		}
 		else if(cmd_ == "zlog"){
 			if(args_.size() >= 1){
-				int index = atoi(args_.at(0).c_str());
+				int index = strtol(args_.at(0).c_str(), NULL, 10);
 				if(online->ToggleLogZ(index)){ std::cout << msgHeader << "Successfully toggled z-axis log scale for TPad " << index << ".\n"; }
 				else{ std::cout << msgHeader << "Failed to toggle z-axis log scale for TPad " << index << ".\n"; }
 			}
 			else{
 				std::cout << msgHeader << "Invalid number of parameters to 'zlog'\n";
-				std::cout << msgHeader << " -SYNTAX- zlog [index]\n";
+				std::cout << msgHeader << " -SYNTAX- zlog <index>\n";
 			}
 		}
 		else if(cmd_ == "xrange"){
 			if(args_.size() >= 3){
-				int index = atoi(args_.at(0).c_str());
-				float min = atof(args_.at(1).c_str());
-				float max = atof(args_.at(2).c_str());
+				int index = strtol(args_.at(0).c_str(), NULL, 10);
+				double min = strtod(args_.at(1).c_str(), NULL);
+				double max = strtod(args_.at(2).c_str(), NULL);
 				if(max > min){ 
 					if(online->SetXrange(index, min, max)){ std::cout << msgHeader << "Successfully set range of TPad " << index << ".\n"; }
 					else{ std::cout << msgHeader << "Failed to set range of TPad " << index << "!\n"; }
 				}
-				else{ std::cout << msgHeader << "Invalid range for x-axis [" << min << ", " << max << "]\n"; }
+				else{ std::cout << msgHeader << "Invalid range for x-axis <" << min << ", " << max << ">\n"; }
 			}
 			else{
 				std::cout << msgHeader << "Invalid number of parameters to 'xrange'\n";
-				std::cout << msgHeader << " -SYNTAX- xrange [index] [min] [max]\n";
+				std::cout << msgHeader << " -SYNTAX- xrange <index> <min> <max>\n";
 			}
 		}
 		else if(cmd_ == "yrange"){
 			if(args_.size() >= 3){
-				int index = atoi(args_.at(0).c_str());
-				float min = atof(args_.at(1).c_str());
-				float max = atof(args_.at(2).c_str());
+				int index = strtol(args_.at(0).c_str(), NULL, 10);
+				double min = strtod(args_.at(1).c_str(), NULL);
+				double max = strtod(args_.at(2).c_str(), NULL);
 				if(max > min){ 
 					if(online->SetYrange(index, min, max)){ std::cout << msgHeader << "Successfully set range of TPad " << index << ".\n"; }
 					else{ std::cout << msgHeader << "Failed to set range of TPad " << index << "!\n"; }
 				}
-				else{ std::cout << msgHeader << "Invalid range for y-axis [" << min << ", " << max << "]\n"; }
+				else{ std::cout << msgHeader << "Invalid range for y-axis <" << min << ", " << max << ">\n"; }
 			}
 			else{
 				std::cout << msgHeader << "Invalid number of parameters to 'yrange'\n";
-				std::cout << msgHeader << " -SYNTAX- yrange [index] [min] [max]\n";
+				std::cout << msgHeader << " -SYNTAX- yrange <index> <min> <max>\n";
 			}
 		}
 		else if(cmd_ == "unzoom"){
 			if(args_.size() >= 1){
-				int index = atoi(args_.at(0).c_str());
+				int index = strtol(args_.at(0).c_str(), NULL, 10);
 				if(args_.size() >= 2){
 					if(args_.at(1) == "x" || args_.at(1) == "X" || args_.at(1) == "0"){
 						online->ResetXrange(index);
@@ -413,32 +420,32 @@ bool simpleScanner::ExtraCommands(const std::string &cmd_, std::vector<std::stri
 			}
 			else{
 				std::cout << msgHeader << "Invalid number of parameters to 'unzoom'\n";
-				std::cout << msgHeader << " -SYNTAX- unzoom [index] <axis>\n";
+				std::cout << msgHeader << " -SYNTAX- unzoom <index> [axis]\n";
 			}
 		}
 		else if(cmd_ == "range"){
 			if(args_.size() >= 5){
-				int index = atoi(args_.at(0).c_str());
-				float xmin = atof(args_.at(1).c_str());
-				float xmax = atof(args_.at(2).c_str());
-				float ymin = atof(args_.at(3).c_str());
-				float ymax = atof(args_.at(4).c_str());
+				int index = strtol(args_.at(0).c_str(), NULL, 10);
+				double xmin = strtod(args_.at(1).c_str(), NULL);
+				double xmax = strtod(args_.at(2).c_str(), NULL);
+				double ymin = strtod(args_.at(3).c_str(), NULL);
+				double ymax = strtod(args_.at(4).c_str(), NULL);
 				if(xmax > xmin && ymax > ymin){ 
 					if(online->SetRange(index, xmin, xmax, ymin, ymax)){ std::cout << msgHeader << "Successfully set range of TPad " << index << ".\n"; }
 					else{ std::cout << msgHeader << "Failed to set range of TPad " << index << "!\n"; }
 				}
 				else{ 
 					if(xmax <= xmin && ymax <= ymin){
-						std::cout << msgHeader << "Invalid range for x-axis [" << xmin << ", " << xmax;
-						std::cout << "] and y-axis [" << ymin << ", " << ymax << "]\n"; 
+						std::cout << msgHeader << "Invalid range for x-axis <" << xmin << ", " << xmax;
+						std::cout << "> and y-axis <" << ymin << ", " << ymax << ">\n"; 
 					}
-					else if(xmax <= xmin){ std::cout << msgHeader << "Invalid range for x-axis [" << xmin << ", " << xmax << "]\n"; }
-					else{ std::cout << msgHeader << "Invalid range for y-axis [" << ymin << ", " << ymax << "]\n"; }
+					else if(xmax <= xmin){ std::cout << msgHeader << "Invalid range for x-axis <" << xmin << ", " << xmax << ">\n"; }
+					else{ std::cout << msgHeader << "Invalid range for y-axis <" << ymin << ", " << ymax << ">\n"; }
 				}
 			}
 			else{
 				std::cout << msgHeader << "Invalid number of parameters to 'range'\n";
-				std::cout << msgHeader << " -SYNTAX- range [index] [xmin] [xmax] [ymin] [ymax]\n";
+				std::cout << msgHeader << " -SYNTAX- range <index> <xmin> <xmax> <ymin> <ymax>\n";
 			}
 		}
 		else if(cmd_ == "draw"){
@@ -463,7 +470,7 @@ bool simpleScanner::ExtraCommands(const std::string &cmd_, std::vector<std::stri
 		}
 		else if(cmd_ == "zero"){
 			if(args_.size() >= 1){
-				int index1 = atoi(args_.at(0).c_str());
+				int index1 = strtol(args_.at(0).c_str(), NULL, 10);
 				if(online->Zero(index1)){ std::cout << msgHeader << "Zeroed histogram '" << args_.at(0) << "'.\n"; }
 				else{ std::cout << msgHeader << "Failed to zero histogram '" << args_.at(0) << "'!\n"; }
 			}
@@ -893,8 +900,8 @@ bool simpleScanner::AddEvent(XiaData *event_){
 	if(firstEvent) firstEvent = false; // This is the first event to be processed.
 
 	// Fill the output histograms.
-	chanCounts->Fill(event_->chanNum, event_->modNum);
-	chanEnergy->Fill(event_->energy, 16*event_->modNum + event_->chanNum);
+	chanCounts->Fill2d(event_->chanNum, event_->modNum);
+	chanEnergy->Fill2d(event_->energy, 16*event_->modNum + event_->chanNum);
 
 	// Raw event information. Dump raw event information to root file.
 	if(write_raw){
@@ -925,7 +932,7 @@ bool simpleScanner::AddEvent(XiaData *event_){
 
 	// Correct the baseline before using the trace.
 	if(pair_->channelEvent->traceLength != 0 && pair_->channelEvent->ComputeBaseline() >= 0.0){
-		chanMaxADC->Fill(pair_->channelEvent->maximum, pair_->entry->location);
+		chanMaxADC->Fill2d(pair_->channelEvent->maximum, pair_->entry->location);
 	}
 	
 	// Pass this event to the correct processor

@@ -60,9 +60,9 @@ bool HistoDefFile::GetNext(const std::string &type, std::string &line){
 ///////////////////////////////////////////////////////////////////////////////
 
 TPad *OnlineProcessor::cd(const unsigned int &index_){
-	if(!display_mode || index_ >= num_hists){ return NULL; }
+	if(!GetPlot(index_)){ return NULL; }
 	pad = (TPad*)(can->cd(index_+1));
-	plot = *(plottable_hists.begin()+which_hists[index_]);
+	plot = plottable_hists.at(which_hists[index_].first);
 	return pad;
 }
 
@@ -75,7 +75,6 @@ OnlineProcessor::~OnlineProcessor(){
 	if(display_mode){
 		can->Close();
 		delete can;
-		delete[] which_hists;
 	}
 
 	// Delete all defined histograms.
@@ -85,14 +84,13 @@ OnlineProcessor::~OnlineProcessor(){
 
 Plotter* OnlineProcessor::GetPlot(const unsigned int &index_){
 	if(!display_mode || index_ >= num_hists){ return NULL; }
-	return (plot = *(plottable_hists.begin()+which_hists[index_]));
+	return (plot = plottable_hists[index_]);
 }
 
 bool OnlineProcessor::ReadHistMap(const char *fname){
 	return histMap.ReadMap(fname);
 }
 
-/// Activate display of histograms to TCanvas.
 bool OnlineProcessor::SetDisplayMode(const unsigned int &cols_/*=2*/, const unsigned int &rows_/*=2*/){
 	if(display_mode){ return false; }
 
@@ -101,12 +99,7 @@ bool OnlineProcessor::SetDisplayMode(const unsigned int &cols_/*=2*/, const unsi
 	canvas_rows = rows_;
 	
 	// Setup arrays.
-	which_hists = new int[cols_*rows_];
-	
-	// Set the histogram ids for all TPads.
-	for(unsigned int i = 0; i < num_hists; i++){
-		which_hists[i] = -1;
-	}
+	which_hists = std::vector<std::pair<int, int> >(cols_*rows_, std::pair<int, int>(-1, -1));
 	
 	// Setup the root canvas for plotting.
 	can = new TCanvas("scanner_c1", "Scanner Canvas");
@@ -114,9 +107,18 @@ bool OnlineProcessor::SetDisplayMode(const unsigned int &cols_/*=2*/, const unsi
 	return (display_mode=true);
 }
 
-bool OnlineProcessor::ChangeHist(const unsigned int &index_, const unsigned int &hist_id_){
+bool OnlineProcessor::ChangeHist(const unsigned int &index_, const unsigned int &hist_id_, const int &det_id_/*=-1*/){
 	if(!display_mode || index_ >= num_hists || hist_id_ >= plottable_hists.size()){ return false; }
-	which_hists[index_] = hist_id_;
+	which_hists[index_].first = hist_id_;
+	if(det_id_ >= 0){
+		if(!plottable_hists[hist_id_]->DetectorIsDefined(det_id_)){
+			which_hists[index_].second = -1;
+			return false;
+		}
+		which_hists[index_].second = det_id_;
+	}
+	else
+		which_hists[index_].second = -1;
 	Refresh(index_);
 	return true;
 }
@@ -127,7 +129,8 @@ bool OnlineProcessor::ChangeHist(const unsigned int &index_, const std::string &
 	int count = 0;
 	for(std::vector<Plotter*>::iterator iter = plottable_hists.begin(); iter != plottable_hists.end(); iter++){
 		if(strcmp((*iter)->GetName().c_str(), hist_name_.c_str()) == 0){
-			which_hists[index_] = count;
+			which_hists[index_].first = count;
+			which_hists[index_].second  = -1;
 			Refresh(index_);
 			return true;
 		}
@@ -202,15 +205,13 @@ bool OnlineProcessor::ToggleLogZ(const unsigned int &index_){
 	return true;
 }
 
-/// Refresh a single online plot.
 void OnlineProcessor::Refresh(const unsigned int &index_){
 	if(cd(index_)){
-		plot->Draw(pad);
+		plot->Draw(pad, which_hists[index_].second);
 		can->Update();
 	}
 }
 
-/// Refresh all online plots.
 void OnlineProcessor::Refresh(){
 	if(!display_mode){ return; }
 
@@ -221,47 +222,45 @@ void OnlineProcessor::Refresh(){
 
 	// Set the histogram ids for all TPads.
 	for(unsigned int i = 0; i < num_hists; i++){
-		if(which_hists[i] >= 0){
+		if(which_hists[i].first >= 0){
 			cd(i);
-			plot->Draw(pad);
+			plot->Draw(pad, which_hists[i].second);
 		}
 	}
 
 	can->Update();
 }
 
-/** Zero a diagnostic histogram.
-  *  param[in]  hist_id_ Histogram ID index.
-  *  return True if the histogram exists and false otherwise.
-  */
 bool OnlineProcessor::Zero(const unsigned int &hist_id_){
 	if(hist_id_ >= plottable_hists.size()){ return false; }
 	plottable_hists.at(hist_id_)->Zero();
 	return true;
 }
 
-/// Add a single histogram to the list of plottable items.
 void OnlineProcessor::AddHist(Plotter *hist_){
 	plottable_hists.push_back(hist_);
 }
 
-/// Prepare to add a processor's histograms to the list of plottable items.
 void OnlineProcessor::StartAddHists(Processor *proc){
 	hadHistError = false;
 
 	// Get the first and last occurance of this type in the map.
 	type = proc->GetType();
 	name = proc->GetName();
-	minloc = mapfile->GetFirstOccurance(type);
-	maxloc = mapfile->GetLastOccurance(type);
+
+	// Get all detector IDs from the map file
+	locations.clear();
+	mapfile->GetAllOccurances(type, locations, proc->GetIsSingleEnded());
+	
+	minloc = locations.front();
+	maxloc = locations.back();
+
+	histID = 1;
 
 	// Get pointers to all histograms.
 	proc->GetHists(this);
-
-	histID = 1;
 }
 
-/// Generate and add a single histogram to the list of plottable items.
 bool OnlineProcessor::GenerateHist(Plotter* &hist_){
 	// Find this histogram in the map of histograms (hist.dat).
 	std::string histString;
@@ -281,23 +280,29 @@ bool OnlineProcessor::GenerateHist(Plotter* &hist_){
 
 	std::stringstream stream;
 	stream << type << "_h" << histID++;
-	if(retval < 12){ // Get the name of this histogram.
+	if(retval < 12){ // Define a 1d histogram
 		int bins = strtoul(args.at(4).c_str(), NULL, 10);
 		double xlow = strtod(args.at(5).c_str(), NULL);
 		double xhigh = strtod(args.at(6).c_str(), NULL);
 
+
+		size_t nDet = maxloc-minloc+1;
+
 		// Get the title of this histogram.
-		if(maxloc-minloc > 1){ // More than one detector. Define a 2d plot.
+		if(nDet >= 2){ // More than one detector. Define a 2d plot and a bunch of 1d plots
 			std::stringstream stream2; stream2 << name << " Location vs. " << args.at(2);
-			hist_ = new Plotter(stream.str(), stream2.str(), args.at(1), args.at(2), args.at(3), bins, xlow, xhigh, "Location", "", (maxloc+1)-minloc, minloc, maxloc+1);
+			hist_ = new Plotter(stream.str(), stream2.str(), args.at(1), args.at(2), args.at(3), bins, xlow, xhigh, "Location", "", nDet, minloc, maxloc+1);
+			for(std::vector<int>::iterator iter = locations.begin(); iter != locations.end(); iter++){
+				hist_->AddNewHistogram((*iter));
+			}
 		}
-		else{ // Only one detector. Define a 1d plot instead.
+		else{ // Only one detector. Define a 1d plot
 			std::stringstream stream2; stream2 << name << " " << args.at(2);
 			hist_ = new Plotter(stream.str(), stream2.str(), args.at(1), args.at(2), args.at(3), bins, xlow, xhigh);
 		}
 		plottable_hists.push_back(hist_);
 	}
-	else{
+	else{ // Define a 2d histogram
 		int xbins = strtoul(args.at(4).c_str(), NULL, 10);
 		double xlow = strtod(args.at(5).c_str(), NULL);
 		double xhigh = strtod(args.at(6).c_str(), NULL);
@@ -314,7 +319,6 @@ bool OnlineProcessor::GenerateHist(Plotter* &hist_){
 	return true;
 }
 
-/// Generate and add a location histogram to the list of plottable items.
 void OnlineProcessor::GenerateLocationHist(Plotter* &hist_){
 	// Define a generic location histogram.
 	hist_ = new Plotter(type+"_loc", "GenericBar Location", "", "Location", "", (maxloc+1)-minloc, minloc, maxloc+1);
@@ -322,23 +326,18 @@ void OnlineProcessor::GenerateLocationHist(Plotter* &hist_){
 	plottable_hists.push_back(hist_);
 }
 
-/// Write a histogram to a root TTree.
 int OnlineProcessor::WriteHists(TFile *file_, const std::string &dirname_/*="hists"*/){
 	if(!file_){ return -1; }
 
-	file_->mkdir(dirname_.c_str());
-	file_->cd(dirname_.c_str());
-
 	int count = 0;
 	for(std::vector<Plotter*>::iterator iter = plottable_hists.begin(); iter != plottable_hists.end(); iter++){
-		(*iter)->Write();
+		(*iter)->Write(file_, dirname_);
 		count++;
 	}
 	
 	return count;
 }
 
-/// Display a list of available plots.
 void OnlineProcessor::PrintHists(){
 	std::cout << "OnlineProcessor: Displaying list of plottable histograms.\n";
 	
@@ -349,6 +348,7 @@ void OnlineProcessor::PrintHists(){
 	
 	int count = 0;
 	for(std::vector<Plotter*>::iterator iter = plottable_hists.begin(); iter != plottable_hists.end(); iter++){
-		std::cout << " " << count++ << ": " << (*iter)->GetName() << "\t" << (*iter)->GetHist()->GetTitle() << std::endl;
+		std::cout << " " << count++ << ": "; 
+		(*iter)->Print();
 	}
 }

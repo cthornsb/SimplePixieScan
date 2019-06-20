@@ -171,6 +171,20 @@ int MapFile::GetLastOccurance(const std::string &type_){
 	return -1;
 }
 
+int MapFile::GetAllOccurances(const std::string &type_, std::vector<int> &locations, const bool &isSingleEnded/*=true*/){
+	int retval = 0;
+	for(int i = 0; i < max_modules; i++){
+		for(int j = 0; j < max_channels; j++){
+			if(!isSingleEnded && j % 2 == 0) continue; // Handle bar-type detectors
+			if(detectors[i][j].type == type_){
+				locations.push_back(detectors[i][j].location);
+				retval++;
+			}
+		}
+	}
+	return retval;
+}
+
 bool MapFile::GetFirstStart(int &mod, int &chan){
 	for(mod = 0; mod < max_modules; mod++){
 		for(chan = 0; chan < max_channels; chan++){

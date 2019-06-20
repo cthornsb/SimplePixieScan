@@ -12,11 +12,11 @@ bool TraceProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEv
 	int location = chEvt->entry->location;
 
 	if(histsEnabled){ // Fill all diagnostic histograms.
-		loc_tdiff_2d->Fill(tdiff, location);
-		loc_energy_2d->Fill(current_event->qdc, location);
-		loc_maximum_2d->Fill(current_event->maximum, location);
-		loc_phase_2d->Fill(current_event->phase, location);
-		loc_baseline_2d->Fill(current_event->baseline, location);
+		loc_tdiff_2d->Fill(location, tdiff);
+		loc_energy_2d->Fill(location, current_event->qdc);
+		loc_maximum_2d->Fill(location, current_event->maximum);
+		loc_phase_2d->Fill(location, current_event->phase);
+		loc_baseline_2d->Fill(location, current_event->baseline);
 		loc_1d->Fill(location);
 	}
 

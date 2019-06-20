@@ -17,10 +17,10 @@ bool LiquidProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 
 	if(histsEnabled){
 		// Fill all diagnostic histograms.
-		loc_tdiff_2d->Fill(tdiff, location);
-		loc_short_tqdc_2d->Fill(short_qdc, location);
-		loc_long_tqdc_2d->Fill(long_qdc, location);
-		loc_psd_2d->Fill(short_qdc/long_qdc, location);
+		loc_tdiff_2d->Fill(location, tdiff);
+		loc_short_tqdc_2d->Fill(location, short_qdc);
+		loc_long_tqdc_2d->Fill(location, long_qdc);
+		loc_psd_2d->Fill(location, short_qdc/long_qdc);
 		loc_1d->Fill(location);		
 	}
 	

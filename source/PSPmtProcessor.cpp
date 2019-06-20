@@ -84,24 +84,24 @@ bool PSPmtProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEv
 
 	if(histsEnabled){ // Fill all diagnostic histograms.
 		if(tqdcIndex == 0){ // This is a dynode.
-			loc_tdiff_2d->Fill(tdiff, location); // Only dynodes get added to the tdiff spectrum
-			sltqdc_ltqdc_2d->Fill(channel_event->qdc, channel_event->qdc2/channel_event->qdc);
+			loc_tdiff_2d->Fill(location, tdiff); // Only dynodes get added to the tdiff spectrum
+			sltqdc_ltqdc_2d->Fill2d(location, channel_event->qdc, channel_event->qdc2/channel_event->qdc);
 		}
 		else{ // Only anodes get added to the tqdc spectrum. Determine which histogram to fill
-			loc_energy_2d->Fill(channel_event->qdc, location);
+			loc_energy_2d->Fill(location, channel_event->qdc);
 			if(!isRightEnd){ // Left side
 				if(pspmtEventL.addAnode((float)channel_event->energy, tqdcIndex-1)){
-					loc_xpos_2d->Fill(pspmtEventL.xpos, location);
-					loc_ypos_2d->Fill(pspmtEventL.ypos, location);
-					ypos_xpos_2d->Fill(pspmtEventL.xpos, pspmtEventL.ypos);
+					loc_xpos_2d->Fill(location, pspmtEventL.xpos);
+					loc_ypos_2d->Fill(location, pspmtEventL.ypos);
+					ypos_xpos_2d->Fill2d(location, pspmtEventL.xpos, pspmtEventL.ypos);
 					pspmtEventL.reset();
 				}
 			}
 			else{ // Right side
 				if(pspmtEventR.addAnode((float)channel_event->energy, tqdcIndex-1)){
-					loc_xpos_2d->Fill(pspmtEventR.xpos, location);
-					loc_ypos_2d->Fill(pspmtEventR.ypos, location);
-					ypos_xpos_2d->Fill(pspmtEventR.xpos, pspmtEventR.ypos);
+					loc_xpos_2d->Fill(location, pspmtEventR.xpos);
+					loc_ypos_2d->Fill(location, pspmtEventR.ypos);
+					ypos_xpos_2d->Fill2d(location, pspmtEventR.xpos, pspmtEventR.ypos);
 					pspmtEventR.reset();
 				}
 			}

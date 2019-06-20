@@ -92,6 +92,8 @@ class MapFile{
 	
 	int GetLastOccurance(const std::string &type_);
 	
+	int GetAllOccurances(const std::string &type_, std::vector<int> &locations, const bool &isSingleEnded=true);
+	
 	bool GetFirstStart(int &mod, int &chan);
 
 	void ClearTypeList(){ types.clear(); }

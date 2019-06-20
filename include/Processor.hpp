@@ -163,6 +163,8 @@ class Processor{
 
 	unsigned long GetNumUnprocessed(){ return (handle_notValid+handle_unpairedEvent); }
 	
+	bool GetIsSingleEnded() const { return isSingleEnded; }
+	
 	bool IsInit(){ return init; }
 	
 	bool ToggleTraces(){ return (write_waveform = !write_waveform); }
