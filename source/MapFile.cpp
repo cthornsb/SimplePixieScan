@@ -153,6 +153,52 @@ std::string MapFile::GetTag(int mod_, int chan_){
 	return detectors[mod_][chan_].tag;
 }
 
+void MapFile::GetModChan(const int &location, int &mod, int &chan){
+	mod = location / max_channels;
+	chan = location % max_channels;
+}
+
+void MapFile::GetListOfLocations(std::vector<int> &list, const std::string &type_, const std::string &subtype_/*=""*/, const bool &withSubtype/*=true*/, const std::string &tag_/*=""*/, const bool &withTag/*=true*/){
+	for(int i = 0; i < max_modules; i++){
+		for(int j = 0; j < max_channels; j++){
+			if(detectors[i][j].type == type_){ 
+				bool foundMatch = true;
+				if(!subtype_.empty()){ // Check subtypes
+					size_t index = subtype_.find(detectors[i][j].subtype);
+					if(withSubtype){ // With subtype
+						if(detectors[i][j].subtype.empty() || index == std::string::npos)
+							foundMatch = false;
+					}
+					else{ // Without subtype
+						if(!detectors[i][j].subtype.empty() && index != std::string::npos)
+							foundMatch = false;
+					}
+				}
+				else if(withSubtype){
+					if(!detectors[i][j].subtype.empty()) // No valid subtypes
+						foundMatch = false;
+				}
+				if(!tag_.empty()){ // Check tags
+					if(withTag){ // With tags
+						if(detectors[i][j].tag.empty() || tag_.find(detectors[i][j].tag) == std::string::npos)
+							foundMatch = false;
+					}
+					else{ // Without tags
+						if(!detectors[i][j].tag.empty() && tag_.find(detectors[i][j].tag) != std::string::npos)
+							foundMatch = false;
+					}
+				}
+				else if(withTag){
+					if(!detectors[i][j].tag.empty()) // No valid tags
+						foundMatch = false;
+				}
+				if(foundMatch)
+					list.push_back(detectors[i][j].location);
+			}
+		}
+	}
+}
+
 int MapFile::GetFirstOccurance(const std::string &type_){
 	for(int i = 0; i < max_modules; i++){
 		for(int j = 0; j < max_channels; j++){

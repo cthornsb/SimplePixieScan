@@ -248,9 +248,10 @@ void OnlineProcessor::StartAddHists(Processor *proc){
 	type = proc->GetType();
 	name = proc->GetName();
 
-	// Get all detector IDs from the map file
 	locations.clear();
-	mapfile->GetAllOccurances(type, locations, proc->GetIsSingleEnded());
+	if(!proc->AddDetectorLocations(locations)){ // Automatically get all detector IDs from the map file
+		mapfile->GetAllOccurances(type, locations, proc->GetIsSingleEnded());
+	}
 	
 	minloc = locations.front();
 	maxloc = locations.back();

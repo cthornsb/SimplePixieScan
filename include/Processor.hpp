@@ -153,6 +153,11 @@ class Processor{
 
 	virtual void GetHists(OnlineProcessor *online_){ }
 
+	/** Manually add detector locations to the online processor detector list
+	  * @return False if not overloaded by child class
+	  */
+	virtual bool AddDetectorLocations(std::vector<int> &){ return false; }
+
 	std::string GetType(){ return type; }
 	
 	std::string GetName(){ return name; }
