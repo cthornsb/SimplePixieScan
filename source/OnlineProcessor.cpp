@@ -334,6 +334,8 @@ void OnlineProcessor::GenerateLocationHist(Plotter* &hist_){
 int OnlineProcessor::WriteHists(TFile *file_, const std::string &dirname_/*="hists"*/){
 	if(!file_){ return -1; }
 
+	file_->mkdir(dirname_.c_str());
+
 	int count = 0;
 	for(std::vector<Plotter*>::iterator iter = plottable_hists.begin(); iter != plottable_hists.end(); iter++){
 		(*iter)->Write(file_, dirname_);

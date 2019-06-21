@@ -218,8 +218,8 @@ void Plotter::Draw(TPad *pad_, const int &detID/*=-1*/){
 
 void Plotter::Write(TFile *file_, const std::string &dirname_/*="hists"*/){
 	if(hists1d.empty()){
-		file_->mkdir(dirname_.c_str());
-		file_->cd(dirname_.c_str());
+		if(!file_->cd(dirname_.c_str())) 
+			return;
 	}
 	else{
 		file_->mkdir((dirname_+"/"+name).c_str());
