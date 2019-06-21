@@ -46,13 +46,22 @@ Plotter::~Plotter(){
 		delete iter->first;
 }
 
-TH1 *Plotter::AddNewHistogram(const int &location){
+TH1 *Plotter::AddNew1dHistogram(const int &location){
 	numHists++;
 	std::stringstream newName;
 	newName << name << "-" << location;
 	hists1d.push_back(std::pair<TH1*, int>((TH1*)(new TH1F(newName.str().c_str(), title.c_str(), xbins, xmin, xmax)), location));
 	SetupHist1d(hists1d.back().first);
 	return hists1d.back().first;
+}
+
+TH1 *Plotter::AddNew2dHistogram(const int &location){
+	numHists++;
+	std::stringstream newName;
+	newName << name << "-" << location;
+	hists1d.push_back(std::pair<TH1*, int>((TH1*)(new TH2F(newName.str().c_str(), title.c_str(), xbins, xmin, xmax, ybins, ymin, ymax)), location));
+	SetupHist2d(hists1d.back().first);
+	return hists1d.back().first;	
 }
 
 TH1 *Plotter::GetHist(const int &location){
@@ -86,17 +95,19 @@ bool Plotter::DetectorIsDefined(const int &id) const {
 }
 
 void Plotter::SetXaxisTitle(const std::string &title_){ 
+	hist->GetXaxis()->SetTitle(title_.c_str()); 
 	for(std::vector<std::pair<TH1*, int> >::iterator iter = hists1d.begin(); iter != hists1d.end(); iter++)
 		iter->first->GetXaxis()->SetTitle(title_.c_str()); 
-	
 }
 
 void Plotter::SetYaxisTitle(const std::string &title_){ 
+	hist->GetYaxis()->SetTitle(title_.c_str()); 
 	for(std::vector<std::pair<TH1*, int> >::iterator iter = hists1d.begin(); iter != hists1d.end(); iter++)
 		iter->first->GetYaxis()->SetTitle(title_.c_str()); 
 }
 
 void Plotter::SetStats(const bool &state_/*=true*/){
+	hist->SetStats(state_);
 	for(std::vector<std::pair<TH1*, int> >::iterator iter = hists1d.begin(); iter != hists1d.end(); iter++)
 		iter->first->SetStats(state_); 
 }
@@ -104,6 +115,7 @@ void Plotter::SetStats(const bool &state_/*=true*/){
 void Plotter::SetXrange(const double &xmin_, const double &xmax_){
 	xmin = xmin_;
 	xmax = xmax_;
+	hist->GetXaxis()->SetRangeUser(xmin, xmax);
 	for(std::vector<std::pair<TH1*, int> >::iterator iter = hists1d.begin(); iter != hists1d.end(); iter++)
 		iter->first->GetXaxis()->SetRangeUser(xmin, xmax);
 }
@@ -111,6 +123,7 @@ void Plotter::SetXrange(const double &xmin_, const double &xmax_){
 void Plotter::SetYrange(const double &ymin_, const double &ymax_){
 	ymin = ymin_;
 	ymax = ymax_;
+	hist->GetYaxis()->SetRangeUser(ymin, ymax);
 	for(std::vector<std::pair<TH1*, int> >::iterator iter = hists1d.begin(); iter != hists1d.end(); iter++)
 		iter->first->GetYaxis()->SetRangeUser(ymin, ymax);
 }
@@ -143,23 +156,24 @@ void Plotter::SetupHist2d(TH1 *h){
 }
 
 void Plotter::ResetXrange(){
+	hist->GetXaxis()->UnZoom();
 	for(std::vector<std::pair<TH1*, int> >::iterator iter = hists1d.begin(); iter != hists1d.end(); iter++)
 		iter->first->GetXaxis()->UnZoom();
 }
 
 void Plotter::ResetYrange(){
+	hist->GetYaxis()->UnZoom();
 	for(std::vector<std::pair<TH1*, int> >::iterator iter = hists1d.begin(); iter != hists1d.end(); iter++)
 		iter->first->GetYaxis()->UnZoom();
 }
 
 void Plotter::ResetRange(){
-	for(std::vector<std::pair<TH1*, int> >::iterator iter = hists1d.begin(); iter != hists1d.end(); iter++){
-		iter->first->GetXaxis()->UnZoom();
-		iter->first->GetYaxis()->UnZoom();
-	}
+	ResetXrange();
+	ResetYrange();
 }
 
 void Plotter::Zero(){
+	hist->Reset();
 	for(std::vector<std::pair<TH1*, int> >::iterator iter = hists1d.begin(); iter != hists1d.end(); iter++)
 		iter->first->Reset();
 }

@@ -175,7 +175,7 @@ int MapFile::GetAllOccurances(const std::string &type_, std::vector<int> &locati
 	int retval = 0;
 	for(int i = 0; i < max_modules; i++){
 		for(int j = 0; j < max_channels; j++){
-			if(!isSingleEnded && j % 2 == 0) continue; // Handle bar-type detectors
+			if(!isSingleEnded && j % 2 != 0) continue; // Handle bar-type detectors
 			if(detectors[i][j].type == type_){
 				locations.push_back(detectors[i][j].location);
 				retval++;

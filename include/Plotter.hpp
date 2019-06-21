@@ -49,7 +49,9 @@ class Plotter{
 	
 	~Plotter();
 	
-	TH1 *AddNewHistogram(const int &location);
+	TH1 *AddNew1dHistogram(const int &location);
+	
+	TH1 *AddNew2dHistogram(const int &location);
 	
 	TH1 *GetHist(){ return hist; }
 	
