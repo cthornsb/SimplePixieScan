@@ -3,7 +3,7 @@ set(SimpleCoreSources ColorTerm.cpp Plotter.cpp ProcessorHandler.cpp OnlineProce
 
 set(ProcessorSources TriggerProcessor.cpp PhoswichProcessor.cpp LiquidProcessor.cpp LiquidBarProcessor.cpp
     HagridProcessor.cpp GenericProcessor.cpp GenericBarProcessor.cpp LogicProcessor.cpp TraceProcessor.cpp
-    PSPmtProcessor.cpp)
+    PSPmtProcessor.cpp PSPmtMap.cpp)
 
 #Add the sources to the library.
 add_library(SimpleCoreObjects OBJECT ${SimpleCoreSources})
