@@ -6,6 +6,8 @@
 #include <deque>
 
 #include "CalibFile.hpp"
+#include "simpleTool.hpp"
+#include "PSPmtMap.hpp"
 
 class PSPmtStructure;
 
@@ -56,8 +58,9 @@ class simpleEvent{
 
 	bool isBarDet;
 	bool isRightEnd;
+	bool isDynode;
 	
-	simpleEvent() : tdiff(0), ltqdc(0), stqdc(0), location(0), tqdcIndex(0), energy(0), isBarDet(0), isRightEnd(0) { }
+	simpleEvent() : tdiff(0), ltqdc(0), stqdc(0), location(0), tqdcIndex(0), energy(0), isBarDet(false), isRightEnd(false), isDynode(false) { }
 	
 	simpleEvent(PSPmtStructure *ptr, const size_t &index);
 };
@@ -153,7 +156,7 @@ class pspmtMapEntry{
   public:
 	pspmtMapEntry();
 	
-	pspmtMapEntry(unsigned short *ptr_);
+	pspmtMapEntry(int *ptr_);
 
 	unsigned short getDynodeID() const { return ids[0]; }
 	
@@ -183,7 +186,7 @@ class pspmtMap{
 
 	size_t getLength(){ return entries.size(); }
 	
-	void addEntry(unsigned short *ptr_);
+	void addEntry(int *ptr_);
 	
 	bool addEvent(simpleEvent *evt_);
 	
@@ -199,11 +202,11 @@ class pspmtBarMap{
   public:
 	pspmtBarMap() : mapL(), mapR() { }
 
-	void addEntry(unsigned short *ptrL_, unsigned short *ptrR_);
+	void addEntry(int *ptrL_, int *ptrR_);
 
-	void addLeftEntry(unsigned short *ptr_);
+	void addLeftEntry(int *ptr_);
 
-	void addRightEntry(unsigned short *ptr_);
+	void addRightEntry(int *ptr_);
 
 	bool addEvent(simpleEvent *evtL_, simpleEvent *evtR_);
 
@@ -214,6 +217,77 @@ class pspmtBarMap{
 	void clear();
 	
 	void buildEventList(std::vector<fullBarEvent*>& vec_);
+};
+
+class pspmtHandler : public simpleTool {
+  private:
+	std::string setupDir;
+
+	unsigned short index;
+
+	CalibFile calib;
+
+	pspmtMap map;
+	pspmtBarMap barmap;
+	
+	PSPmtStructure *ptr;
+	TriggerStructure *sptr;
+
+	bool singleEndedMode;
+	bool noTimeMode;
+	bool noEnergyMode;
+	bool noPositionMode;
+	bool calibrationMode;
+	bool manualCalMode;
+	bool useLightBalance;
+
+	std::string countsString;
+	unsigned long long totalCounts;
+	double totalDataTime;
+	double userEnergyOffset;
+
+	std::vector<pspmtPosCal> pspmtcal;
+	std::vector<double> posCalX, posCalY;
+
+	double x, y, z, r, theta, phi;
+	double tdiff, tof, ctof, tqdc, stqdc, lbal, ctqdc, energy;
+	double centerE, barifierE, xdetL, xdetR, ydetL, ydetR;
+	unsigned short location;
+
+	double cxdet, cydet;
+	short xcell, ycell;
+
+	double tdiff_L, tdiff_R;
+	float tqdc_L, tqdc_R;
+	float stqdc_L, stqdc_R;	
+	float startqdc;
+
+	float allTQDC_L[4];
+	float allTQDC_R[4];
+
+	std::vector<PSPmtMap> detMap; ///< List of PSPmt detectors read in from the user map file
+
+	void process();
+
+	void handleCalibration();
+
+	void handleEvents();
+
+	void setVariables(fullEvent* evt_);
+
+	void setVariables(fullBarEvent* evt_);
+
+  public:
+	pspmtHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), map(), barmap(), ptr(NULL), sptr(NULL), singleEndedMode(true), noTimeMode(false), 
+	                 noEnergyMode(false), noPositionMode(false), calibrationMode(false), manualCalMode(false), useLightBalance(false), totalCounts(0), totalDataTime(0), userEnergyOffset(0) { }
+
+	~pspmtHandler();
+	
+	void addOptions();
+	
+	bool processArgs();
+	
+	int execute(int argc, char *argv[]);
 };
 
 #endif

@@ -56,11 +56,27 @@ PSPmtMap::PSPmtMap(const int &dynodeL, const int &dynodeR) : PSPmtMap() {
 	isDoubleSided = true;
 }
 
+bool PSPmtMap::check(const int &location) const {
+	for(size_t i = 0; i < 2; i++){
+		for(size_t j = 0; j < 5; j++){
+			if(location == channels[i][j])
+				return true;
+		}
+	}
+	return false;
+}
+
 bool PSPmtMap::check(const int &location, bool &isDynode, bool &isRight, unsigned short &tqdcIndex) const {
 	bool retval = false;
 	
-	if(location == channels[0][0] || location == channels[1][0]){ // A dynode
-		isRight = (location % 2 != 0);
+	if(location == channels[0][0]){ // A dynode
+		isRight = false;
+		isDynode = true;
+		retval = true;
+		tqdcIndex = 0;
+	}
+	else if(location == channels[1][0]){
+		isRight = true;
 		isDynode = true;
 		retval = true;
 		tqdcIndex = 0;
@@ -72,7 +88,8 @@ bool PSPmtMap::check(const int &location, bool &isDynode, bool &isRight, unsigne
 					isRight = (i == 1);
 					isDynode = false;
 					retval = true;
-					tqdcIndex = j;
+					tqdcIndex = j-1;
+					break;
 				}
 			}
 		}	

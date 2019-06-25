@@ -38,6 +38,12 @@ class PSPmtMap{
 	
 	PSPmtEvent *getEventR(){ return &pspmtEventR; }
 	
+	int *getLeftChannels(){ return channels[0]; }
+	
+	int *getRightChannels(){ return channels[1]; }
+	
+	bool check(const int &location) const ;
+	
 	bool check(const int &location, bool &isDynode, bool &isRight, unsigned short &tqdcIndex) const ;
 	
 	bool checkLocations() const ;

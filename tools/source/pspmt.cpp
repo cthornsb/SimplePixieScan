@@ -17,7 +17,7 @@
 
 #include "CTerminal.h"
 
-#include "simpleTool.hpp"
+#include "MapFile.hpp"
 #include "Structures.hpp"
 #include "pspmt.hpp"
 
@@ -186,8 +186,14 @@ simpleEvent::simpleEvent(PSPmtStructure *ptr, const size_t &index){
 	// Decode the channel information.
 	isBarDet   = ((chanIdentifier & 0x0010) != 0);
 	isRightEnd = ((chanIdentifier & 0x0020) != 0);	
-	tqdcIndex  =  (chanIdentifier & 0x00C0) >> 6;
-	//= (chanIdentifier & 0xFF00) >> 8; // Remaining 8 bits. Currently un-used.
+	isDynode   = ((chanIdentifier & 0x0040) != 0);
+	tqdcIndex  =  (chanIdentifier & 0x0180) >> 7;
+	//= (chanIdentifier & 0xFE00) >> 9; // Remaining 7 bits. Currently un-used.
+	
+	if(!isDynode) // Increment TQDC index for anodes
+		tqdcIndex++;
+	if(isRightEnd) // Increment TQDC index for right side
+		tqdcIndex += 5;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -405,7 +411,7 @@ pspmtMapEntry::pspmtMapEntry(){
 	}
 }
 
-pspmtMapEntry::pspmtMapEntry(unsigned short *ptr_){
+pspmtMapEntry::pspmtMapEntry(int *ptr_){
 	for(size_t i = 0; i < 5; i++){
 		mult[i] = 0;
 		ids[i] = ptr_[i];
@@ -420,13 +426,20 @@ void pspmtMapEntry::clear(){
 }
 
 bool pspmtMapEntry::add(simpleEvent *evt){
-	for(size_t i = 0; i < 5; i++){
-		if(evt->location == ids[i]){
-			events[i].push_back(evt);
-			mult[i]++;
-			return true;
-		}
+	if(evt->location != ids[0]) // Check for matching detector
+		return false;
+	if(evt->tqdcIndex < 5){ // Left side
+		events[evt->tqdcIndex].push_back(evt);
+		mult[evt->tqdcIndex]++;
+		return true;
 	}
+	else if(evt->tqdcIndex < 10){ // Right side
+		events[evt->tqdcIndex-5].push_back(evt);
+		mult[evt->tqdcIndex-5]++;
+		return true;		
+	}
+	else
+		warnStr << " Encountered unknown TQDC index (" << evt->tqdcIndex << ")?\n";
 	return false;
 }
 
@@ -455,7 +468,7 @@ fullEvent* pspmtMapEntry::buildEvent(){
 // class pspmtMap
 ///////////////////////////////////////////////////////////////////////////////
 
-void pspmtMap::addEntry(unsigned short *ptr_){
+void pspmtMap::addEntry(int *ptr_){
 	entries.push_back(pspmtMapEntry(ptr_));
 }
 
@@ -483,16 +496,17 @@ void pspmtMap::buildEventList(std::vector<fullEvent*>& vec_){
 // class pspmtBarMap
 ///////////////////////////////////////////////////////////////////////////////
 
-void pspmtBarMap::addEntry(unsigned short *ptrL_, unsigned short *ptrR_){
+void pspmtBarMap::addEntry(int *ptrL_, int *ptrR_){
+	ptrR_[0] = ptrL_[0];
 	mapL.addEntry(ptrL_);
 	mapR.addEntry(ptrR_);
 }
 
-void pspmtBarMap::addLeftEntry(unsigned short *ptr_){
+void pspmtBarMap::addLeftEntry(int *ptr_){
 	mapL.addEntry(ptr_);
 }
 
-void pspmtBarMap::addRightEntry(unsigned short *ptr_){
+void pspmtBarMap::addRightEntry(int *ptr_){
 	mapR.addEntry(ptr_);
 }
 
@@ -528,75 +542,6 @@ void pspmtBarMap::buildEventList(std::vector<fullBarEvent*>& vec_){
 ///////////////////////////////////////////////////////////////////////////////
 // class pspmtHandler
 ///////////////////////////////////////////////////////////////////////////////
-
-class pspmtHandler : public simpleTool {
-  private:
-	std::string setupDir;
-
-	unsigned short index;
-
-	CalibFile calib;
-
-	pspmtMap map;
-	pspmtBarMap barmap;
-	
-	PSPmtStructure *ptr;
-	TriggerStructure *sptr;
-
-	bool singleEndedMode;
-	bool noTimeMode;
-	bool noEnergyMode;
-	bool noPositionMode;
-	bool calibrationMode;
-	bool manualCalMode;
-	bool useLightBalance;
-
-	std::string countsString;
-	unsigned long long totalCounts;
-	double totalDataTime;
-	double userEnergyOffset;
-
-	std::vector<pspmtPosCal> pspmtcal;
-	std::vector<double> posCalX, posCalY;
-
-	double x, y, z, r, theta, phi;
-	double tdiff, tof, ctof, tqdc, stqdc, lbal, ctqdc, energy;
-	double centerE, barifierE, xdetL, xdetR, ydetL, ydetR;
-	unsigned short location;
-
-	double cxdet, cydet;
-	short xcell, ycell;
-
-	double tdiff_L, tdiff_R;
-	float tqdc_L, tqdc_R;
-	float stqdc_L, stqdc_R;	
-	float startqdc;
-
-	float allTQDC_L[4];
-	float allTQDC_R[4];
-
-	void process();
-
-	void handleCalibration();
-
-	void handleEvents();
-
-	void setVariables(fullEvent* evt_);
-
-	void setVariables(fullBarEvent* evt_);
-
-  public:
-	pspmtHandler() : simpleTool(), setupDir("./setup/"), index(0), calib(), map(), barmap(), ptr(NULL), sptr(NULL), singleEndedMode(false), noTimeMode(false), 
-	                 noEnergyMode(false), noPositionMode(false), calibrationMode(false), manualCalMode(false), useLightBalance(false), totalCounts(0), totalDataTime(0), userEnergyOffset(0) { }
-
-	~pspmtHandler();
-	
-	void addOptions();
-	
-	bool processArgs();
-	
-	int execute(int argc, char *argv[]);
-};
 
 void pspmtHandler::process(){
 	// Check for invalid TQDC.
@@ -1036,7 +981,6 @@ pspmtHandler::~pspmtHandler(){
 
 void pspmtHandler::addOptions(){
 	addOption(optionExt("config", required_argument, NULL, 'c', "<fname>", "Read bar speed-of-light from an input cal file."), userOpts, optstr);
-	addOption(optionExt("single", no_argument, NULL, 0x0, "", "Single-ended PSPMT detector mode."), userOpts, optstr);
 	addOption(optionExt("debug", no_argument, NULL, 0x0, "", "Enable debug output."), userOpts, optstr);
 	addOption(optionExt("light", no_argument, NULL, 0x0, "", "Use TQDC light-balance to compute Y instead of PMT tdiff."), userOpts, optstr);	
 	addOption(optionExt("no-energy", no_argument, NULL, 0x0, "", "Do not use energy calibration."), userOpts, optstr);
@@ -1053,34 +997,31 @@ bool pspmtHandler::processArgs(){
 		setupDir = userOpts.at(0).argument;
 		if(setupDir[setupDir.size()-1] != '/') setupDir += '/';
 	}
-	if(userOpts.at(1).active){ // Single-ended PSPMT
-		singleEndedMode = true;
-	}
-	if(userOpts.at(2).active){ // Debug output
+	if(userOpts.at(1).active){ // Debug output
 		debug = true;
 	}
-	if(userOpts.at(3).active){
+	if(userOpts.at(2).active){
 		useLightBalance = true;
 	}
-	if(userOpts.at(4).active){
+	if(userOpts.at(3).active){
 		noEnergyMode = true;
 	}
-	if(userOpts.at(5).active){
+	if(userOpts.at(4).active){
 		noTimeMode = true;
 	}
-	if(userOpts.at(6).active){
+	if(userOpts.at(5).active){
 		noPositionMode = true;
 	}
-	if(userOpts.at(7).active){
+	if(userOpts.at(6).active){
 		useFilterEnergy = true;
 	}
-	if(userOpts.at(8).active){
+	if(userOpts.at(7).active){
 		calibrationMode = true;
 	}
-	if(userOpts.at(9).active){
+	if(userOpts.at(8).active){
 		manualCalMode = true;
 	}
-	if(userOpts.at(10).active){
+	if(userOpts.at(9).active){
 		userEnergyOffset = strtod(userOpts.at(10).argument.c_str(), NULL);
 		std::cout << " Setting neutron energy offset to " << userEnergyOffset << " MeV.\n";
 	}
@@ -1100,25 +1041,35 @@ int pspmtHandler::execute(int argc, char *argv[]){
 	if(!cut_filename.empty() && !loadTCutG())
 		return 1;
 
-	int numLinesRead = 0;
-	std::vector<pspmtMapFileEntry> pspmtMapFileEntries;
-	if(!LoadCalibFile((setupDir+"pspmt.dat").c_str(), pspmtMapFileEntries)) return 2;
-	for(size_t i = 0; i < pspmtMapFileEntries.size(); i++){
-		if(pspmtMapFileEntries.at(i).defaultVals) continue;
-		unsigned short array[5];
-		pspmtMapFileEntries.at(i).GetIDs(array);
-		if(!singleEndedMode){
-			if(numLinesRead % 2 == 0) // Even (left)
-				barmap.addLeftEntry(array);
-			else // Odd (right)
-				barmap.addRightEntry(array);
-		}
-		else
-			map.addEntry(array);
-		numLinesRead++;
+	// Initialize map file
+	std::string mapFilename = setupDir + "map.dat";
+	std::cout << " Reading map file " << mapFilename << "\n";
+	MapFile mapfile(mapFilename.c_str());
+	if(!mapfile.IsInit()){ // Failed to read map file.
+		errStr << " Failed to read map file '" << mapFilename << "'.\n";
+		return 2;
 	}
-
-	std::cout << " Loaded " << numLinesRead << " PSPMT detectors from pspmt map file.\n";	
+	
+	// Read the map
+	PSPmtMap::readMapFile(&mapfile, detMap);
+	if(detMap.empty()){ // Complain if there are no PSPmt detectors defined
+		errStr << " No PSPMT detectors defined in map file.\n";
+		return 2;
+	}
+	std::cout << " Loaded " << detMap.size() << " PSPMT detectors from map file.\n";
+	for(std::vector<PSPmtMap>::iterator iter = detMap.begin(); iter != detMap.end(); iter++){
+		if(iter->getDoubleSided()){ // Bar-type PSPMT detector
+			singleEndedMode = false;
+			break;
+		}
+	}
+	for(std::vector<PSPmtMap>::iterator iter = detMap.begin(); iter != detMap.end(); iter++){
+		if(singleEndedMode) // Single-sided PSPMT detector
+			map.addEntry(iter->getLeftChannels());
+		else // Bar-type PSPMT detector
+			barmap.addEntry(iter->getLeftChannels(), iter->getRightChannels());
+	}
+	std::cout << " Using double-sided PSPMT detectors? " << (singleEndedMode ? "NO" : "YES") << std::endl;
 
 	if(!calibrationMode){
 		if(!noPositionMode){

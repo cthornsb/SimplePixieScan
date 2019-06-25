@@ -16,7 +16,7 @@ bool PSPmtProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEv
 	bool isDynode;
 	bool isBarDet;
 	bool isRightEnd;
-	unsigned short tqdcIndex;
+	unsigned short tqdcIndex = 0;
 
 	PSPmtEvent *evtL, *evtR;
 
@@ -45,11 +45,12 @@ bool PSPmtProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEv
 	unsigned short chanIdentifier = 0xFFFF;
 	
 	// Build up the channel identifier.
-	chanIdentifier &= ~(0x000F & (channel_event->chanNum)); // Pixie module channel number
+	chanIdentifier &= ~(0x000F & (channel_event->chanNum)); // Pixie channel number
 	chanIdentifier &= ~(0x0010 & (isBarDet << 4));          // Is this detector part of a double-ended bar?
 	chanIdentifier &= ~(0x0020 & (isRightEnd << 5));        // Is this the right side of the bar detector?
-	chanIdentifier &= ~(0x00C0 & (tqdcIndex << 6));         // Index of TQDC signal (if applicable).
-	//chanIdentifier &= ~(0xFF00 & (tqdcIndex << 8));        // Remaining 8 bits. Currently un-used.
+	chanIdentifier &= ~(0x0040 & (isDynode << 6));          // Is this a dynode signal?
+	chanIdentifier &= ~(0x0180 & (tqdcIndex << 7));         // Index of TQDC signal (if applicable).
+	//chanIdentifier &= ~(0xFE00 & (VARIABLE << 9));        // Remaining 7 bits. Currently un-used.
 	chanIdentifier = ~chanIdentifier;
 
 	if(histsEnabled){ // Fill all diagnostic histograms.
@@ -60,7 +61,7 @@ bool PSPmtProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEv
 		else{ // Only anodes get added to the tqdc spectrum. Determine which histogram to fill
 			loc_energy_2d->Fill(location, channel_event->qdc);
 			if(!isRightEnd){ // Left side
-				if(evtL->addAnode((float)channel_event->qdc, tqdcIndex-1)){
+				if(evtL->addAnode((float)channel_event->qdc, tqdcIndex)){
 					loc_xpos_2d->Fill(location, evtL->xpos);
 					loc_ypos_2d->Fill(location, evtL->ypos);
 					ypos_xpos_2d->Fill2d(location, evtL->xpos, evtL->ypos);
@@ -68,7 +69,7 @@ bool PSPmtProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEv
 				}
 			}
 			else{ // Right side
-				if(evtR->addAnode((float)channel_event->qdc, tqdcIndex-1)){
+				if(evtR->addAnode((float)channel_event->qdc, tqdcIndex)){
 					loc_xpos_2d->Fill(location, evtR->xpos);
 					loc_ypos_2d->Fill(location, evtR->ypos);
 					ypos_xpos_2d->Fill2d(location, evtR->xpos, evtR->ypos);
