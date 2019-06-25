@@ -44,19 +44,10 @@ optionHandler::optionHandler(){
 	optstr = "h";
 }
 
-/** SyntaxStr is used to print a linux style usage message to the screen.
-  * Prints a standard usage message by default.
-  * \param[in]  name_ The name of the program.
-  * \return Nothing.
-  */
 void optionHandler::syntaxStr(char *name_){
 	std::cout << " usage: " << name_ << " [options]\n";
 }
 
-/** Print a command line argument help dialogue.
-  * \param[in]  name_ The name of the program.
-  * \return Nothing.
-  */  
 void optionHandler::help(char *name_){
 	syntaxStr(name_);
 	std::cout << "  Available options:\n";
@@ -70,19 +61,10 @@ void optionHandler::help(char *name_){
 	}
 }
 
-/** Add a command line option to the option list.
-  * \param[in]  opt_ The option to add to the list.
-  * \return Nothing.
-  */
 void optionHandler::add(optionExt opt_){
 	addOption(opt_, userOpts, optstr);
 }
 
-/** Setup user options and initialize all required objects.
-  * \param[in]  argc Number of arguments passed from the command line.
-  * \param[in]  argv Array of strings passed as arguments from the command line.
-  * \return True upon success and false otherwise.
-  */
 bool optionHandler::setup(int argc, char *argv[]){
 	// Build the vector of all command line options.
 	for(std::vector<optionExt>::iterator iter = baseOpts.begin(); iter != baseOpts.end(); iter++){
@@ -133,7 +115,7 @@ bool optionHandler::setup(int argc, char *argv[]){
 					break;
 			}
 		}
-	}//while
+	}
 	
 	return true;
 }
@@ -145,10 +127,6 @@ optionExt *optionHandler::getOption(const size_t &index_){
 	return NULL;
 }
 
-/** Add a command line option to the option list.
-  * \param[in]  opt_ The option to add to the list.
-  * \return Nothing.
-  */
 void addOption(optionExt opt_, std::vector<optionExt> &vec, std::string &optstr){
 	char tempChar = opt_.val;
 	if(tempChar){
