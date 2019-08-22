@@ -13,10 +13,12 @@ class LiquidBarProcessor : public Processor{
 	float short_qdc; /// The integral of the short portion of the left pmt pulse.
 	float long_qdc; /// The integral of the long portion of the left pmt pulse.
 
-	Plotter *loc_tdiff_2d;
-	Plotter *loc_short_tqdc_2d;
-	Plotter *loc_long_tqdc_2d;
-	Plotter *loc_psd_2d;
+	Plotter *tdiff_1d;
+	Plotter *tof_1d;
+	Plotter *long_1d;
+	Plotter *psd_long_2d;
+	Plotter *long_tof_2d;
+	Plotter *maxADC_tof_2d;
 	Plotter *loc_1d;
 
 	// Handle an individual event.
