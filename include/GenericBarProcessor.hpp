@@ -11,10 +11,11 @@ class GenericBarProcessor : public Processor{
 	Trace L_waveform;
 	Trace R_waveform;
 
-	Plotter *loc_tdiff_2d;
-	Plotter *loc_energy_2d;
-	Plotter *tqdc_tdiff_2d;
-	Plotter *maxADC_tdiff_2d;
+	Plotter *tdiff_1d;
+	Plotter *tof_1d;
+	Plotter *tqdc_1d;
+	Plotter *tqdc_tof_2d;
+	Plotter *maxADC_tof_2d;
 	Plotter *loc_1d;
 
 	// Handle an individual event.
