@@ -51,16 +51,20 @@ int instantTime::execute(int argc, char *argv[]){
 		return 3;
 	}
 
-	unsigned int count = 0;
+	unsigned int count;
+
 	double prevTime = 0;
-	double firstTime = 0;	
+	double firstTime = 0;
 	double currTime = 0;
+
+	double time;
 	double tdiff;
 	
-	outtree = new TTree("t", "tree");
+	outtree = new TTree("data", "tree");
 	outtree->Branch("tdiff", &tdiff);
-	outtree->Branch("time", &currTime);
+	outtree->Branch("time", &time);
 
+	double timeOffset = 0;
 	double grandTotalTime = 0;
 
 	while(openInputFile()){
@@ -83,34 +87,42 @@ int instantTime::execute(int argc, char *argv[]){
 		else
 			intree->SetBranchAddress("trigger", &tptr, &branch);
 			
-
 		if(!branch){
 			std::cout << " Error: Failed to load branch \"" << bname << "\" from input TTree.\n";
 			return false;
 		}
 
-		double time;
+		count = 0;
 		unsigned int mult;
 		while(getNextEntry()){
 			mult = (!useTrigger ? lptr->mult : tptr->mult);
-			if(mult == 0)
-				continue;
 			for(unsigned int j = 0; j < mult; j++){
-				time = (!useTrigger ? lptr->time.at(j) : tptr->time.at(j));
-				if(count++ != 0){
-					currTime = time-firstTime;
-					tdiff = currTime-prevTime;
-					outtree->Fill();
+				currTime = (!useTrigger ? lptr->time.at(j) : tptr->time.at(j));
+				if(count++ == 0){ // Get the time of the first event
+					firstTime = currTime;
 					prevTime = currTime;
 				}
-				else{ firstTime = time; }
+				
+				// Compute output variables
+				time = (currTime - firstTime + timeOffset)*8E-9; // Now in seconds
+				tdiff = (currTime - prevTime)*8E-9; // Now in seconds
+				prevTime = currTime;	
+
+				if(tdiff < 0) // Check for negative time difference
+					std::cout << " Warning! Negative time jump encountered (tdiff=" << tdiff << ")!!!\n";
+	
+				// Fill the tree
+				outtree->Fill();
 			}
 		}
 
 		std::cout << " First event time in file   = " << firstTime*8E-9 << " s.\n";
-		std::cout << " Total elapsed time in file = " << currTime*8E-9 << " s.\n";
+		std::cout << " Total elapsed time in file = " << (prevTime-firstTime)*8E-9 << " s.\n";
 
-		grandTotalTime += currTime*8E-9;
+		grandTotalTime += (prevTime-firstTime)*8E-9;
+
+		// Update the time offset between files
+		timeOffset += (prevTime-firstTime);
 	}
 
 	outfile->cd();
