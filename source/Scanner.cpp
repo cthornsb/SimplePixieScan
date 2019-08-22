@@ -452,6 +452,7 @@ bool simpleScanner::ExtraCommands(const std::string &cmd_, std::vector<std::stri
 			if(args_.size() >= 2){
 				std::string gateStr = (args_.size() >= 3)?args_.at(2):"";
 				std::string optStr = (args_.size() >= 4)?args_.at(3):"";
+				std::cout << " " << args_.at(0) << "->Draw(\"" << args_.at(1) << "\", \"" << gateStr << "\", \"" << optStr << "\")\n";
 				if(args_.at(0) == "data")
 					root_tree->SafeDraw(args_.at(1), gateStr, optStr);
 				else if(args_.at(0) == "raw")
@@ -465,19 +466,29 @@ bool simpleScanner::ExtraCommands(const std::string &cmd_, std::vector<std::stri
 			}
 			else{
 				std::cout << msgHeader << "Invalid number of parameters to 'draw'\n";
-				std::cout << msgHeader << " -SYNTAX- draw <tree> <expr> [gate] [opt]\n";
+				std::cout << msgHeader << " -SYNTAX- draw <data|raw|stats> <expr> [gate] [opt]\n";
 			}
 		}
 		else if(cmd_ == "zero"){
+			bool restartScan = false;
+			if(GetIsRunning()){ // Stop the scan, if it's running
+				stop_scan();
+				restartScan = true;
+			}
 			if(args_.size() >= 1){
 				int index1 = strtol(args_.at(0).c_str(), NULL, 10);
 				if(online->Zero(index1)){ std::cout << msgHeader << "Zeroed histogram '" << args_.at(0) << "'.\n"; }
 				else{ std::cout << msgHeader << "Failed to zero histogram '" << args_.at(0) << "'!\n"; }
 			}
 			else{
-				std::cout << msgHeader << "Invalid number of parameters to 'zero'\n";
-				std::cout << msgHeader << " -SYNTAX- zero <hist>\n";
+				// Zero all histograms
+				for(unsigned int i = 0; i < online->GetNumHistograms(); i++){
+					online->Zero(i);
+					std::cout << msgHeader << " Zeroed histogram '" << i << "'.\n";
+				}
 			}
+			if(restartScan)
+				start_scan();
 		}
 		else{ return false; }
 	}

@@ -34,7 +34,7 @@ class OnlineProcessor{
   private:
 	unsigned int canvas_cols;
 	unsigned int canvas_rows;
-  	unsigned int num_hists; ///< The number of histograms which may be plotted at a given time
+  	unsigned int num_pads; ///< The number of canvas pads which are available on the canvas
   	
   	bool display_mode; ///< True if histograms are to be displayed in a root canvas
   	
@@ -80,7 +80,17 @@ class OnlineProcessor{
 	  */
 	Plotter* operator [] (const unsigned int &index_){ return GetPlot(index_); }
 	
+	/** Get the histogram corresponding to @a index from the list of all histograms
+	  */
 	Plotter* GetPlot(const unsigned int &index_);
+
+	/** Return the number of histograms which are defined
+	  */
+	unsigned int GetNumHistograms() const { return plottable_hists.size(); }
+
+	/** Return the number of canvas pads which are available on the canvas
+	  */ 
+	unsigned int GetNumCanvasPads() const { return num_pads; }
 	
 	bool ReadHistMap(const char *fname);
 

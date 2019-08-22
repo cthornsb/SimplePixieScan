@@ -79,6 +79,10 @@ class ScanInterface{
 	
 	/// Return true if batch processing mode is enabled.
 	bool BatchMode(){ return batch_mode; }
+
+	/** Return true if the scan is running and return false otherwise
+	  */ 
+	bool GetIsRunning() const { return is_running; }
 	
 	/// Return the header string used to prefix output messages.
 	std::string GetMessageHeader(){ return msgHeader; }
@@ -274,6 +278,9 @@ class ScanInterface{
 	/// Stop the scan.
 	void stop_scan();
 
+	/// Start the scan.
+	void start_scan();
+
   private:
 	unsigned int maxShmSizeL; /// Max size of shared memory buffer in pixie words (4050 + 2 header words)
 	unsigned int maxShmSize; /// Max size of shared memory buffer in bytes
@@ -326,9 +333,6 @@ class ScanInterface{
 	EOF_buffer eofbuff; /// HRIBF EOF buffer handler.
 
 	Terminal *term; /// ncurses terminal used for displaying output and handling user input.
-
-	/// Start the scan.
-	void start_scan();
 	
 	/// Print a command line argument help dialogue.
 	void help(char *name_);

@@ -83,7 +83,7 @@ OnlineProcessor::~OnlineProcessor(){
 }
 
 Plotter* OnlineProcessor::GetPlot(const unsigned int &index_){
-	if(!display_mode || index_ >= num_hists){ return NULL; }
+	if(!display_mode || index_ >= num_pads){ return NULL; }
 	return (plot = plottable_hists[index_]);
 }
 
@@ -94,7 +94,7 @@ bool OnlineProcessor::ReadHistMap(const char *fname){
 bool OnlineProcessor::SetDisplayMode(const unsigned int &cols_/*=2*/, const unsigned int &rows_/*=2*/){
 	if(display_mode){ return false; }
 
-	num_hists = cols_*rows_;
+	num_pads = cols_*rows_;
 	canvas_cols = cols_;
 	canvas_rows = rows_;
 	
@@ -108,7 +108,7 @@ bool OnlineProcessor::SetDisplayMode(const unsigned int &cols_/*=2*/, const unsi
 }
 
 bool OnlineProcessor::ChangeHist(const unsigned int &index_, const unsigned int &hist_id_, const int &det_id_/*=-1*/){
-	if(!display_mode || index_ >= num_hists || hist_id_ >= plottable_hists.size()){ return false; }
+	if(!display_mode || index_ >= num_pads || hist_id_ >= plottable_hists.size()){ return false; }
 	which_hists[index_].first = hist_id_;
 	if(det_id_ >= 0){
 		if(!plottable_hists[hist_id_]->DetectorIsDefined(det_id_)){
@@ -124,7 +124,7 @@ bool OnlineProcessor::ChangeHist(const unsigned int &index_, const unsigned int 
 }
 
 bool OnlineProcessor::ChangeHist(const unsigned int &index_, const std::string &hist_name_){
-	if(!display_mode || index_ >= num_hists){ return false; }
+	if(!display_mode || index_ >= num_pads){ return false; }
 	
 	int count = 0;
 	for(std::vector<Plotter*>::iterator iter = plottable_hists.begin(); iter != plottable_hists.end(); iter++){
@@ -221,7 +221,7 @@ void OnlineProcessor::Refresh(){
 	can->Divide(canvas_cols, canvas_rows);
 
 	// Set the histogram ids for all TPads.
-	for(unsigned int i = 0; i < num_hists; i++){
+	for(unsigned int i = 0; i < num_pads; i++){
 		if(which_hists[i].first >= 0){
 			cd(i);
 			plot->Draw(pad, which_hists[i].second);
