@@ -368,6 +368,9 @@ ScanInterface::ScanInterface(Unpacker *core_/*=NULL*/){
 	max_spill_size = 0;
 	file_format = -1;
 
+	// Set the default output filename
+	output_filename = "out.root";
+
 	file_start_offset = 0;
 	file_start_percent = -1;
 	file_stop_offset = 0;
