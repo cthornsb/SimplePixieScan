@@ -94,9 +94,9 @@ class Unpacker{
 	double SetEventDelay(double delay_){ return (eventDelay = delay_); }
 
 	/** Set the method to use for raw event building.
-	  *  (0) : Untriggered, positive time. Raw event window opens toward positive time for any detected signal (default).
+	  *  (0) : Untriggered, positive time. Raw event window opens toward positive time for any detected signal.
 	  *  (1) : Untriggered, negative time. Raw event window opens toward negative time for any detected signal.
-	  *  (2) : Triggered, positive time. Raw event window opens toward positive time for a specified start channel.
+	  *  (2) : Triggered, positive time. Raw event window opens toward positive time for a specified start channel (default).
 	  *  (3) : Triggered, negative time. Raw event window opens toward negative time for a specified start channel.
 	  * \param[in]  mode_ Set the raw event building method.
 	  * \return The raw event building method upon success and -1 upon failure.

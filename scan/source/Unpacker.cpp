@@ -463,7 +463,7 @@ Unpacker::Unpacker() :
 	maxWords(131072), // Maximum number of data words for revision D.	
 	numRawEvt(0), // Count of raw events read from file.
 	firstTime(0),
-	rawEventMode(0), // The raw event building method to use.
+	rawEventMode(2), // The raw event building method to use.
 	startMod(0),
 	startChan(0),
 	startEventTime(0),
