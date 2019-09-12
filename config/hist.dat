@@ -1,62 +1,69 @@
 # Example simpleScan diagnostic histogram definition file.
-# Author: Cory R. Thornsberry (updated: Oct. 10, 2018)
+# Author: Cory R. Thornsberry (updated: Sept. 12, 2018)
 #  - Entries must be delimited with COLONS!
 #     * This allows tabs and spaces to exist in axis titles.
 #  - Blank lines and those starting with a # are ignored.
 #  - Histograms of a given type are read sequentially each
 #    time OnlineProcessor::GenerateHist is called from
 #    within your processor class.
-#     * Adding a new entry to this file will do nothing unless
-#       your processor calls GenerateHist from inside its own
-#       GetHists method e.g. "online_->GenerateHist(loc_tdiff_2d)"
-#       where loc_tdiff_2d is a pointer to a Plotter object.
-#     * Removing entries from this list may cause segmentation-faults.
+#     * Adding a new entry to this file will do nothing if it
+#       is not added to the online processor using ::GenerateHist()
+#     * Removing entries from this list may cause errors.
 #     * Including 4 extra entries (i.e. YBINS, YUNITS, YLOW, and YHIGH)
 #       will define a two dimensional histogram.
 # Syntax:
-#  TYPE:DRAW_OPTION:XAXIS_TITLE:XAXIS_UNITS:XBINS:XLOW:XHIGH[:YBINS:YUNITS:YLOW:YHIGH]
+#  TYPE:XTITLE:XUNITS:XBINS:XLOW:XHIGH[:YTITLE:YUNITS:YBINS:YLOW:YHIGH]
 ###############################################################################
-genericbar:COLZ:Tdiff:ns:200:100:100
-genericbar:COLZ:TQDC:a.u.:200:0:20000
-genericbar:COLZ:Tdiff:ns:200:-100:100:TQDC:a.u.:200:0:20000
-genericbar:COLZ:Tdiff:ns:200:-100:100:Max ADC:a.u.:200:0:4096
+genericbar:Tdiff:ns:200:-100:100
+genericbar:TOF:ns:200:-100:100
+genericbar:TQDC:a.u.:200:0:20000
+genericbar:TOF:ns:200:-100:100:TQDC:a.u.:200:0:20000
+genericbar:TOF:ns:200:-100:100:Max ADC:Channels:200:0:4095
 ###############################################################################
-generic:COLZ:Tdiff:ns:200:-100:100
-generic:COLZ:TQDC:a.u.:200:0:20000
+generic:TOF:ns:200:-100:100
+generic:TQDC:a.u.:200:0:20000
+generic:TOF:ns:200:-100:100:L:a.u.:200:0:20000
+generic:TOF:ns:200:-100:100:Max ADC:Channels:200:0:4095
 ###############################################################################
-hagrid:COLZ:Tdiff:ns:200:-100:100
-hagrid:COLZ:TQDC:a.u.:200:0:20000
+hagrid:TOF:ns:200:-100:100
+hagrid:TQDC:a.u.:200:0:20000
+hagrid:Slow Filter:a.u.:200:0:32767
+hagrid:Max ADC:Channels:200:0:4095
 ###############################################################################
-liquidbar:COLZ:Tdiff:ns:200:-100:100
-liquidbar:COLZ:S:a.u.:200:0:20000
-liquidbar:COLZ:L:a.u.:200:0:20000
-liquidbar:COLZ:PSD:S/L:200:0:1
+liquidbar:Tdiff:ns:200:-100:100
+liquidbar:TOF:ns:200:-100:100
+liquidbar:L:a.u.:200:0:20000
+liquidbar:L:a.u.:200:0:20000:S/L:a.u.:200:-1:1
+liquidbar:TOF:ns:200:-100:100:L:a.u.:200:0:20000
+liquidbar:TOF:ns:200:-100:100:Max ADC:Channels:200:0:4095
 ###############################################################################
-liquid:COLZ:Tdiff:ns:200:-100:100
-liquid:COLZ:S:a.u.:200:0:20000
-liquid:COLZ:L:a.u.:200:0:20000
-liquid:COLZ:PSD:S/L:200:0:1
+liquid:TOF:ns:200:-100:100
+liquid:L:a.u.:200:0:20000
+liquid:L:a.u.:200:0:20000:S/L:a.u.:200:-1:1
+liquid:TOF:ns:200:-100:100:L:a.u.:200:0:20000
+liquid:TOF:ns:200:-100:100:Max ADC:Channels:200:0:4095
 ###############################################################################
-phoswich:COLZ:Light Response:a.u.:200:0:20000
-phoswich:COLZ:Light Response:a.u.:200:0:20000
-phoswich:COLZ:Slow Light Response:a.u.:200:0:20000:Fast Light Response:a.u.:200:0:20000
-phoswich:COLZ:MPV:ns:100:0:100
+pspmt:Tdiff:ns:200:-100:100
+pspmt:TOF:ns:200:-100:100
+pspmt:L:a.u.:200:0:20000
+pspmt:X Position:a.u.:200:-1:1
+pspmt:Y Position:a.u.:200:-1:1
+pspmt:X Position:a.u.:200:-1:1:Y Position:a.u.:200:-1:1
+pspmt:L:a.u.:200:0:20000:S/L:a.u.:200:-1:1
+pspmt:TOF:ns:200:-100:100:L:a.u.:200:0:20000
+pspmt:TOF:ns:200:-100:100:Max ADC:Channels:200:0:4095
 ###############################################################################
-pspmt:COLZ:Tdiff:ns:200:-100:100
-pspmt:COLZ:TQDC:a.u.:200:0:20000
-pspmt:COLZ:X Position:a.u.:200:-1:1
-pspmt:COLZ:Y Position:a.u.:200:-1:1
-pspmt:COLZ:X Position:a.u.:200:-1:1:Y Position:a.u.:200:-1:1
-pspmt:COLZ:L:a.u.:250:0:300000:S/L:a.u.:250:-1:1
+trace:TOF:ns:200:-100:100
+trace:TQDC:a.u.:200:0:20000
+trace:Slow Filter:a.u.:200:0:32767
+trace:Maximum:Channels:200:0:4095
+trace:Max ADC:Channels:200:0:4095
+trace:Baseline StdDev:Channels:200:0:200
+trace:Baseline:Channels:200:0:4095
+trace:Phase:ns:200:0:1000
+trace:TOF:ns:200:-100:100:TQDC:a.u.:200:0:20000
+trace:TOF:ns:200:-100:100:Max ADC:Channels:200:0:4095
+trace:Start Phase:ns:200:0:1000:Stop Phase:ns:200:0:1000
 ###############################################################################
-trace:COLZ:Tdiff:ns:200:-100:100
-trace:COLZ:TQDC:a.u.:200:0:20000
-trace:COLZ:Maximum:ADC:200:0:5000
-trace:COLZ:Phase:ns:200:0:1000
-trace:COLZ:Baseline:ADC:200:0:1000
-###############################################################################
-trigger:COLZ:TQDC:a.u.:200:0:20000
-trigger:COLZ:Phase:ns:100:0:100
-###############################################################################
-# Histograms for user defined detector types will go below this line
-###############################################################################
+trigger:TQDC:a.u.:200:0:20000
+trigger:Phase:ns:100:0:100
