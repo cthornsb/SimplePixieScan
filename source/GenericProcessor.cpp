@@ -6,27 +6,29 @@ bool GenericProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *ch
 	ChanEvent *current_event = chEvt->channelEvent;
 	
 	// Calculate the time difference between the current event and the start.
-	double tdiff;
+	double tof;
 	if(chEvt->channelEvent->traceLength != 0) // Correct for the phases of the start and the current event.
-		tdiff = (current_event->time - start->channelEvent->time)*8 + (current_event->phase - start->channelEvent->phase)*4;
+		tof = (current_event->time - start->channelEvent->time)*8 + (current_event->phase - start->channelEvent->phase)*4;
 	else
 		if(start->channelEvent->traceLength != 0) // Correct for the phase of the start trace.
-			tdiff = (current_event->time - start->channelEvent->time)*8 - start->channelEvent->phase*4;
+			tof = (current_event->time - start->channelEvent->time)*8 - start->channelEvent->phase*4;
 		else // No start trace. Cannot correct the phases.
-			tdiff = (current_event->time - start->channelEvent->time)*8;
+			tof = (current_event->time - start->channelEvent->time)*8;
 		
 	// Get the location of this detector.
 	int location = chEvt->entry->location;
 
 	if(histsEnabled){	
 		// Fill all diagnostic histograms.
-		loc_tdiff_2d->Fill(location, tdiff);
-		loc_energy_2d->Fill(location, current_event->qdc);
+		tof_1d->Fill(location, tof);
+		tqdc_1d->Fill(location, current_event->qdc);
+		long_tof_2d->Fill2d(location, tof, current_event->qdc);
+		maxADC_tof_2d->Fill2d(location, tof, current_event->max_ADC);
 		loc_1d->Fill(location);
 	}
 
 	// Fill the values into the root tree.
-	structure.Append(tdiff, current_event->qdc, location);
+	structure.Append(tof, current_event->qdc, location);
 	
 	return true;
 }
@@ -43,8 +45,10 @@ GenericProcessor::GenericProcessor(MapFile *map_) : Processor("Generic", "generi
 void GenericProcessor::GetHists(OnlineProcessor *online_){
 	if(histsEnabled) return;
 
-	online_->GenerateHist(loc_tdiff_2d);
-	online_->GenerateHist(loc_energy_2d);
+	online_->GenerateHist(tof_1d);
+	online_->GenerateHist(tqdc_1d);
+	online_->GenerateHist(long_tof_2d);
+	online_->GenerateHist(maxADC_tof_2d);
 	online_->GenerateLocationHist(loc_1d);
 
 	histsEnabled = true;

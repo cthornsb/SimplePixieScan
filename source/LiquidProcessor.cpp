@@ -7,7 +7,7 @@ bool LiquidProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 	ChanEvent *current_event = chEvt->channelEvent;
 	
 	// Calculate the time difference between the current event and the start.
-	double tdiff = (current_event->time - start->channelEvent->time)*8 + (current_event->phase - start->channelEvent->phase)*4;
+	double tof = (current_event->time - start->channelEvent->time)*8 + (current_event->phase - start->channelEvent->phase)*4;
 
 	// Get the location of this detector.
 	int location = chEvt->entry->location;
@@ -17,15 +17,16 @@ bool LiquidProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 
 	if(histsEnabled){
 		// Fill all diagnostic histograms.
-		loc_tdiff_2d->Fill(location, tdiff);
-		loc_short_tqdc_2d->Fill(location, short_qdc);
-		loc_long_tqdc_2d->Fill(location, long_qdc);
-		loc_psd_2d->Fill(location, short_qdc/long_qdc);
-		loc_1d->Fill(location);		
+		tof_1d->Fill(location, tof);
+		long_1d->Fill(location, long_qdc);
+		psd_long_2d->Fill2d(location, long_qdc, short_qdc/long_qdc);
+		long_tof_2d->Fill2d(location, tof, long_qdc);
+		maxADC_tof_2d->Fill2d(location, tof, current_event->max_ADC);
+		loc_1d->Fill(location);	
 	}
 	
 	// Fill the values into the root tree.
-	structure.Append(tdiff, short_qdc, long_qdc, location);
+	structure.Append(tof, short_qdc, long_qdc, location);
 	     
 	return true;
 }
@@ -43,10 +44,11 @@ LiquidProcessor::LiquidProcessor(MapFile *map_) : Processor("Liquid", "liquid", 
 void LiquidProcessor::GetHists(OnlineProcessor *online_){
 	if(histsEnabled) return;
 
-	online_->GenerateHist(loc_tdiff_2d);
-	online_->GenerateHist(loc_short_tqdc_2d);
-	online_->GenerateHist(loc_long_tqdc_2d);
-	online_->GenerateHist(loc_psd_2d);
+	online_->GenerateHist(tof_1d);
+	online_->GenerateHist(long_1d);
+	online_->GenerateHist(psd_long_2d);
+	online_->GenerateHist(long_tof_2d);
+	online_->GenerateHist(maxADC_tof_2d);	
 	online_->GenerateLocationHist(loc_1d);
 
 	histsEnabled = true;

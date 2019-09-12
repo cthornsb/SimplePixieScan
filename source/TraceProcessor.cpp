@@ -6,22 +6,28 @@ bool TraceProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEv
 	ChanEvent *current_event = chEvt->channelEvent;
 	
 	// Calculate the time difference between the current event and the start.
-	double tdiff = (current_event->time - start->channelEvent->time)*8 + (current_event->phase - start->channelEvent->phase)*4;
+	double tof = (current_event->time - start->channelEvent->time)*8 + (current_event->phase - start->channelEvent->phase)*4;
 
 	// Get the location of this detector.
 	int location = chEvt->entry->location;
 
 	if(histsEnabled){ // Fill all diagnostic histograms.
-		loc_tdiff_2d->Fill(location, tdiff);
-		loc_energy_2d->Fill(location, current_event->qdc);
-		loc_maximum_2d->Fill(location, current_event->maximum);
-		loc_phase_2d->Fill(location, current_event->phase);
-		loc_baseline_2d->Fill(location, current_event->baseline);
+		tof_1d->Fill(location, tof);
+		tqdc_1d->Fill(location, current_event->qdc);
+		filter_1d->Fill(location, current_event->energy);
+		maximum_1d->Fill(location, current_event->maximum);
+		maxADC_1d->Fill(location, current_event->max_ADC);
+		stddev_1d->Fill(location, current_event->stddev);
+		baseline_1d->Fill(location, current_event->baseline);
+		phase_1d->Fill(location, current_event->phase);
+		tqdc_tof_2d->Fill2d(location, tof, current_event->qdc);
+		maxADC_tof_2d->Fill2d(location, tof, current_event->max_ADC);
+		phase_phase_2d->Fill2d(location, start->channelEvent->phase, current_event->phase);
 		loc_1d->Fill(location);
 	}
 
 	// Fill the values into the root tree.
-	structure.Append(tdiff, current_event->phase, current_event->baseline, current_event->stddev, 
+	structure.Append(tof, current_event->phase, current_event->baseline, current_event->stddev, 
 	                 current_event->maximum, current_event->qdc, current_event->energy, current_event->max_ADC, current_event->max_index, location);
 	
 	return true;
@@ -35,11 +41,17 @@ TraceProcessor::TraceProcessor(MapFile *map_) : Processor("Trace", "trace", map_
 void TraceProcessor::GetHists(OnlineProcessor *online_){
 	if(histsEnabled) return;
 
-	online_->GenerateHist(loc_tdiff_2d);
-	online_->GenerateHist(loc_energy_2d);
-	online_->GenerateHist(loc_maximum_2d);
-	online_->GenerateHist(loc_phase_2d);
-	online_->GenerateHist(loc_baseline_2d);
+	online_->GenerateHist(tof_1d);
+	online_->GenerateHist(tqdc_1d);
+	online_->GenerateHist(filter_1d);
+	online_->GenerateHist(maximum_1d);
+	online_->GenerateHist(maxADC_1d);
+	online_->GenerateHist(stddev_1d);
+	online_->GenerateHist(baseline_1d);
+	online_->GenerateHist(phase_1d);
+	online_->GenerateHist(tqdc_tof_2d);
+	online_->GenerateHist(maxADC_tof_2d);
+	online_->GenerateHist(phase_phase_2d);
 	online_->GenerateLocationHist(loc_1d);
 
 	histsEnabled = true;

@@ -11,8 +11,10 @@ class GenericProcessor : public Processor{
 	GenericStructure structure;
 	Trace waveform;
   
-	Plotter *loc_tdiff_2d;
-	Plotter *loc_energy_2d;
+	Plotter *tof_1d;
+	Plotter *tqdc_1d;
+	Plotter *long_tof_2d;
+	Plotter *maxADC_tof_2d;
 	Plotter *loc_1d;
   
 	// Handle an individual event.

@@ -11,8 +11,10 @@ class HagridProcessor : public Processor{
 	HagridStructure structure;
 	Trace waveform;
   
-	Plotter *loc_tdiff_2d;
-	Plotter *loc_energy_2d;
+	Plotter *tof_1d;
+	Plotter *tqdc_1d;
+	Plotter *filter_1d;
+	Plotter *maxADC_1d;
 	Plotter *loc_1d;
   
 	// Handle an individual event.
