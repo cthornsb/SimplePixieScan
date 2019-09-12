@@ -37,7 +37,7 @@ bool PSPmtProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEv
 		return false;
 	
 	// Calculate the time difference between the current event and the start.
-	double tdiff = (channel_event->time - start->channelEvent->time)*8 + (channel_event->phase - start->channelEvent->phase)*4;
+	double tof = (channel_event->time - start->channelEvent->time)*8 + (channel_event->phase - start->channelEvent->phase)*4;
 
 	if(isDynode) // Compute the short integral of the dynode pulse.
 		channel_event->IntegratePulse2(channel_event->max_index + 5, channel_event->max_index + 50);
@@ -54,34 +54,61 @@ bool PSPmtProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEv
 	chanIdentifier = ~chanIdentifier;
 
 	if(histsEnabled){ // Fill all diagnostic histograms.
-		if(tqdcIndex == 0){ // This is a dynode.
-			loc_tdiff_2d->Fill(location, tdiff); // Only dynodes get added to the tdiff spectrum
-			sltqdc_ltqdc_2d->Fill2d(location, channel_event->qdc, channel_event->qdc2/channel_event->qdc);
-		}
-		else{ // Only anodes get added to the tqdc spectrum. Determine which histogram to fill
-			loc_energy_2d->Fill(location, channel_event->qdc);
-			if(!isRightEnd){ // Left side
-				if(evtL->addAnode((float)channel_event->qdc, tqdcIndex)){
-					loc_xpos_2d->Fill(location, evtL->xpos);
-					loc_ypos_2d->Fill(location, evtL->ypos);
-					ypos_xpos_2d->Fill2d(location, evtL->xpos, evtL->ypos);
-					evtL->reset();
-				}
-			}
-			else{ // Right side
-				if(evtR->addAnode((float)channel_event->qdc, tqdcIndex)){
-					loc_xpos_2d->Fill(location, evtR->xpos);
-					loc_ypos_2d->Fill(location, evtR->ypos);
-					ypos_xpos_2d->Fill2d(location, evtR->xpos, evtR->ypos);
-					evtR->reset();
-				}
+		if(!isBarDet){ // Single sided
+			if(isDynode) // This is a dynode.
+				evtL->addDynode(tof, channel_event->qdc, channel_event->qdc2);
+			else // Only anodes get added to the tqdc spectrum. Determine which histogram to fill
+				evtL->addAnode((float)channel_event->qdc, tqdcIndex);
+			if(evtL->allValuesSet()){
+				// Fill all histograms
+				tof_1d->Fill(location, evtL->dynTime); 
+				long_1d->Fill(location, evtL->dynLTQDC);
+				psd_long_2d->Fill2d(location, evtL->dynLTQDC, evtL->dynSTQDC/evtL->dynLTQDC);
+				long_tof_2d->Fill2d(location, evtL->dynTime, evtL->dynLTQDC);		
+				xpos_1d->Fill(location, evtL->xpos);
+				ypos_1d->Fill(location, evtL->ypos);
+				ypos_xpos_2d->Fill2d(location, evtL->xpos, evtL->ypos);
+				evtL->reset();
 			}
 		}
+		else{ // Bar detector
+			if(isDynode){ // This is a dynode.
+				if(!isRightEnd) // Left side dynode
+					evtL->addDynode(tof, channel_event->qdc, channel_event->qdc2);
+				else // Right side dynode
+					evtR->addDynode(tof, channel_event->qdc, channel_event->qdc2);
+			}
+			else{ // Only anodes get added to the tqdc spectrum. Determine which histogram to fill
+				if(!isRightEnd) // Left side
+					evtL->addAnode((float)channel_event->qdc, tqdcIndex);
+				else // Right side
+					evtR->addAnode((float)channel_event->qdc, tqdcIndex);
+			}
+			if(evtL->allValuesSet() && evtR->allValuesSet()){
+				double ltqdc = std::sqrt(evtL->dynLTQDC*evtR->dynLTQDC);
+				double stqdc = std::sqrt(evtL->dynSTQDC*evtR->dynSTQDC);
+				double xpos = (evtL->xpos+evtR->xpos)/2;
+				double ypos = (evtL->ypos+evtR->ypos)/2;				
+			
+				// Fill all histograms
+				tdiff_1d->Fill(location, (evtL->dynTime - evtR->dynTime));
+				tof_1d->Fill(location, (evtL->dynTime + evtR->dynTime)/2); // Only dynodes get added to the tof spectrum
+				long_1d->Fill(location, ltqdc);
+				psd_long_2d->Fill2d(location, ltqdc, stqdc/ltqdc);
+				long_tof_2d->Fill2d(location, tof, ltqdc);
+				xpos_1d->Fill(location, xpos);
+				ypos_1d->Fill(location, ypos);
+				ypos_xpos_2d->Fill2d(location, xpos, ypos);
+				evtL->reset();
+				evtR->reset();
+			}
+		}
+
 		loc_1d->Fill(location);
 	}
 
 	// Fill the values into the root tree.
-	structure.Append(tdiff, channel_event->qdc, channel_event->qdc2, channel_event->energy, chanIdentifier, location);
+	structure.Append(tof, channel_event->qdc, channel_event->qdc2, channel_event->energy, chanIdentifier, location);
 
 	// In order to read back the information.
 	/*location_readback =  (chanIdentifier & 0x0F);
@@ -110,20 +137,21 @@ PSPmtProcessor::PSPmtProcessor(MapFile *map_) : Processor("PSPmt", "pspmt", map_
 void PSPmtProcessor::GetHists(OnlineProcessor *online_){
 	if(histsEnabled) return;
 
-	online_->GenerateHist(loc_tdiff_2d);
-	online_->GenerateHist(loc_energy_2d);
-	online_->GenerateHist(loc_xpos_2d);
-	online_->GenerateHist(loc_ypos_2d);
+	online_->GenerateHist(tdiff_1d);
+	online_->GenerateHist(tof_1d);
+	online_->GenerateHist(long_1d);
+	online_->GenerateHist(xpos_1d);
+	online_->GenerateHist(ypos_1d);
 	online_->GenerateHist(ypos_xpos_2d);
-	online_->GenerateHist(sltqdc_ltqdc_2d);
-	online_->GenerateLocationHist(loc_1d);
+	online_->GenerateHist(psd_long_2d);
+	online_->GenerateHist(long_tof_2d);
+	online_->GenerateLocationHist(loc_1d);	
 
 	histsEnabled = true;
 }
 
 bool PSPmtProcessor::AddDetectorLocations(std::vector<int> &locations){
 	for(std::vector<PSPmtMap>::iterator detector = detMap.begin(); detector != detMap.end(); detector++){
-		std::cout << "debug: " << detector->getLocation() << std::endl;
 		locations.push_back(detector->getLocation());
 	}	
 	return true; 

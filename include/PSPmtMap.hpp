@@ -8,16 +8,22 @@ class MapFile;
 
 class PSPmtEvent{
   public:
+	double dynTime;
+	double dynLTQDC;
+	double dynSTQDC;
 	float xpos;
 	float ypos;
 	float anodes[4];
 	bool channels[4];
+	bool dynodeSet;
 
 	PSPmtEvent(){ reset(); }
 
 	void reset();
 
-	bool addAnode(const float &anode, const size_t &index);
+	void addDynode(const double &time, const double &L, const double &S);
+
+	void addAnode(const float &anode, const size_t &index);
 
 	bool allValuesSet();
 };

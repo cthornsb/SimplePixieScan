@@ -11,12 +11,14 @@ class PSPmtProcessor : public Processor{
 	PSPmtStructure structure;
 	Trace waveform;
 
-	Plotter *loc_tdiff_2d;
-	Plotter *loc_energy_2d;
-	Plotter *loc_xpos_2d;
-	Plotter *loc_ypos_2d;
+	Plotter *tdiff_1d;
+	Plotter *tof_1d;
+	Plotter *long_1d;
+	Plotter *xpos_1d;
+	Plotter *ypos_1d;
 	Plotter *ypos_xpos_2d;
-	Plotter *sltqdc_ltqdc_2d;
+	Plotter *psd_long_2d;
+	Plotter *long_tof_2d;
 	Plotter *loc_1d;
 
 	std::vector<PSPmtMap> detMap;

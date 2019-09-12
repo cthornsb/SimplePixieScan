@@ -242,19 +242,30 @@ void PSPmtMap::print() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void PSPmtEvent::reset(){
+	dynTime = 0;
+	dynLTQDC = 0;
+	dynSTQDC = 0;
+	dynodeSet = false;
 	for(size_t i = 0; i < 4; i++) 
 		channels[i] = false;
 }
 
-bool PSPmtEvent::addAnode(const float &anode, const size_t &index){
+void PSPmtEvent::addDynode(const double &time, const double &L, const double &S){
+	dynTime = time;
+	dynLTQDC = L;
+	dynSTQDC = S;
+	dynodeSet = true;
+}
+
+void PSPmtEvent::addAnode(const float &anode, const size_t &index){
 	if(anode > 0){
 		anodes[index] = anode;
 		channels[index] = true;
 	}
-	return allValuesSet();
 }
 
 bool PSPmtEvent::allValuesSet(){
+	if(!dynodeSet) return false;
 	for(size_t i = 0; i < 4; i++)
 		if(!channels[i]) return false;
 	xpos = ((anodes[0]+anodes[1])-(anodes[2]+anodes[3]))/(anodes[0]+anodes[1]+anodes[2]+anodes[3]);
