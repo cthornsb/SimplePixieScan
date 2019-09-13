@@ -331,7 +331,7 @@ bool simpleScanner::ExtraCommands(const std::string &cmd_, std::vector<std::stri
 			}
 			else{
 				std::cout << msgHeader << "Invalid number of parameters to 'set'\n";
-				std::cout << msgHeader << " -SYNTAX- set <index> <hist> [detector]\n";
+				std::cout << msgHeader << " -SYNTAX- set <pad> <hist> [detector]\n";
 			}
 		}
 		else if(cmd_ == "xlog"){
@@ -342,7 +342,7 @@ bool simpleScanner::ExtraCommands(const std::string &cmd_, std::vector<std::stri
 			}
 			else{
 				std::cout << msgHeader << "Invalid number of parameters to 'xlog'\n";
-				std::cout << msgHeader << " -SYNTAX- xlog <index>\n";
+				std::cout << msgHeader << " -SYNTAX- xlog <pad>\n";
 			}
 		}
 		else if(cmd_ == "ylog"){
@@ -353,7 +353,7 @@ bool simpleScanner::ExtraCommands(const std::string &cmd_, std::vector<std::stri
 			}
 			else{
 				std::cout << msgHeader << "Invalid number of parameters to 'ylog'\n";
-				std::cout << msgHeader << " -SYNTAX- ylog <index>\n";
+				std::cout << msgHeader << " -SYNTAX- ylog <pad>\n";
 			}
 		}
 		else if(cmd_ == "zlog"){
@@ -364,7 +364,7 @@ bool simpleScanner::ExtraCommands(const std::string &cmd_, std::vector<std::stri
 			}
 			else{
 				std::cout << msgHeader << "Invalid number of parameters to 'zlog'\n";
-				std::cout << msgHeader << " -SYNTAX- zlog <index>\n";
+				std::cout << msgHeader << " -SYNTAX- zlog <pad>\n";
 			}
 		}
 		else if(cmd_ == "xrange"){
@@ -380,7 +380,7 @@ bool simpleScanner::ExtraCommands(const std::string &cmd_, std::vector<std::stri
 			}
 			else{
 				std::cout << msgHeader << "Invalid number of parameters to 'xrange'\n";
-				std::cout << msgHeader << " -SYNTAX- xrange <index> <min> <max>\n";
+				std::cout << msgHeader << " -SYNTAX- xrange <pad> <min> <max>\n";
 			}
 		}
 		else if(cmd_ == "yrange"){
@@ -396,7 +396,7 @@ bool simpleScanner::ExtraCommands(const std::string &cmd_, std::vector<std::stri
 			}
 			else{
 				std::cout << msgHeader << "Invalid number of parameters to 'yrange'\n";
-				std::cout << msgHeader << " -SYNTAX- yrange <index> <min> <max>\n";
+				std::cout << msgHeader << " -SYNTAX- yrange <pad> <min> <max>\n";
 			}
 		}
 		else if(cmd_ == "unzoom"){
@@ -420,7 +420,7 @@ bool simpleScanner::ExtraCommands(const std::string &cmd_, std::vector<std::stri
 			}
 			else{
 				std::cout << msgHeader << "Invalid number of parameters to 'unzoom'\n";
-				std::cout << msgHeader << " -SYNTAX- unzoom <index> [axis]\n";
+				std::cout << msgHeader << " -SYNTAX- unzoom <pad> [axis]\n";
 			}
 		}
 		else if(cmd_ == "range"){
@@ -445,7 +445,7 @@ bool simpleScanner::ExtraCommands(const std::string &cmd_, std::vector<std::stri
 			}
 			else{
 				std::cout << msgHeader << "Invalid number of parameters to 'range'\n";
-				std::cout << msgHeader << " -SYNTAX- range <index> <xmin> <xmax> <ymin> <ymax>\n";
+				std::cout << msgHeader << " -SYNTAX- range <pad> <xmin> <xmax> <ymin> <ymax>\n";
 			}
 		}
 		else if(cmd_ == "draw"){
@@ -563,18 +563,18 @@ void simpleScanner::ExtraArguments(){
   */
 void simpleScanner::CmdHelp(const std::string &prefix_/*=""*/){
 	if(online_mode){
-		std::cout << "   refresh <update>           - Set refresh frequency of online diagnostic plots (default=5000).\n";
+		std::cout << "   refresh [update]           - Set refresh frequency of online diagnostic plots (default=5000).\n";
 		std::cout << "   list                       - List all plottable online histograms.\n";
-		std::cout << "   zero <hist>                - Zero a histogram.\n";
-		std::cout << "   set <index> <hist>         - Set the histogram to draw to part of the canvas.\n";
-		std::cout << "   xlog <index>               - Toggle the x-axis log/linear scale of a specified histogram.\n";
-		std::cout << "   ylog <index>               - Toggle the y-axis log/linear scale of a specified histogram.\n";
-		std::cout << "   zlog <index>               - Toggle the z-axis log/linear scale of a specified histogram.\n"; 
-		std::cout << "   xrange <index> <min> <max> - Set the x-axis range of a histogram displayed on the canvas.\n";
-		std::cout << "   yrange <index> <min> <max> - Set the y-axis range of a histogram displayed on the canvas.\n";
-		std::cout << "   unzoom <index> [axis]      - Unzoom the x-axis, the y-axis, or both.\n";
-		std::cout << "   range <index> <xmin> <xmax> <ymin> <ymax> - Set the range of the x and y axes.\n";
-		std::cout << "   draw <tree> <expr> [gate] [opt]           - Draw a histogram using TTree::Draw().\n";
+		std::cout << "   zero [hist]                - Zero a histogram.\n";
+		std::cout << "   set <pad> <hist> [ID]      - Set the histogram to draw to part of the canvas.\n";
+		std::cout << "   xlog <pad>                 - Toggle the x-axis log/linear scale of a specified histogram.\n";
+		std::cout << "   ylog <pad>                 - Toggle the y-axis log/linear scale of a specified histogram.\n";
+		std::cout << "   zlog <pad>                 - Toggle the z-axis log/linear scale of a specified histogram.\n"; 
+		std::cout << "   xrange <pad> <min> <max>   - Set the x-axis range of a histogram displayed on the canvas.\n";
+		std::cout << "   yrange <pad> <min> <max>   - Set the y-axis range of a histogram displayed on the canvas.\n";
+		std::cout << "   unzoom <pad> [x|y]         - Unzoom the x-axis, the y-axis, or both.\n";
+		std::cout << "   range <pad> <xmin> <xmax> <ymin> <ymax>   - Set the range of the x and y axes.\n";
+		std::cout << "   draw <data|raw|stats> <expr> [gate] [opt] - Draw a histogram using TTree::Draw().\n";
 	}
 }
 

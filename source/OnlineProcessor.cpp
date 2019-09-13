@@ -141,21 +141,21 @@ bool OnlineProcessor::ChangeHist(const unsigned int &index_, const std::string &
 }
 
 bool OnlineProcessor::SetXrange(const unsigned int &index_, const double &xmin_, const double &xmax_){
-	if(!GetPlot(index_)){ return false; }
+	if(!cd(index_) || (xmin_ >= xmax_)){ return false; }
 	plot->SetXrange(xmin_, xmax_);
 	Refresh(index_);
 	return true;
 }
 
 bool OnlineProcessor::SetYrange(const unsigned int &index_, const double &ymin_, const double &ymax_){
-	if(!GetPlot(index_)){ return false; }
+	if(!cd(index_) || (ymin_ >= ymax_)){ return false; }
 	plot->SetYrange(ymin_, ymax_);
 	Refresh(index_);
 	return true;
 }
 
 bool OnlineProcessor::SetRange(const unsigned int &index_, const double &xmin_, const double &xmax_, const double &ymin_, const double &ymax_){
-	if(!GetPlot(index_)){ return false; }
+	if(!cd(index_) || (xmin_ >= xmax_) || (ymin_ >= ymax_)){ return false; }
 	plot->SetXrange(xmin_, xmax_);
 	plot->SetYrange(ymin_, ymax_);
 	Refresh(index_);
@@ -163,21 +163,21 @@ bool OnlineProcessor::SetRange(const unsigned int &index_, const double &xmin_, 
 }
 
 bool OnlineProcessor::ResetXrange(const unsigned int &index_){
-	if(!GetPlot(index_)){ return false; }
+	if(!cd(index_)){ return false; }
 	plot->GetHist()->GetXaxis()->UnZoom();
 	Refresh(index_);
 	return true;
 }
 
 bool OnlineProcessor::ResetYrange(const unsigned int &index_){
-	if(!GetPlot(index_)){ return false; }
+	if(!cd(index_)){ return false; }
 	plot->GetHist()->GetYaxis()->UnZoom();
 	Refresh(index_);
 	return true;
 }
 
 bool OnlineProcessor::ResetRange(const unsigned int &index_){
-	if(!GetPlot(index_)){ return false; }
+	if(!cd(index_)){ return false; }
 	plot->GetHist()->GetXaxis()->UnZoom();
 	plot->GetHist()->GetYaxis()->UnZoom();
 	Refresh(index_);
@@ -289,10 +289,12 @@ bool OnlineProcessor::GenerateHist(Plotter* &hist_){
 
 		if(nDet >= 2){ // More than one detector. Define a 2d plot and a bunch of 1d plots
 			std::stringstream stream2; stream2 << name << " Location vs. " << args.at(1);
-			hist_ = new Plotter(stream.str(), stream2.str(), "", args.at(1), args.at(2), bins, xlow, xhigh, "Location", "", nDet, minloc, maxloc+1);
+			hist_ = new Plotter(stream.str(), stream2.str(), "COLZ", args.at(1), args.at(2), bins, xlow, xhigh, "Location", "", nDet, minloc, maxloc+1);
 			for(std::vector<int>::iterator iter = locations.begin(); iter != locations.end(); iter++){
 				hist_->AddNew1dHistogram((*iter));
 			}
+			// Set this hist to 1d, since the second dimension is just the detector ID
+			hist_->SetNdim(1);
 		}
 		else{ // Only one detector. Define a 1d plot
 			std::stringstream stream2; stream2 << name << " " << args.at(1);
@@ -311,7 +313,7 @@ bool OnlineProcessor::GenerateHist(Plotter* &hist_){
 		size_t nDet = maxloc-minloc+1;
 		
 		std::stringstream stream2; stream2 << name << " " << args.at(1) << " vs. " << args.at(6);
-		hist_ = new Plotter(stream.str(), stream2.str(), "", args.at(1), args.at(2), xbins, xlow, xhigh, args.at(6), args.at(7), ybins, ylow, yhigh);
+		hist_ = new Plotter(stream.str(), stream2.str(), "COLZ", args.at(1), args.at(2), xbins, xlow, xhigh, args.at(6), args.at(7), ybins, ylow, yhigh);
 		
 		if(nDet >= 2){ // More than one detector. Define a bunch of 2d plots
 			for(std::vector<int>::iterator iter = locations.begin(); iter != locations.end(); iter++)

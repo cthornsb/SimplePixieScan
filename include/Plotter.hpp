@@ -87,6 +87,8 @@ class Plotter{
 	
 	bool DetectorIsDefined(const int &id) const ;
 	
+	void SetNdim(const int &N){ dim = N; }
+	
 	void SetXaxisTitle(const std::string &title_);
 	
 	void SetYaxisTitle(const std::string &title_);
