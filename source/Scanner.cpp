@@ -557,7 +557,7 @@ void simpleScanner::CmdHelp(const std::string &prefix_/*=""*/){
 		std::cout << "   yrange <pad> <min> <max>   - Set the y-axis range of a histogram displayed on the canvas.\n";
 		std::cout << "   unzoom <pad> [x|y]         - Unzoom the x-axis, the y-axis, or both.\n";
 		std::cout << "   range <pad> <xmin> <xmax> <ymin> <ymax>   - Set the range of the x and y axes.\n";
-		std::cout << "   draw <data|raw|stats> <expr> [gate] [opt] - Draw a histogram using TTree::Draw().\n";
+		std::cout << "   draw <data|raw|stats> [expr] [gate] [opt] - Draw a histogram using TTree::Draw().\n";
 	}
 }
 

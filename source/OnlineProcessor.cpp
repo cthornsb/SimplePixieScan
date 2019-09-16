@@ -282,8 +282,8 @@ bool OnlineProcessor::GenerateHist(Plotter* &hist_){
 		return false;
 	}
 
-	std::stringstream stream;
-	stream << type << "_h" << histID++;
+	std::stringstream histName;
+	histName << type << "_h" << histID++;
 	if(retval < 11){ // Define a 1d histogram
 		int bins = strtoul(args.at(3).c_str(), NULL, 10);
 		double xlow = strtod(args.at(4).c_str(), NULL);
@@ -291,17 +291,18 @@ bool OnlineProcessor::GenerateHist(Plotter* &hist_){
 		size_t nDet = maxloc-minloc+1;
 
 		if(nDet >= 2){ // More than one detector. Define a 2d plot and a bunch of 1d plots
-			std::stringstream stream2; stream2 << name << " Location vs. " << args.at(1);
-			hist_ = new Plotter(stream.str(), stream2.str(), "COLZ", args.at(1), args.at(2), bins, xlow, xhigh, "Location", "", nDet, minloc, maxloc+1);
+			std::stringstream histTitle; histTitle << name << " Location vs. " << args.at(1);
+			hist_ = new Plotter(histName.str(), histTitle.str(), "COLZ", args.at(1), args.at(2), bins, xlow, xhigh, "Location", "", nDet, minloc, maxloc+1);
 			for(std::vector<int>::iterator iter = locations.begin(); iter != locations.end(); iter++){
-				hist_->AddNew1dHistogram((*iter));
+				std::stringstream newTitle; newTitle << name << " " << args.at(1) << " (det=" << (*iter) << ")";
+				hist_->AddNew1dHistogram((*iter), newTitle.str());
 			}
 			// Set this hist to 1d, since the second dimension is just the detector ID
 			hist_->SetNdim(1);
 		}
 		else{ // Only one detector. Define a 1d plot
-			std::stringstream stream2; stream2 << name << " " << args.at(1);
-			hist_ = new Plotter(stream.str(), stream2.str(), "", args.at(1), args.at(2), bins, xlow, xhigh);
+			std::stringstream histTitle; histTitle << name << " " << args.at(1);
+			hist_ = new Plotter(histName.str(), histTitle.str(), "", args.at(1), args.at(2), bins, xlow, xhigh);
 		}
 		plottable_hists.push_back(hist_);
 	}
@@ -315,12 +316,14 @@ bool OnlineProcessor::GenerateHist(Plotter* &hist_){
 		double yhigh = strtod(args.at(10).c_str(), NULL);
 		size_t nDet = maxloc-minloc+1;
 		
-		std::stringstream stream2; stream2 << name << " " << args.at(1) << " vs. " << args.at(6);
-		hist_ = new Plotter(stream.str(), stream2.str(), "COLZ", args.at(1), args.at(2), xbins, xlow, xhigh, args.at(6), args.at(7), ybins, ylow, yhigh);
+		std::stringstream histTitle; histTitle << name << " " << args.at(1) << " vs. " << args.at(6);
+		hist_ = new Plotter(histName.str(), histTitle.str(), "COLZ", args.at(1), args.at(2), xbins, xlow, xhigh, args.at(6), args.at(7), ybins, ylow, yhigh);
 		
 		if(nDet >= 2){ // More than one detector. Define a bunch of 2d plots
-			for(std::vector<int>::iterator iter = locations.begin(); iter != locations.end(); iter++)
-				hist_->AddNew2dHistogram((*iter));
+			for(std::vector<int>::iterator iter = locations.begin(); iter != locations.end(); iter++){
+				std::stringstream newTitle; newTitle << name << " " << args.at(1) << " vs. " << args.at(6) << " (det=" << (*iter) << ")";
+				hist_->AddNew2dHistogram((*iter), newTitle.str());
+			}
 		}
 		else{ // Only one detector. Define a single 2d plot
 		}

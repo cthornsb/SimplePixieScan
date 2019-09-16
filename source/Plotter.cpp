@@ -46,20 +46,20 @@ Plotter::~Plotter(){
 		delete iter->first;
 }
 
-TH1 *Plotter::AddNew1dHistogram(const int &location){
+TH1 *Plotter::AddNew1dHistogram(const int &location, const std::string &newTitle/*=""*/){
 	numHists++;
 	std::stringstream newName;
 	newName << name << "-" << location;
-	hists1d.push_back(std::pair<TH1*, int>((TH1*)(new TH1F(newName.str().c_str(), title.c_str(), xbins, xmin, xmax)), location));
+	hists1d.push_back(std::pair<TH1*, int>((TH1*)(new TH1F(newName.str().c_str(), (newTitle.empty() ? title.c_str() : newTitle.c_str()), xbins, xmin, xmax)), location));
 	SetupHist1d(hists1d.back().first);
 	return hists1d.back().first;
 }
 
-TH1 *Plotter::AddNew2dHistogram(const int &location){
+TH1 *Plotter::AddNew2dHistogram(const int &location, const std::string &newTitle/*=""*/){
 	numHists++;
 	std::stringstream newName;
 	newName << name << "-" << location;
-	hists1d.push_back(std::pair<TH1*, int>((TH1*)(new TH2F(newName.str().c_str(), title.c_str(), xbins, xmin, xmax, ybins, ymin, ymax)), location));
+	hists1d.push_back(std::pair<TH1*, int>((TH1*)(new TH2F(newName.str().c_str(), (newTitle.empty() ? title.c_str() : newTitle.c_str()), xbins, xmin, xmax, ybins, ymin, ymax)), location));
 	SetupHist2d(hists1d.back().first);
 	return hists1d.back().first;	
 }

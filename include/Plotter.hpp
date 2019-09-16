@@ -49,9 +49,9 @@ class Plotter{
 	
 	~Plotter();
 	
-	TH1 *AddNew1dHistogram(const int &location);
+	TH1 *AddNew1dHistogram(const int &location, const std::string &newTitle="");
 	
-	TH1 *AddNew2dHistogram(const int &location);
+	TH1 *AddNew2dHistogram(const int &location, const std::string &newTitle="");
 	
 	TH1 *GetHist(){ return hist; }
 	
