@@ -20,7 +20,6 @@
 #include "TNamed.h"
 #include "TCanvas.h"
 #include "TSystem.h"
-#include "TApplication.h"
 
 // Define the name of the program.
 #if not defined(PROG_NAME)
@@ -944,13 +943,6 @@ bool simpleScanner::ProcessEvents(){
 }
 
 int main(int argc, char *argv[]){
-	// Initialize root graphics
-	TApplication *rootapp = new TApplication("rootapp", 0, NULL);
-	
-	// This is done to keep the compiler from complaining about
-	// unused TApplication variable.
-	rootapp->SetBit(0, false);
-
 	// Define a new unpacker object.
 	simpleScanner scanner;
 	

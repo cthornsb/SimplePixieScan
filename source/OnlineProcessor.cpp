@@ -66,9 +66,12 @@ TPad *OnlineProcessor::cd(const unsigned int &index_){
 	return pad;
 }
 
-OnlineProcessor::OnlineProcessor(){
-	display_mode = false;
-	hadHistError = false;
+OnlineProcessor::OnlineProcessor() : TApplication("simpleScan", 0, NULL), 
+                                     canvas_cols(0), canvas_rows(0), num_pads(0), 
+                                     display_mode(false), hadHistError(false), 
+                                     can(NULL), pad(NULL), plot(NULL), mapfile(NULL), 
+                                     histMap(), type(), name(), 
+                                     minloc(0), maxloc(0), histID(0) {
 }
 
 OnlineProcessor::~OnlineProcessor(){
