@@ -91,13 +91,17 @@ int extTree::SafeFill(const bool &doFill/*=true*/){
 		retval = this->Fill();
 	if(doDraw){
 		if(GetEntries() > 0){ // Check if there are entries in the tree
-			OpenCanvas()->cd();
-			std::cout << " draw: " << this->Draw(expr.c_str(), gate.c_str(), opt.c_str()) << std::endl;
-			canvas->Update();
-			doDraw = false;
+			if(!expr.empty()){ // Check if there is a string to draw
+				OpenCanvas()->cd();
+				std::cout << " draw: " << this->Draw(expr.c_str(), gate.c_str(), opt.c_str()) << std::endl;
+				canvas->Update();
+			}
+			else{ // The draw string is empty, nothing to draw
+				std::cout << " Refusing draw of empty string\n";
+			}
 		}
 		else{ // The tree has no entries. Drawing on an empty tree causes seg-faults occasionally
-			std::cout << " Tree contains no entries.\n";
+			std::cout << " Refusing draw from tree which contains no entries\n";
 		}
 		doDraw = false;
 	}
@@ -413,18 +417,25 @@ bool simpleScanner::ExtraCommands(const std::string &cmd_, std::vector<std::stri
 			}
 		}
 		else if(cmd_ == "draw"){
-			if(args_.size() >= 2){
+			if(args_.size() >= 1){
 				std::string gateStr = (args_.size() >= 3)?args_.at(2):"";
 				std::string optStr = (args_.size() >= 4)?args_.at(3):"";
-				std::cout << " " << args_.at(0) << "->Draw(\"" << args_.at(1) << "\", \"" << gateStr << "\", \"" << optStr << "\")\n";
+				if(args_.size() >= 2)
+					std::cout << " " << args_.at(0) << "->Draw(\"" << args_.at(1) << "\", \"" << gateStr << "\", \"" << optStr << "\")\n";
 				if(args_.at(0) == "data"){
-					root_tree->SafeDraw(args_.at(1), gateStr, optStr);
+					if(args_.size() >= 2)
+						root_tree->SafeDraw(args_.at(1), gateStr, optStr);
+					else
+						root_tree->SafeDraw();
 					if(!GetIsRunning()) // Manually update the histogram
 						root_tree->SafeFill(false);
 				}
 				else if(args_.at(0) == "raw"){
 					if(write_raw){
-						raw_tree->SafeDraw(args_.at(1), gateStr, optStr);
+						if(args_.size() >= 2)
+							raw_tree->SafeDraw(args_.at(1), gateStr, optStr);
+						else
+							raw_tree->SafeDraw();
 						if(!GetIsRunning()) // Manually update the histogram
 							raw_tree->SafeFill(false);
 					}
@@ -433,7 +444,10 @@ bool simpleScanner::ExtraCommands(const std::string &cmd_, std::vector<std::stri
 				}
 				else if(args_.at(0) == "stats"){
 					if(write_stats){
-						stat_tree->SafeDraw(args_.at(1), gateStr, optStr);
+						if(args_.size() >= 2)
+							stat_tree->SafeDraw(args_.at(1), gateStr, optStr);
+						else
+							stat_tree->SafeDraw();
 						if(!GetIsRunning()) // Manually update the histogram
 							stat_tree->SafeFill(false);
 					}
@@ -447,7 +461,7 @@ bool simpleScanner::ExtraCommands(const std::string &cmd_, std::vector<std::stri
 			}
 			else{
 				std::cout << msgHeader << "Invalid number of parameters to 'draw'\n";
-				std::cout << msgHeader << " -SYNTAX- draw <data|raw|stats> <expr> [gate] [opt]\n";
+				std::cout << msgHeader << " -SYNTAX- draw <data|raw|stats> [expr] [gate] [opt]\n";
 			}
 		}
 		else if(cmd_ == "zero"){
