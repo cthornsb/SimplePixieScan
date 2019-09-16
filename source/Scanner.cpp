@@ -27,11 +27,6 @@
 #define PROG_NAME "Scanner"
 #endif
 
-const unsigned int fileFooterWord = 0x20464f45; // "EOF "
-const unsigned int fileHeaderWord = 0x44414548; // "HEAD"
-const unsigned int dataHeaderWord = 0x41544144; // "DATA"
-const unsigned int endBufferWord = 0xFFFFFFFF;
-
 template <typename T>
 void writeTNamed(const char *label_, const T &val_, const int &precision_=-1){
 	std::stringstream stream; 
@@ -56,9 +51,10 @@ void writeFileInfo(std::ofstream &file_, const std::string &str_){
 	}
 }
 
-/** Open a TCanvas if this tree has not already done so.
-  * \return Pointer to an open TCanvas.
-  */
+///////////////////////////////////////////////////////////////////////////////
+// class extTree
+///////////////////////////////////////////////////////////////////////////////
+
 TCanvas *extTree::OpenCanvas(){
 	if(!canvas){
 		std::string canvasName = std::string(this->GetName())+"_c1";
@@ -69,19 +65,9 @@ TCanvas *extTree::OpenCanvas(){
 	return canvas;
 }
 
-/** Named constructor.
-  *	\param[in]  name_ Name of the underlying TTree.
-  * \param[in]  title_ Title of the underlying TTree.
-  */
-extTree::extTree(const char *name_, const char *title_) : TTree(name_, title_){
-	expr = "";
-	gate = "";
-	opt = "";
-	doDraw = false;
-	canvas = NULL;
+extTree::extTree(const char *name_, const char *title_) : TTree(name_, title_), doDraw(false), expr(), gate(), opt(), canvas(NULL) {
 }
 
-/// Destructor.
 extTree::~extTree(){
 	if(canvas){
 		canvas->Close();
@@ -89,35 +75,33 @@ extTree::~extTree(){
 	}
 }
 
-/** Safely draw from the underlying TTree using TTree::Draw(). Must preceed calls to SafeDraw().
-  * \param[in]  expr_ Root TFormula expression to draw from the TTree.
-  * \param[in]  gate_ Root selection string to use for plotting.
-  * \param[in]  opt_ Root drawing option.
-  * \return True if the tree is ready to draw and false if the tree is already waiting to draw.
-  */
-bool extTree::SafeDraw(const std::string &expr_, const std::string &gate_/*=""*/, const std::string &opt_/*=""*/){
-	if(doDraw){ return false; }
-	
+void extTree::SafeDraw(const std::string &expr_, const std::string &gate_/*=""*/, const std::string &opt_/*=""*/){
 	expr = expr_;
 	gate = gate_;
 	opt = opt_;
-	
-	return (doDraw = true);
+	doDraw = true;
 }
 
-/** Safely fill the tree and draw a histogram using TTree::Draw() if required.
-  * \return The return value from TTree::Draw().
-  */
-int extTree::SafeFill(){
-	int retval = this->Fill();
+void extTree::SafeDraw(){
+	doDraw = true;
+}
 
+int extTree::SafeFill(const bool &doFill/*=true*/){
+	int retval = -1;
+	if(doFill)
+		retval = this->Fill();
 	if(doDraw){
-		OpenCanvas()->cd();
-		std::cout << " draw: " << this->Draw(expr.c_str(), gate.c_str(), opt.c_str()) << std::endl;
-		canvas->Update();
+		if(GetEntries() > 0){ // Check if there are entries in the tree
+			OpenCanvas()->cd();
+			std::cout << " draw: " << this->Draw(expr.c_str(), gate.c_str(), opt.c_str()) << std::endl;
+			canvas->Update();
+			doDraw = false;
+		}
+		else{ // The tree has no entries. Drawing on an empty tree causes seg-faults occasionally
+			std::cout << " Tree contains no entries.\n";
+		}
 		doDraw = false;
 	}
-
 	return retval;
 }
 
@@ -130,17 +114,10 @@ simpleUnpacker::simpleUnpacker() : Unpacker() {
 	stat_tree = NULL;
 }
 
-/** Return a pointer to a new XiaData channel event.
-  * \return A pointer to a new XiaData.
-  */
 XiaData *simpleUnpacker::GetNewEvent(){ 
 	return (XiaData*)(new ChanEvent()); 
 }
 
-/** Process all events in the event list.
-  * \param[in]  addr_ Pointer to a location in memory. 
-  * \return Nothing.
-  */
 void simpleUnpacker::ProcessRawEvent(ScanInterface *addr_/*=NULL*/){
 	if(!addr_ || rawEvent.empty()){ return; }
 	
@@ -165,9 +142,6 @@ void simpleUnpacker::ProcessRawEvent(ScanInterface *addr_/*=NULL*/){
 	addr_->ProcessEvents();
 }
 
-/** Initialize the raw event statistics tree.
-  * \return Pointer to the TTree.
-  */
 extTree *simpleUnpacker::InitTree(){
 	// Setup the stats tree for data output.
 	stat_tree = new extTree("stats", "Low-level statistics tree");
@@ -187,7 +161,6 @@ extTree *simpleUnpacker::InitTree(){
 // class simpleScanner
 ///////////////////////////////////////////////////////////////////////////////
 
-/// Default constructor.
 simpleScanner::simpleScanner() : ScanInterface() {
 	recordAllStarts = false;
 	nonStartEvents = false;
@@ -215,7 +188,6 @@ simpleScanner::simpleScanner() : ScanInterface() {
 	defaultCFDparameter = -1;
 }
 
-/// Destructor.
 simpleScanner::~simpleScanner(){
 	if(init){
 		std::cout << msgHeader << "Found " << chanCounts->GetHist()->GetEntries() << " total events.\n";
@@ -291,13 +263,6 @@ simpleScanner::~simpleScanner(){
 	}
 }
 
-/** ExtraCommands is used to send command strings to classes derived
-  * from ScanInterface. If ScanInterface receives an unrecognized
-  * command from the user, it will pass it on to the derived class.
-  * \param[in]  cmd_ The command to interpret.
-  * \param[out] arg_ Vector or arguments to the user command.
-  * \return True if the command was recognized and false otherwise.
-  */
 bool simpleScanner::ExtraCommands(const std::string &cmd_, std::vector<std::string> &args_){
 	if(online_mode){
 		if(cmd_ == "refresh"){
@@ -453,12 +418,29 @@ bool simpleScanner::ExtraCommands(const std::string &cmd_, std::vector<std::stri
 				std::string gateStr = (args_.size() >= 3)?args_.at(2):"";
 				std::string optStr = (args_.size() >= 4)?args_.at(3):"";
 				std::cout << " " << args_.at(0) << "->Draw(\"" << args_.at(1) << "\", \"" << gateStr << "\", \"" << optStr << "\")\n";
-				if(args_.at(0) == "data")
+				if(args_.at(0) == "data"){
 					root_tree->SafeDraw(args_.at(1), gateStr, optStr);
-				else if(args_.at(0) == "raw")
-					raw_tree->SafeDraw(args_.at(1), gateStr, optStr);
-				else if(args_.at(0) == "stats")
-					stat_tree->SafeDraw(args_.at(1), gateStr, optStr);
+					if(!GetIsRunning()) // Manually update the histogram
+						root_tree->SafeFill(false);
+				}
+				else if(args_.at(0) == "raw"){
+					if(write_raw){
+						raw_tree->SafeDraw(args_.at(1), gateStr, optStr);
+						if(!GetIsRunning()) // Manually update the histogram
+							raw_tree->SafeFill(false);
+					}
+					else
+						std::cout << msgHeader << "The \"raw\" tree is not available! Use --raw flag\n";
+				}
+				else if(args_.at(0) == "stats"){
+					if(write_stats){
+						stat_tree->SafeDraw(args_.at(1), gateStr, optStr);
+						if(!GetIsRunning()) // Manually update the histogram
+							stat_tree->SafeFill(false);
+					}
+					else
+						std::cout << msgHeader << "The \"stats\" tree is not available! Use --stats flag\n";
+				}
 				else{
 					std::cout << msgHeader << "Invalid TTree specification!\n";
 					std::cout << msgHeader << " Available trees include 'data', 'raw', and 'stats'.\n";
@@ -497,12 +479,6 @@ bool simpleScanner::ExtraCommands(const std::string &cmd_, std::vector<std::stri
 	return true;
 }
 
-/** ExtraArguments is used to send command line arguments to classes derived
-  * from ScanInterface. This method should loop over the optionExt elements
-  * in the vector userOpts and check for those options which have been flagged
-  * as active by ::Setup(). This should be overloaded in the derived class.
-  * \return Nothing.
-  */
 void simpleScanner::ExtraArguments(){
 	if(userOpts.at(0).active){ // Untriggered.
 		std::cout << msgHeader << "Using untriggered mode.\n";
@@ -555,12 +531,6 @@ void simpleScanner::ExtraArguments(){
 	}
 }
 
-/** CmdHelp is used to allow a derived class to print a help statement about
-  * its own commands. This method is called whenever the user enters 'help'
-  * or 'h' into the interactive terminal (if available).
-  * \param[in]  prefix_ String to append at the start of any output. Not used by default.
-  * \return Nothing.
-  */
 void simpleScanner::CmdHelp(const std::string &prefix_/*=""*/){
 	if(online_mode){
 		std::cout << "   refresh [update]           - Set refresh frequency of online diagnostic plots (default=5000).\n";
@@ -578,12 +548,6 @@ void simpleScanner::CmdHelp(const std::string &prefix_/*=""*/){
 	}
 }
 
-/** ArgHelp is used to allow a derived class to add a command line option
-  * to the main list of options. This method is called at the end of
-  * from the ::Setup method.
-  * Does nothing useful by default.
-  * \return Nothing.
-  */
 void simpleScanner::ArgHelp(){
 	AddOption(optionExt("untriggered", no_argument, NULL, 'u', "", "Run without a start detector"));
 	AddOption(optionExt("force", no_argument, NULL, 'f', "", "Force overwrite of the output root file"));
@@ -599,29 +563,15 @@ void simpleScanner::ArgHelp(){
 	AddOption(optionExt("output-prefix", required_argument, NULL, 0, "<prefix>", "Set the output file prefix (default is ./)"));
 }
 
-/** SyntaxStr is used to print a linux style usage message to the screen.
-  * \param[in]  name_ The name of the program.
-  * \return Nothing.
-  */
 void simpleScanner::SyntaxStr(char *name_){ 
 	std::cout << " usage: " << std::string(name_) << " [options]\n"; 
 }
 
-/** IdleTask is called whenever a scan is running in shared
-  * memory mode, and a spill has yet to be received. This method may
-  * be used to update things which need to be updated every so often
-  * (e.g. a root TCanvas) when working with a low data rate. 
-  * \return Nothing.
-  */
 void simpleScanner::IdleTask(){
-	gSystem->ProcessEvents();
+	if(online_mode)
+		gSystem->ProcessEvents();
 }
 
-/** Initialize the map file, the config file, the processor handler, 
-  * and add all of the required processors.
-  * \param[in]  prefix_ String to append to the beginning of system output.
-  * \return True upon successfully initializing and false otherwise.
-  */
 bool simpleScanner::Initialize(std::string prefix_){
 	if(init){ return false; }
 
@@ -845,9 +795,6 @@ bool simpleScanner::Initialize(std::string prefix_){
 	return (init = true);
 }
 
-/** Peform any last minute initialization before processing data. 
-  * /return Nothing.
-  */
 void simpleScanner::FinalInitialization(){
 	// Add file header information to the output root file.
 	root_file->mkdir("head");
@@ -857,10 +804,6 @@ void simpleScanner::FinalInitialization(){
 	configfile->Write(root_file);
 }
 
-/** Receive various status notifications from the scan.
-  * \param[in] code_ The notification code passed from ScanInterface methods.
-  * \return Nothing.
-  */
 void simpleScanner::Notify(const std::string &code_/*=""*/){
 	if(code_ == "START_SCAN"){  }
 	else if(code_ == "STOP_SCAN"){  }
@@ -891,20 +834,11 @@ void simpleScanner::Notify(const std::string &code_/*=""*/){
 	else{ std::cout << msgHeader << "Unknown notification code '" << code_ << "'!\n"; }
 }
 
-/** Return a pointer to the Unpacker object to use for data unpacking.
-  * If no object has been initialized, create a new one.
-  * \return Pointer to an Unpacker object.
-  */
 Unpacker *simpleScanner::GetCore(){ 
 	if(!core){ core = (Unpacker*)(new simpleUnpacker()); }
 	return core;
 }
 
-/** Add a channel event to the deque of events to send to the processors.
-  * This method should only be called from Unpacker::ProcessRawEvent().
-  * \param[in]  event_ The raw XiaData to add.
-  * \return True if the event is added to the processor handler, and false otherwise.
-  */
 bool simpleScanner::AddEvent(XiaData *event_){
 	if(!event_){ return false; }
 
@@ -969,10 +903,6 @@ bool simpleScanner::AddEvent(XiaData *event_){
 	return true;
 }
 
-/** Process all channel events read in from the rawEvent.
-  * This method should only be called from Unpacker::ProcessRawEvent().
-  * \return True if at least one valid signal was found, and false otherwise.
-  */
 bool simpleScanner::ProcessEvents(){
 	bool retval = true;
 
@@ -1013,7 +943,6 @@ bool simpleScanner::ProcessEvents(){
 	return retval;
 }
 
-#ifndef USE_HRIBF
 int main(int argc, char *argv[]){
 	// Initialize root graphics
 	TApplication *rootapp = new TApplication("rootapp", 0, NULL);
@@ -1039,28 +968,3 @@ int main(int argc, char *argv[]){
 
 	return retval;
 }
-#else
-Unpacker *pixieUnpacker = NULL;
-simpleScanner *scanner = NULL;
-
-// Do some startup stuff.
-extern "C" void startup_()
-{
-	scanner = new simpleScanner();	
-
-	// Handle command line arguments.
-	scanner->Setup(fortargc, fortargv); // Getting these from scanor...
-	
-	// Get a pointer to a class derived from Unpacker.
-	pixieUnpacker = scanner->GetCore();
-}
-
-// Catch the exit call from scanor and clean up c++ objects CRT
-extern "C" void cleanup_()
-{
-	// Do some cleanup.
-	std::cout << "\nCleaning up..\n";
-	scanner->Close();
-	delete scanner;
-}
-#endif
