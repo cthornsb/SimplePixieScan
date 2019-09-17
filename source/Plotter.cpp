@@ -207,11 +207,16 @@ void Plotter::Draw(TPad *pad_, const int &detID/*=-1*/){
 	if(logy){ pad_->SetLogy(); }
 	if(logz){ pad_->SetLogz(); }
 	if(detID < 0)
-		hist->Draw((opt+"SAME").c_str());
+		hist->Draw(opt.c_str());
 	else{
 		for(std::vector<std::pair<TH1*, int> >::const_iterator iter = hists1d.begin(); iter != hists1d.end(); iter++){
-			if(iter->second == detID)
-				iter->first->Draw((opt+"SAME").c_str());
+			if(iter->second == detID){
+				if(dim == 1)
+					iter->first->Draw();
+				else
+					iter->first->Draw(opt.c_str());
+				break;
+			}
 		}
 	}
 }

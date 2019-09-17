@@ -156,6 +156,13 @@ class OnlineProcessor : public TApplication {
 	  */
 	bool ChangeHist(const unsigned int &index_, const std::string &hist_name_);
 	
+	/** Set the draw option for the histogram currently displayed on a specified pad
+	  * @param index_ The index of the TPad to select (zero-indexed)
+	  * @param opt_ The ROOT draw option for the histogram
+	  * @return True if the requested pad location and histogram exists and return false otherwise
+	  */
+	bool SetDrawOpt(const unsigned int &index_, const std::string &opt_);
+	
 	/** Set the X-axis range for the histogram currently displayed on a specified pad
 	  * @param index_ The index of the TPad to select (zero-indexed)
 	  * @param xmin_ The new minimum
@@ -226,6 +233,10 @@ class OnlineProcessor : public TApplication {
 	/** Refresh all histograms currently drawn on the canvas
 	  */
 	void Refresh();
+
+	/** Clear the canvas and divide it into pads
+	  */
+	void Clear();
 
 	/** Zero one of the histograms in the list
 	  * @param hist_id_ Index of the requested histogram in the list of histograms

@@ -282,6 +282,9 @@ bool simpleScanner::ExtraCommands(const std::string &cmd_, std::vector<std::stri
 		else if(cmd_ == "list"){
 			online->PrintHists();
 		}
+		else if(cmd_ == "clear"){
+			online->Clear();
+		}
 		else if(cmd_ == "set"){
 			if(args_.size() >= 2){
 				int index1 = strtol(args_.at(0).c_str(), NULL, 10);
@@ -300,6 +303,20 @@ bool simpleScanner::ExtraCommands(const std::string &cmd_, std::vector<std::stri
 			else{
 				std::cout << msgHeader << "Invalid number of parameters to 'set'\n";
 				std::cout << msgHeader << " -SYNTAX- set <pad> <hist> [detector]\n";
+			}
+		}
+		else if(cmd_ == "setopt"){
+			if(args_.size() >= 1){
+				int index = strtol(args_.at(0).c_str(), NULL, 10);
+				std::string drawopt = (args_.size() >= 2 ? args_.at(1) : "");
+				if(online->SetDrawOpt(index, drawopt))
+					std::cout << msgHeader << "Set TPad " << index << " draw opt \"" << drawopt << "\"\n";
+				else
+					std::cout << msgHeader << "Failed to set TPad " << index << " draw opt!\n";
+			}
+			else{
+				std::cout << msgHeader << "Invalid number of parameters to 'setopt'\n";
+				std::cout << msgHeader << " -SYNTAX- setopt <pad> [opt]\n";
 			}
 		}
 		else if(cmd_ == "xlog"){
@@ -548,8 +565,10 @@ void simpleScanner::CmdHelp(const std::string &prefix_/*=""*/){
 	if(online_mode){
 		std::cout << "   refresh [update]           - Set refresh frequency of online diagnostic plots (default=5000).\n";
 		std::cout << "   list                       - List all plottable online histograms.\n";
+		std::cout << "   clear                      - Clear the canvas.\n";
 		std::cout << "   zero [hist]                - Zero a histogram.\n";
 		std::cout << "   set <pad> <hist> [ID]      - Set the histogram to draw to part of the canvas.\n";
+		std::cout << "   setopt <pad> [opt]         - Set (or un-set) the draw option for a displayed histogram.\n";
 		std::cout << "   xlog <pad>                 - Toggle the x-axis log/linear scale of a specified histogram.\n";
 		std::cout << "   ylog <pad>                 - Toggle the y-axis log/linear scale of a specified histogram.\n";
 		std::cout << "   zlog <pad>                 - Toggle the z-axis log/linear scale of a specified histogram.\n"; 

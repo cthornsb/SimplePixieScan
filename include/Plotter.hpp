@@ -87,6 +87,12 @@ class Plotter{
 	
 	bool DetectorIsDefined(const int &id) const ;
 	
+	void SetName(const std::string &name_){ name = name_; }
+	
+	void SetTitle(const std::string &title_){ title = title_; }
+	
+	void SetDrawOpt(const std::string &opt_){ opt = opt_; }
+	
 	void SetNdim(const int &N){ dim = N; }
 	
 	void SetXaxisTitle(const std::string &title_);

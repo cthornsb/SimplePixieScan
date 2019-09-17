@@ -60,7 +60,7 @@ bool HistoDefFile::GetNext(const std::string &type, std::string &line){
 ///////////////////////////////////////////////////////////////////////////////
 
 TPad *OnlineProcessor::cd(const unsigned int &index_){
-	if(!GetPlot(index_)){ return NULL; }
+	if(!display_mode || index_ >= num_pads){ return NULL; }
 	pad = (TPad*)(can->cd(index_+1));
 	plot = plottable_hists.at(which_hists[index_].first);
 	return pad;
@@ -87,7 +87,7 @@ OnlineProcessor::~OnlineProcessor(){
 
 Plotter* OnlineProcessor::GetPlot(const unsigned int &index_){
 	if(!display_mode || index_ >= num_pads){ return NULL; }
-	return (plot = plottable_hists[index_]);
+	return (plottable_hists.at(which_hists[index_].first));
 }
 
 bool OnlineProcessor::ReadHistMap(const char *fname){
@@ -106,8 +106,12 @@ bool OnlineProcessor::SetDisplayMode(const unsigned int &cols_/*=2*/, const unsi
 	
 	// Setup the root canvas for plotting.
 	can = new TCanvas("scanner_c1", "Scanner Canvas");
+	display_mode = true;
+
+	// Clear the canvas and divide it
+	Clear();
 	
-	return (display_mode=true);
+	return true;
 }
 
 bool OnlineProcessor::ChangeHist(const unsigned int &index_, const unsigned int &hist_id_, const int &det_id_/*=-1*/){
@@ -141,6 +145,14 @@ bool OnlineProcessor::ChangeHist(const unsigned int &index_, const std::string &
 	}
 	
 	return false;
+}
+
+bool OnlineProcessor::SetDrawOpt(const unsigned int &index_, const std::string &opt_){
+	Plotter *ptemp = GetPlot(index_);
+	if(!ptemp){ return false; }
+	ptemp->SetDrawOpt(opt_);
+	Refresh(index_);
+	return true;
 }
 
 bool OnlineProcessor::SetXrange(const unsigned int &index_, const double &xmin_, const double &xmax_){
@@ -218,10 +230,8 @@ void OnlineProcessor::Refresh(const unsigned int &index_){
 void OnlineProcessor::Refresh(){
 	if(!display_mode){ return; }
 
-	can->Clear();
-
-	// Divide the canvas into TPads.
-	can->Divide(canvas_cols, canvas_rows);
+	// Clear the canvas (it's really slow if we don't do this)
+	Clear();
 
 	// Set the histogram ids for all TPads.
 	for(unsigned int i = 0; i < num_pads; i++){
@@ -232,6 +242,14 @@ void OnlineProcessor::Refresh(){
 	}
 
 	can->Update();
+}
+
+void OnlineProcessor::Clear(){
+	if(!display_mode){ return; }
+	
+	// Divide the canvas into TPads.
+	can->Clear();
+	can->Divide(canvas_cols, canvas_rows);
 }
 
 bool OnlineProcessor::Zero(const unsigned int &hist_id_){
