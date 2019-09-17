@@ -230,9 +230,6 @@ void OnlineProcessor::Refresh(const unsigned int &index_){
 void OnlineProcessor::Refresh(){
 	if(!display_mode){ return; }
 
-	// Clear the canvas (it's really slow if we don't do this)
-	Clear();
-
 	// Set the histogram ids for all TPads.
 	for(unsigned int i = 0; i < num_pads; i++){
 		if(which_hists[i].first >= 0){
@@ -250,6 +247,7 @@ void OnlineProcessor::Clear(){
 	// Divide the canvas into TPads.
 	can->Clear();
 	can->Divide(canvas_cols, canvas_rows);
+	can->Update();
 }
 
 bool OnlineProcessor::Zero(const unsigned int &hist_id_){
