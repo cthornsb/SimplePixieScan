@@ -169,12 +169,24 @@ bool PSPmtMap::setNextLocation(const int &location){
 bool PSPmtMap::readMapFile(MapFile *map, std::vector<PSPmtMap> &detMap){
 	detMap.clear();
 
+	MapEntryValidator dynodeValid;
+	MapEntryValidator anodeValid;
+
 	// Get all single sided PSPMT detectors from the map
 	std::vector<int> singleSidedDynodes;
 	std::vector<int> singleSidedAnodes;
-	map->GetListOfLocations(singleSidedDynodes, "pspmt", "", true);
-	map->GetListOfLocations(singleSidedAnodes, "pspmt", "", true, "V1 V2 V3 V4 SE NE NW SW", true);
-	
+
+	// I'll clean these up later CRT	
+	dynodeValid.SetValidationMode(MapEntryValidator::WITH_TYPE | MapEntryValidator::NO_SUBTYPE | MapEntryValidator::WITHOUT_TAG);
+	dynodeValid.SetValid("pspmt"); 
+	dynodeValid.SetInvalid("", "", "V1 V2 V3 V4 SE NE NW SW");
+	map->GetListOfLocations(singleSidedDynodes, dynodeValid);
+
+	// I'll clean these up later CRT	
+	anodeValid.SetValidationMode(MapEntryValidator::WITH_TYPE | MapEntryValidator::NO_SUBTYPE | MapEntryValidator::WITH_TAG | MapEntryValidator::FORCE_TAG);
+	anodeValid.SetValid("pspmt", "", "V1 V2 V3 V4 SE NE NW SW"); 
+	map->GetListOfLocations(singleSidedAnodes, anodeValid);
+
 	std::vector<PSPmtMap> singleDetMap;
 	for(std::vector<int>::iterator iter = singleSidedDynodes.begin(); iter != singleSidedDynodes.end(); iter++){
 		singleDetMap.push_back(PSPmtMap((*iter)));
@@ -191,12 +203,21 @@ bool PSPmtMap::readMapFile(MapFile *map, std::vector<PSPmtMap> &detMap){
 		if(detector->checkLocations())
 			detector++;
 	}
-	
+
 	// Get all double sided PSPMT detectors from the map
 	std::vector<int> doubleSidedDynodes;
 	std::vector<int> doubleSidedAnodes;
-	map->GetListOfLocations(doubleSidedDynodes, "pspmt", "left right", true);	
-	map->GetListOfLocations(doubleSidedAnodes, "pspmt", "left right", true, "V1 V2 V3 V4 SE NE NW SW", true);
+
+	// I'll clean these up later CRT
+	dynodeValid.SetValidationMode(MapEntryValidator::WITH_TYPE | MapEntryValidator::WITH_SUBTYPE | MapEntryValidator::WITHOUT_TAG);
+	dynodeValid.SetValid("pspmt", "left right"); 
+	dynodeValid.SetInvalid("", "left right", "V1 V2 V3 V4 SE NE NW SW");
+	map->GetListOfLocations(doubleSidedDynodes, dynodeValid);
+
+	// I'll clean these up later CRT
+	anodeValid.SetValidationMode(MapEntryValidator::WITH_TYPE | MapEntryValidator::WITH_SUBTYPE | MapEntryValidator::WITH_TAG | MapEntryValidator::FORCE_TAG);
+	anodeValid.SetValid("pspmt", "left right", "V1 V2 V3 V4 SE NE NW SW"); 
+	map->GetListOfLocations(doubleSidedAnodes, anodeValid);
 
 	std::vector<PSPmtMap> doubleDetMap;
 	for(std::vector<int>::iterator iter = doubleSidedDynodes.begin(); iter != doubleSidedDynodes.end(); iter++){

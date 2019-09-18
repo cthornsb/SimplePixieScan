@@ -9,6 +9,10 @@ double absdiff(const double &v1, const double &v2);
 class XiaData;
 class TFile;
 
+///////////////////////////////////////////////////////////////////////////////
+// class MapEntry
+///////////////////////////////////////////////////////////////////////////////
+
 class MapEntry{
   public:
 	unsigned int location;
@@ -25,9 +29,9 @@ class MapEntry{
 	
 	MapEntry(const MapEntry &other);
 
-	bool operator == (const MapEntry &other);
+	bool operator == (const MapEntry &other) const ;
 
-	void get(std::string &type_, std::string &subtype_, std::string &tag_);
+	void get(std::string &type_, std::string &subtype_, std::string &tag_) const ;
 	
 	void set(const std::string &input_, const char delimiter_=':');
 	
@@ -39,12 +43,74 @@ class MapEntry{
 	
 	unsigned int increment();
 	
-	bool getArg(const size_t &index_, double &arg);
+	bool getArg(const size_t &index_, double &arg) const ;
 	
-	bool hasTag(const std::string &tag_);
+	bool hasTag(const std::string &tag_) const ;
 
-	std::string print();
+	std::string print() const ;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+// class MapEntryValidator
+///////////////////////////////////////////////////////////////////////////////
+
+class MapEntryValidator{
+public:
+	enum MapValidationModes {NO_VALIDATION=0x0, 
+	                         WITH_TYPE=0x1, WITHOUT_TYPE=0x2, NO_TYPE=0x4, FORCE_TYPE=0x8,
+	                         WITH_SUBTYPE=0x10, WITHOUT_SUBTYPE=0x20, NO_SUBTYPE=0x40, FORCE_SUBTYPE=0x80,
+	                         WITH_TAG=0x100, WITHOUT_TAG=0x200, NO_TAG=0x400, FORCE_TAG=0x800
+	                         };
+
+	enum FailureModes {PASSED=0x0, BAD_TYPE=0x1, BAD_SUBTYPE=0x2, BAD_TAG=0x4};
+
+	MapEntryValidator() : validation(NO_VALIDATION) { }
+	
+	void SetValidationMode(const int &valid){ validation = valid; }
+	
+	void SetValidTypes(const std::string &valid){ validTypes = valid; }
+	
+	void SetValidSubtypes(const std::string &valid){ validSubtypes = valid; }
+	
+	void SetValidTags(const std::string &valid){ validTags = valid; }
+	
+	void SetInvalidTypes(const std::string &invalid){ invalidTypes = invalid; }
+	
+	void SetInvalidSubtypes(const std::string &invalid){ invalidSubtypes = invalid; }
+	
+	void SetInvalidTags(const std::string &invalid){ invalidTags = invalid; }
+	
+	void SetValid(const std::string &types, const std::string &subtypes="", const std::string &tags="");
+	
+	void SetInvalid(const std::string &types, const std::string &subtypes="", const std::string &tags="");
+	
+	bool Validate(const MapEntry &entry) const ;
+	
+	bool HasBadType(const int &failcode) const { return ((failcode & BAD_TYPE) != 0); }
+	
+	bool HasBadSubtype(const int &failcode) const { return ((failcode & BAD_SUBTYPE) != 0); }
+	
+	bool HasBadTag(const int &failcode) const { return ((failcode & BAD_TAG) != 0); }
+	
+	void Print() const ;
+	
+private:
+	int validation;
+
+	std::string validTypes;
+	std::string validSubtypes;
+	std::string validTags;
+	
+	std::string invalidTypes;
+	std::string invalidSubtypes;
+	std::string invalidTags;
+	
+	bool CheckFlag(const MapValidationModes &flag) const { return ((validation & flag) != 0); }
+};
+
+///////////////////////////////////////////////////////////////////////////////
+// class MapFile
+///////////////////////////////////////////////////////////////////////////////
 
 class MapFile{
   private:
@@ -90,7 +156,7 @@ class MapFile{
 	
 	bool IsInit(){ return init; }
 
-	void GetListOfLocations(std::vector<int> &list, const std::string &type_, const std::string &subtype_="", const bool &withSubtype=true, const std::string &tag_="", const bool &withTag=true);
+	void GetListOfLocations(std::vector<int> &list, const MapEntryValidator &valid);
 	
 	int GetFirstOccurance(const std::string &type_);
 	

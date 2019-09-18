@@ -18,6 +18,10 @@ std::string to_str(const int &input_){
 	return stream.str();
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// class MapEntry
+///////////////////////////////////////////////////////////////////////////////
+
 MapEntry::MapEntry(const MapEntry &other){
 	type = other.type; 
 	subtype = other.subtype; 
@@ -26,12 +30,12 @@ MapEntry::MapEntry(const MapEntry &other){
 	args = other.args;
 }
 
-bool MapEntry::operator == (const MapEntry &other){
+bool MapEntry::operator == (const MapEntry &other) const {
 	if(other.type == type && other.subtype == subtype && other.tag == tag){ return true; }
 	return false;
 }
 
-void MapEntry::get(std::string &type_, std::string &subtype_, std::string &tag_){
+void MapEntry::get(std::string &type_, std::string &subtype_, std::string &tag_) const {
 	type_ = type; 
 	subtype_ = subtype; 
 	tag_ = tag;
@@ -65,13 +69,13 @@ void MapEntry::clear(){
 	tag = "";
 }
 
-bool MapEntry::getArg(const size_t &index_, double &arg){
+bool MapEntry::getArg(const size_t &index_, double &arg) const {
 	if(index_ >= args.size()){ return false; }
 	arg = args.at(index_);
 	return true;
 }
 
-bool MapEntry::hasTag(const std::string &tag_){
+bool MapEntry::hasTag(const std::string &tag_) const {
 	return (tag.find(tag_) != std::string::npos);
 }
 
@@ -79,13 +83,110 @@ unsigned int MapEntry::increment(){
 	return ++location;
 }
 
-std::string MapEntry::print(){
+std::string MapEntry::print() const {
 	std::stringstream output; 
 	output << type << ":" << subtype << ":" << tag;
-	for(std::vector<double>::iterator iter = args.begin(); iter != args.end(); ++iter)
+	for(std::vector<double>::const_iterator iter = args.begin(); iter != args.end(); ++iter)
 		output << " " << *iter;
 	return output.str();
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// class MapEntryValidator
+///////////////////////////////////////////////////////////////////////////////
+	
+void MapEntryValidator::SetValid(const std::string &types, const std::string &subtypes/*=""*/, const std::string &tags/*=""*/){
+	validTypes = types;
+	validSubtypes = subtypes;
+	validTags = tags;
+}
+
+void MapEntryValidator::SetInvalid(const std::string &types, const std::string &subtypes/*=""*/, const std::string &tags/*=""*/){
+	invalidTypes = types;
+	invalidSubtypes = subtypes;
+	invalidTags = tags;
+}
+
+bool MapEntryValidator::Validate(const MapEntry &entry) const {
+	if(validation == NO_VALIDATION) // No validation
+		return true;
+
+	int retval = PASSED;
+
+	// Check types
+	if(!entry.type.empty()){
+		if(CheckFlag(NO_TYPE)) // No types allowed
+			retval |= BAD_TYPE;
+		if(CheckFlag(WITH_TYPE) && (validTypes.find(entry.type) == std::string::npos)) // With a type
+			retval |= BAD_TYPE;
+		if(CheckFlag(WITHOUT_TYPE) && (invalidTypes.find(entry.type) != std::string::npos)) // Without a type
+			retval |= BAD_TYPE;
+	}
+	else if(CheckFlag(FORCE_TYPE))
+		retval |= BAD_TYPE;
+
+	// Check subtypes
+	if(!entry.subtype.empty()){
+		if(CheckFlag(NO_SUBTYPE)) // No subtypes allowed
+			retval |= BAD_SUBTYPE;
+		if(CheckFlag(WITH_SUBTYPE) && (validSubtypes.find(entry.subtype) == std::string::npos)) // With a subtype
+			retval |= BAD_SUBTYPE;
+		if(CheckFlag(WITHOUT_SUBTYPE) && (invalidSubtypes.find(entry.subtype) != std::string::npos)) // Without a subtype
+			retval |= BAD_SUBTYPE;
+	}
+	else if(CheckFlag(FORCE_SUBTYPE))
+		retval |= BAD_SUBTYPE;
+
+	// Check tags
+	if(!entry.tag.empty()){
+		if(CheckFlag(NO_TAG)) // No tags allowed
+			retval |= BAD_TAG;
+		if(CheckFlag(WITH_TAG) && (validTags.find(entry.tag) == std::string::npos)) // With a tag
+			retval |= BAD_TAG;
+		if(CheckFlag(WITHOUT_TAG) && (invalidTags.find(entry.tag) != std::string::npos)) // Without a tag
+			retval |= BAD_TAG;
+	}
+	else if(CheckFlag(FORCE_TAG))
+		retval |= BAD_TAG;
+	
+	return (retval == PASSED);
+}
+
+void MapEntryValidator::Print() const {
+	std::cout << "-----------------------------\n";
+	if(CheckFlag(NO_TYPE))
+		std::cout << " types allowed - NO\n";
+	else{
+		std::cout << " types allowed - YES\n";
+		if(CheckFlag(WITH_TYPE))
+			std::cout << "  valid  : \"" << validTypes << "\"\n";
+		if(CheckFlag(WITHOUT_TYPE))
+			std::cout << "  invalid: \"" << invalidTypes << "\"\n";
+	}
+	if(CheckFlag(NO_SUBTYPE))
+		std::cout << " subtypes allowed - NO\n";
+	else{
+		std::cout << " subtypes allowed - YES\n";
+		if(CheckFlag(WITH_SUBTYPE))
+			std::cout << "  valid  : \"" << validSubtypes << "\"\n";
+		if(CheckFlag(WITHOUT_SUBTYPE))
+		std::cout << "  invalid: \"" << invalidSubtypes << "\"\n";
+	}
+	if(CheckFlag(NO_TAG))
+		std::cout << " tags allowed - NO\n";
+	else{
+		std::cout << " tags allowed - YES\n";
+		if(CheckFlag(WITH_TAG))
+			std::cout << "  valid  : \"" << validTags << "\"\n";
+		if(CheckFlag(WITHOUT_TAG))
+			std::cout << "  invalid: \"" << invalidTags << "\"\n";
+	}
+	std::cout << "-----------------------------\n\n";
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// class MapFile
+///////////////////////////////////////////////////////////////////////////////
 
 void MapFile::clear_entries(){
 	for(int i = 0; i < max_modules; i++){
@@ -158,43 +259,13 @@ void MapFile::GetModChan(const int &location, int &mod, int &chan){
 	chan = location % max_channels;
 }
 
-void MapFile::GetListOfLocations(std::vector<int> &list, const std::string &type_, const std::string &subtype_/*=""*/, const bool &withSubtype/*=true*/, const std::string &tag_/*=""*/, const bool &withTag/*=true*/){
+void MapFile::GetListOfLocations(std::vector<int> &list, const MapEntryValidator &valid){
 	for(int i = 0; i < max_modules; i++){
 		for(int j = 0; j < max_channels; j++){
-			if(detectors[i][j].type == type_){ 
-				bool foundMatch = true;
-				if(!subtype_.empty()){ // Check subtypes
-					size_t index = subtype_.find(detectors[i][j].subtype);
-					if(withSubtype){ // With subtype
-						if(detectors[i][j].subtype.empty() || index == std::string::npos)
-							foundMatch = false;
-					}
-					else{ // Without subtype
-						if(!detectors[i][j].subtype.empty() && index != std::string::npos)
-							foundMatch = false;
-					}
-				}
-				else if(withSubtype){
-					if(!detectors[i][j].subtype.empty()) // No valid subtypes
-						foundMatch = false;
-				}
-				if(!tag_.empty()){ // Check tags
-					if(withTag){ // With tags
-						if(detectors[i][j].tag.empty() || tag_.find(detectors[i][j].tag) == std::string::npos)
-							foundMatch = false;
-					}
-					else{ // Without tags
-						if(!detectors[i][j].tag.empty() && tag_.find(detectors[i][j].tag) != std::string::npos)
-							foundMatch = false;
-					}
-				}
-				else if(withTag){
-					if(!detectors[i][j].tag.empty()) // No valid tags
-						foundMatch = false;
-				}
-				if(foundMatch)
-					list.push_back(detectors[i][j].location);
-			}
+			if(detectors[i][j].type == "ignore")
+				continue;
+			if(valid.Validate(detectors[i][j]))
+				list.push_back(detectors[i][j].location);
 		}
 	}
 }

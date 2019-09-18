@@ -272,6 +272,11 @@ void OnlineProcessor::StartAddHists(Processor *proc){
 		mapfile->GetAllOccurances(type, locations, proc->GetIsSingleEnded());
 	}
 	
+	if(locations.empty()){
+		warnStr << "OnlineProcessor: WARNING! Failed to find any detectors of type " << type << "!\n";
+		return;
+	}
+	
 	minloc = locations.front();
 	maxloc = locations.back();
 
@@ -285,7 +290,7 @@ bool OnlineProcessor::GenerateHist(Plotter* &hist_){
 	// Find this histogram in the map of histograms (hist.dat).
 	std::string histString;
 	if(!histMap.GetNext(type, histString)){
-		warnStr << "OnlineProcessor: ERROR! Failed to find histogram definition for histogram type=" << type << "!\n";
+		warnStr << "OnlineProcessor: WARNING! Failed to find histogram definition for histogram type=" << type << "!\n";
 		hadHistError = true;
 		return false;
 	}
@@ -293,7 +298,7 @@ bool OnlineProcessor::GenerateHist(Plotter* &hist_){
 	std::vector<std::string> args;
 	unsigned int retval = split_str(histString, args, ':');
 	if(retval < 6){
-		warnStr << "OnlineProcessor: ERROR! Invalid number of arguments given to histogram builder (" << retval << ")!\n";
+		warnStr << "OnlineProcessor: WARNING! Invalid number of arguments given to histogram builder (" << retval << ")!\n";
 		hadHistError = true;
 		return false;
 	}
