@@ -3,6 +3,11 @@
 #  - Entries must be delimited with SPACES!
 #  - Blank lines and text following a # are ignored.
 #  - Empty channels DO NOT need to be defined here.
+#  - Ranges of channels may be specified by a string with format "start:stop[e|o]"
+#      where "start" and "stop" are integers indicating the start and stop channel
+#      respectively and the optional character after the stop channel may be either
+#      an "e" for only even channels or an "o" for only odd channels (e.g. "3:14e" 
+#      would define the following list of channels [4,6,8,10,12,14]).
 # Syntax:
 #  MOD CHAN TYPE:SUBTYPE:TAG(S)
 #0 0 hagrid::start                     # This line is commented and will be ignored

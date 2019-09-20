@@ -13,8 +13,8 @@ double absdiff(const double &v1, const double &v2){
 	return (v1 >= v2)?(v1-v2):(v2-v1);
 }
 
-std::string to_str(const int &input_){
-	std::stringstream stream; stream << input_;
+std::string to_str(const int &input){
+	std::stringstream stream; stream << input;
 	return stream.str();
 }
 
@@ -41,17 +41,17 @@ void MapEntry::get(std::string &type_, std::string &subtype_, std::string &tag_)
 	tag_ = tag;
 }
 
-void MapEntry::set(const std::string &input_, const char delimiter_/*=':'*/){
+void MapEntry::set(const std::string &input, const char delimiter_/*=':'*/){
 	int count = 0;
 	type = ""; subtype = ""; tag = "";
-	for(size_t index = 0; index < input_.size(); index++){
-		if(input_[index] == delimiter_){
+	for(size_t index = 0; index < input.size(); index++){
+		if(input[index] == delimiter_){
 			count++;
 			continue;
 		}
-		else if(count == 0){ type += input_[index]; }
-		else if(count == 1){ subtype += input_[index]; }
-		else if(count == 2){ tag += input_[index]; }
+		else if(count == 0){ type += input[index]; }
+		else if(count == 1){ subtype += input[index]; }
+		else if(count == 2){ tag += input[index]; }
 		else{ break; }
 	}
 }
@@ -107,80 +107,97 @@ void MapEntryValidator::SetInvalid(const std::string &types, const std::string &
 	invalidTags = tags;
 }
 
-bool MapEntryValidator::Validate(const MapEntry &entry) const {
+int MapEntryValidator::Validate(const MapEntry &entry) const {
 	if(validation == NO_VALIDATION) // No validation
 		return true;
 
-	int retval = PASSED;
+	int retval = 0x0;
 
 	// Check types
 	if(!entry.type.empty()){
-		if(CheckFlag(NO_TYPE)) // No types allowed
-			retval |= BAD_TYPE;
-		if(CheckFlag(WITH_TYPE) && (validTypes.find(entry.type) == std::string::npos)) // With a type
-			retval |= BAD_TYPE;
-		if(CheckFlag(WITHOUT_TYPE) && (invalidTypes.find(entry.type) != std::string::npos)) // Without a type
-			retval |= BAD_TYPE;
+		if(CheckMode(NO_TYPE)) // No types allowed
+			retval |= NO_TYPE;
+		if(CheckMode(WITH_TYPE) && (validTypes.find(entry.type) == std::string::npos)) // With a type
+			retval |= WITH_TYPE;
+		if(CheckMode(WITHOUT_TYPE) && (invalidTypes.find(entry.type) != std::string::npos)) // Without a type
+			retval |= WITHOUT_TYPE;
 	}
-	else if(CheckFlag(FORCE_TYPE))
-		retval |= BAD_TYPE;
+	else if(CheckMode(FORCE_TYPE))
+		retval |= FORCE_TYPE;
 
 	// Check subtypes
 	if(!entry.subtype.empty()){
-		if(CheckFlag(NO_SUBTYPE)) // No subtypes allowed
-			retval |= BAD_SUBTYPE;
-		if(CheckFlag(WITH_SUBTYPE) && (validSubtypes.find(entry.subtype) == std::string::npos)) // With a subtype
-			retval |= BAD_SUBTYPE;
-		if(CheckFlag(WITHOUT_SUBTYPE) && (invalidSubtypes.find(entry.subtype) != std::string::npos)) // Without a subtype
-			retval |= BAD_SUBTYPE;
+		if(CheckMode(NO_SUBTYPE)) // No subtypes allowed
+			retval |= NO_SUBTYPE;
+		if(CheckMode(WITH_SUBTYPE) && (validSubtypes.find(entry.subtype) == std::string::npos)) // With a subtype
+			retval |= WITH_SUBTYPE;
+		if(CheckMode(WITHOUT_SUBTYPE) && (invalidSubtypes.find(entry.subtype) != std::string::npos)) // Without a subtype
+			retval |= WITHOUT_SUBTYPE;
 	}
-	else if(CheckFlag(FORCE_SUBTYPE))
-		retval |= BAD_SUBTYPE;
+	else if(CheckMode(FORCE_SUBTYPE))
+		retval |= FORCE_SUBTYPE;
 
 	// Check tags
 	if(!entry.tag.empty()){
-		if(CheckFlag(NO_TAG)) // No tags allowed
-			retval |= BAD_TAG;
-		if(CheckFlag(WITH_TAG) && (validTags.find(entry.tag) == std::string::npos)) // With a tag
-			retval |= BAD_TAG;
-		if(CheckFlag(WITHOUT_TAG) && (invalidTags.find(entry.tag) != std::string::npos)) // Without a tag
-			retval |= BAD_TAG;
+		if(CheckMode(NO_TAG)) // No tags allowed
+			retval |= NO_TAG;
+		if(CheckMode(WITH_TAG) && (validTags.find(entry.tag) == std::string::npos)) // With a tag
+			retval |= WITH_TAG;
+		if(CheckMode(WITHOUT_TAG) && (invalidTags.find(entry.tag) != std::string::npos)) // Without a tag
+			retval |= WITHOUT_TAG;
 	}
-	else if(CheckFlag(FORCE_TAG))
-		retval |= BAD_TAG;
+	else if(CheckMode(FORCE_TAG))
+		retval |= FORCE_TAG;
 	
-	return (retval == PASSED);
+	return retval;
 }
 
 void MapEntryValidator::Print() const {
-	std::cout << "-----------------------------\n";
-	if(CheckFlag(NO_TYPE))
+	std::cout << "VALIDATOR MODE---------------\n";
+	if(CheckMode(NO_TYPE))
 		std::cout << " types allowed - NO\n";
 	else{
 		std::cout << " types allowed - YES\n";
-		if(CheckFlag(WITH_TYPE))
+		if(CheckMode(WITH_TYPE))
 			std::cout << "  valid  : \"" << validTypes << "\"\n";
-		if(CheckFlag(WITHOUT_TYPE))
+		if(CheckMode(WITHOUT_TYPE))
 			std::cout << "  invalid: \"" << invalidTypes << "\"\n";
 	}
-	if(CheckFlag(NO_SUBTYPE))
+	if(CheckMode(NO_SUBTYPE))
 		std::cout << " subtypes allowed - NO\n";
 	else{
 		std::cout << " subtypes allowed - YES\n";
-		if(CheckFlag(WITH_SUBTYPE))
+		if(CheckMode(WITH_SUBTYPE))
 			std::cout << "  valid  : \"" << validSubtypes << "\"\n";
-		if(CheckFlag(WITHOUT_SUBTYPE))
+		if(CheckMode(WITHOUT_SUBTYPE))
 		std::cout << "  invalid: \"" << invalidSubtypes << "\"\n";
 	}
-	if(CheckFlag(NO_TAG))
+	if(CheckMode(NO_TAG))
 		std::cout << " tags allowed - NO\n";
 	else{
 		std::cout << " tags allowed - YES\n";
-		if(CheckFlag(WITH_TAG))
+		if(CheckMode(WITH_TAG))
 			std::cout << "  valid  : \"" << validTags << "\"\n";
-		if(CheckFlag(WITHOUT_TAG))
+		if(CheckMode(WITHOUT_TAG))
 			std::cout << "  invalid: \"" << invalidTags << "\"\n";
 	}
+	std::cout << "-----------------------------\n\n";
+}
+
+void MapEntryValidator::PrintFailure(const int &failcode) const {
+	std::cout << "FAILURE CODE-(" << (failcode == 0x0 ? "PASSED" : "FAILED") << ")--------\n";
+	std::cout << " With Type      : " << (!CheckMode(failcode, WITH_TYPE) ? "PASS" : "FAIL") << std::endl;
+	std::cout << " With Subtype   : " << (!CheckMode(failcode, WITH_SUBTYPE) ? "PASS" : "FAIL") << std::endl;
+	std::cout << " With Tag       : " << (!CheckMode(failcode, WITH_TAG) ? "PASS" : "FAIL") << std::endl;
+	std::cout << " Without Type   : " << (!CheckMode(failcode, WITHOUT_TYPE) ? "PASS" : "FAIL") << std::endl;
+	std::cout << " Without Subtype: " << (!CheckMode(failcode, WITHOUT_SUBTYPE) ? "PASS" : "FAIL") << std::endl;
+	std::cout << " Without Tag    : " << (!CheckMode(failcode, WITHOUT_TAG) ? "PASS" : "FAIL") << std::endl;
+	std::cout << " No Type        : " << (!CheckMode(failcode, NO_TYPE) ? "PASS" : "FAIL") << std::endl;
+	std::cout << " No Subtype     : " << (!CheckMode(failcode, NO_SUBTYPE) ? "PASS" : "FAIL") << std::endl;
+	std::cout << " No Tag         : " << (!CheckMode(failcode, NO_TAG) ? "PASS" : "FAIL") << std::endl;
+	std::cout << " Force Type     : " << (!CheckMode(failcode, FORCE_TYPE) ? "PASS" : "FAIL") << std::endl;
+	std::cout << " Force Subtype  : " << (!CheckMode(failcode, FORCE_SUBTYPE) ? "PASS" : "FAIL") << std::endl;
+	std::cout << " Force Tag      : " << (!CheckMode(failcode, FORCE_TAG) ? "PASS" : "FAIL") << std::endl;
 	std::cout << "-----------------------------\n\n";
 }
 
@@ -188,7 +205,7 @@ void MapEntryValidator::Print() const {
 // class MapFile
 ///////////////////////////////////////////////////////////////////////////////
 
-void MapFile::clear_entries(){
+void MapFile::clearEntries(){
 	for(int i = 0; i < max_modules; i++){
 		for(int j = 0; j < max_channels; j++){
 			detectors[i][j].clear();
@@ -197,26 +214,37 @@ void MapFile::clear_entries(){
 	types.clear();
 }
 
-void MapFile::parse_string(const std::string &input_, std::string &left, std::string &right, char &even_odd){
-	bool left_side = true;
-	left = ""; right = ""; even_odd = 0x0;
-	for(size_t index = 0; index < input_.size(); index++){
-		if(left_side){
-			if(input_[index] == ':'){ 
-				left_side = false; 
+bool MapFile::parseString(const std::string &input, int &left, int &right, char &leftover) const {
+	const char zero = '0';
+	const char nine = '9';
+	bool leftSide = true;
+	std::string lstr;
+	std::string rstr;
+	leftover = 0x0;
+	for(size_t index = 0; index < input.size(); index++){
+		if(leftSide){
+			if(input[index] == ':'){ 
+				leftSide = false;
 				continue;
 			}
-			left += input_[index];
+			else if(input[index] < zero || input[index] > nine){ // Not a number
+				return false;
+			}
+			lstr += input[index];
 		}
 		else{ 
-			if(input_[index] == ':'){ 
-				if(index++ >= input_.size()){ break; }
-				even_odd = input_[index];
-				return;
+			if(input[index] < zero || input[index] > nine){ // Not a number
+				leftover = input[index];
+				break;
 			}
-			right += input_[index]; 
+			rstr += input[index]; 
 		}
 	}
+	if(lstr.empty() || rstr.empty())
+		return false;
+	left = strtol(lstr.c_str(), NULL, 10);
+	right = strtol(rstr.c_str(), NULL, 10);
+	return true;
 }
 
 MapFile::MapFile(){ 
@@ -239,38 +267,38 @@ MapEntry *MapFile::GetMapEntry(XiaData *event_){
 	return &detectors[event_->modNum][event_->chanNum];
 }
 
-std::string MapFile::GetType(int mod_, int chan_){
+std::string MapFile::GetType(int mod_, int chan_) const {
 	if(mod_ >= max_modules || chan_ >= max_channels){ return ""; }
 	return detectors[mod_][chan_].type;
 }
 
-std::string MapFile::GetSubtype(int mod_, int chan_){
+std::string MapFile::GetSubtype(int mod_, int chan_) const {
 	if(mod_ >= max_modules || chan_ >= max_channels){ return ""; }
 	return detectors[mod_][chan_].subtype;
 }
 
-std::string MapFile::GetTag(int mod_, int chan_){
+std::string MapFile::GetTag(int mod_, int chan_) const {
 	if(mod_ >= max_modules || chan_ >= max_channels){ return ""; }
 	return detectors[mod_][chan_].tag;
 }
 
-void MapFile::GetModChan(const int &location, int &mod, int &chan){
+void MapFile::GetModChan(const int &location, int &mod, int &chan) const {
 	mod = location / max_channels;
 	chan = location % max_channels;
 }
 
-void MapFile::GetListOfLocations(std::vector<int> &list, const MapEntryValidator &valid){
+void MapFile::GetListOfLocations(std::vector<int> &list, const MapEntryValidator &valid) const {
 	for(int i = 0; i < max_modules; i++){
 		for(int j = 0; j < max_channels; j++){
 			if(detectors[i][j].type == "ignore")
 				continue;
-			if(valid.Validate(detectors[i][j]))
+			if(valid.Validate(detectors[i][j]) == 0x0)
 				list.push_back(detectors[i][j].location);
 		}
 	}
 }
 
-int MapFile::GetFirstOccurance(const std::string &type_){
+int MapFile::GetFirstOccurance(const std::string &type_) const {
 	for(int i = 0; i < max_modules; i++){
 		for(int j = 0; j < max_channels; j++){
 			if(detectors[i][j].type == type_){ return (int)detectors[i][j].location; }
@@ -279,7 +307,7 @@ int MapFile::GetFirstOccurance(const std::string &type_){
 	return -1;
 }
 
-int MapFile::GetLastOccurance(const std::string &type_){
+int MapFile::GetLastOccurance(const std::string &type_) const {
 	for(int i = max_modules-1; i >= 0; i--){
 		for(int j = max_channels-1; j >= 0; j--){
 			if(detectors[i][j].type == type_){ return (int)detectors[i][j].location; }
@@ -288,7 +316,7 @@ int MapFile::GetLastOccurance(const std::string &type_){
 	return -1;
 }
 
-int MapFile::GetAllOccurances(const std::string &type_, std::vector<int> &locations, const bool &isSingleEnded/*=true*/){
+int MapFile::GetAllOccurances(const std::string &type_, std::vector<int> &locations, const bool &isSingleEnded/*=true*/) const {
 	int retval = 0;
 	for(int i = 0; i < max_modules; i++){
 		for(int j = 0; j < max_channels; j++){
@@ -302,7 +330,7 @@ int MapFile::GetAllOccurances(const std::string &type_, std::vector<int> &locati
 	return retval;
 }
 
-bool MapFile::GetFirstStart(int &mod, int &chan){
+bool MapFile::GetFirstStart(int &mod, int &chan) const {
 	for(mod = 0; mod < max_modules; mod++){
 		for(chan = 0; chan < max_channels; chan++){
 			if(detectors[mod][chan].hasTag("start")) return true;
@@ -312,7 +340,7 @@ bool MapFile::GetFirstStart(int &mod, int &chan){
 }
 
 bool MapFile::Load(const char *filename_){
-	clear_entries();
+	clearEntries();
 
 	std::ifstream mapfile(filename_);
 	if(!mapfile.good()){
@@ -391,38 +419,37 @@ bool MapFile::Load(const char *filename_){
 		// Check for the ':' character in the channel specification.
 		if(values.at(1).find(':') != std::string::npos){ // User has specified a range of channels.
 			std::vector<int> channels;
-			std::string lhs, rhs;
+			int startChan;
+			int stopChan;
 			char leftover;
-			
-			parse_string(values.at(1), lhs, rhs, leftover);
-			int start_chan = atoi(lhs.c_str());
-			int stop_chan = atoi(rhs.c_str());
+			if(!parseString(values.at(1), startChan, stopChan, leftover)){
+				warnStr << "MapFile: WARNING! On line " << line_num << ", failed to parse module range specifier \"" << values.at(1) << "\". Ignoring.\n";
+				continue;
+			}
 			
 			// Flip the start and stop channels
-			if(start_chan > stop_chan){
+			if(startChan > stopChan){
 				warnStr << "MapFile: WARNING! On line " << line_num << ", start channel > stop channel. I'm assuming you swapped the values.\n";
-				int dummy = start_chan;
-				start_chan = stop_chan;
-				stop_chan = dummy;
+				std::swap(startChan, stopChan);
 			}
 			
-			if(leftover == 0x65){ // 'e' even channels only
-				if(start_chan % 2 != 0){ start_chan++; }
-				for(int i = start_chan; i <= stop_chan; i+=2){
+			if(leftover == 'e'){ // 'e' even channels only
+				if(startChan % 2 != 0)
+					startChan++;
+				for(int i = startChan; i <= stopChan; i+=2)
 					channels.push_back(i);
-				}
 			}
-			else if(leftover == 0x6F){ // 'o' odd channels only
-				if(start_chan % 2 == 0){ start_chan++; }
-				for(int i = start_chan; i <= stop_chan; i+=2){
+			else if(leftover == 'o'){ // 'o' odd channels only
+				if(startChan % 2 == 0)
+					startChan++;
+				for(int i = startChan; i <= stopChan; i+=2)
 					channels.push_back(i);
-				}
 			}
 			else{ // All channels
-				if(leftover != 0x0){ warnStr << "MapFile: WARNING! On line " << line_num << ", only even (e) or odd (o) may be specified as channel wildcards.\n"; }
-				for(int i = start_chan; i <= stop_chan; i++){
+				if(leftover != 0x0)
+					warnStr << "MapFile: WARNING! On line " << line_num << ", only even (e) or odd (o) may be specified as channel range wildcards but user specified (" << leftover << ").\n";
+				for(int i = startChan; i <= stopChan; i++)
 					channels.push_back(i);
-				}
 			}
 			
 			// Iterate over all specified channels and set the detector type.
@@ -491,7 +518,7 @@ bool MapFile::Load(const char *filename_){
 	return init;
 }
 
-void MapFile::PrintAllEntries(){
+void MapFile::PrintAllEntries() const {
 	std::cout << "MapFile: List of defined detectors...\n";
 	for(int i = 0; i < max_modules; i++){
 		for(int j = 0; j < max_channels; j++){
@@ -501,21 +528,21 @@ void MapFile::PrintAllEntries(){
 	}
 }
 
-void MapFile::PrintAllTypes(){
-	for(std::vector<std::string>::iterator iter = types.begin(); iter != types.end(); iter++){
+void MapFile::PrintAllTypes() const {
+	for(std::vector<std::string>::const_iterator iter = types.begin(); iter != types.end(); iter++){
 		if(*iter == "ignore"){ continue; }
 		std::cout << " " << *iter << std::endl;
 	}
 }
 
-bool MapFile::Write(TFile *f_){
+bool MapFile::Write(TFile *f_) const {
 	if(!f_ || !f_->IsOpen())
 		return false;
 		
 	// Add all map entries to the output root file.
 	const int num_mod = GetMaxModules();
 	const int num_chan = GetMaxChannels();
-	MapEntry *entryptr;
+	const MapEntry *entryptr;
 
 	std::string *dir_names = new std::string[num_mod];
 	std::string *chan_names = new std::string[num_chan];
@@ -536,7 +563,7 @@ bool MapFile::Write(TFile *f_){
 	for(int i = 0; i < num_mod; i++){
 		bool first_good_channel = true;
 		for(int j = 0; j < num_chan; j++){
-			entryptr = GetMapEntry(i, j);
+			entryptr = &detectors[i][j];
 			if(entryptr->type == "ignore"){ continue; }
 			if(first_good_channel){
 				f_->mkdir(dir_names[i].c_str());
