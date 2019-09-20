@@ -1,0 +1,17 @@
+# Example barifier (or pspmt) analyzer configuration file.
+# Author: Cory R. Thornsberry (September 20, 2019)
+#  - Entries must be delimited with TABS!
+#  - Blank lines and text following a # are ignored.
+#  - It is not necessary to define the "right" (odd) side of a bar-type detector
+#  - Undefined detectors will take default values.
+#  - The description of the entry fields are:
+#     * id - The channel number ID (16*m + c, where m is the module and c is the channel)
+#     * t0 - The time offset of the R-L time difference spectrum (ns)
+#     * beta - The width of the time difference spectrum (ns)
+#     * cbar - The speed-of-light in the detector (cm/ns)
+#     * length - The size of the detector along the Z-axis (cm)
+#     * width - The size of the detector along the X-axis (cm)
+#     * height - [optional] The size of the detector along the Y-axis (cm)
+# Syntax:
+#  ID	t0(ns)	beta(ns)	cbar(cm/ns)	length(cm)	width(cm)	[height(cm)]
+0	-0.00359823	0.303998	15.57	25.4	5.08
