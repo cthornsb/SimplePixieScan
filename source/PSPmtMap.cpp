@@ -8,23 +8,23 @@
 unsigned short getIndexFromTag(const std::string &tag){
 	unsigned short retval = 0;
 	if(tag.at(0) != 'V'){
-		if(tag == "SE")
+		if(tag == "se")
 			retval = 1;
-		else if(tag == "NE")
+		else if(tag == "ne")
 			retval = 2;
-		else if(tag == "NW")
+		else if(tag == "nw")
 			retval = 3;
-		else if(tag == "SW")
+		else if(tag == "sw")
 			retval = 4;
 	}
 	else{
-		if(tag == "V1")
+		if(tag == "v1")
 			retval = 1;
-		else if(tag == "V2")
+		else if(tag == "v2")
 			retval = 2;
-		else if(tag == "V3")
+		else if(tag == "v3")
 			retval = 3;
-		else if(tag == "V4")
+		else if(tag == "v4")
 			retval = 4;
 	}
 	return retval;
@@ -179,12 +179,12 @@ bool PSPmtMap::readMapFile(MapFile *map, std::vector<PSPmtMap> &detMap){
 	// I'll clean these up later CRT	
 	dynodeValid.SetValidationMode(MapEntryValidator::WITH_TYPE | MapEntryValidator::NO_SUBTYPE | MapEntryValidator::WITHOUT_TAG);
 	dynodeValid.SetValid("pspmt"); 
-	dynodeValid.SetInvalid("", "", "V1 V2 V3 V4 SE NE NW SW");
+	dynodeValid.SetInvalid("", "", "v1 v2 v3 v4 se ne nw sw");
 	map->GetListOfLocations(singleSidedDynodes, dynodeValid);
 
 	// I'll clean these up later CRT	
 	anodeValid.SetValidationMode(MapEntryValidator::WITH_TYPE | MapEntryValidator::NO_SUBTYPE | MapEntryValidator::WITH_TAG | MapEntryValidator::FORCE_TAG);
-	anodeValid.SetValid("pspmt", "", "V1 V2 V3 V4 SE NE NW SW"); 
+	anodeValid.SetValid("pspmt", "", "v1 v2 v3 v4 se ne nw sw"); 
 	map->GetListOfLocations(singleSidedAnodes, anodeValid);
 
 	std::vector<PSPmtMap> singleDetMap;
@@ -211,12 +211,12 @@ bool PSPmtMap::readMapFile(MapFile *map, std::vector<PSPmtMap> &detMap){
 	// I'll clean these up later CRT
 	dynodeValid.SetValidationMode(MapEntryValidator::WITH_TYPE | MapEntryValidator::WITH_SUBTYPE | MapEntryValidator::WITHOUT_TAG);
 	dynodeValid.SetValid("pspmt", "left right"); 
-	dynodeValid.SetInvalid("", "left right", "V1 V2 V3 V4 SE NE NW SW");
+	dynodeValid.SetInvalid("", "left right", "v1 v2 v3 v4 se ne nw sw");
 	map->GetListOfLocations(doubleSidedDynodes, dynodeValid);
 
 	// I'll clean these up later CRT
 	anodeValid.SetValidationMode(MapEntryValidator::WITH_TYPE | MapEntryValidator::WITH_SUBTYPE | MapEntryValidator::WITH_TAG | MapEntryValidator::FORCE_TAG);
-	anodeValid.SetValid("pspmt", "left right", "V1 V2 V3 V4 SE NE NW SW"); 
+	anodeValid.SetValid("pspmt", "left right", "v1 v2 v3 v4 se ne nw sw"); 
 	map->GetListOfLocations(doubleSidedAnodes, anodeValid);
 
 	std::vector<PSPmtMap> doubleDetMap;

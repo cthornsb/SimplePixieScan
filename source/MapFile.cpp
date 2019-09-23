@@ -9,13 +9,12 @@
 #include "MapFile.hpp"
 #include "ColorTerm.hpp"
 
-double absdiff(const double &v1, const double &v2){
-	return (v1 >= v2)?(v1-v2):(v2-v1);
-}
-
-std::string to_str(const int &input){
-	std::stringstream stream; stream << input;
-	return stream.str();
+void lowercaseString(std::string &str){
+	const char offset = 'a'-'A';
+	for(size_t i = 0; i < str.length(); i++){
+		if(str[i] >= 'A' && str[i] <= 'Z')
+			str[i] += offset;
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -458,6 +457,7 @@ bool MapFile::Load(const char *filename_){
 					warnStr << "MapFile: WARNING! On line " << line_num << ", invalid channel number (" << *iter << "). Ignoring.\n";
 					break;
 				}
+				lowercaseString(values.at(2)); // Convert the string to lowercase
 				detectors[mod][*iter].set(values.at(2));
 				for(size_t arg_index = 3; arg_index < values.size(); arg_index++){
 					detectors[mod][*iter].pushArg(strtod(values.at(arg_index).c_str(), NULL));
@@ -481,6 +481,7 @@ bool MapFile::Load(const char *filename_){
 				warnStr << "MapFile: WARNING! On line " << line_num << ", invalid channel number (" << chan << "). Ignoring.\n";
 				continue;
 			}
+			lowercaseString(values.at(2)); // Convert the string to lowercase
 			detectors[mod][chan].set(values.at(2));
 			for(size_t arg_index = 3; arg_index < values.size(); arg_index++){
 				detectors[mod][chan].pushArg(strtod(values.at(arg_index).c_str(), NULL));

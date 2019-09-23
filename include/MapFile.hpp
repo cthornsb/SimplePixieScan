@@ -4,9 +4,9 @@
 #include <vector>
 #include <stdlib.h>
 
-/** Return the absolute value of the difference between @a v1 and @a v2
+/** Convert all uppercase letters in a string to lowercase
   */
-double absdiff(const double &v1, const double &v2);
+void lowercaseString(std::string &str);
 
 class XiaData;
 class TFile;

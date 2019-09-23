@@ -1,13 +1,14 @@
 # Example simpleScan detector map file.
 # Author: Cory R. Thornsberry (Oct. 4, 2018)
 #  - Entries must be delimited with SPACES!
-#  - Blank lines and text following a # are ignored.
-#  - Empty channels DO NOT need to be defined here.
+#  - Blank lines and text following a # are ignored
+#  - Types, subtypes, and tags are not case-sensitive
+#  - Empty channels DO NOT need to be defined here
 #  - Ranges of channels may be specified by a string with format "start:stop[e|o]"
 #      where "start" and "stop" are integers indicating the start and stop channel
 #      respectively and the optional character after the stop channel may be either
 #      an "e" for only even channels or an "o" for only odd channels (e.g. "3:14e" 
-#      would define the following list of channels [4,6,8,10,12,14]).
+#      would define the following list of channels [4,6,8,10,12,14])
 # Syntax:
 #  MOD CHAN TYPE:SUBTYPE:TAG(S)
 #0 0 hagrid::start                     # This line is commented and will be ignored
@@ -17,16 +18,16 @@
 1 0:15 genericbar::                    # Generic bar type detectors (e.g. VANDLE) defined for channels 0-15 in module 1
 2 0:9 liquidbar::                      # Generic liquid bar type detectors (e.g. SABRE) defined for channels 0-9 in module 2
 # Double-sided PSPMT bar definition follows
-#  TAG="" denotes the DYNODE, TAG=inter-cardinal direction denotes ANODE (e.g. SE, NE, NW, SW)
+#  TAG="" denotes the DYNODE, TAG=inter-cardinal direction denotes ANODE (e.g. [se, ne, nw, sw] or [v1, v2, v3, v4])
 #  SUBTYPE="left" denotes the LEFT side PSPMT, SUBTYPE="right" denotes the RIGHT side
 #  SUBTYPE="" denotes SINGLE-ENDED detector
 3 0 pspmt:left:                        # Left dynode of a PSPMT bar 
 3 1 pspmt:right:                       # Right dynode of a PSPMT bar
-3 2 pspmt:left:SE                      # Left PSPMT bottom right corner
-3 3 pspmt:right:SW                     # Left PSPMT top right corner
-3 4 pspmt:left:NE                      # Left PSPMT top left corner
-3 5 pspmt:right:NW                     # Left PSPMT bottom left corner
-3 6 pspmt:left:NW                      # Right PSPMT bottom right corner
-3 7 pspmt:right:NE                     # Right PSPMT top right corner
-3 8 pspmt:left:SW                      # Right PSPMT top right corner
-3 9 pspmt:right:SE                     # Right PSPMT bottom right corner
+3 2 pspmt:left:se                      # Left PSPMT bottom right corner
+3 3 pspmt:right:ne                     # Left PSPMT top right corner
+3 4 pspmt:left:nw                      # Left PSPMT top left corner
+3 5 pspmt:right:sw                     # Left PSPMT bottom left corner
+3 6 pspmt:left:v4                      # Right PSPMT bottom left corner
+3 7 pspmt:right:v3                     # Right PSPMT top left corner
+3 8 pspmt:left:v2                      # Right PSPMT top right corner
+3 9 pspmt:right:v1                     # Right PSPMT bottom right corner
