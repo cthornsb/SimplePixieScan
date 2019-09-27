@@ -25,6 +25,8 @@ class PSPmtEvent{
 
 	void addAnode(const float &anode, const size_t &index);
 
+	void print() const ;
+
 	bool allValuesSet();
 };
 

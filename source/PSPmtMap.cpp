@@ -7,7 +7,7 @@
 
 unsigned short getIndexFromTag(const std::string &tag){
 	unsigned short retval = 0;
-	if(tag.at(0) != 'V'){
+	if(tag.at(0) != 'v'){
 		if(tag == "se")
 			retval = 1;
 		else if(tag == "ne")
@@ -30,7 +30,7 @@ unsigned short getIndexFromTag(const std::string &tag){
 	return retval;
 }
 
-bool compareTime(const PSPmtMap &lhs, const PSPmtMap &rhs){ 
+bool compareLocation(const PSPmtMap &lhs, const PSPmtMap &rhs){ 
 	return (lhs.getLocation() < rhs.getLocation()); 
 }
 
@@ -244,7 +244,7 @@ bool PSPmtMap::readMapFile(MapFile *map, std::vector<PSPmtMap> &detMap){
 	}
 	
 	// Sort detectors by channel location
-	sort(detMap.begin(), detMap.end(), &compareTime);
+	sort(detMap.begin(), detMap.end(), &compareLocation);
 	
 	return !detMap.empty();
 }
@@ -279,10 +279,16 @@ void PSPmtEvent::addDynode(const double &time, const double &L, const double &S)
 }
 
 void PSPmtEvent::addAnode(const float &anode, const size_t &index){
-	if(anode > 0){
-		anodes[index] = anode;
-		channels[index] = true;
-	}
+	if(anode >= 4) return;
+	anodes[index] = anode;
+	channels[index] = true;
+}
+
+void PSPmtEvent::print() const {
+	std::cout << dynodeSet;
+	for(size_t i = 0; i < 4; i++)
+		std::cout << channels[i];
+	std::cout << std::endl;
 }
 
 bool PSPmtEvent::allValuesSet(){
@@ -291,5 +297,6 @@ bool PSPmtEvent::allValuesSet(){
 		if(!channels[i]) return false;
 	xpos = ((anodes[0]+anodes[1])-(anodes[2]+anodes[3]))/(anodes[0]+anodes[1]+anodes[2]+anodes[3]);
 	ypos = ((anodes[1]+anodes[2])-(anodes[0]+anodes[3]))/(anodes[0]+anodes[1]+anodes[2]+anodes[3]);
+	std::cout << "x=" << xpos << "y=" << ypos << std::endl;
 	return true;
 }
