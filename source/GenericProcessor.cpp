@@ -8,12 +8,12 @@ bool GenericProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *ch
 	// Calculate the time difference between the current event and the start.
 	double tof;
 	if(chEvt->channelEvent->traceLength != 0) // Correct for the phases of the start and the current event.
-		tof = (current_event->time - start->channelEvent->time)*8 + (current_event->phase - start->channelEvent->phase)*4;
+		tof = (current_event->time - start->channelEvent->time)*sysClock + (current_event->phase - start->channelEvent->phase)*adcClock;
 	else
 		if(start->channelEvent->traceLength != 0) // Correct for the phase of the start trace.
-			tof = (current_event->time - start->channelEvent->time)*8 - start->channelEvent->phase*4;
+			tof = (current_event->time - start->channelEvent->time)*sysClock - start->channelEvent->phase*adcClock;
 		else // No start trace. Cannot correct the phases.
-			tof = (current_event->time - start->channelEvent->time)*8;
+			tof = (current_event->time - start->channelEvent->time)*sysClock;
 		
 	// Get the location of this detector.
 	int location = chEvt->entry->location;

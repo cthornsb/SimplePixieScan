@@ -50,7 +50,7 @@ class ChannelEventPair{
 };
 
 class Processor{
-  private:
+  protected:
 	std::deque<ChannelEventPair*> events;	  
 
 	std::string name;
@@ -76,13 +76,15 @@ class Processor{
 	TBranch *trace_branch;
 
 	double adcClockInSeconds; /// One ADC clock is 4 ns
-	double systemClockInSeconds; /// One filter clock is 8 ns
+	double sysClockInSeconds; /// One filter clock is 8 ns
+
+	double adcClock; /// One ADC clock is 4 ns
+	double sysClock; /// One filter clock is 8 ns
 
 	TimingAnalyzer analyzer; /// Specifies which type of high-resolution timing is to be used.
 
 	TraceFitter fitter; /// High-resolution fitter used for fitting traces.
 
-  protected:
 	Structure *root_structure; /// Root data structure for storing processor-specific information.
 	Trace *root_waveform; /// Root data structure for storing traces.
 	Trace *root_waveformR; /// Root data structure for storing right detector traces.
@@ -186,9 +188,15 @@ class Processor{
 
 	void SetDefaultCfdParameters(const float &F_, const float &D_=1, const float &L_=1){ defaultCFD[0] = F_; defaultCFD[1] = D_; defaultCFD[2] = L_; }
 
-	void SetAdcClockInSeconds(const double &adcClock_){ adcClockInSeconds = adcClock_; }
+	void SetAdcClockInSeconds(const double &adcClock_){ 
+		adcClock = adcClock_*1E9;
+		adcClockInSeconds = adcClock_; 
+	}
 	
-	void SetSystemClockInSeconds(const double &sysClock_){ systemClockInSeconds = sysClock_; }
+	void SetSystemClockInSeconds(const double &sysClock_){ 
+		sysClock = sysClock_*1E9;
+		sysClockInSeconds = sysClock_; 
+	}
 	
 	bool Initialize(TTree *tree_);
 	

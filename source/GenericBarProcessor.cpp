@@ -9,8 +9,8 @@ bool GenericBarProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair 
 	ChanEvent *channel_event_R = chEvtR->channelEvent;
 	
 	// Calculate the time difference between the current event and the start.
-	double tdiff_L = (channel_event_L->time - start->channelEvent->time)*8 + (channel_event_L->phase - start->channelEvent->phase)*4;
-	double tdiff_R = (channel_event_R->time - start->channelEvent->time)*8 + (channel_event_R->phase - start->channelEvent->phase)*4;
+	double tdiff_L = (channel_event_L->time - start->channelEvent->time)*sysClock + (channel_event_L->phase - start->channelEvent->phase)*adcClock;
+	double tdiff_R = (channel_event_R->time - start->channelEvent->time)*sysClock + (channel_event_R->phase - start->channelEvent->phase)*adcClock;
 
 	// Get the location of this detector.
 	int location = chEvt->entry->location;

@@ -266,7 +266,10 @@ Processor::Processor(std::string name_, std::string type_, MapFile *map_){
 	mapfile = map_;
 	
 	adcClockInSeconds = 4e-9;
-	systemClockInSeconds = 8e-9;
+	sysClockInSeconds = 8e-9;
+
+	adcClock = 4;
+	sysClock = 8;
 
 	defaultCFD[0] = 0.5;
 	defaultCFD[1] = 1;
@@ -352,7 +355,7 @@ void Processor::PreProcess(){
 		current_event = (*iter)->channelEvent;
 		
 		// Set the default values for high resolution energy and time.
-		current_event->hiresTime = current_event->time * systemClockInSeconds;
+		current_event->hiresTime = current_event->time * sysClockInSeconds;
 	
 		// Check for trace with zero size.
 		if(current_event->traceLength == 0){

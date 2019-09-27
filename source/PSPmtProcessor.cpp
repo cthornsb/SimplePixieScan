@@ -37,7 +37,7 @@ bool PSPmtProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEv
 		return false;
 	
 	// Calculate the time difference between the current event and the start.
-	double tof = (channel_event->time - start->channelEvent->time)*8 + (channel_event->phase - start->channelEvent->phase)*4;
+	double tof = (channel_event->time - start->channelEvent->time)*sysClock + (channel_event->phase - start->channelEvent->phase)*adcClock;
 
 	if(isDynode) // Compute the short integral of the dynode pulse.
 		channel_event->IntegratePulse2(channel_event->max_index + 5, channel_event->max_index + 50);

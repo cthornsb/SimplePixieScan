@@ -6,7 +6,7 @@ bool HagridProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chE
 	ChanEvent *current_event = chEvt->channelEvent;
 
 	// Calculate the time difference between the current event and the start.
-	double tof = (current_event->time - start->channelEvent->time)*8 + (current_event->phase - start->channelEvent->phase)*4;
+	double tof = (current_event->time - start->channelEvent->time)*sysClock + (current_event->phase - start->channelEvent->phase)*adcClock;
 
 	// Get the location of this detector.
 	int location = chEvt->entry->location;
