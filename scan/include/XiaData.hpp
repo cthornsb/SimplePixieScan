@@ -161,6 +161,7 @@ class ChannelEvent : public XiaData {
 	unsigned short max_index; /// The index of the maximum trace bin (in ADC clock ticks).
 	unsigned short max_ADC; /// The uncorrected maximum ADC value of the trace.
 	unsigned short cfdIndex; /// The index in the trace just above the CFD threshold.
+	unsigned short clipped; ///< The number of ADC bins that the trace integral extended past the end of the trace
 	
 	double cfdPar[7]; /// Array of floats for storing cfd polynomial fits.
 

@@ -20,6 +20,7 @@ bool TraceProcessor::HandleEvent(ChannelEventPair *chEvt, ChannelEventPair *chEv
 		stddev_1d->Fill(location, current_event->stddev);
 		baseline_1d->Fill(location, current_event->baseline);
 		phase_1d->Fill(location, current_event->phase);
+		clipped_1d->Fill(location, current_event->clipped);
 		tqdc_tof_2d->Fill2d(location, tof, current_event->qdc);
 		maxADC_tof_2d->Fill2d(location, tof, current_event->max_ADC);
 		phase_phase_2d->Fill2d(location, start->channelEvent->phase, current_event->phase);
@@ -49,6 +50,7 @@ void TraceProcessor::GetHists(OnlineProcessor *online_){
 	online_->GenerateHist(stddev_1d);
 	online_->GenerateHist(baseline_1d);
 	online_->GenerateHist(phase_1d);
+	online_->GenerateHist(clipped_1d);
 	online_->GenerateHist(tqdc_tof_2d);
 	online_->GenerateHist(maxADC_tof_2d);
 	online_->GenerateHist(phase_phase_2d);

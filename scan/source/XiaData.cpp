@@ -444,7 +444,10 @@ float ChannelEvent::IntegratePulse(const size_t &start_/*=0*/, const size_t &sto
 	size_t stop = (stop_ == 0?traceLength:stop_);
 
 	// Check for out of bounds of trace.
-	if(stop >= traceLength) return -9999;
+	if(stop >= traceLength){
+		clipped = stop-traceLength;
+		stop = traceLength;
+	}
 	
 	// Check for start index greater than stop index.
 	if(start_+1 >= stop) return -9999;
@@ -464,7 +467,8 @@ float ChannelEvent::IntegratePulse2(const size_t &start_/*=0*/, const size_t &st
 	size_t stop = (stop_ == 0?traceLength:stop_);
 
 	// Check for out of bounds of trace.
-	if(stop >= traceLength) return -9999;
+	if(stop >= traceLength) 
+		stop = traceLength;
 	
 	// Check for start index greater than stop index.
 	if(start_+1 >= stop) return -9999;
@@ -558,6 +562,7 @@ void ChannelEvent::Clear(){
 	qdc2 = -9999;
 	max_index = 0;
 	max_ADC = 0;
+	clipped = 0;
 
 	valid_chan = false;
 	ignore = false;

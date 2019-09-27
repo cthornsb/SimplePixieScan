@@ -61,6 +61,7 @@ trace:Max ADC:Channels:200:0:4095
 trace:Baseline StdDev:Channels:200:0:200
 trace:Baseline:Channels:200:0:4095
 trace:Phase:ns:200:0:1000
+trace:Clipped ADC Ticks:ns:50:0:50
 trace:TOF:ns:200:-100:100:TQDC:a.u.:200:0:20000
 trace:TOF:ns:200:-100:100:Max ADC:Channels:200:0:4095
 trace:Start Phase:ns:200:0:1000:Stop Phase:ns:200:0:1000

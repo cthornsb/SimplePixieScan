@@ -18,6 +18,7 @@ class TraceProcessor : public Processor{
 	Plotter *stddev_1d;
 	Plotter *baseline_1d;
 	Plotter *phase_1d;
+	Plotter *clipped_1d;
 	Plotter *tqdc_tof_2d;
 	Plotter *maxADC_tof_2d;
 	Plotter *phase_phase_2d;
